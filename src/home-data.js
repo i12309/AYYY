@@ -32,7 +32,7 @@
     const points = hours.map((hour,index) => ({x:8+index/(hours.length-1)*264, y:34-(hour.temp-middle)/range*42}));
     const path = points.map((point,index)=>`${index?'L':'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
     const label = `${data.live?'Прогноз':'Демонстрационный прогноз'} температуры: ${hours.map(hour=>`${hour.time.slice(11,16)} — ${temperature(hour.temp)}`).join(', ')}. Время выбранного города.`;
-    return `<svg viewBox="0 0 280 64" class="home-weather-chart" role="img" aria-label="${escape(label)}"><path d="${path} L272,64 L8,64 Z" fill="currentColor" opacity=".10"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${points.map(point=>`<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2.6" fill="currentColor"/>`).join('')}</svg>`;
+    return `<svg viewBox="0 0 280 64" preserveAspectRatio="none" class="home-weather-chart" role="img" aria-label="${escape(label)}"><path d="${path} L272,64 L8,64 Z" fill="currentColor" opacity=".10"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${points.map(point=>`<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2.6" fill="currentColor"/>`).join('')}</svg>`;
   }
 
   /**
