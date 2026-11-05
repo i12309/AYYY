@@ -95,6 +95,8 @@
     render(){
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
+      document.body.dataset.page=app.route;
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -103,29 +105,6 @@
       document.body.classList.remove('nav-open');document.querySelector('[data-action=menu]')?.setAttribute('aria-expanded','false');window.scrollTo({top:0,behavior:'instant'});
     }
   };
-  app.lighthouse = () => `<svg class="lighthouse-art" viewBox="0 0 560 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><linearGradient id="sky" x1="280" y1="0" x2="280" y2="340" gradientUnits="userSpaceOnUse"><stop stop-color="#e5edff"/><stop offset="1" stop-color="#f0f4ff"/></linearGradient><linearGradient id="sea" x1="280" y1="218" x2="280" y2="340" gradientUnits="userSpaceOnUse"><stop stop-color="#a7c9ed"/><stop offset="1" stop-color="#648ac8"/></linearGradient><linearGradient id="beam" x1="330" y1="94" x2="48" y2="148" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe6a0" stop-opacity=".9"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></linearGradient><linearGradient id="tower" x1="301" y1="155" x2="360" y2="155"><stop stop-color="#fffdf4"/><stop offset=".58" stop-color="#fffdf7"/><stop offset="1" stop-color="#ced8ed"/></linearGradient></defs>
-    <path d="M150 21c95-37 281-20 343 45 59 60 78 171 43 240L86 335C1 260 50 61 150 21Z" fill="url(#sky)"/>
-    <circle cx="452" cy="64" r="24" fill="#ffe8b4"/><circle cx="452" cy="64" r="36" stroke="#ffe5a6" stroke-opacity=".35" stroke-width="12"/>
-    <path d="M54 214c73-25 110 12 187 0s164-3 319 12v114H49l5-126Z" fill="url(#sea)"/>
-    <g class="sea-lines" stroke="#e4effb" stroke-width="2" stroke-linecap="round" opacity=".85"><path d="M51 239h71m-46 15h36m-60 37h97m270-46h79m-55 14h39M450 304h49m-298 12h49m-112-42h41M495 229h36"/></g>
-    <path d="m190 291 55-55 57-11 20-22 37 15 30 35 49 33-18 23-239 8 9-26Z" fill="#8f9eb8"/>
-    <path d="m190 291 55-55 57-11 20-22 37 15-44 16-29 30-64 32-32-5Z" fill="#bec5ce"/>
-    <path d="m181 312 44-20 25 5 43-16 54-11 45 10 38 29-110 20-139-17Z" fill="#7587a6"/>
-    <path d="m242 249 39-24 51-14 30 10 17 26-66 16-71-14Z" fill="#acbba9"/>
-    <path class="lighthouse-beam" d="M328 93 32 35 17 183 328 100 555 159 560 49 328 93Z" fill="url(#beam)"/>
-    <path d="m310 113-17 125c13 10 51 10 64 0l-17-125h-30Z" fill="url(#tower)"/>
-    <path d="m305 151-5 35c18 8 34 8 50 0l-5-35c-13 5-26 5-40 0Z" fill="#e46f66"/>
-    <path d="m310 113-3 21c12 5 26 5 36 0l-3-21h-30Z" fill="#e46f66"/>
-    <path d="m298 212-5 26c13 10 51 10 64 0l-4-26c-17 7-35 7-55 0Z" fill="#e46f66"/>
-    <path d="M319 229a7 7 0 0 1 14 0v16h-14v-16Z" fill="#304365"/><path d="M321 167v12h8v-12a4 4 0 0 0-8 0Z" fill="#405879"/>
-    <path d="M301 106h48v8h-48z" fill="#304365"/><path d="M307 76h36v30h-36z" fill="#314b70"/><path d="M311 80h28v22h-28z" fill="#ffdb88"/><path d="M325 78v26" stroke="#304365" stroke-width="3"/><path d="m301 76 24-18 24 18h-48Z" fill="#354d70"/><path d="M325 49v10" stroke="#354d70" stroke-width="3" stroke-linecap="round"/>
-    <path d="M297 103v-9m56 9v-9M297 98h56" stroke="#304365" stroke-width="2"/>
-    <path d="m236 234 26-17 26 17v21h-52v-21Z" fill="#fffaed"/><path d="m231 235 31-23 31 23" stroke="#d7655f" stroke-width="7" stroke-linejoin="round"/><path d="M258 239h9v17h-9z" fill="#496085"/><path d="M241 238h8v7h-8z" fill="#81aacc"/>
-    <path d="M324 249c-3 18-55 21-68 50" stroke="#dfd2bd" stroke-width="6"/>
-    <g stroke="#6179a1" stroke-width="2" stroke-linecap="round"><path d="M175 100q8-9 16 0 8-9 16 0 M417 155q6-7 12 0 6-7 12 0 M203 64q4-5 8 0 4-5 8 0"/></g>
-    <path d="M137 202c17-6 33-6 51 0" stroke="#c2d5ee" stroke-width="2"/><path d="M430 274h32" stroke="#e8f2fe" stroke-width="2"/>
-  </svg>`;
   app.services = [
     {id:'ai',name:'ИИ-помощник',desc:'Идеи, тексты и ответы на вопросы',icon:'sparkles',color:'purple',group:'everyday',kind:'connect',route:'ai',tag:'Ваш AI'},
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},

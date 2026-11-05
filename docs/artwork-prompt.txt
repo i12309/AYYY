@@ -1,0 +1,14 @@
+AYYY lighthouse illustration
+Generated with the built-in ImageGen tool from the user-supplied visual reference.
+Reference: https://i.pinimg.com/originals/f7/12/af/f712af8928926391e946081584b2ad04.jpg
+The reference is used for visual direction; the website uses a newly generated illustration.
+
+Use case: illustration-story.
+Asset type: an original portrait lighthouse illustration for the left side of the AYYY entertainment portal homepage. This is an illustration asset, not a website screenshot.
+Input image: the supplied lighthouse picture is a STYLE AND PALETTE REFERENCE only. Create a new composition with the same expressive watercolor and black-ink sketch language.
+Subject: a beautiful tall lighthouse standing on a small rocky outcrop, almost full-height within a portrait canvas, the tower centered around x=50%. Dark navy lantern roof and balcony, luminous amber glass, warm ivory tower with one broad vivid orange band, elegant long architectural proportions. Small freely sketched gulls, a couple of tiny distant sailboats, airy turquoise watercolor sea around the lower third, a loose orange sun wash near the lantern. Fine and bold black/navy pen strokes together, imperfect lively construction lines, delicate architectural hatching, bright transparent pigments, occasional orange paint flecks.
+Composition: portrait 1024 x 1536 or similar 2:3 ratio; keep all essential lighthouse architecture within the image. Lantern light center approximately x=50%, y=20%. The roof starts near y=5%; rocky base ends near y=96%. Tower is tall and commanding with breathing room at the sides. The artwork will be displayed about 420px wide by 700px tall on a warm cream webpage.
+Background: genuinely transparent alpha outside the drawn artwork and watercolor washes. Preserve warm ivory paint inside the lighthouse and soft translucent watercolor edges. No rectangular white or colored background, no frame. Let scattered washes and pen lines fade naturally into transparency.
+Lighting and mood: sunlit coastal optimism, playful yet sophisticated travel-sketch illustration. Add a small warm amber glow inside the lantern only; the webpage will animate the beam separately. Do not draw a large opaque light beam.
+Palette: ink navy #142e3d, warm ivory #fff9eb, vivid burnt orange #f4772b with ochre accents, turquoise/sea-glass watercolor #7ebfc8 and #a9d4d6. A few charcoal strokes. Maintain the reference's hand-drawn watercolor character.
+Constraints: no text, no letters, no UI, no logo, no watermark, no photorealism, no 3D, no flat vector icon style, no checkerboard pattern.

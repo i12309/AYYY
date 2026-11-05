@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7fb">
+  <meta name="theme-color" content="#fcfaf4">
   <meta name="description" content="AYYY — ваш маяк в интернете. Поиск, полезные инструменты, заметки, творчество и игры в одном спокойном пространстве.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>AYYY — ваш маяк в интернете</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='13' fill='%233d68ef'/%3E%3Cpath d='M20 17h8l5 23H15l5-23zM18 12l6-5 6 5M19 12h10v5H19zM16 40h16M18 29h12' fill='none' stroke='white' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='13' fill='%23e77d36'/%3E%3Cpath d='M20 17h8l5 23H15l5-23zM18 12l6-5 6 5M19 12h10v5H19zM16 40h16M18 29h12' fill='none' stroke='white' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>/* style.css */
 
 :root{--bg:#f5f7fb;--surface:#fff;--surface-2:#f7f9fc;--text:#1b2942;--muted:#738097;--line:#e9edf4;--blue:#3d68ef;--blue-soft:#edf2ff;--green:#309c81;--red:#e66d6c;--purple:#8a6bd7;--amber:#da9d36;--shadow:0 4px 24px #23365b05;--radius:18px;--sidebar:218px;--header:76px;--sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -59,9 +59,402 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
 @media(max-width:1100px){.prod-bookmark-toolbar{gap:12px}.prod-bookmark-toolbar>.muted{font-size:10px}.prod-focus .focus-panel>.segmented button{padding:7px 9px;font-size:10px}.prod-focus .focus-panel{padding:25px 20px}.prod-focus .focus-ring{width:235px;height:235px}.prod-focus .focus-time{font-size:57px}.prod-focus-custom{gap:7px}.prod-focus-custom label{font-size:9px}.prod-focus-custom .field{width:57px}.prod-focus-custom .btn{padding:6px 8px}}
 @media(max-width:760px){.prod-notes .note-list-item small{margin-top:5px;font-size:8px}.prod-notes .note-list-item{min-width:164px;max-width:164px}.prod-notes .page-heading>.badge,.prod-focus .page-heading>.badge{display:none}.prod-notes .note-editor-foot{gap:14px;font-size:9px;align-items:flex-end}.prod-notes .note-editor-foot>span:last-child{white-space:nowrap}.prod-notes .note-title{font-size:20px}.prod-notes .note-body{min-height:320px;font-size:12px}.prod-notes .note-editor-head .icon-btn{flex-shrink:0}.prod-notes .notes-tasks .task-row{font-size:11px}.prod-task-list .delete-task{opacity:1}.prod-bookmark-toolbar{flex-wrap:wrap;gap:12px;margin-bottom:18px}.prod-bookmark-search{max-width:none;flex-basis:100%}.prod-bookmark-toolbar>.muted{margin-right:auto}.prod-bookmark-toolbar>.btn{font-size:10px;min-height:33px;padding:7px 10px}.prod-bookmark-actions{opacity:1}.prod-bookmark-title svg{opacity:1}.prod-bookmark-path{margin-top:9px}.prod-bookmark-end{font-size:9px;line-height:1.7}.prod-bookmark-end>span{align-items:flex-start}.prod-bookmark-end>span>svg{margin-top:2px}.prod-focus .focus-panel{padding:24px 18px;min-height:0}.prod-focus .focus-panel>.segmented button{font-size:10px;padding:7px 9px}.prod-focus .focus-ring{width:238px;height:238px;margin:25px auto}.prod-focus .focus-time{font-size:57px}.prod-focus-custom{gap:8px}.prod-focus-custom label{font-size:10px}.prod-focus .stack{gap:15px}.prod-focus .focus-stats{margin:17px 0}.prod-focus .focus-stat strong{font-size:30px}.prod-storage-note{font-size:9px}.prod-focus-custom .field{width:58px}}
 @media(prefers-reduced-motion:reduce){.prod-focus .ring-progress,.prod-bookmark-title svg{transition:none}}
+
+/* splash.css */
+/* Watercolor paper, ink and sunlight. Scoped to the two public entry pages. */
+body[data-shell="splash"] {
+  --paper:#fcfaf4; --ink:#203640; --sea:#3d8491; --sunlight:#e77d36;
+  --bg:var(--paper); --surface:#fffdf8; --surface-2:#f3f1e9; --text:var(--ink);
+  --muted:#768185; --line:#e3e3da; --blue:#c9692b; --blue-soft:#fbecda;
+  background:var(--paper); color:var(--ink);
+}
+body[data-shell="splash"] > .sidebar,
+body[data-shell="splash"] > .nav-scrim,
+body[data-shell="splash"] > .mobile-nav,
+body[data-shell="splash"] .main-wrap > .topbar,
+body[data-shell="splash"] .main-content > .footer {display:none!important}
+body[data-shell="splash"] .main-wrap {margin:0;min-height:100svh}
+body[data-shell="splash"] .main-content {padding:0!important;max-width:none;min-height:100svh;margin:0}
+body[data-shell="splash"] #view {animation:none}
+body[data-shell="splash"] ::selection {background:#f4d4ac;color:var(--ink)}
+body[data-shell="splash"] :is(button,a,input,select):focus-visible {outline:2px solid var(--sea);outline-offset:4px;box-shadow:none}
+body[data-shell="splash"] .toasts {bottom:22px}
+
+.shore-page {position:relative;isolation:isolate;overflow:clip;min-height:100svh;max-width:1840px;margin:auto;background:var(--paper);font-family:"Segoe UI",Arial,sans-serif;letter-spacing:0}
+.shore-page::before {content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.045;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.68' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.65' filter='url(%23n)'/%3E%3C/svg%3E")}
+.shore-header {height:100px;padding:22px clamp(28px,4.2vw,78px);display:flex;align-items:center;gap:24px;position:relative;z-index:5}
+.shore-brand {color:var(--ink);font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:46px;font-weight:800;line-height:1;letter-spacing:-4px;transform:rotate(-3deg);padding-right:5px}
+.shore-brand span {color:var(--sunlight)}
+.shore-brand-note {font-size:11px;letter-spacing:.04em;color:#6f7c80;padding-top:9px}
+.shore-nav {margin-left:auto;display:flex;align-items:center;gap:30px;font-size:13px;font-weight:500}
+.shore-nav a {color:var(--ink);position:relative}
+.shore-nav-home {opacity:.6;padding:9px 0}
+.shore-nav-home.is-current {opacity:1}
+.shore-nav-home.is-current::after {content:"";position:absolute;bottom:4px;left:0;right:0;height:2px;background:var(--sunlight);transform:rotate(-3deg);border-radius:50%}
+.shore-catalog-link {display:flex;align-items:center;gap:10px;padding:10px 0}
+.shore-catalog-link>span {font-size:10px;background:#e9ece4;color:#657470;min-width:22px;line-height:20px;text-align:center;border-radius:50%}
+.shore-catalog-link>svg {color:var(--sunlight);transition:transform .2s}
+.shore-catalog-link:hover>svg {transform:translateX(4px)}
+.shore-settings {width:34px;height:34px;display:grid;place-items:center;color:#63777c;border:1px solid #dbe0d7;border-radius:50%;padding:0}
+.shore-settings:hover {background:#f2ecdf;color:var(--ink)}
+
+.shore-stage {position:relative;min-height:calc(100svh - 160px)}
+.shore-art {position:absolute;width:41%;left:-2%;top:0;bottom:0;z-index:1;pointer-events:none}
+.shore-lighthouse {height:100%;width:auto;max-width:none;display:block;position:absolute;bottom:0;left:50%;transform:translateX(-50%);object-fit:contain}
+.shore-art-caption {position:absolute;bottom:8%;left:11%;font:italic 13px Georgia,serif;color:#3c7179;transform:rotate(-8deg);writing-mode:vertical-rl;opacity:.8}
+.shore-beam {position:absolute;inset:0;width:100%;height:100%;z-index:2;overflow:visible;pointer-events:none}
+.shore-beam-fill {animation:shore-breathe 9s ease-in-out infinite;filter:blur(2px)}
+.shore-beam-edge {opacity:.2}
+.shore-lamp-glow {opacity:.65;filter:blur(6px);animation:shore-lamp 6s ease-in-out infinite}
+@keyframes shore-breathe {0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes shore-lamp {0%,100%{opacity:.45}50%{opacity:.85}}
+.shore-home-content {position:relative;z-index:3;margin-left:39.5%;padding:25px clamp(30px,4.2vw,78px) 40px 20px}
+.shore-eyebrow {font-size:10px;font-weight:600;letter-spacing:2.3px;display:flex;align-items:center;gap:9px;color:#788382;line-height:1.6}
+.shore-eyebrow>span {width:5px;height:5px;background:var(--sunlight);border-radius:50%;box-shadow:0 0 0 3px #ecbc8420}
+.shore-welcome h1,.shore-catalog-heading h1 {font-family:Georgia,"Times New Roman",serif;font-size:clamp(43px,4.15vw,68px);line-height:1.06;font-weight:400;letter-spacing:-2.5px;margin:15px 0 14px;color:var(--ink)}
+.shore-welcome h1 em,.shore-catalog-heading h1 em {font-weight:400;font-style:italic;position:relative;color:#b9622f;z-index:0}
+.shore-welcome h1 em::after {content:"";position:absolute;left:1px;right:-7px;bottom:0;height:8px;z-index:-1;background:#edba623d;border-radius:60% 40% 50% 30%;transform:rotate(-2deg)}
+.shore-subtitle {font-size:13px;line-height:1.65;color:#7c8584;letter-spacing:.05px}
+.shore-section-line {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.shore-section-line h2 {font-size:11px;line-height:1.5;letter-spacing:.3px;font-weight:500;color:#788482}
+.shore-text-button {display:inline-flex;align-items:center;gap:6px;font-size:10px;line-height:1.4;color:#7d8785;padding:5px 0;white-space:nowrap}
+.shore-text-button:hover {color:var(--sea)}
+.shore-shortcuts {margin-top:29px}
+.shore-shortcut-grid {display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;min-height:126px}
+.shore-shortcut {display:flex;flex-direction:column;align-items:center;color:var(--ink);text-align:center;padding:2px 0 7px;border-radius:8px;position:relative;transition:transform .2s}
+.shore-shortcut:hover,.shore-shortcut:focus-visible {transform:translateY(-4px)}
+.shore-service-art {width:76px;height:68px;display:flex;align-items:center;justify-content:center;position:relative;color:#d28a3e;flex-shrink:0}
+.shore-service-art .shore-ink-wash {position:absolute;inset:0;width:100%;height:100%;transition:transform .3s}
+.shore-service-art>svg:not(.shore-ink-wash) {position:relative;z-index:1;color:var(--ink);transform:rotate(-5deg);stroke-width:1.35}
+.shore-service-art.blue {color:#71a4ba}.shore-service-art.purple {color:#73959b}.shore-service-art.orange {color:#eaa160}.shore-service-art.amber {color:#d7b461}.shore-service-art.green {color:#6faaa0}.shore-service-art.pink {color:#d89376}
+.shore-shortcut:nth-child(2n) .shore-service-art {transform:rotate(6deg)}
+.shore-shortcut:hover .shore-ink-wash {transform:rotate(9deg) scale(1.06)}
+.shore-shortcut-name {font-size:12px;font-weight:600;line-height:1.4;letter-spacing:-.1px;margin-top:5px}
+.shore-shortcut small {font-size:9px;color:#87908d;line-height:1.45;margin-top:5px;max-width:105px}
+.shore-empty-shortcuts {grid-column:1/-1;border:1px dashed #b9c7c5;color:var(--sea);border-radius:5px;margin:10px 0;display:flex;align-items:center;justify-content:center;gap:10px}
+
+.shore-search-section {margin-top:22px}
+.shore-search-modes {display:flex;align-items:center;gap:23px;margin-bottom:9px;min-height:25px}
+.shore-search-modes button {position:relative;display:flex;gap:5px;align-items:center;padding:2px 0 7px;font-size:11px;color:#89918d;white-space:nowrap}
+.shore-search-modes button.active {color:var(--ink)}
+.shore-search-modes button.active::after {content:"";position:absolute;bottom:0;left:0;right:0;height:3px;background:#e7aa66;border-radius:60% 30% 40% 50%;transform:rotate(-1deg)}
+.shore-search-key {margin-left:auto;font-size:9px;color:#9aa19b;white-space:nowrap}
+.shore-search-key kbd {font-family:inherit;padding:0 4px;border:1px solid #e0e2d9;border-radius:3px;color:#7c8987}
+.shore-search-box {display:flex;align-items:center;gap:11px;border:1.2px solid #aebeb9;background:#fffef9e6;border-radius:8px 10px 8px 7px;padding:7px 7px 7px 17px;box-shadow:0 3px 0 #ded7c422;min-height:58px;position:relative}
+.shore-search-box::after {content:"";position:absolute;height:1px;left:10px;right:18px;bottom:-4px;background:#c7cbc080;transform:rotate(-.18deg);pointer-events:none}
+.shore-search-box:focus-within {border-color:var(--sea)}
+.shore-search-box>svg {color:#718c8e;stroke-width:1.4}
+.shore-search-box input {font-size:14px;min-width:0;flex:1;width:100%;padding:8px 0;border:0;background:transparent;outline:none!important;box-shadow:none!important}
+.shore-search-box input::placeholder {color:#9ba4a0}
+.shore-search-provider {border-left:1px solid #e7e9df;padding-left:10px;max-width:126px}
+.shore-search-provider select {background:transparent;border:0;padding:6px 0;max-width:112px;font-size:10px;color:#84908d;cursor:pointer}
+.shore-search-submit {background:var(--sunlight);color:white;padding:12px 16px;border-radius:5px 6px 5px 7px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:500;transition:background .2s}
+.shore-search-submit:hover {background:#cf6926}
+
+.shore-information {margin-top:30px}
+.shore-widgets {display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:22px}
+.shore-widget {position:relative;min-width:0;padding:12px 0 0;border-top:1px solid #dce1d7}
+.shore-widget-top {display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:22px}
+.shore-widget-title {font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:6px;color:var(--ink);padding:0;line-height:1.45;text-align:left}
+.shore-data-status {font-size:8px;color:#a17f47;white-space:nowrap;letter-spacing:.3px}
+.shore-data-status[data-state="live"] {color:#4f8b7b}
+.shore-data-status[data-state="saved"] {color:#8c887a}
+.shore-data-status[data-state="pending"] {color:#697f88}
+.shore-weather-now {display:flex;gap:10px;align-items:center;color:var(--ink);margin-top:7px}
+.shore-temperature {font-family:Georgia,serif;font-size:36px;letter-spacing:-2px;line-height:1.2;white-space:nowrap}
+.shore-weather-drawing {position:relative;color:#cb8e37}
+.shore-weather-drawing:before {content:"";position:absolute;inset:-2px;background:#f2d59c70;transform:rotate(-10deg);border-radius:49% 55% 37% 50%}
+.shore-weather-drawing svg {width:37px;height:37px;stroke-width:1.2;position:relative}
+.shore-weather-detail {font-size:9px;color:#798884;line-height:1.4;max-width:115px}
+.shore-weather-detail small {display:block;font-size:8px;margin-top:4px;color:#9a9f95}
+.shore-weather-graph {height:32px;margin:3px 0 -4px;color:#83b6b6;overflow:hidden}
+.shore-weather-graph svg {width:100%;height:38px;display:block}
+.shore-weather-hours {display:grid;grid-template-columns:repeat(6,1fr);gap:2px}
+.home-forecast-hour {display:flex;align-items:center;flex-direction:column;gap:2px;font-size:8px;color:#8c9890}
+.home-forecast-hour strong {font-size:9px;font-weight:500;color:#607e7d}
+.shore-data-source {font-size:8px;color:#9b9f94;line-height:1.4;margin-top:12px;min-height:12px}
+.shore-data-error {font-size:10px;line-height:1.5;color:#a05b30;margin-top:8px}
+.shore-rate-line {display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--ink);padding:7px 0;border-bottom:1px solid #e9e9dd;font-size:11px;font-variant-numeric:tabular-nums}
+.shore-rate-line>span {display:flex;align-items:center;gap:8px;color:#798984;font-size:10px}
+.shore-rate-line b {font:italic 17px Georgia,serif;color:#65949a;width:12px;text-align:center}
+.shore-rate-line strong {font-size:14px;font-weight:500;white-space:nowrap}
+.shore-rate-line strong small {font-size:10px;color:#9a9f91;font-weight:400}
+.shore-rates .shore-data-source {margin-top:11px}
+.shore-clock-dot {width:5px;height:5px;background:#71a999;border-radius:50%;box-shadow:0 0 0 3px #a8cfb81a}
+.shore-time-main {display:flex;align-items:center;gap:8px;margin-top:15px}
+.shore-clock-face {color:#608188;width:48px;height:48px;flex-shrink:0;transform:rotate(-4deg)}
+.shore-digital-time {font:29px/1.1 Georgia,serif;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.shore-day {font-size:9px;text-transform:capitalize;color:#8a968d;margin-top:10px;line-height:1.6}
+.shore-pause {font-size:9px;color:#b8884b;display:inline-flex;align-items:center;gap:7px;margin-top:14px;line-height:1.5}
+.shore-footer {position:relative;z-index:4;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:13px clamp(28px,4.2vw,78px) 20px;min-height:60px;font-size:10px;color:#919c95}
+.shore-footer-links {display:flex;align-items:center;gap:21px}
+.shore-footer-links button {padding:4px 0;color:inherit;font-size:10px}
+.shore-footer-links button:hover {color:var(--sea)}
+.shore-footer-mark {display:inline-flex;align-items:center;gap:6px;letter-spacing:1.5px;color:#5d7a7f;font-size:9px}
+
+.shore-picker-grid {display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:20px}
+.shore-picker-item {display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:7px;cursor:pointer;font-size:12px}
+.shore-picker-item input:disabled~* {opacity:.4}
+.shore-picker-item:has(input:checked) {background:#f8ead755;border-color:#dcb58f}
+.shore-picker-item>svg {color:#789394}
+
+/* The directory is a coastal map, with a lighthouse in the page margin. */
+.shore-directory-stage {display:grid;grid-template-columns:28% minmax(0,1fr);gap:32px;padding:22px clamp(28px,4.2vw,78px) 45px 0;position:relative}
+.shore-directory-art {align-self:start;position:sticky;top:15px;height:calc(100svh - 40px);max-height:950px;min-height:570px;pointer-events:none;z-index:0}
+.shore-directory-art .shore-lighthouse {height:100%;bottom:30px;left:42%}
+.shore-directory-art>p {position:absolute;bottom:3%;left:32%;font:18px/1.5 Georgia,serif;color:#486d75;transform:rotate(-5deg);white-space:nowrap;text-align:center}
+.shore-directory-art>p em {color:#be824c;font-weight:400}
+.shore-catalog-content {position:relative;z-index:1;padding-top:9px}
+.shore-catalog-heading h1 {font-size:clamp(40px,3.8vw,62px);margin-top:15px}
+.shore-catalog-heading h1 br {display:none}
+.shore-catalog-heading .shore-subtitle {margin-top:12px}
+.shore-catalog-tools {margin-top:28px}
+.shore-catalog-search {display:flex;align-items:center;gap:12px;background:#fffdf8;border:1px solid #bcc8bf;border-radius:7px;padding:12px 16px;min-height:51px;max-width:700px}
+.shore-catalog-search>svg {color:#829e9c}
+.shore-catalog-search input {width:100%;min-width:0;flex:1;background:none;border:0;font-size:13px;padding:2px 0;box-shadow:none;outline:none!important}
+.shore-catalog-search:focus-within {border-color:var(--sea)}
+.shore-catalog-search>span {white-space:nowrap;color:#98a399;font-size:10px}
+.shore-catalog-filters {display:flex;gap:9px 22px;flex-wrap:wrap;margin-top:18px}
+.shore-catalog-filters button {font-size:11px;line-height:1.7;position:relative;display:inline-flex;align-items:center;gap:5px;color:#89948c;padding:6px 0}
+.shore-catalog-filters button.active {color:#254b54}
+.shore-catalog-filters button.active:after {content:"";position:absolute;bottom:1px;left:0;right:0;height:3px;border-radius:50%;background:#e6ad70;transform:rotate(-2deg)}
+.shore-catalog-summary {display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#929e94;border-top:1px solid #e2e5da;padding-top:16px;margin:18px 0 15px}
+.shore-catalog-summary>span {display:flex;align-items:center;gap:7px}
+.shore-catalog-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.shore-service-card {position:relative;background:#fffdf9a8;border:1px solid #e4e5d9;border-radius:4px 10px 5px 8px;transition:background .2s,border-color .2s,transform .2s}
+.shore-service-card:nth-child(3n+2) {border-radius:9px 5px 8px 4px}
+.shore-service-card:hover {background:#fffdf8;border-color:#bfcdc3;transform:translateY(-3px)}
+.shore-catalog-open {display:block;padding:17px 19px 20px;color:var(--ink);height:100%;position:relative}
+.shore-catalog-open .shore-service-art {width:64px;height:57px;margin-left:-9px}
+.shore-catalog-open h3 {font-size:14px;font-weight:500;letter-spacing:-.2px;margin-top:9px;line-height:1.4;padding-right:5px}
+.shore-catalog-open p {color:#86938b;font-size:10px;line-height:1.6;margin-top:7px;min-height:32px}
+.shore-service-kind {display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:.2px;color:#a19d88;margin-top:16px}
+.shore-service-kind i {width:4px;height:4px;border-radius:50%;background:#d4ae78}
+.shore-service-kind i.is-local {background:#7caaa2}
+.shore-card-arrow {position:absolute;right:17px;bottom:15px;color:#b3b9aa;transition:transform .2s}
+.shore-service-card:hover .shore-card-arrow {transform:translateX(4px);color:var(--sunlight)}
+.shore-service-card .shore-favorite {position:absolute;right:12px;top:13px;color:#aeb9ad;width:30px;height:30px;padding:0;display:grid;place-items:center;border-radius:50%;background:transparent;opacity:1}
+.shore-service-card .shore-favorite:hover {background:#f3eee0}
+.shore-service-card .shore-favorite.selected {color:#ca984c;background:transparent}
+.shore-favorite.selected>svg {fill:#efd7a750}
+.shore-catalog-empty {grid-column:1/-1;text-align:center;padding:60px 20px;color:#7e9593}
+.shore-catalog-empty h2 {font:23px Georgia,serif;margin-top:18px}
+.shore-catalog-empty p {font-size:12px;margin:13px auto 20px;max-width:330px}
+.shore-small-button {border:1px solid #bbc8be;border-radius:6px;padding:10px 18px;font-size:12px;color:var(--sea)}
+.shore-catalog-note {display:flex;align-items:center;justify-content:center;gap:10px;font-size:10px;color:#9aa497;margin-top:30px;text-align:center}
+
+/* Keep fine print readable against the paper, even beside the bright artwork. */
+.shore-subtitle {color:#687b79}
+.shore-section-line h2 {font-size:12px;color:#6c7c78}
+.shore-text-button {font-size:11px;color:#6b7d78}
+.shore-shortcut-name {font-size:13px}
+.shore-shortcut small {font-size:10px;color:#76837e}
+.shore-search-modes button {font-size:12px;color:#73817b}
+.shore-weather-detail {font-size:10px;color:#687c78}
+.shore-weather-detail small {font-size:9px;color:#77857e}
+.shore-data-status {font-size:9px;color:#8d713e}
+.shore-data-source {font-size:9px;color:#76857c}
+.shore-day {font-size:10px;color:#718179}
+.shore-rate-line strong {font-size:16px}
+.shore-catalog-open p {font-size:11px;color:#74827a}
+.shore-service-kind {font-size:9px;color:#89866f}
+.shore-catalog-filters button {font-size:12px;color:#708278}
+.shore-catalog-summary,.shore-catalog-note {color:#76867b}
+
+@media (min-width:1500px) {
+  .shore-home-content {padding-top:38px}
+  .shore-shortcuts {margin-top:36px}
+  .shore-shortcut-grid {gap:18px}
+  .shore-service-art {width:88px;height:78px}
+  .shore-shortcut-name {font-size:14px}
+  .shore-shortcut small {font-size:10px}
+  .shore-information {margin-top:38px}
+  .shore-widget-title {font-size:12px}
+  .shore-weather-detail {font-size:10px}
+  .shore-digital-time {font-size:34px}
+}
+@media (min-width:1100px) and (max-height:830px) {
+  .shore-header {height:83px;padding-top:16px;padding-bottom:16px}
+  .shore-stage {min-height:calc(100svh - 137px)}
+  .shore-home-content {padding-top:10px;padding-bottom:23px}
+  .shore-welcome h1 {font-size:49px;margin-top:11px;margin-bottom:9px}
+  .shore-shortcuts {margin-top:20px}
+  .shore-shortcut-grid {min-height:110px}
+  .shore-service-art {width:68px;height:61px}
+  .shore-search-section {margin-top:15px}
+  .shore-information {margin-top:22px}
+  .shore-widgets {gap:19px}
+  .shore-footer {min-height:54px}
+}
+@media (max-width:1190px) {
+  .shore-brand-note {display:none}
+  .shore-home-content {margin-left:35%;padding-right:30px}
+  .shore-art {width:37%;left:-3%}
+  .shore-welcome h1 {font-size:49px}
+  .shore-shortcut-grid {gap:3px}
+  .shore-shortcut-name {font-size:11px}
+  .shore-shortcut small {font-size:8px}
+  .shore-service-art {width:65px;height:60px}
+  .shore-search-key {display:none}
+  .shore-widgets {gap:16px}
+  .shore-weather-now {gap:6px;flex-wrap:wrap}
+  .shore-weather-detail {max-width:100%;flex-basis:100%;display:flex;gap:8px;align-items:center;font-size:9px}
+  .shore-weather-detail small {margin:0;font-size:8px}
+  .shore-time-main {flex-direction:column;align-items:flex-start;gap:7px;margin-top:9px}
+  .shore-clock-face {height:34px;width:34px;position:absolute;right:0;top:45px;opacity:.7}
+  .shore-digital-time {font-size:29px;margin-top:7px}
+  .shore-day {max-width:100px;margin-top:13px}
+  .shore-pause {margin-top:19px}
+  .shore-catalog-grid {gap:13px}
+  .shore-directory-stage {grid-template-columns:25% minmax(0,1fr);gap:22px}
+}
+@media (max-width:980px) and (min-width:721px) {
+  .shore-header {height:90px;padding-left:30px;padding-right:30px}
+  .shore-home-content {margin-left:32%;padding-left:12px;padding-top:15px}
+  .shore-art {width:34%;left:-3%;max-height:900px;top:0;bottom:auto;height:100%;mask-image:linear-gradient(to right,#000 70%,transparent 100%)}
+  .shore-art .shore-lighthouse {left:44%}
+  .shore-welcome h1 {font-size:44px}
+  .shore-eyebrow {font-size:9px;letter-spacing:1.7px}
+  .shore-subtitle {font-size:11px}
+  .shore-shortcuts {margin-top:22px}
+  .shore-shortcut-grid {grid-template-columns:repeat(3,1fr);gap:7px 14px}
+  .shore-shortcut {padding:0 0 8px}
+  .shore-shortcut-name {font-size:12px}
+  .shore-shortcut small {display:none}
+  .shore-search-provider {display:none}
+  .shore-search-modes {gap:20px}
+  .shore-search-submit {padding:11px 12px}
+  .shore-widgets {grid-template-columns:1.25fr 1fr;gap:18px}
+  .shore-weather {grid-column:1/-1}
+  .shore-weather-now {flex-wrap:nowrap}
+  .shore-weather-detail {flex-basis:auto;display:block;margin-left:8px}
+  .shore-weather-detail small {margin-top:4px}
+  .shore-weather-graph {height:35px}
+  .shore-weather-graph svg {height:44px}
+  .shore-clock-face {position:static;opacity:1;width:44px;height:44px}
+  .shore-time-main {flex-direction:row}
+  .shore-digital-time {margin:0}
+  .shore-day {max-width:none}
+  .shore-directory-stage {grid-template-columns:20% minmax(0,1fr);gap:18px;padding-right:30px}
+  .shore-directory-art {mask-image:linear-gradient(to right,#000 65%,transparent 100%)}
+  .shore-directory-art .shore-lighthouse {left:23%;height:82%;bottom:auto;top:0}
+  .shore-directory-art>p {display:none}
+  .shore-catalog-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shore-catalog-heading h1 {font-size:42px}
+  .shore-catalog-heading h1 br {display:block}
+}
+@media (max-width:720px) {
+  .shore-header {height:76px;padding:16px 21px;gap:15px}
+  .shore-brand {font-size:38px;letter-spacing:-3.3px}
+  .shore-nav {gap:18px;font-size:12px}
+  .shore-nav-home {display:none}
+  .shore-catalog-link {gap:7px}
+  .shore-catalog-link>svg {width:14px}
+  .shore-catalog-link>span {font-size:9px;line-height:18px;min-width:18px}
+  .shore-settings {height:30px;width:30px;border:0}
+  .shore-stage {min-height:0}
+  .shore-art {left:-26px;top:0;bottom:auto;width:184px;height:280px}
+  .shore-art .shore-lighthouse {height:100%;left:50%}
+  .shore-art-caption {display:none}
+  .shore-home-content {margin:0;padding:5px 22px 31px}
+  .shore-welcome {padding:30px 0 28px 133px;min-height:282px;display:flex;flex-direction:column;justify-content:center}
+  .shore-eyebrow {font-size:8px;letter-spacing:1.1px;line-height:1.7;gap:6px}
+  .shore-eyebrow>span {height:4px;width:4px;flex-shrink:0}
+  .shore-welcome h1 {font-size:36px;line-height:1.08;letter-spacing:-1.7px;margin:12px 0 13px}
+  .shore-subtitle {font-size:10px;line-height:1.65;max-width:250px}
+  .shore-shortcuts {margin-top:8px}
+  .shore-section-line {margin-bottom:7px}
+  .shore-section-line h2 {font-size:10px;letter-spacing:0}
+  .shore-text-button {font-size:9px}
+  .shore-shortcut-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:13px 10px}
+  .shore-shortcut {padding:0 0 5px}
+  .shore-service-art {width:74px;height:65px}
+  .shore-shortcut-name {font-size:12px;margin-top:1px}
+  .shore-shortcut small {font-size:8px;margin-top:3px}
+  .shore-search-section {margin-top:24px}
+  .shore-search-modes {gap:19px;margin-bottom:10px}
+  .shore-search-modes button {font-size:10px}
+  .shore-search-box {padding:6px 6px 6px 12px;min-height:55px;gap:9px}
+  .shore-search-box>svg {width:18px;height:18px}
+  .shore-search-box input {font-size:13px;padding:8px 0}
+  .shore-search-provider {display:none}
+  .shore-search-submit {padding:12px;font-size:11px;gap:6px}
+  .shore-search-submit>svg {width:14px}
+  .shore-information {margin-top:29px}
+  .shore-widgets {grid-template-columns:1fr 1fr;gap:24px 22px}
+  .shore-weather {grid-column:1/-1}
+  .shore-widget {padding-top:12px}
+  .shore-widget-title {font-size:12px}
+  .shore-data-status {font-size:9px}
+  .shore-weather-now {flex-wrap:nowrap;gap:15px;margin-top:10px}
+  .shore-temperature {font-size:42px}
+  .shore-weather-drawing svg {width:42px;height:42px}
+  .shore-weather-detail {flex-basis:auto;display:block;font-size:11px}
+  .shore-weather-detail small {font-size:10px;margin-top:5px}
+  .shore-weather-graph {height:36px;margin:3px 0 0}
+  .shore-weather-graph svg {height:44px}
+  .home-forecast-hour {font-size:9px;gap:3px}
+  .home-forecast-hour strong {font-size:10px}
+  .shore-data-source {font-size:9px;margin-top:12px}
+  .shore-rate-line {padding:9px 0;font-size:12px}
+  .shore-rate-line>span {font-size:11px}
+  .shore-rate-line strong {font-size:16px}
+  .shore-time-main {flex-direction:row;align-items:center;margin-top:16px;gap:10px}
+  .shore-clock-face {position:static;opacity:1;width:46px;height:46px}
+  .shore-digital-time {font-size:29px;margin:0}
+  .shore-day {max-width:none;font-size:10px;margin-top:13px}
+  .shore-pause {margin-top:22px;font-size:9px;gap:4px}
+  .shore-footer {padding:18px 22px 24px;flex-direction:column;gap:13px;align-items:flex-start;border-top:1px solid #e1e6da;font-size:9px}
+  .shore-footer-links {width:100%;gap:22px}
+  .shore-footer-links button {font-size:9px}
+  .shore-footer-mark {margin-left:auto;font-size:8px}
+  .shore-picker-grid {gap:5px;grid-template-columns:1fr}
+  .shore-picker-item {padding:9px;font-size:12px}
+  .shore-directory-stage {display:block;padding:0 22px 30px}
+  .shore-directory-art {position:absolute;left:-24px;top:-5px;height:250px;min-height:0;width:163px;pointer-events:none}
+  .shore-directory-art .shore-lighthouse {height:100%;bottom:0;left:45%}
+  .shore-directory-art>p {display:none}
+  .shore-catalog-content {padding:0}
+  .shore-catalog-heading {padding:30px 0 20px 119px;min-height:232px;display:flex;flex-direction:column;justify-content:center}
+  .shore-catalog-heading h1 {font-size:34px;line-height:1.13;letter-spacing:-1.7px;margin:12px 0 0}
+  .shore-catalog-heading h1 br {display:none}
+  .shore-catalog-heading .shore-subtitle {font-size:10px;margin-top:12px}
+  .shore-catalog-tools {margin-top:20px}
+  .shore-catalog-search {padding:12px;gap:9px;min-height:50px}
+  .shore-catalog-search input {font-size:12px}
+  .shore-catalog-search>span {font-size:9px}
+  .shore-catalog-filters {gap:5px 18px;margin-top:13px}
+  .shore-catalog-filters button {font-size:11px}
+  .shore-catalog-summary {font-size:9px;margin:12px 0 14px;padding-top:13px}
+  .shore-catalog-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .shore-catalog-open {padding:14px 13px 16px}
+  .shore-catalog-open .shore-service-art {width:60px;height:53px;margin-left:-7px}
+  .shore-catalog-open h3 {font-size:13px;margin-top:8px;min-height:36px}
+  .shore-catalog-open p {font-size:10px;min-height:46px;margin-top:3px}
+  .shore-service-kind {font-size:8px;margin-top:12px;gap:5px}
+  .shore-service-card .shore-favorite {right:5px;top:9px}
+  .shore-card-arrow {right:10px;bottom:12px;opacity:.7}
+  .shore-card-arrow>svg {width:13px}
+  .shore-catalog-note {font-size:9px;line-height:1.7;margin-top:25px;align-items:flex-start;text-align:left}
+}
+@media (max-width:370px) {
+  .shore-header {padding-left:17px;padding-right:17px}
+  .shore-nav {gap:10px}
+  .shore-home-content {padding-left:17px;padding-right:17px}
+  .shore-welcome {padding-left:113px}
+  .shore-welcome h1 {font-size:31px}
+  .shore-art {left:-42px}
+  .shore-search-modes {gap:14px}
+  .shore-shortcut-name {font-size:11px}
+  .shore-time-main {gap:4px}
+  .shore-clock-face {width:37px;height:37px}
+  .shore-digital-time {font-size:27px}
+  .shore-catalog-heading {padding-left:99px}
+  .shore-catalog-heading h1 {font-size:29px}
+}
 </style>
 </head>
-<body>
+<body data-shell="splash">
   <a href="#view" class="skip-link">Перейти к содержимому</a>
   <aside class="sidebar" aria-label="Основная навигация">
     <a href="#home" class="brand" aria-label="AYYY, главная"><span class="brand-mark" data-icon="lighthouse" data-size="35"></span><span class="brand-copy"><span class="brand-word">ayyy<span class="brand-dot">.</span></span><small>ВАШ МАЯК В ИНТЕРНЕТЕ</small></span></a>
@@ -197,6 +590,8 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
     render(){
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
+      document.body.dataset.page=app.route;
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -205,29 +600,6 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
       document.body.classList.remove('nav-open');document.querySelector('[data-action=menu]')?.setAttribute('aria-expanded','false');window.scrollTo({top:0,behavior:'instant'});
     }
   };
-  app.lighthouse = () => `<svg class="lighthouse-art" viewBox="0 0 560 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><linearGradient id="sky" x1="280" y1="0" x2="280" y2="340" gradientUnits="userSpaceOnUse"><stop stop-color="#e5edff"/><stop offset="1" stop-color="#f0f4ff"/></linearGradient><linearGradient id="sea" x1="280" y1="218" x2="280" y2="340" gradientUnits="userSpaceOnUse"><stop stop-color="#a7c9ed"/><stop offset="1" stop-color="#648ac8"/></linearGradient><linearGradient id="beam" x1="330" y1="94" x2="48" y2="148" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe6a0" stop-opacity=".9"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></linearGradient><linearGradient id="tower" x1="301" y1="155" x2="360" y2="155"><stop stop-color="#fffdf4"/><stop offset=".58" stop-color="#fffdf7"/><stop offset="1" stop-color="#ced8ed"/></linearGradient></defs>
-    <path d="M150 21c95-37 281-20 343 45 59 60 78 171 43 240L86 335C1 260 50 61 150 21Z" fill="url(#sky)"/>
-    <circle cx="452" cy="64" r="24" fill="#ffe8b4"/><circle cx="452" cy="64" r="36" stroke="#ffe5a6" stroke-opacity=".35" stroke-width="12"/>
-    <path d="M54 214c73-25 110 12 187 0s164-3 319 12v114H49l5-126Z" fill="url(#sea)"/>
-    <g class="sea-lines" stroke="#e4effb" stroke-width="2" stroke-linecap="round" opacity=".85"><path d="M51 239h71m-46 15h36m-60 37h97m270-46h79m-55 14h39M450 304h49m-298 12h49m-112-42h41M495 229h36"/></g>
-    <path d="m190 291 55-55 57-11 20-22 37 15 30 35 49 33-18 23-239 8 9-26Z" fill="#8f9eb8"/>
-    <path d="m190 291 55-55 57-11 20-22 37 15-44 16-29 30-64 32-32-5Z" fill="#bec5ce"/>
-    <path d="m181 312 44-20 25 5 43-16 54-11 45 10 38 29-110 20-139-17Z" fill="#7587a6"/>
-    <path d="m242 249 39-24 51-14 30 10 17 26-66 16-71-14Z" fill="#acbba9"/>
-    <path class="lighthouse-beam" d="M328 93 32 35 17 183 328 100 555 159 560 49 328 93Z" fill="url(#beam)"/>
-    <path d="m310 113-17 125c13 10 51 10 64 0l-17-125h-30Z" fill="url(#tower)"/>
-    <path d="m305 151-5 35c18 8 34 8 50 0l-5-35c-13 5-26 5-40 0Z" fill="#e46f66"/>
-    <path d="m310 113-3 21c12 5 26 5 36 0l-3-21h-30Z" fill="#e46f66"/>
-    <path d="m298 212-5 26c13 10 51 10 64 0l-4-26c-17 7-35 7-55 0Z" fill="#e46f66"/>
-    <path d="M319 229a7 7 0 0 1 14 0v16h-14v-16Z" fill="#304365"/><path d="M321 167v12h8v-12a4 4 0 0 0-8 0Z" fill="#405879"/>
-    <path d="M301 106h48v8h-48z" fill="#304365"/><path d="M307 76h36v30h-36z" fill="#314b70"/><path d="M311 80h28v22h-28z" fill="#ffdb88"/><path d="M325 78v26" stroke="#304365" stroke-width="3"/><path d="m301 76 24-18 24 18h-48Z" fill="#354d70"/><path d="M325 49v10" stroke="#354d70" stroke-width="3" stroke-linecap="round"/>
-    <path d="M297 103v-9m56 9v-9M297 98h56" stroke="#304365" stroke-width="2"/>
-    <path d="m236 234 26-17 26 17v21h-52v-21Z" fill="#fffaed"/><path d="m231 235 31-23 31 23" stroke="#d7655f" stroke-width="7" stroke-linejoin="round"/><path d="M258 239h9v17h-9z" fill="#496085"/><path d="M241 238h8v7h-8z" fill="#81aacc"/>
-    <path d="M324 249c-3 18-55 21-68 50" stroke="#dfd2bd" stroke-width="6"/>
-    <g stroke="#6179a1" stroke-width="2" stroke-linecap="round"><path d="M175 100q8-9 16 0 8-9 16 0 M417 155q6-7 12 0 6-7 12 0 M203 64q4-5 8 0 4-5 8 0"/></g>
-    <path d="M137 202c17-6 33-6 51 0" stroke="#c2d5ee" stroke-width="2"/><path d="M430 274h32" stroke="#e8f2fe" stroke-width="2"/>
-  </svg>`;
   app.services = [
     {id:'ai',name:'ИИ-помощник',desc:'Идеи, тексты и ответы на вопросы',icon:'sparkles',color:'purple',group:'everyday',kind:'connect',route:'ai',tag:'Ваш AI'},
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
@@ -820,7 +1192,7 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
     document.dispatchEvent(new CustomEvent('ayyy:'+type));
     const active=document.activeElement;
     const isEditing=active && (active.matches('input,textarea,select')||active.isContentEditable);
-    if(refreshHome && app.route==='home' && !isEditing && !document.querySelector('#modal')?.open && app.views.home)app.render();
+    if(refreshHome && app.route==='home' && !app.homeDataMounted && !isEditing && !document.querySelector('#modal')?.open && app.views.home)app.render();
   }
   function parseWeather(data,city) {
     const current=data?.current, hourly=data?.hourly, daily=data?.daily;
@@ -863,7 +1235,7 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
   function selectCity(city) {
     selectedCity=cleanCity(city);app.set('weather.city',selectedCity);weatherError='';weatherTicket++;weatherPendingKey='';weatherPromise=null;
     app.closeModal();
-    if(['home','weather'].includes(app.route))app.render();
+    if(app.route==='weather' || (app.route==='home' && !app.homeDataMounted))app.render();
     app.refreshWeather();
   }
   app.showCityPicker = () => {
@@ -1192,48 +1564,12 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
 (() => {
   'use strict';
   const a=window.AYYY, e=a.escape, i=a.icon;
-  const fallbackTasks=[{id:'first',text:'Попробовать что-нибудь новое',done:false},{id:'second',text:'Оставить время для прогулки',done:false}];
-  const defaultBookmarks=[{id:'github',title:'GitHub',url:'https://github.com/'},{id:'wiki',title:'Википедия',url:'https://ru.wikipedia.org/'},{id:'youtube',title:'YouTube',url:'https://youtube.com/'}];
+  // Home and the service directory are registered by splash.js.
   a.apiBadge=(data)=>`<span class="badge ${data.live?'live':'demo'}">${data.live?(data.stale?'Сохранено':'API'):'Демо'}</span>`;
-  a.register('home',{title:'Главная',render(){
-    const w=a.getWeather?.()||{city:'Москва',temp:8,condition:'Переменная облачность',feels:6,icon:'sun',live:false};
-    const r=a.getRates?.()||{USD:92.40,EUR:100.81,live:false};
-    const favorites=a.favorites().map(id=>a.services.find(s=>s.id===id)).filter(Boolean);
-    const bookmarks=(a.getBookmarks?.()||a.get('bookmarks',defaultBookmarks)).slice(0,3);
-    const parcels=a.get('parcels',[]);
-    return `<div class="page-intro flex-between"><div><div class="page-kicker"><i class="status-dot blue"></i> ВАША ТОЧКА ОТСЧЁТА</div><h1>Всё нужное — рядом.</h1></div><button class="intro-side" data-action="settings">${i('sliders',14)} Настроить пространство</button></div>
-      <section class="hero" aria-label="Поиск и маяк AYYY"><div class="hero-content"><div class="hero-eyebrow">НЕМНОГО ЯСНОСТИ В БОЛЬШОМ ИНТЕРНЕТЕ</div><h1>Ваш маяк<br><span>в интернете.</span></h1><p class="hero-sub">Найти ответ. Сделать дело. Открыть новое.</p><form class="home-search" id="home-search"><div class="search-modes" role="group" aria-label="Где искать"><button type="button" class="active" data-searchmode="web">В интернете</button><button type="button" data-searchmode="local">Сервисы AYYY</button><button type="button" data-searchmode="ai">Спросить ИИ ${i('sparkles',10)}</button></div><div class="search-box"><span class="search-icon">${i('search',18)}</span><input id="home-query" aria-label="Поисковый запрос" placeholder="Что вы хотите найти?" autocomplete="off" maxlength="500"><span class="search-engine">${e(a.get('searchEngine','Google'))}</span><button class="search-submit" type="submit" aria-label="Начать поиск">${i('arrow-right',19)}</button></div><div class="search-hints"><span>Например:</span><button type="button" data-query="как работает маяк">как работает маяк</button><button type="button" data-route="tools" data-param="percent">посчитать скидку</button><button type="button" data-route="paint">что-нибудь нарисовать</button></div></form></div><div class="hero-art">${a.lighthouse()}</div><div class="hero-stamp">${i('lighthouse',12)} AYYY · всегда есть ориентир</div></section>
-      <div class="overview-grid">
-        <article class="overview-card"><div class="overview-top"><button class="tiny-title" data-action="city">${i('pin',14)} ${e(w.city)} ${i('chevron-down',11)}</button>${a.apiBadge(w)}</div><button class="weather-mini-main" data-route="weather" style="width:100%;text-align:left;padding:0"><span class="weather-mini-temp">${w.temp>0?'+':''}${a.fmt(w.temp,0)}°</span>${i(w.icon||'sun',39)}</button><div class="overview-bottom"><span>${e(w.condition)}</span><button class="icon-btn" data-route="weather" title="Прогноз погоды" style="height:16px;width:18px">${i('arrow-right',13)}</button></div></article>
-        <article class="overview-card"><div class="overview-top"><button class="tiny-title" data-route="finance">${i('chart',14)} Курсы валют</button>${a.apiBadge(r)}</div><div class="currency-mini"><span><span class="currency-code">USD</span> Доллар</span><strong>${a.fmt(r.USD)} ₽</strong></div><div class="currency-mini"><span><span class="currency-code">EUR</span> Евро</span><strong>${a.fmt(r.EUR)} ₽</strong></div><div class="overview-bottom"><span>${r.live?'Дневные справочные курсы':'Пример отображения курсов'}</span><button class="icon-btn" data-route="finance" title="Валюты и индексы" style="height:16px;width:18px">${i('arrow-right',13)}</button></div></article>
-        <article class="overview-card"><div class="overview-top"><button class="tiny-title" data-route="parcels">${i('package',14)} Мои посылки</button>${parcels.length?`<span class="badge">${parcels.length}</span>`:'<span class="badge demo">Демо</span>'}</div><button class="parcel-mini" data-route="parcels" style="text-align:left;padding:0;width:100%"><span class="parcel-mini-icon">${i('package',21)}</span><span><h3>${parcels.length?e(parcels[0].title):'Кое-что хорошее в пути'}</h3><p>${parcels.length?'Открыть сохранённые трек-номера':'Так будет выглядеть доставка'}</p></span></button><div class="mini-progress"><i class="done"></i><i class="done"></i><i></i><i></i></div><div class="overview-bottom"><span>${parcels.length?'Статус — на сайте перевозчика':'Демонстрационный маршрут'}</span></div></article>
-        <article class="overview-card"><div class="overview-top"><button class="tiny-title" data-route="focus">${i('focus',14)} Время фокуса</button><span class="badge">В браузере</span></div><div class="timer-mini"><button style="padding:0" data-route="focus"><strong data-focus-time>${a.focusLabel?.()||'25:00'}</strong></button><button class="timer-play" data-focus-play data-action="focus-toggle" aria-label="Запустить или приостановить таймер">${i('play',14)}</button></div><div class="overview-bottom"><span>Одно дело. Без лишнего шума.</span></div></article>
-      </div>
-      <div class="section-heading"><h2>Быстрый доступ <span class="count">${favorites.length}</span></h2><button class="section-action" data-route="directory">Все сервисы ${i('arrow-right',14)}</button></div>
-      <div class="services-grid home-services">${favorites.length?favorites.map(s=>a.serviceCard(s,true)).join(''):`<button class="btn soft" data-route="directory">${i('plus')} Добавить избранное</button>`}</div>
-      <div class="home-bottom"><section class="panel"><div class="panel-head"><h2>Мои маршруты</h2><button class="icon-btn" data-route="bookmarks" aria-label="Все закладки">${i('arrow-right',15)}</button></div>${bookmarks.length?bookmarks.map(b=>`<a class="bookmark-row" href="${e(a.safeURL(b.url)||'#')}" target="_blank" rel="noopener noreferrer"><span class="bookmark-symbol">${e(b.title.slice(0,1))}</span><span>${e(b.title)}</span>${i('external',12)}</a>`).join(''):'<p class="small muted">Сохраните любимые сайты в закладках.</p>'}</section>
-      <section class="panel"><div class="panel-head"><h2>На сегодня</h2><button class="icon-btn" data-route="notes" aria-label="Открыть заметки и задачи">${i('arrow-right',15)}</button></div><div id="home-tasks">${a.renderTasks?a.renderTasks(3):(a.get('tasks',fallbackTasks).slice(0,3).map(t=>`<label class="task-row ${t.done?'done':''}"><input type="checkbox" data-home-task="${e(t.id)}" ${t.done?'checked':''}><span>${e(t.text)}</span></label>`).join(''))}</div>${a.renderTasks?'':`<form class="task-input" id="home-task-form"><input placeholder="Ещё одно небольшое дело…" maxlength="180" aria-label="Новая задача"><button aria-label="Добавить задачу">${i('plus',16)}</button></form>`}</section>
-      <section class="panel discovery-card"><div><span class="badge purple">ПАУЗА С ПОЛЬЗОЙ</span><h3>Переключитесь.<br>И найдите пару.</h3><p>Пять минут игры — и можно возвращаться к важному.</p></div><button class="btn" data-route="games" data-param="memory">Сыграть ${i('arrow-right',12)}</button><span class="discovery-mark">${i('grid',80)}</span></section></div>`;
-    },mount(){
-      let mode='web';const form=document.querySelector('#home-search');form.querySelectorAll('[data-searchmode]').forEach(button=>button.onclick=()=>{mode=button.dataset.searchmode;form.querySelectorAll('[data-searchmode]').forEach(b=>b.classList.toggle('active',b===button));const input=form.querySelector('input');input.placeholder=mode==='ai'?'Что обсудим с помощником?':mode==='local'?'Найти инструмент, игру или сервис':'Что вы хотите найти?';input.focus();});
-      form.onsubmit=event=>{event.preventDefault();a.performSearch(form.querySelector('input').value,mode);};
-      const taskCleanup=a.mountTasks?.(document.querySelector('#home-tasks'));
-      const extraTaskForm=document.querySelector('#home-task-form');if(extraTaskForm)extraTaskForm.onsubmit=event=>{event.preventDefault();const input=event.currentTarget.querySelector('input');const text=input.value.trim();if(!text)return;const tasks=a.getTasks?.()||a.get('tasks',fallbackTasks);tasks.push({id:crypto.randomUUID?.()||String(Date.now()),text,done:false});a.set('tasks',tasks);a.render();};
-      document.querySelectorAll('[data-home-task]').forEach(el=>el.onchange=()=>{const tasks=a.get('tasks',fallbackTasks);const task=tasks.find(t=>t.id===el.dataset.homeTask);if(task){task.done=el.checked;a.set('tasks',tasks);el.closest('label').classList.toggle('done',el.checked);}});
-      return typeof taskCleanup==='function'?taskCleanup:undefined;
-    }
-  });
-  const groups=[['all','Все сервисы'],['everyday','На каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
-  let category='all';
-  a.register('directory',{title:'Все сервисы',render(){return a.heading('Маленькие сервисы. Большие возможности.','Всё, что помогает находить, создавать и успевать.',`<span class="badge live">${i('grid',12)} ${a.services.length} сервиса</span>`)+`<div class="catalog-toolbar"><div class="catalog-filters">${groups.map(([id,name])=>`<button class="chip ${id===category?'active':''}" data-category="${id}">${id==='favorites'?i('star',12):''}${name}</button>`).join('')}</div><div class="catalog-search">${i('search',16)}<input class="field" id="catalog-search" placeholder="Найти сервис" aria-label="Поиск по сервисам" value="${e(a.param)}"></div></div><p class="catalog-count" id="catalog-count"></p><div class="services-grid" id="catalog-grid"></div><div class="notice" style="margin-top:24px">${i('laptop',17)}<span>Сервисы с отметкой «В браузере» работают на вашем устройстве. Звёздочка добавляет сервис в быстрый доступ на главной.</span></div>`;},mount(){
-    const input=document.querySelector('#catalog-search');
-    function update(){const query=input.value.toLocaleLowerCase('ru').trim();const list=a.services.filter(s=>(category==='all'||category==='favorites'&&a.favorites().includes(s.id)||s.group===category)&&(!query||`${s.name} ${s.desc} ${s.id}`.toLocaleLowerCase('ru').includes(query)));document.querySelector('#catalog-count').textContent=`Найдено: ${list.length} · нажмите на карточку, чтобы открыть`;document.querySelector('#catalog-grid').innerHTML=list.length?list.map(s=>a.serviceCard(s)).join(''):`<div class="empty-state full-width">${i('search')}<h3>Пока ничего не найдено</h3><p>Попробуйте другое слово или выберите «Все сервисы».</p></div>`;}
-    input.oninput=update;document.querySelectorAll('[data-category]').forEach(button=>button.onclick=()=>{category=button.dataset.category;document.querySelectorAll('[data-category]').forEach(b=>b.classList.toggle('active',b===button));update();});update();
-  }});
   a.searchProviders={Google:{letter:'G',url:q=>'https://www.google.com/search?q='+encodeURIComponent(q)},Яндекс:{letter:'Я',url:q=>'https://yandex.ru/search/?text='+encodeURIComponent(q)},DuckDuckGo:{letter:'D',url:q=>'https://duckduckgo.com/?q='+encodeURIComponent(q)},Bing:{letter:'b',url:q=>'https://www.bing.com/search?q='+encodeURIComponent(q)}};
   a.performSearch=(query,mode='web',provider=a.get('searchEngine','Google'),type='web')=>{
     query=query.trim();if(!query){a.toast('Напишите, что хотите найти.');return;}
-    if(mode==='local'){category='all';a.navigate('directory',query);return;}if(mode==='ai'){a.navigate('ai',query);return;}
+    if(mode==='local'){a.catalogCategory='all';a.navigate('directory',query);return;}if(mode==='ai'){a.navigate('ai',query);return;}
     let url=(a.searchProviders[provider]||a.searchProviders.Google).url(query);
     if(type==='video')url='https://www.youtube.com/results?search_query='+encodeURIComponent(query);
     else if(type==='images')url='https://www.google.com/search?tbm=isch&q='+encodeURIComponent(query);
@@ -1246,6 +1582,336 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
   a.register('parcels',{title:'Мои посылки',render(){const parcels=a.get('parcels',[]);return a.heading('Хорошие вещи уже в пути.','Сохраните трек-номера и переходите к отслеживанию в один клик.')+`<section class="panel tracking-hero"><div><div class="page-kicker" style="color:#c5a47e">ДОСТАВКИ ПОД РУКОЙ</div><h2 style="margin-top:8px">Куда едет ваша посылка?</h2><p>Добавьте номер. Мы сохраним его на этом устройстве.</p><form class="form-row" id="parcel-quick"><input class="field mono" id="parcel-code" aria-label="Трек-номер посылки" placeholder="Например: RR123456789CN" maxlength="60" required><button class="btn primary">${i('plus',16)} Добавить</button></form></div><div class="tracking-art">${i('package',95)}</div></section><div class="two-column"><section class="panel"><div class="panel-head"><h2>Ваши отправления <span class="muted small">${parcels.length}</span></h2><span class="badge">В этом браузере</span></div><div id="parcel-list">${parcels.length?parcels.map(p=>`<div class="parcel-list-item"><div class="parcel-mini-icon">${i('package',20)}</div><div class="parcel-info"><h3>${e(p.title)}</h3><p class="mono">${e(p.code)}</p><span class="small muted">Статус на сайте ${e(p.provider||'17TRACK')}</span></div>${a.external(parcelURL(p),`Отследить`,'external','btn small')}<button class="icon-btn" data-parcel-edit="${e(p.id)}" title="Редактировать посылку">${i('edit',15)}</button><button class="icon-btn" data-parcel-delete="${e(p.id)}" title="Удалить посылку">${i('trash',15)}</button></div>`).join(''):`<div class="empty-state">${i('package',34)}<h3>Пока нет посылок</h3><p>Первая начнёт свой маршрут здесь.<br>Номер можно найти в письме о заказе.</p></div>`}</div></section><section class="panel"><div class="panel-head"><h2>Как это работает</h2>${i('lightbulb',18)}</div><p class="small muted">AYYY хранит ваши номера и удобные ссылки. Актуальное движение посылки открывается на сайте перевозчика или 17TRACK.</p><div class="notice amber" style="margin-top:18px">${i('package',16)}<span>Автоматические статусы пока показаны только в примере ниже. Сохранение номера само по себе не запрашивает доставку.</span></div><div class="button-row" style="margin-top:18px">${a.external('https://www.17track.net/ru','Открыть 17TRACK','external','btn small')}</div></section></div><div class="section-heading"><h2>Маршрут посылки</h2><span class="badge demo">Демонстрационный пример</span></div><section class="panel parcel-card"><div class="parcel-main"><span class="badge live">ПРИМЕР: В ПУТИ</span><h2>Набор для новых идей</h2><p class="tracking-code mono">DEMO · НЕ РЕАЛЬНОЕ ОТПРАВЛЕНИЕ</p><p class="small muted" style="margin-top:14px">На таком экране можно будет собирать события разных перевозчиков после подключения источника статусов.</p><div class="chips" style="margin-top:18px"><span class="chip">${i('package',13)} Отправлено</span><span class="chip">${i('pin',13)} Следующая остановка — ваш город</span></div></div><div class="timeline"><div class="timeline-item current"><strong>Пример: на пути в пункт выдачи</strong><small>Третий этап маршрута</small></div><div class="timeline-item done"><strong>Пример: сортировка завершена</strong><small>Второй этап маршрута</small></div><div class="timeline-item done"><strong>Пример: принято к перевозке</strong><small>Первый этап маршрута</small></div><div class="timeline-item"><strong>Заказ создан</strong><small>Начало демонстрации</small></div></div></section>`;},mount(){document.querySelector('#parcel-quick').onsubmit=event=>{event.preventDefault();const code=document.querySelector('#parcel-code').value.trim();if(!/^[a-zA-Z0-9\-\s]{5,60}$/.test(code)){a.toast('Введите номер из 5–60 латинских букв, цифр, пробелов или дефисов.');return;}editParcel(null,code);};document.querySelectorAll('[data-parcel-edit]').forEach(b=>b.onclick=()=>editParcel(b.dataset.parcelEdit));document.querySelectorAll('[data-parcel-delete]').forEach(b=>b.onclick=()=>{const parcel=a.get('parcels',[]).find(p=>p.id===b.dataset.parcelDelete);if(!parcel)return;a.modal('Удалить сохранённый номер?',`<p class="muted">${e(parcel.title)} · ${e(parcel.code)}</p><div class="modal-footer"><button class="btn" data-close-modal>Оставить</button><button class="btn danger" id="confirm-parcel-delete">Удалить</button></div>`);document.querySelector('#confirm-parcel-delete').onclick=()=>{a.set('parcels',a.get('parcels',[]).filter(p=>p.id!==parcel.id));a.closeModal();a.render();};});}});
   function parcelURL(p){const code=encodeURIComponent(p.code);switch(p.provider){case'Почта России':return'https://www.pochta.ru/tracking#'+code;case'USPS':return'https://tools.usps.com/go/TrackConfirmAction?tLabels='+code;case'DHL':return'https://www.dhl.com/global-en/home/tracking.html?tracking-id='+code;case'UPS':return'https://www.ups.com/track?tracknum='+code;default:return'https://t.17track.net/ru#nums='+code;}}
   function editParcel(id,code=''){const parcels=a.get('parcels',[]),p=parcels.find(x=>x.id===id)||{id:crypto.randomUUID?.()||String(Date.now()),title:'Новая посылка',code,provider:'17TRACK'};a.modal(id?'Изменить посылку':'Добавить посылку',`<form id="parcel-form"><label class="field-label" for="parcel-title">Название</label><input class="field" id="parcel-title" value="${e(p.title)}" maxlength="80" required><label class="field-label" for="parcel-number">Трек-номер</label><input class="field mono" id="parcel-number" value="${e(p.code)}" maxlength="60" pattern="[A-Za-z0-9 \-]{5,60}" required><label class="field-label" for="parcel-provider">Где отслеживать</label><select class="field" id="parcel-provider">${['17TRACK','Почта России','USPS','DHL','UPS'].map(v=>`<option ${v===p.provider?'selected':''}>${v}</option>`).join('')}</select><p class="small muted" style="margin-top:13px">Номер останется в этом браузере. Сайт отслеживания получит его только после нажатия «Отследить».</p><div class="modal-footer"><button type="button" class="btn" data-close-modal>Отмена</button><button class="btn primary">Сохранить</button></div></form>`);document.querySelector('#parcel-form').onsubmit=event=>{event.preventDefault();const updated={id:p.id,title:document.querySelector('#parcel-title').value.trim(),code:document.querySelector('#parcel-number').value.trim(),provider:document.querySelector('#parcel-provider').value};if(!updated.title||!/^[A-Za-z0-9 \-]{5,60}$/.test(updated.code)){a.toast('Проверьте название и трек-номер.');return;}if(parcels.some(x=>x.id!==id&&x.code===updated.code)){a.toast('Этот номер уже сохранён.');return;}if(id)parcels[parcels.findIndex(x=>x.id===id)]=updated;else parcels.unshift(updated);if(a.set('parcels',parcels)){a.closeModal();a.render();a.toast('Посылка сохранена');}};}
+})();
+
+
+/* home-data.js */
+/* Homepage data only. Public API clients and caches remain in data.js. */
+(() => {
+  'use strict';
+  const app = window.AYYY;
+  const escape = app.escape;
+  const money = new Intl.NumberFormat('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const temperature = value => Number.isFinite(value) ? `${Math.round(value)>0?'+':''}${Math.round(value)}°` : '—';
+  const shortDate = value => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+    const date = new Date(value+'T12:00:00Z');
+    return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ru-RU', {day:'numeric',month:'short',timeZone:'UTC'}).format(date) : '';
+  };
+  const savedAt = value => {
+    const date = new Date(value);
+    return value && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ru-RU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(date) : '';
+  };
+  const state = data => data.pending ? 'Обновляем…' : !data.live ? 'Демо' : data.stale || data.error ? 'Сохранено' : 'Обновлено';
+
+  function weatherHours(data) {
+    return (Array.isArray(data.hours) ? data.hours : []).filter(hour => Number.isFinite(hour.temp) && typeof hour.time==='string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(hour.time)).slice(0,6);
+  }
+
+  function forecastHTML(data) {
+    return weatherHours(data).map(hour => `<span class="home-forecast-hour"><time datetime="${escape(hour.time)}">${escape(hour.time.slice(11,16))}</time><strong>${temperature(hour.temp)}</strong></span>`).join('');
+  }
+
+  function chartHTML(data) {
+    const hours = weatherHours(data);
+    if (hours.length<2) return '';
+    const temperatures = hours.map(hour=>hour.temp), low = Math.min(...temperatures), high = Math.max(...temperatures);
+    const range = Math.max(4, high-low), middle = (low+high)/2;
+    const points = hours.map((hour,index) => ({x:8+index/(hours.length-1)*264, y:34-(hour.temp-middle)/range*42}));
+    const path = points.map((point,index)=>`${index?'L':'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+    const label = `${data.live?'Прогноз':'Демонстрационный прогноз'} температуры: ${hours.map(hour=>`${hour.time.slice(11,16)} — ${temperature(hour.temp)}`).join(', ')}. Время выбранного города.`;
+    return `<svg viewBox="0 0 280 64" class="home-weather-chart" role="img" aria-label="${escape(label)}"><path d="${path} L272,64 L8,64 Z" fill="currentColor" opacity=".10"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${points.map(point=>`<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2.6" fill="currentColor"/>`).join('')}</svg>`;
+  }
+
+  /**
+   * Hydrate the existing homepage; never fetch on mount or replace its root.
+   * Weather fields use data-home-weather; rate fields use data-home-rates.
+   * Refresh buttons use data-home-refresh="weather|rates|all".
+   * Return the cleanup from the home view's mount() callback.
+   */
+  app.mountHomeData = (root=document.querySelector('#view')) => {
+    if (!root || typeof app.getWeather!=='function' || typeof app.getRates!=='function') return () => {};
+    let mounted = true;
+    app.homeDataMounted = true;
+
+    function updateWeather() {
+      if (!mounted || !root.isConnected) return;
+      const data = app.getWeather();
+      const source = !data.live ? 'Open-Meteo · пример прогноза' : data.stale || data.error ? `Open-Meteo · сохранено ${savedAt(data.updatedAt)}` : `Open-Meteo · ${shortDate(data.observedAt?.slice(0,10))}, ${data.observedAt?.slice(11,16)||''}`;
+      const values = {
+        city:data.city, country:data.country, temp:temperature(data.temp), condition:data.condition,
+        feels:temperature(data.feels), wind:Number.isFinite(data.wind)?app.fmt(data.wind,1)+' м/с':'—',
+        humidity:Number.isFinite(data.humidity)?Math.round(data.humidity)+'%':'—', status:state(data),
+        source, error:data.error||''
+      };
+      root.querySelectorAll('[data-home-weather]').forEach(element => {
+        const field = element.dataset.homeWeather;
+        if (field==='icon') element.innerHTML=app.icon(data.icon||'cloud',64);
+        else if (field==='hours') {
+          element.innerHTML=forecastHTML(data);
+          element.setAttribute('aria-label', `${data.live?'Прогноз':'Демонстрационный прогноз'} по часам; время выбранного города`);
+        }
+        else if (field==='chart') element.innerHTML=chartHTML(data);
+        else if (Object.hasOwn(values,field)) element.textContent=values[field]||'—';
+        if (field==='error') {element.textContent=values.error;element.hidden=!data.error;}
+        if (field==='status') {
+          element.dataset.state=data.pending?'pending':!data.live?'demo':data.stale||data.error?'saved':'live';
+          element.title=!data.live?'Пример прогноза. Нажмите обновление, чтобы получить погоду.':`Прогноз получен ${savedAt(data.updatedAt)}`;
+        }
+      });
+      updateButtons();
+    }
+
+    function updateRates() {
+      if (!mounted || !root.isConnected) return;
+      const data = app.getRates();
+      const source = !data.live ? 'Frankfurter · пример курсов' : `Frankfurter · ${data.stale || data.error?'сохранено · ':''}${shortDate(data.date)}`;
+      const values = {status:state(data), source, date:shortDate(data.date)||'Демо', error:data.error||''};
+      root.querySelectorAll('[data-home-rates]').forEach(element => {
+        const field = element.dataset.homeRates, code=field.toUpperCase();
+        if (['USD','EUR','GBP','CNY'].includes(code)) {
+          element.textContent=Number.isFinite(data[code])?money.format(data[code]):'—';
+          element.title=data.live?`1 ${code} в рублях · ${shortDate(data.dates?.[code]||data.date)} · справочный курс`:'Демонстрационный курс, не текущая котировка';
+        }
+        else if (Object.hasOwn(values,field)) element.textContent=values[field]||'—';
+        if (field==='error') {element.textContent=values.error;element.hidden=!data.error;}
+        if (field==='status') {
+          element.dataset.state=data.pending?'pending':!data.live?'demo':data.stale||data.error?'saved':'live';
+          element.title=!data.live?'Пример курсов. Нажмите обновление, чтобы получить справочные курсы.':`Курсы получены ${savedAt(data.updatedAt)}`;
+        }
+      });
+      updateButtons();
+    }
+
+    function updateButtons() {
+      const weather=app.getWeather(), rates=app.getRates();
+      root.querySelectorAll('[data-home-refresh]').forEach(button=>{
+        const type=button.dataset.homeRefresh;
+        const pending=type==='weather'?weather.pending:type==='rates'?rates.pending:weather.pending||rates.pending;
+        const label=type==='weather'?'Обновить погоду':type==='rates'?'Обновить курсы':'Обновить погоду и курсы';
+        button.disabled=!!pending;
+        button.setAttribute('aria-busy',String(!!pending));
+        button.setAttribute('aria-label',pending?'Данные обновляются':label);
+        button.title=pending?'Данные обновляются':label;
+        const caption=button.querySelector('[data-home-refresh-label]');
+        if(caption)caption.textContent=pending?'Обновляем…':'Обновить';
+      });
+    }
+
+    function click(event) {
+      const button=event.target.closest('[data-home-refresh]');
+      if (!button || !root.contains(button)) return;
+      event.preventDefault();
+      if (button.disabled) return;
+      const type=button.dataset.homeRefresh;
+      if (type==='weather'||type==='all') app.refreshWeather();
+      if (type==='rates'||type==='all') app.refreshRates();
+    }
+
+    root.addEventListener('click',click);
+    document.addEventListener('ayyy:weather',updateWeather);
+    document.addEventListener('ayyy:rates',updateRates);
+    updateWeather();
+    updateRates();
+
+    return () => {
+      mounted=false;
+      app.homeDataMounted=false;
+      root.removeEventListener('click',click);
+      document.removeEventListener('ayyy:weather',updateWeather);
+      document.removeEventListener('ayyy:rates',updateRates);
+    };
+  };
+})();
+
+
+/* splash.js */
+/* AYYY · watercolor front door. Service screens retain their own layout. */
+(() => {
+  'use strict';
+  const a = window.AYYY, e = a.escape, icon = a.icon;
+  const artwork = 'assets/lighthouse-watercolor.webp';
+  const defaults = ['memory', 'paint', 'ai', 'calc', 'notes', 'parcels'];
+  const groups = [['all','Все'],['everyday','Каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
+  const shortNames = {memory:'Игры',paint:'Рисовать',ai:'Спросить ИИ',calc:'Посчитать',notes:'Записать',parcels:'Посылки'};
+  const shortDescriptions = {memory:'Пять минут для себя',paint:'Дайте идеям цвет',ai:'Разобраться вместе',calc:'Сложное — в простое',notes:'Поймать хорошую мысль',parcels:'Что там уже в пути?'};
+  a.catalogCategory = 'all';
+
+  const shortcutIds = () => {
+    const saved = a.get('home.shortcuts', defaults);
+    return [...new Set(Array.isArray(saved) ? saved : defaults)].filter(id => a.services.some(s => s.id===id)).slice(0,6);
+  };
+
+  const navigation = page => `<header class="shore-header">
+    <a class="shore-brand" href="#home" aria-label="AYYY — на главную">ayyy<span>.</span></a>
+    <span class="shore-brand-note">всегда есть ориентир</span>
+    <nav class="shore-nav" aria-label="Навигация портала">
+      <a class="shore-nav-home ${page==='home'?'is-current':''}" href="#home" ${page==='home'?'aria-current="page"':''}>Главная</a>
+      <a class="shore-catalog-link ${page==='directory'?'is-current':''}" href="#directory" ${page==='directory'?'aria-current="page"':''}>Все сервисы <span>${a.services.length}</span>${icon('arrow-right',16)}</a>
+      <button class="shore-settings" data-action="settings" aria-label="Настройки портала" title="Настройки">${icon('sliders',19)}</button>
+    </nav>
+  </header>`;
+
+  const footer = () => `<footer class="shore-footer"><span>Найти. Придумать. Немного поиграть.</span><span class="shore-footer-links"><button data-action="about">О маяке</button><button data-action="design">Цвета и характер</button><span class="shore-footer-mark">${icon('lighthouse',15)} AYYY</span></span></footer>`;
+
+  const beam = id => `<svg class="shore-beam" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x1="0%" y1="50%" x2="100%" y2="50%"><stop stop-color="#ffbf57" stop-opacity=".48"/><stop offset=".48" stop-color="#ffc46c" stop-opacity=".18"/><stop offset="1" stop-color="#ffe6b6" stop-opacity="0"/></linearGradient></defs><path class="shore-beam-fill" fill="url(#${id})"/><path class="shore-beam-edge" fill="none" stroke="#de9a52" stroke-width=".65"/><circle class="shore-lamp-glow" r="10" fill="#ffe3a1"/></svg>`;
+
+  const picture = extra => `<img class="shore-lighthouse ${extra||''}" src="${artwork}" width="1024" height="1536" alt="Акварельный маяк на скалистом берегу: оранжевый свет, бирюзовое море и парусники" fetchpriority="high" decoding="async">`;
+
+  function serviceIcon(service, size=32) {
+    return `<span class="shore-service-art ${e(service.color)}"><svg class="shore-ink-wash" viewBox="0 0 96 82" aria-hidden="true"><path d="M11 27C1 14 29 4 43 10 59-2 93 13 86 28 104 44 81 67 65 68 49 87 9 73 13 57-4 50 0 35 11 27Z" fill="currentColor" opacity=".18"/><path d="M9 29C14 13 41 7 59 14 81 11 93 37 83 52 81 72 52 76 32 67 9 69 3 46 9 29Z" fill="none" stroke="currentColor" stroke-width=".8" opacity=".24"/><path d="m7 68 9 2m64-55 7-4M86 62l5 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${icon(service.icon,size)}</span>`;
+  }
+
+  function shortcut(service) {
+    const destination = service.url ? `href="${e(service.url)}" target="_blank" rel="noopener noreferrer"` : `href="#${e(service.route)}${service.param?'/'+encodeURIComponent(service.param):''}"`;
+    return `<a class="shore-shortcut" ${destination} data-light-target>${serviceIcon(service)}<span class="shore-shortcut-name">${e(shortNames[service.id]||service.name)}</span><small>${e(shortDescriptions[service.id]||service.desc)}</small></a>`;
+  }
+
+  const clockFace = () => `<svg class="shore-clock-face" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 7C74 6 94 27 92 51 93 76 73 94 48 92 24 93 6 73 8 49 7 25 26 6 50 7Z" fill="#b9d9d8" fill-opacity=".25" stroke="currentColor" stroke-width="1.4"/><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width=".5" stroke-dasharray="1 19"/>${[0,90,180,270].map(angle=>`<path d="M50 15v5" stroke="currentColor" stroke-width="1.7" transform="rotate(${angle} 50 50)"/>`).join('')}<path class="shore-clock-hour" d="M50 50V29" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path class="shore-clock-minute" d="M50 53V20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="50" cy="50" r="3" fill="#e9792d"/></svg>`;
+
+  function homeInformation() {
+    return `<section class="shore-information" aria-labelledby="shore-information-title">
+      <div class="shore-section-line"><h2 id="shore-information-title">Маленькие ориентиры дня</h2><button class="shore-text-button" data-home-refresh="all">${icon('refresh',13)}<span data-home-refresh-label>Обновить</span></button></div>
+      <div class="shore-widgets">
+        <article class="shore-weather shore-widget">
+          <div class="shore-widget-top"><button class="shore-widget-title" data-action="city">${icon('pin',14)}<span data-home-weather="city"></span>${icon('chevron-down',11)}</button><span class="shore-data-status" data-home-weather="status"></span></div>
+          <a href="#weather" class="shore-weather-now"><span class="shore-temperature" data-home-weather="temp"></span><span class="shore-weather-drawing" data-home-weather="icon"></span><span class="shore-weather-detail"><span data-home-weather="condition"></span><small>Ощущается <span data-home-weather="feels"></span></small></span></a>
+          <div class="shore-weather-graph" data-home-weather="chart"></div><div class="shore-weather-hours" data-home-weather="hours"></div>
+          <div class="shore-data-source" data-home-weather="source"></div><p class="shore-data-error" data-home-weather="error" hidden></p>
+        </article>
+        <article class="shore-rates shore-widget">
+          <div class="shore-widget-top"><a class="shore-widget-title" href="#finance">${icon('coins',15)} Валюты</a><span class="shore-data-status" data-home-rates="status"></span></div>
+          <a class="shore-rate-line" href="#finance"><span><b>$</b> USD</span><strong><span data-home-rates="USD"></span><small> ₽</small></strong></a>
+          <a class="shore-rate-line" href="#finance"><span><b>€</b> EUR</span><strong><span data-home-rates="EUR"></span><small> ₽</small></strong></a>
+          <a class="shore-rate-line" href="#finance"><span><b>¥</b> CNY</span><strong><span data-home-rates="CNY"></span><small> ₽</small></strong></a>
+          <div class="shore-data-source" data-home-rates="source"></div><p class="shore-data-error" data-home-rates="error" hidden></p>
+        </article>
+        <article class="shore-time shore-widget"><div class="shore-widget-top"><span class="shore-widget-title">Сейчас у вас</span><span class="shore-clock-dot" title="Время вашего устройства"></span></div>
+          <div class="shore-time-main">${clockFace()}<time class="shore-digital-time" data-shore-clock></time></div><p class="shore-day" data-shore-day></p><a class="shore-pause" href="#focus">Найти время для себя ${icon('arrow-right',12)}</a>
+        </article>
+      </div>
+    </section>`;
+  }
+
+  a.register('home', {
+    title:'Ваш маяк в интернете',
+    render() {
+      const services=shortcutIds().map(id=>a.services.find(s=>s.id===id));
+      const engine=Object.hasOwn(a.searchProviders,a.get('searchEngine','Google'))?a.get('searchEngine','Google'):'Google';
+      return `<div class="shore-page shore-home">${navigation('home')}
+        <div class="shore-stage">
+          <div class="shore-art">${picture()}<span class="shore-art-caption">свет на вашей стороне</span></div>${beam('home-light')}
+          <div class="shore-home-content">
+            <div class="shore-welcome"><p class="shore-eyebrow"><span></span> ВАШ МАЯК В ИНТЕРНЕТЕ</p><h1>Куда отправимся<br><em>сегодня?</em></h1><p class="shore-subtitle">Немного пользы. Немного игры. Много открытий.</p></div>
+            <section class="shore-shortcuts" aria-labelledby="shore-shortcuts-title"><div class="shore-section-line"><h2 id="shore-shortcuts-title">Близкие направления</h2><button class="shore-text-button" id="shore-edit-shortcuts">${icon('sliders',12)} Выбрать свои</button></div><div class="shore-shortcut-grid">${services.length?services.map(shortcut).join(''):`<button class="shore-empty-shortcuts" id="shore-add-shortcuts">${icon('plus',18)} Добавить любимые сервисы</button>`}</div></section>
+            <section class="shore-search-section" aria-label="Поиск"><form id="home-search" class="shore-search-form"><div class="shore-search-modes" role="group" aria-label="Режим поиска"><button type="button" class="active" data-searchmode="web" aria-pressed="true">В интернете</button><button type="button" data-searchmode="local" aria-pressed="false">Сервисы AYYY</button><button type="button" data-searchmode="ai" aria-pressed="false">Спросить ИИ ${icon('sparkles',12)}</button><span class="shore-search-key"><kbd>/</kbd> — начать поиск</span></div><div class="shore-search-box">${icon('search',21)}<input id="home-query" aria-label="Поисковый запрос" placeholder="Что хочется найти?" maxlength="500" autocomplete="off"><label class="shore-search-provider"><span class="data-visually-hidden">Поисковая система</span><select id="shore-search-engine">${Object.keys(a.searchProviders).map(name=>`<option ${name===engine?'selected':''}>${e(name)}</option>`).join('')}</select></label><button type="submit" class="shore-search-submit">Найти ${icon('arrow-right',16)}</button></div></form></section>
+            ${homeInformation()}
+          </div>
+        </div>${footer()}</div>`;
+    },
+    mount() {
+      const root=document.querySelector('#view'), form=root.querySelector('#home-search'), input=root.querySelector('#home-query'), provider=root.querySelector('#shore-search-engine');
+      let mode='web';
+      form.querySelectorAll('[data-searchmode]').forEach(button=>button.addEventListener('click',()=>{
+        mode=button.dataset.searchmode;
+        form.querySelectorAll('[data-searchmode]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});
+        input.placeholder=mode==='local'?'Найти сервис, инструмент или игру':mode==='ai'?'Что обсудим с помощником?':'Что хочется найти?';
+        provider.closest('label').hidden=mode!=='web';
+        input.focus();
+      }));
+      provider.onchange=()=>a.set('searchEngine',provider.value);
+      form.onsubmit=event=>{event.preventDefault();a.performSearch(input.value,mode,provider.value);};
+      root.querySelector('#shore-edit-shortcuts').onclick=chooseShortcuts;
+      root.querySelector('#shore-add-shortcuts')?.addEventListener('click',chooseShortcuts);
+      const updateClock=()=>{
+        const now=new Date();
+        const clock=root.querySelector('[data-shore-clock]');
+        clock.textContent=now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+        clock.dateTime=now.toISOString();
+        root.querySelector('[data-shore-day]').textContent=now.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+        root.querySelector('.shore-clock-hour').setAttribute('transform',`rotate(${now.getHours()%12*30+now.getMinutes()/2} 50 50)`);
+        root.querySelector('.shore-clock-minute').setAttribute('transform',`rotate(${now.getMinutes()*6+now.getSeconds()/10} 50 50)`);
+      };
+      updateClock();const clockTimer=setInterval(updateClock,1000);
+      const stopData=a.mountHomeData(root), stopBeam=mountBeam(root,'.shore-shortcut-grid');
+      return ()=>{clearInterval(clockTimer);stopData();stopBeam();};
+    }
+  });
+
+  function chooseShortcuts() {
+    let selected=shortcutIds();
+    a.modal('Ваши близкие направления',`<p class="muted">Выберите до шести сервисов для главной. Все остальные всегда доступны в каталоге.</p><div class="shore-picker-grid">${a.services.map(s=>`<label class="shore-picker-item"><input type="checkbox" value="${e(s.id)}" ${selected.includes(s.id)?'checked':''}>${icon(s.icon,21)}<span>${e(s.name)}</span></label>`).join('')}</div><div class="modal-footer"><span id="shore-picker-count" class="muted"></span><button class="btn" data-close-modal>Отмена</button><button class="btn primary" id="shore-save-shortcuts">Сохранить</button></div>`);
+    const items=[...document.querySelectorAll('.shore-picker-item input')];
+    const update=()=>{document.querySelector('#shore-picker-count').textContent=`${selected.length} из 6`;items.forEach(input=>input.disabled=!input.checked&&selected.length>=6);};
+    items.forEach(input=>input.onchange=()=>{selected=input.checked?[...selected,input.value]:selected.filter(id=>id!==input.value);update();});
+    update();document.querySelector('#shore-save-shortcuts').onclick=()=>{if(a.set('home.shortcuts',selected)){a.closeModal();a.render();a.toast('Ваши направления сохранены');}};
+  }
+
+  function catalogCard(service) {
+    const favorite=a.favorites().includes(service.id);
+    const destination=service.url?`href="${e(service.url)}" target="_blank" rel="noopener noreferrer"`:`href="#${e(service.route)}${service.param?'/'+encodeURIComponent(service.param):''}"`;
+    return `<article class="shore-service-card"><a class="shore-catalog-open" ${destination} data-light-target>${serviceIcon(service,29)}<h3>${e(service.name)}</h3><p>${e(service.desc)}</p><span class="shore-service-kind"><i class="${service.kind==='local'?'is-local':''}"></i>${e(a.kindLabels[service.kind])}</span><span class="shore-card-arrow">${icon('arrow-right',16)}</span></a><button class="shore-favorite favorite-btn ${favorite?'selected':''}" data-favorite="${e(service.id)}" data-service-name="${e(service.name)}" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из избранного':'В избранное'}: ${e(service.name)}" title="${favorite?'Убрать из избранного':'В избранное'}">${icon('star',16)}</button></article>`;
+  }
+
+  a.register('directory', {
+    title:'Все направления',
+    render() {
+      return `<div class="shore-page shore-directory">${navigation('directory')}
+        <div class="shore-directory-stage"><aside class="shore-directory-art" aria-label="Маяк AYYY">${picture()}<p>Каждому делу —<br><em>свой ориентир.</em></p></aside>
+          <div class="shore-catalog-content"><div class="shore-catalog-heading"><p class="shore-eyebrow"><span></span> КАРТА ВОЗМОЖНОСТЕЙ</p><h1>Выберите своё <em>направление.</em></h1><p class="shore-subtitle">Здесь найдётся место и важному делу, и хорошей паузе.</p></div>
+            <div class="shore-catalog-tools"><div class="shore-catalog-search">${icon('search',19)}<input id="catalog-search" aria-label="Найти сервис" placeholder="Название, занятие или идея…" value="${e(a.param)}" maxlength="150"><span>${a.services.length} сервиса</span></div><div class="shore-catalog-filters" role="group" aria-label="Категории сервисов">${groups.map(([id,name])=>`<button type="button" class="${id===a.catalogCategory?'active':''}" data-category="${id}" aria-pressed="${id===a.catalogCategory}">${id==='favorites'?icon('star',13):''}${name}</button>`).join('')}</div></div>
+            <div class="shore-catalog-summary"><p id="catalog-count" aria-live="polite"></p><span>Сохраняйте любимое ${icon('star',12)}</span></div><div class="shore-catalog-grid" id="catalog-grid"></div>
+            <p class="shore-catalog-note">${icon('lighthouse',17)} На главной — только ваши шесть направлений. Здесь — весь горизонт.</p>
+          </div>
+        </div>${footer()}</div>`;
+    },
+    mount() {
+      const root=document.querySelector('#view'), input=root.querySelector('#catalog-search');
+      const update=()=>{
+        const category=a.catalogCategory, query=input.value.toLocaleLowerCase('ru').trim();
+        const list=a.services.filter(s=>(category==='all'||category==='favorites'&&a.favorites().includes(s.id)||s.group===category)&&(!query||`${s.name} ${s.desc} ${s.id} ${shortNames[s.id]||''}`.toLocaleLowerCase('ru').includes(query)));
+        root.querySelector('#catalog-count').textContent=`${list.length} из ${a.services.length} · ${groups.find(g=>g[0]===category)?.[1]||'Все'}`;
+        root.querySelector('#catalog-grid').innerHTML=list.length?list.map(catalogCard).join(''):`<div class="shore-catalog-empty">${icon('search',32)}<h2>В этом направлении пока тихо</h2><p>Попробуйте другое слово или вернитесь ко всем сервисам.</p><button class="shore-small-button" id="shore-reset-catalog">Показать все</button></div>`;
+        root.querySelector('#shore-reset-catalog')?.addEventListener('click',()=>{input.value='';a.catalogCategory='all';selectFilter();update();});
+      };
+      const selectFilter=()=>root.querySelectorAll('[data-category]').forEach(b=>{const active=b.dataset.category===a.catalogCategory;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
+      input.oninput=update;
+      root.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{a.catalogCategory=b.dataset.category;selectFilter();update();});
+      const updateFavorites=()=>{
+        if(a.catalogCategory!=='favorites')return;
+        const buttons=[...root.querySelectorAll('[data-favorite]')];
+        const focused=buttons.indexOf(document.activeElement);
+        update();
+        if(focused>=0){const remaining=[...root.querySelectorAll('[data-favorite]')];(remaining[Math.min(focused,remaining.length-1)]||root.querySelector('[data-category="favorites"]')).focus();}
+      };
+      document.addEventListener('ayyy:favorites',updateFavorites);update();
+      return ()=>document.removeEventListener('ayyy:favorites',updateFavorites);
+    }
+  });
+
+  // The beam starts at the real lamp position, including responsive artwork scaling.
+  function mountBeam(root, targetSelector) {
+    const stage=root.querySelector('.shore-stage'), svg=root.querySelector('.shore-beam'), image=root.querySelector('.shore-lighthouse'), defaultTarget=root.querySelector(targetSelector);
+    if(!stage||!svg||!image||!defaultTarget)return ()=>{};
+    let activeTarget=null, frame=0, alive=true;
+    const update=()=>{
+      frame=0;if(!alive||!stage.isConnected)return;
+      const bounds=stage.getBoundingClientRect(), art=image.getBoundingClientRect(), target=(activeTarget||defaultTarget).getBoundingClientRect();
+      const x=art.left-bounds.left+art.width*.51, y=art.top-bounds.top+art.height*.178;
+      const right=Math.min(bounds.width+10,target.right-bounds.left+70), top=target.top-bounds.top-22, bottom=target.bottom-bounds.top+22;
+      svg.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);
+      svg.querySelector('.shore-beam-fill').setAttribute('d',`M ${x} ${y-5} L ${right} ${top} Q ${right+20} ${(top+bottom)/2} ${right} ${bottom} L ${x} ${y+5} Z`);
+      svg.querySelector('.shore-beam-edge').setAttribute('d',`M ${x} ${y} L ${right} ${top} M ${x} ${y} L ${right} ${bottom}`);
+      const glow=svg.querySelector('.shore-lamp-glow');glow.setAttribute('cx',x);glow.setAttribute('cy',y);
+    };
+    const queue=()=>{if(!frame)frame=requestAnimationFrame(update);};
+    const point=event=>{const target=event.target.closest('[data-light-target]');if(target&&defaultTarget.contains(target)){activeTarget=target;queue();}};
+    const reset=()=>{activeTarget=null;queue();};
+    const observer=new ResizeObserver(queue);observer.observe(stage);observer.observe(image);observer.observe(defaultTarget);
+    image.addEventListener('load',queue);defaultTarget.addEventListener('pointerover',point);defaultTarget.addEventListener('pointerleave',reset);defaultTarget.addEventListener('focusin',point);defaultTarget.addEventListener('focusout',reset);
+    queue();
+    return ()=>{alive=false;observer.disconnect();cancelAnimationFrame(frame);image.removeEventListener('load',queue);defaultTarget.removeEventListener('pointerover',point);defaultTarget.removeEventListener('pointerleave',reset);defaultTarget.removeEventListener('focusin',point);defaultTarget.removeEventListener('focusout',reset);};
+  }
 })();
 
 
@@ -1334,12 +2000,13 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
     if(data.bookmarks!==undefined){if(!validArray(data.bookmarks,2000,b=>b&&str(b.id,100)&&str(b.title,300)&&str(b.url,3000)&&a.safeURL(b.url)))throw new Error('Некорректный формат закладок.');result.bookmarks=data.bookmarks;}
     if(data.notes!==undefined){if(!validArray(data.notes,1000,n=>n&&str(n.id,100)&&str(n.title,300)&&str(n.body,200000)))throw new Error('Некорректный формат заметок.');result.notes=data.notes;}
     if(data.favorites!==undefined){if(!validArray(data.favorites,100,id=>str(id,40)&&a.services.some(s=>s.id===id)))throw new Error('Некорректное избранное.');result.favorites=data.favorites;}
+    if(data['home.shortcuts']!==undefined){if(!validArray(data['home.shortcuts'],6,id=>str(id,40)&&a.services.some(s=>s.id===id)))throw new Error('Некорректные направления главной.');result['home.shortcuts']=[...new Set(data['home.shortcuts'])];}
     if(data.parcels!==undefined){if(!validArray(data.parcels,1000,p=>p&&str(p.id,100)&&str(p.title,200)&&str(p.code,60)&&/^[A-Za-z0-9 \-]{5,60}$/.test(p.code)&&['17TRACK','Почта России','USPS','DHL','UPS'].includes(p.provider)))throw new Error('Некорректный формат посылок.');result.parcels=data.parcels;}
     if(!Object.keys(result).length)throw new Error('В этой копии нет основных данных для восстановления. Поддерживаются заметки, задачи, закладки, избранное и посылки.');
-    const names={tasks:'Задачи',bookmarks:'Закладки',notes:'Заметки',favorites:'Избранное',parcels:'Посылки'};a.modal('Восстановить данные?',`<p class="muted">Будут заменены перечисленные разделы в этом браузере. Другие данные останутся на месте.</p><div class="stack" style="gap:7px;margin-top:18px">${Object.entries(result).map(([key,value])=>`<div class="flex-between small"><span>${names[key]}</span><strong>${value.length}</strong></div>`).join('')}</div><div class="modal-footer"><button class="btn" data-close-modal>Отмена</button><button class="btn primary" id="confirm-import">Восстановить</button></div>`);document.querySelector('#confirm-import').onclick=()=>{if(a.cleanup){a.cleanup();a.cleanup=null;}const saved=Object.entries(result).map(([k,v])=>a.set(k,v));a.closeModal();a.render();a.toast(saved.every(Boolean)?'Основные данные восстановлены':'Часть данных не удалось сохранить. Проверьте хранилище.');};
+    const names={tasks:'Задачи',bookmarks:'Закладки',notes:'Заметки',favorites:'Избранное',parcels:'Посылки','home.shortcuts':'Направления главной'};a.modal('Восстановить данные?',`<p class="muted">Будут заменены перечисленные разделы в этом браузере. Другие данные останутся на месте.</p><div class="stack" style="gap:7px;margin-top:18px">${Object.entries(result).map(([key,value])=>`<div class="flex-between small"><span>${names[key]}</span><strong>${value.length}</strong></div>`).join('')}</div><div class="modal-footer"><button class="btn" data-close-modal>Отмена</button><button class="btn primary" id="confirm-import">Восстановить</button></div>`);document.querySelector('#confirm-import').onclick=()=>{if(a.cleanup){a.cleanup();a.cleanup=null;}const saved=Object.entries(result).map(([k,v])=>a.set(k,v));a.closeModal();a.render();a.toast(saved.every(Boolean)?'Основные данные восстановлены':'Часть данных не удалось сохранить. Проверьте хранилище.');};
   }catch(error){a.toast(error.message||'Не удалось прочитать резервную копию.');}}
-  a.showAbout=()=>a.modal('AYYY — ваш маяк в интернете',`<div class="flex-between" style="align-items:flex-start"><div><div class="page-kicker">НАХОДИТЬ · СОЗДАВАТЬ · ПРОБОВАТЬ</div><h2 style="font-size:25px;margin:10px 0">Немного ясности<br>в большом интернете.</h2></div><span class="service-icon blue" style="width:62px;height:62px">${i('lighthouse',38)}</span></div><p class="muted" style="margin-top:13px">Интерактивный прототип вашего портала. Один HTML-файл, собственные SVG-иконки и работающие локальные инструменты.</p><div class="help-grid"><section class="panel"><h3>${i('laptop',16)} В браузере</h3><p>Калькуляторы, заметки, пароли, рисование и игры. Данные сохраняются на этом устройстве.</p></section><section class="panel"><h3>${i('globe',16)} Открытые данные</h3><p>Погода и валюты обновляются по кнопке через Open-Meteo и Frankfurter. Источники подписаны.</p></section><section class="panel"><h3>${i('sparkles',16)} Свой помощник</h3><p>Демо-чат или ваш совместимый API. Ключ хранится только в памяти вкладки.</p></section><section class="panel"><h3>${i('mail',16)} Демо-экраны</h3><p>Почта, маршрут посылки и биржевые графики демонстрируют будущий интерфейс. Живые данные не имитируются.</p></section></div><div class="notice" style="margin-top:18px">${i('search',16)}<span><strong>Ctrl+K</strong> — быстрый переход к сервису. <strong>/</strong> — поиск. В заметках и инструментах работают привычные команды клавиатуры.</span></div><div class="modal-footer"><button class="btn primary" data-close-modal>Продолжить исследовать</button></div>`,true);
-  function showDesign(){a.modal('Цвета и характер AYYY',`<div class="page-kicker">ВИЗУАЛЬНАЯ СИСТЕМА</div><h2 style="font-size:25px;margin-top:10px">Спокойное море.<br>Ясные ориентиры.</h2><p class="muted" style="margin-top:13px">Маяк — символ помощи и направления. Он встречает на главной, а его компактный знак остаётся рядом с вами в навигации.</p><div class="color-swatches" style="margin-bottom:39px">${[['#3D68EF','Синий'],['#309C81','Зелёный'],['#E66D6C','Коралловый'],['#DA9D36','Золотой'],['#8A6BD7','Лиловый'],['#1B2942','Текст']].map(([hex,name])=>`<button class="color-swatch" style="background:${hex}" data-copy-color="${hex}" title="${name}: ${hex}"><small>${hex}</small></button>`).join('')}</div><div class="stack" style="gap:12px"><p class="small muted"><strong style="color:var(--text)">Цвет — навигация.</strong> Синий ведёт к действию, зелёный помогает считать, лиловый сопровождает идеи, тёплые акценты добавляют жизни.</p><p class="small muted"><strong style="color:var(--text)">Иконки — одна семья.</strong> Единая сетка, округлые окончания, одинаковая толщина линий. Без случайных emoji и внешних шрифтов.</p><p class="small muted"><strong style="color:var(--text)">Плотность — в меру.</strong> Короткие подписи, компактные виджеты и достаточно пространства, чтобы не уставать.</p></div><div class="modal-footer"><button class="btn primary" data-close-modal>Нравится направление</button></div>`);document.querySelectorAll('[data-copy-color]').forEach(b=>b.onclick=()=>a.copy(b.dataset.copyColor));}
+  a.showAbout=()=>a.modal('AYYY — ваш маяк в интернете',`<div class="flex-between" style="align-items:flex-start"><div><div class="page-kicker">НАХОДИТЬ · СОЗДАВАТЬ · ПРОБОВАТЬ</div><h2 style="font-size:25px;margin:10px 0">Немного ясности<br>в большом интернете.</h2></div><span class="service-icon blue" style="width:62px;height:62px">${i('lighthouse',38)}</span></div><p class="muted" style="margin-top:13px">Интерактивный прототип вашего портала. Статический портал: акварельный маяк, собственные SVG-иконки и работающие локальные инструменты.</p><div class="help-grid"><section class="panel"><h3>${i('laptop',16)} В браузере</h3><p>Калькуляторы, заметки, пароли, рисование и игры. Данные сохраняются на этом устройстве.</p></section><section class="panel"><h3>${i('globe',16)} Открытые данные</h3><p>Погода и валюты обновляются по кнопке через Open-Meteo и Frankfurter. Источники подписаны.</p></section><section class="panel"><h3>${i('sparkles',16)} Свой помощник</h3><p>Демо-чат или ваш совместимый API. Ключ хранится только в памяти вкладки.</p></section><section class="panel"><h3>${i('mail',16)} Демо-экраны</h3><p>Почта, маршрут посылки и биржевые графики демонстрируют будущий интерфейс. Живые данные не имитируются.</p></section></div><div class="notice" style="margin-top:18px">${i('search',16)}<span><strong>Ctrl+K</strong> — быстрый переход к сервису. <strong>/</strong> — поиск. В заметках и инструментах работают привычные команды клавиатуры.</span></div><div class="modal-footer"><button class="btn primary" data-close-modal>Продолжить исследовать</button></div>`,true);
+  function showDesign(){a.modal('Цвета и характер AYYY',`<div class="page-kicker">ВИЗУАЛЬНАЯ СИСТЕМА</div><h2 style="font-size:25px;margin-top:10px">Спокойное море.<br>Ясные ориентиры.</h2><p class="muted" style="margin-top:13px">Маяк — символ помощи и направления. Он встречает на главной, а его компактный знак остаётся рядом с вами в навигации.</p><div class="color-swatches" style="margin-bottom:39px">${[['#FCFAF4','Бумага'],['#203640','Тушь'],['#E77D36','Свет маяка'],['#3D8491','Море'],['#B9D9D8','Акварель'],['#D7B461','Песок']].map(([hex,name])=>`<button class="color-swatch" style="background:${hex}" data-copy-color="${hex}" title="${name}: ${hex}"><small>${hex}</small></button>`).join('')}</div><div class="stack" style="gap:12px"><p class="small muted"><strong style="color:var(--text)">Цвет — навигация.</strong> Тёплая бумага, тёмная тушь, бирюзовая акварель и оранжевый свет. Маяк направляет к вашим любимым занятиям.</p><p class="small muted"><strong style="color:var(--text)">Иконки — одна семья.</strong> Лёгкие контуры и акварельные пятна продолжают рисунок маяка. Вся графика хранится вместе с сайтом.</p><p class="small muted"><strong style="color:var(--text)">Плотность — в меру.</strong> На главной — до шести ваших направлений, поиск и небольшие ориентиры дня. Весь список доступен в отдельном каталоге.</p></div><div class="modal-footer"><button class="btn primary" data-close-modal>Нравится направление</button></div>`);document.querySelectorAll('[data-copy-color]').forEach(b=>b.onclick=()=>a.copy(b.dataset.copyColor));}
   function command(){a.modal('Куда направимся?',`<input class="command-input" id="command-search" placeholder="Название сервиса или действие…" aria-label="Быстрый поиск по сервисам" autocomplete="off"><div class="command-results" id="command-results"></div><p class="small muted" style="margin-top:14px;font-size:10px">Enter — открыть первый результат · Esc — закрыть</p>`);const input=document.querySelector('#command-search');let results=[];const update=()=>{const q=input.value.trim().toLowerCase();results=a.services.filter(s=>(s.name+' '+s.desc+' '+s.id).toLowerCase().includes(q)).slice(0,8);document.querySelector('#command-results').innerHTML=results.length?results.map(s=>`<button class="command-result" data-command-id="${s.id}"><span class="service-icon ${s.color}">${i(s.icon,17)}</span><span class="command-info"><strong>${s.name}</strong><small>${s.desc}</small></span>${i('arrow-right',13)}</button>`).join(''):'<div class="empty-state">Нет подходящих сервисов</div>';document.querySelectorAll('[data-command-id]').forEach(b=>b.onclick=()=>go(results.find(s=>s.id===b.dataset.commandId)));};const go=s=>{if(!s)return;a.closeModal();if(s.url)window.open(s.url,'_blank','noopener,noreferrer');else a.navigate(s.route,s.param||'');};input.oninput=update;input.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();go(results[0]);}};update();input.focus();}
   document.querySelector('.skip-link').addEventListener('click',event=>{event.preventDefault();const view=document.querySelector('#view');view.focus();view.scrollIntoView({block:'start'});});
   document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=i(el.dataset.icon,Number(el.dataset.size)||20));
@@ -1348,7 +2015,7 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
     if(target.hasAttribute('data-close-modal')){a.closeModal();return;}
     if(target.dataset.route){event.preventDefault();a.navigate(target.dataset.route,target.dataset.param||'');return;}
     if(target.dataset.external){const url=a.safeURL(target.dataset.external);if(url)window.open(url,'_blank','noopener,noreferrer');return;}
-    if(target.dataset.favorite){const id=target.dataset.favorite;let list=a.favorites();const selected=!list.includes(id);list=selected?[...list,id]:list.filter(v=>v!==id);a.set('favorites',list);document.querySelectorAll('[data-favorite]').forEach(b=>{const checked=list.includes(b.dataset.favorite);b.classList.toggle('selected',checked);b.setAttribute('aria-pressed',checked);});a.toast(selected?'Добавлено в быстрый доступ':'Убрано из быстрого доступа');if(a.route==='home')a.render();return;}
+    if(target.dataset.favorite){const id=target.dataset.favorite;let list=a.favorites();const selected=!list.includes(id);list=selected?[...list,id]:list.filter(v=>v!==id);a.set('favorites',list);document.querySelectorAll('[data-favorite]').forEach(b=>{const checked=list.includes(b.dataset.favorite);b.classList.toggle('selected',checked);b.setAttribute('aria-pressed',checked);});document.querySelectorAll('[data-favorite]').forEach(b=>{const checked=list.includes(b.dataset.favorite);const service=a.services.find(s=>s.id===b.dataset.favorite);const action=checked?'Убрать из избранного':'В избранное';b.title=action;b.setAttribute('aria-label',action+': '+(service?.name||''));});document.dispatchEvent(new CustomEvent('ayyy:favorites'));a.toast(selected?'Добавлено в избранное':'Убрано из избранного');return;}
     if(target.dataset.query){a.performSearch(target.dataset.query);return;}
     switch(target.dataset.action){case'settings':a.showSettings();break;case'theme':a.settings.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';applySettings();break;case'about':a.showAbout();break;case'design':showDesign();break;case'command':command();break;case'city':a.showCityPicker?.();break;case'menu':document.body.classList.toggle('nav-open');target.setAttribute('aria-expanded',document.body.classList.contains('nav-open'));break;case'close-nav':document.body.classList.remove('nav-open');break;}
   });

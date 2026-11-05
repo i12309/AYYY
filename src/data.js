@@ -70,7 +70,7 @@
     document.dispatchEvent(new CustomEvent('ayyy:'+type));
     const active=document.activeElement;
     const isEditing=active && (active.matches('input,textarea,select')||active.isContentEditable);
-    if(refreshHome && app.route==='home' && !isEditing && !document.querySelector('#modal')?.open && app.views.home)app.render();
+    if(refreshHome && app.route==='home' && !app.homeDataMounted && !isEditing && !document.querySelector('#modal')?.open && app.views.home)app.render();
   }
   function parseWeather(data,city) {
     const current=data?.current, hourly=data?.hourly, daily=data?.daily;
@@ -113,7 +113,7 @@
   function selectCity(city) {
     selectedCity=cleanCity(city);app.set('weather.city',selectedCity);weatherError='';weatherTicket++;weatherPendingKey='';weatherPromise=null;
     app.closeModal();
-    if(['home','weather'].includes(app.route))app.render();
+    if(app.route==='weather' || (app.route==='home' && !app.homeDataMounted))app.render();
     app.refreshWeather();
   }
   app.showCityPicker = () => {
