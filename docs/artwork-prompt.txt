@@ -1,31 +1,14 @@
-AYYY lighthouse illustration — sharp ink revision (2026-11-05)
-Generated with the built-in ImageGen tool in style-transfer edit mode.
-Final asset: assets/lighthouse-watercolor.webp
-Output: 1024 x 1536, RGBA with transparent surroundings.
-Lantern light anchor: x=516 px, y=291 px; normalized x=0.50390625, y=0.189453125.
+AYYY lighthouse illustration
+Generated with the built-in ImageGen tool from the user-supplied visual reference.
+Reference: https://i.pinimg.com/originals/f7/12/af/f712af8928926391e946081584b2ad04.jpg
+The reference is used for visual direction; the website uses a newly generated illustration.
 
-Inputs:
-- Existing AYYY illustration: assets/lighthouse-watercolor.webp (previous revision).
-- User-supplied style reference: image(20261105-191035).png.
-- Original reference URL: https://i.pinimg.com/originals/f7/12/af/f712af8928926391e946081584b2ad04.jpg
-The reference guides the ink language and palette. The website uses an original redrawn illustration.
-
-Rendering guidance:
-Display at its native 2:3 ratio over pure #ffffff.
-Do not add opacity, blur, pastel filters, cream texture, floating transforms or image animation.
-The surrounding alpha remains transparent; tower highlights are white.
-The separate page light beam should originate from the normalized anchor above.
-WebP encoding only; no programmatic drawing, color correction, removal or retouching was applied.
-
-Final prompt:
-Use case: style-transfer.
-Asset type: a single portrait lighthouse illustration for the left side of the AYYY portal, to be displayed over a PURE WHITE #ffffff website. Return an illustration asset, not a website screenshot.
-Input images: Image 1 is the EXISTING ASSET to redraw. Image 2 is the USER'S STYLE REFERENCE and the required graphic character.
-Primary request: redraw the lighthouse from Image 1 using the rough, sharp, emphatic ink-and-color graphic language of Image 2. The existing image is too soft, delicate, creamy and pastel. Make the difference unmistakable.
-Preserve: a tall entire lighthouse from finial to rocky base, one broad orange stripe, dark lantern and balcony, white tower, a few gulls, two small boats on the sea, a large orange sun behind the lantern. Preserve the centered portrait composition and lighthouse silhouette, not the old soft rendering.
-Graphic style: expressive rough black dip-pen strokes, dramatic sharp calligraphic slashes, irregular angular contour marks, energetic sketch construction lines that extend beyond the tower, hard black shadow shapes, selective crosshatching. Strokes should be crisp and visible at thumbnail scale; not hairline dainty linework. Gulls should have sharp graphic black wings like the reference. Distinct saturated pigment shapes with rough torn brush edges, visibly rougher and less polite than the previous image. The result should feel hand-drawn, slightly raw and confident.
-Palette: WHITE #ffffff tower wall highlights, intense near-black/navy #071821 lantern and shadows, saturated orange #ff7100 stripe and sun, vivid cyan/turquoise #08a6c6 sea, a few small scarlet red paint dots like the reference. Cool blue-grey architectural shadows. No beige or yellow wash over the tower.
-Composition: portrait 1024x1536 or similar 2:3 ratio; keep the whole lighthouse and its small rocky base fully within frame. Lantern center near x=50%, y=19%. Roof tip near y=4%. Base ends near y=96%. Keep loose ink marks and sea strokes around the sides but plenty of transparent breathing space. No large protruding painted background slab.
-Background: genuine TRANSPARENT ALPHA outside the actual drawn tower, gulls, rocks, sun, sea strokes and ink marks. White areas INSIDE the tower and gulls are opaque white. The open background around them is transparent. No paper texture, no cream canvas, no beige haze, no opaque white rectangle, no checkerboard pattern. Saturated accents should keep crisp rough painted boundaries rather than dissolve into pastel fog.
-Lantern: blue-black metal and pale clear glass with a small bright light at the center, no large glow. The webpage draws the light beam separately; do not draw a light beam.
-Constraints: no text, no letters, no UI, no logo, no watermark, no frame, no photorealism, no 3D, no smooth flat-vector icon look. Preserve a rugged illustrated character and saturated high contrast.
+Use case: illustration-story.
+Asset type: an original portrait lighthouse illustration for the left side of the AYYY entertainment portal homepage. This is an illustration asset, not a website screenshot.
+Input image: the supplied lighthouse picture is a STYLE AND PALETTE REFERENCE only. Create a new composition with the same expressive watercolor and black-ink sketch language.
+Subject: a beautiful tall lighthouse standing on a small rocky outcrop, almost full-height within a portrait canvas, the tower centered around x=50%. Dark navy lantern roof and balcony, luminous amber glass, warm ivory tower with one broad vivid orange band, elegant long architectural proportions. Small freely sketched gulls, a couple of tiny distant sailboats, airy turquoise watercolor sea around the lower third, a loose orange sun wash near the lantern. Fine and bold black/navy pen strokes together, imperfect lively construction lines, delicate architectural hatching, bright transparent pigments, occasional orange paint flecks.
+Composition: portrait 1024 x 1536 or similar 2:3 ratio; keep all essential lighthouse architecture within the image. Lantern light center approximately x=50%, y=20%. The roof starts near y=5%; rocky base ends near y=96%. Tower is tall and commanding with breathing room at the sides. The artwork will be displayed about 420px wide by 700px tall on a warm cream webpage.
+Background: genuinely transparent alpha outside the drawn artwork and watercolor washes. Preserve warm ivory paint inside the lighthouse and soft translucent watercolor edges. No rectangular white or colored background, no frame. Let scattered washes and pen lines fade naturally into transparency.
+Lighting and mood: sunlit coastal optimism, playful yet sophisticated travel-sketch illustration. Add a small warm amber glow inside the lantern only; the webpage will animate the beam separately. Do not draw a large opaque light beam.
+Palette: ink navy #142e3d, warm ivory #fff9eb, vivid burnt orange #f4772b with ochre accents, turquoise/sea-glass watercolor #7ebfc8 and #a9d4d6. A few charcoal strokes. Maintain the reference's hand-drawn watercolor character.
+Constraints: no text, no letters, no UI, no logo, no watermark, no photorealism, no 3D, no flat vector icon style, no checkerboard pattern.

@@ -1,4 +1,4 @@
-/* AYYY · white canvas, ink strokes and a fixed lighthouse. */
+/* AYYY · watercolor canvas with a fixed lighthouse. */
 (() => {
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
@@ -24,14 +24,14 @@
     </nav>
   </header>`;
 
-  const footer = () => `<footer class="shore-footer"><span class="shore-footer-links"><button data-action="about">О маяке</button><button data-action="design">Цвета и характер</button><span class="shore-footer-mark">${icon('lighthouse',15)} AYYY</span></span></footer>`;
+  const footer = () => `<footer class="shore-footer"><span>Найти. Придумать. Немного поиграть.</span><span class="shore-footer-links"><button data-action="about">О маяке</button><button data-action="design">Цвета и характер</button><span class="shore-footer-mark">${icon('lighthouse',15)} AYYY</span></span></footer>`;
 
-  const beam = id => `<svg class="shore-beam" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x1="0%" y1="50%" x2="100%" y2="50%"><stop stop-color="#ff8a00" stop-opacity=".32"/><stop offset=".52" stop-color="#ffb000" stop-opacity=".09"/><stop offset="1" stop-color="#ffb000" stop-opacity="0"/></linearGradient></defs><path class="shore-beam-fill" fill="url(#${id})"/><path class="shore-beam-edge" fill="none" stroke="#f47b00" stroke-width=".8"/></svg>`;
+  const beam = id => `<svg class="shore-beam" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x1="0%" y1="50%" x2="100%" y2="50%"><stop stop-color="#ffbf57" stop-opacity=".48"/><stop offset=".48" stop-color="#ffc46c" stop-opacity=".18"/><stop offset="1" stop-color="#ffe6b6" stop-opacity="0"/></linearGradient></defs><path class="shore-beam-fill" fill="url(#${id})"/><path class="shore-beam-edge" fill="none" stroke="#de9a52" stroke-width=".65"/></svg>`;
 
-  const picture = () => `<img class="shore-lighthouse" src="${artwork}" width="1024" height="1536" alt="Маяк, нарисованный резкими чёрными росчерками: оранжевая полоса, яркое солнце, голубое море и чайки" fetchpriority="high" decoding="async">`;
+  const picture = extra => `<img class="shore-lighthouse ${extra||''}" src="${artwork}" width="1024" height="1536" alt="Акварельный маяк на скалистом берегу: оранжевый свет, бирюзовое море и парусники" fetchpriority="high" decoding="async">`;
 
   function serviceIcon(service, size=32) {
-    return `<span class="shore-service-art ${e(service.color)}"><svg class="shore-ink-wash" viewBox="0 0 96 82" aria-hidden="true"><path d="m8 26 16-8-6-7 28 3L70 8l-4 10 20-2-7 16 11 7-12 11 5 13-23-1-6 11-21-7-16 5 3-14L7 53l8-13Z" fill="currentColor" opacity=".75"/><path d="m10 25 62-12-6 9 17-3M7 55l11 3-2 9 31-2 10 6 22-10M22 11l-5-3m64 3 9-6M6 38l7-4m70 35 7 4" fill="none" stroke="#101c24" stroke-width="1.3"/><path d="m19 29 48-9M27 59l44-7" stroke="#fff" stroke-width="3.5" opacity=".7"/><path d="m16 75 11-2m53-44 12-3" stroke="currentColor" stroke-width="2.4"/></svg>${icon(service.icon,size)}</span>`;
+    return `<span class="shore-service-art ${e(service.color)}"><svg class="shore-ink-wash" viewBox="0 0 96 82" aria-hidden="true"><path d="M11 27C1 14 29 4 43 10 59-2 93 13 86 28 104 44 81 67 65 68 49 87 9 73 13 57-4 50 0 35 11 27Z" fill="currentColor" opacity=".18"/><path d="M9 29C14 13 41 7 59 14 81 11 93 37 83 52 81 72 52 76 32 67 9 69 3 46 9 29Z" fill="none" stroke="currentColor" stroke-width=".8" opacity=".24"/><path d="m7 68 9 2m64-55 7-4M86 62l5 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${icon(service.icon,size)}</span>`;
   }
 
   function shortcut(service) {
@@ -39,11 +39,11 @@
     return `<a class="shore-shortcut" ${destination}>${serviceIcon(service)}<span class="shore-shortcut-name">${e(shortNames[service.id]||service.name)}</span><small>${e(shortDescriptions[service.id]||service.desc)}</small></a>`;
   }
 
-  const clockFace = () => `<svg class="shore-clock-face" viewBox="0 0 100 100" aria-hidden="true"><path d="m16 30 12-15 25-7 25 10 12 22-3 26-18 22-28 4-24-13-9-26Z" fill="#fff" stroke="currentColor" stroke-width="2"/><path d="m6 43 8-21L34 9m32 83 18-15 10-21" fill="none" stroke="#009aca" stroke-width="4"/>${[0,90,180,270].map(angle=>`<path d="M50 15v7" stroke="currentColor" stroke-width="2.4" transform="rotate(${angle} 50 50)"/>`).join('')}<path class="shore-clock-hour" d="M50 50V29" fill="none" stroke="currentColor" stroke-width="3.8"/><path class="shore-clock-minute" d="M50 53V20" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="50" cy="50" r="4" fill="#ff7200"/></svg>`;
+  const clockFace = () => `<svg class="shore-clock-face" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 7C74 6 94 27 92 51 93 76 73 94 48 92 24 93 6 73 8 49 7 25 26 6 50 7Z" fill="#b9d9d8" fill-opacity=".25" stroke="currentColor" stroke-width="1.4"/><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width=".5" stroke-dasharray="1 19"/>${[0,90,180,270].map(angle=>`<path d="M50 15v5" stroke="currentColor" stroke-width="1.7" transform="rotate(${angle} 50 50)"/>`).join('')}<path class="shore-clock-hour" d="M50 50V29" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path class="shore-clock-minute" d="M50 53V20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="50" cy="50" r="3" fill="#e9792d"/></svg>`;
 
   function homeInformation() {
     return `<section class="shore-information" aria-labelledby="shore-information-title">
-      <div class="shore-section-line"><h2 id="shore-information-title">Сейчас</h2><button class="shore-text-button" data-home-refresh="all">${icon('refresh',13)}<span data-home-refresh-label>Обновить</span></button></div>
+      <div class="shore-section-line"><h2 id="shore-information-title">Маленькие ориентиры дня</h2><button class="shore-text-button" data-home-refresh="all">${icon('refresh',13)}<span data-home-refresh-label>Обновить</span></button></div>
       <div class="shore-widgets">
         <article class="shore-weather shore-widget">
           <div class="shore-widget-top"><button class="shore-widget-title" data-action="city">${icon('pin',14)}<span data-home-weather="city"></span>${icon('chevron-down',11)}</button><span class="shore-data-status" data-home-weather="status"></span></div>
@@ -171,7 +171,7 @@
       const bounds=svg.getBoundingClientRect(), art=image.getBoundingClientRect(), target=targetElement.getBoundingClientRect();
       if(!bounds.width||!bounds.height)return;
       const x=art.left-bounds.left+art.width*.50390625, y=art.top-bounds.top+art.height*.189453125;
-      const right=Math.min(bounds.width,target.right-bounds.left+40), top=target.top+window.scrollY-bounds.top-8, bottom=target.bottom+window.scrollY-bounds.top+8;
+      const right=Math.min(bounds.width,target.right-bounds.left+40), top=target.top-bounds.top-8, bottom=target.bottom-bounds.top+8;
       svg.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);
       svg.querySelector('.shore-beam-fill').setAttribute('d',`M ${x} ${y-5} L ${right} ${top} Q ${right+20} ${(top+bottom)/2} ${right} ${bottom} L ${x} ${y+5} Z`);
       svg.querySelector('.shore-beam-edge').setAttribute('d',`M ${x} ${y} L ${right} ${top} M ${x} ${y} L ${right} ${bottom}`);
