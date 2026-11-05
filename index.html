@@ -538,6 +538,175 @@ body[data-shell="splash"] .toasts {bottom:22px}
  .shore-art {left:-16px;width:101px}
  .shore-section-line h1 {font-size:14px}
 }
+
+
+/* 2026-11-05: catalog lighthouse and compact service cards.
+   Keep this illustration in the document grid, not in a clipped fixed layer. */
+@media (min-width:721px) {
+  .shore-directory .shore-directory-stage {
+    display:grid;
+    grid-template-columns:minmax(245px,27%) minmax(0,1fr);
+    gap:clamp(20px,2.2vw,36px);
+    align-items:start;
+    padding:18px var(--shore-gutter) 36px clamp(14px,2.2vw,42px);
+  }
+  .shore-directory .shore-directory-art {
+    position:sticky;
+    top:86px;
+    left:auto;
+    bottom:auto;
+    width:100%;
+    height:calc(100svh - 102px);
+    max-height:900px;
+    min-height:460px;
+    overflow:visible;
+    align-self:start;
+    z-index:1;
+    mask-image:none;
+  }
+  .shore-directory .shore-directory-art .shore-lighthouse {
+    position:relative;
+    inset:auto;
+    transform:none;
+    display:block;
+    width:100%;
+    max-width:100%;
+    height:100%;
+    object-fit:contain;
+    object-position:center top;
+  }
+  .shore-directory .shore-catalog-content {min-width:0;}
+}
+.shore-directory .shore-catalog-grid {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+}
+.shore-directory .shore-service-card {
+  border-radius:8px;
+  min-height:124px;
+}
+.shore-directory .shore-service-card:nth-child(3n+2) {border-radius:8px;}
+.shore-directory .shore-catalog-open {
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  grid-template-rows:auto auto minmax(20px,1fr);
+  align-content:start;
+  column-gap:9px;
+  padding:14px 12px 12px;
+  min-height:124px;
+  text-align:left;
+}
+.shore-directory .shore-catalog-open .shore-service-art {
+  grid-column:1;
+  grid-row:1 / span 2;
+  width:48px;
+  height:45px;
+  margin-left:-4px;
+}
+.shore-directory .shore-catalog-open .shore-service-art>svg:not(.shore-ink-wash) {
+  width:25px;
+  height:25px;
+}
+.shore-directory .shore-catalog-open h3 {
+  grid-column:2;
+  grid-row:1;
+  margin:4px 17px 0 0;
+  padding:0;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.3;
+  min-height:0;
+}
+.shore-directory .shore-catalog-open p {
+  grid-column:2;
+  grid-row:2;
+  margin:4px 0 0;
+  padding:0;
+  min-height:0;
+  color:#74827a;
+  font-size:10px;
+  line-height:1.4;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  overflow:hidden;
+}
+.shore-directory .shore-service-kind {
+  grid-column:1 / -1;
+  grid-row:3;
+  align-self:end;
+  margin:12px 20px 0 0;
+  font-size:9px;
+  min-height:12px;
+}
+.shore-directory .shore-card-arrow {right:11px;bottom:10px;}
+.shore-directory .shore-favorite {right:6px;top:6px;}
+.shore-directory .shore-catalog-tools {margin-top:13px;}
+.shore-directory .shore-catalog-summary {margin:13px 0 13px;padding-top:11px;}
+
+@media (min-width:721px) and (max-width:1399px) {
+  .shore-directory .shore-catalog-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (min-width:721px) and (max-width:1080px) {
+  .shore-directory .shore-directory-stage {
+    grid-template-columns:minmax(165px,24%) minmax(0,1fr);
+    gap:14px;
+    padding:15px 25px 28px 8px;
+  }
+  .shore-directory .shore-directory-art {top:76px;height:calc(100svh - 92px);min-height:350px;}
+  .shore-directory .shore-catalog-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:720px) {
+  .shore-directory .shore-directory-stage {display:block;padding:13px 18px 28px;}
+  .shore-directory .shore-directory-art {
+    display:block;
+    position:absolute;
+    left:6px;
+    top:1px;
+    bottom:auto;
+    width:86px;
+    height:118px;
+    max-height:none;
+    min-height:0;
+    overflow:visible;
+    z-index:1;
+  }
+  .shore-directory .shore-directory-art .shore-lighthouse {
+    position:relative;
+    inset:auto;
+    transform:none;
+    display:block;
+    height:100%;
+    width:100%;
+    max-width:100%;
+    object-fit:contain;
+  }
+  .shore-directory .shore-catalog-heading {
+    padding:16px 0 18px 88px;
+    min-height:116px;
+  }
+  .shore-directory .shore-catalog-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  .shore-directory .shore-service-card {min-height:142px;}
+  .shore-directory .shore-catalog-open {
+    display:block;
+    min-height:142px;
+    padding:11px 11px 12px;
+  }
+  .shore-directory .shore-catalog-open .shore-service-art {
+    width:45px;height:39px;margin-left:-4px;
+  }
+  .shore-directory .shore-catalog-open h3 {margin:3px 15px 0 0;font-size:12px;line-height:1.3;}
+  .shore-directory .shore-catalog-open p {
+    margin-top:4px;
+    min-height:0;
+    font-size:10px;
+    line-height:1.35;
+  }
+  .shore-directory .shore-service-kind {margin-top:10px;padding-right:14px;font-size:9px;}
+  .shore-directory .shore-card-arrow {right:8px;bottom:9px;}
+}
 </style>
 </head>
 <body data-shell="splash">
