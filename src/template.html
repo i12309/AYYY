@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="description" content="AYYY — ваш маяк в интернете. Поиск, полезные инструменты, заметки, творчество и игры в одном спокойном пространстве.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>AYYY — ваш маяк в интернете</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='13' fill='%233d68ef'/%3E%3Cpath d='M20 17h8l5 23H15l5-23zM18 12l6-5 6 5M19 12h10v5H19zM16 40h16M18 29h12' fill='none' stroke='white' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>/*__STYLES__*/</style>
+</head>
+<body>
+  <a href="#view" class="skip-link">Перейти к содержимому</a>
+  <aside class="sidebar" aria-label="Основная навигация">
+    <a href="#home" class="brand" aria-label="AYYY, главная"><span class="brand-mark" data-icon="lighthouse" data-size="35"></span><span class="brand-copy"><span class="brand-word">ayyy<span class="brand-dot">.</span></span><small>ВАШ МАЯК В ИНТЕРНЕТЕ</small></span></a>
+    <nav class="nav-scroll">
+      <div class="nav-section">
+        <a href="#home" class="nav-item active" data-nav="home" title="Главная" aria-label="Главная"><span data-icon="home"></span><span>Главная</span></a>
+        <a href="#directory" class="nav-item" data-nav="directory" title="Все сервисы" aria-label="Все сервисы"><span data-icon="grid"></span><span>Все сервисы</span><span class="nav-count">22</span></a>
+        <a href="#search" class="nav-item" data-nav="search" title="Поиск" aria-label="Поиск"><span data-icon="search"></span><span>Поиск</span></a>
+        <a href="#ai" class="nav-item" data-nav="ai" title="ИИ-помощник" aria-label="ИИ-помощник"><span data-icon="sparkles"></span><span>ИИ-помощник</span><span class="nav-new"></span></a>
+      </div>
+      <div class="nav-section"><div class="nav-section-label">На каждый день</div>
+        <a href="#mail" class="nav-item" data-nav="mail" title="Почта" aria-label="Почта"><span data-icon="mail"></span><span>Почта</span></a>
+        <a href="#parcels" class="nav-item" data-nav="parcels" title="Мои посылки" aria-label="Мои посылки"><span data-icon="package"></span><span>Мои посылки</span></a>
+        <a href="#weather" class="nav-item" data-nav="weather" title="Погода" aria-label="Погода"><span data-icon="sun"></span><span>Погода</span></a>
+        <a href="#finance" class="nav-item" data-nav="finance" title="Валюты и рынки" aria-label="Валюты и рынки"><span data-icon="chart"></span><span>Валюты и рынки</span></a>
+      </div>
+      <div class="nav-section"><div class="nav-section-label">Создавайте и пробуйте</div>
+        <a href="#tools" class="nav-item" data-nav="tools" title="Инструменты" aria-label="Инструменты"><span data-icon="calculator"></span><span>Инструменты</span></a>
+        <a href="#paint" class="nav-item" data-nav="paint" title="Мастерская" aria-label="Мастерская"><span data-icon="brush"></span><span>Мастерская</span></a>
+        <a href="#games" class="nav-item" data-nav="games" title="Игры" aria-label="Игры"><span data-icon="gamepad"></span><span>Игры</span></a>
+        <a href="#notes" class="nav-item" data-nav="notes" title="Заметки и задачи" aria-label="Заметки и задачи"><span data-icon="note"></span><span>Заметки и задачи</span></a>
+        <a href="#bookmarks" class="nav-item" data-nav="bookmarks" title="Мои закладки" aria-label="Мои закладки"><span data-icon="bookmark"></span><span>Мои закладки</span></a>
+        <a href="#focus" class="nav-item" data-nav="focus" title="Время фокуса" aria-label="Время фокуса"><span data-icon="focus"></span><span>Время фокуса</span></a>
+      </div>
+    </nav>
+    <div class="sidebar-foot"><button class="nav-item" data-action="settings" title="Настройки" style="width:100%"><span data-icon="settings"></span><span>Настройки</span></button><div class="local-profile"><span class="avatar">Я</span><span>Моё пространство<small>На этом устройстве</small></span><button class="icon-btn" data-action="about" aria-label="О локальном пространстве"><span data-icon="chevron-right" data-size="14"></span></button></div></div>
+  </aside>
+  <button class="nav-scrim" data-action="close-nav" aria-label="Закрыть меню"></button>
+  <div class="main-wrap">
+    <header class="topbar"><div class="breadcrumb"><span data-icon="lighthouse" data-size="15"></span><span>Моё пространство</span><span>/</span><strong id="page-label">Главная</strong></div><div class="topbar-mobile"><button class="icon-btn" data-action="menu" aria-expanded="false" aria-label="Открыть меню"><span data-icon="menu"></span></button><a href="#home" class="mobile-logo">ayyy<span style="color:var(--blue)">.</span></a></div><div class="topbar-actions"><span class="top-date" id="top-date"></span><span class="top-clock" id="top-clock"></span><button class="command-trigger" data-action="command" title="Быстрый переход (Ctrl+K)"><span data-icon="search" data-size="13"></span><kbd>Ctrl K</kbd></button><button class="icon-btn" data-action="theme" title="Переключить светлую и тёмную тему" aria-label="Переключить тему" id="theme-button"><span data-icon="moon" data-size="18"></span></button><button class="icon-btn top-help" data-action="about" title="О портале" aria-label="О портале"><span data-icon="help" data-size="18"></span></button><button class="avatar gradient" data-action="settings" aria-label="Настройки моего пространства">Я</button></div></header>
+    <main class="main-content"><div id="view" tabindex="-1"></div><footer class="footer"><div class="footer-left"><span class="brand-foot">ayyy.</span><span>Меньше шума. Больше полезного.</span></div><div class="footer-right"><button data-action="about">О портале</button><button data-action="design">Цвета и характер</button><span><i class="status-dot green"></i> Ваше пространство</span></div></footer></main>
+  </div>
+  <nav class="mobile-nav" aria-label="Быстрая навигация"><a href="#home" data-nav="home"><span data-icon="home"></span>Главная</a><a href="#directory" data-nav="directory"><span data-icon="grid"></span>Сервисы</a><a href="#search" data-nav="search"><span data-icon="search"></span>Поиск</a><a href="#ai" data-nav="ai"><span data-icon="sparkles"></span>Помощник</a><a href="#tools" data-nav="tools"><span data-icon="calculator"></span>Инструменты</a></nav>
+  <dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button class="icon-btn" data-close-modal aria-label="Закрыть окно"><span data-icon="x"></span></button></div><div id="modal-body"></div></dialog>
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+  <noscript><div style="padding:30px;margin-left:220px">Для работы инструментов AYYY включите JavaScript в браузере.</div></noscript>
+  <script>/*__SCRIPTS__*/</script>
+</body>
+</html>
