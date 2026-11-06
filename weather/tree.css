@@ -124,3 +124,32 @@
 @media(max-width:720px){.ww-tree-foliage-slot{transform:translateY(3px)}}
 /* Leave the forecast readable by shifting the tree slightly left. */
 @media(min-width:1251px){.ww-tree-wrap{left:calc(50% - 55px)}}
+
+
+/* Layer the live tree beneath controls and away from the forecast. */
+@media(min-width:1251px){
+  .ww-tree-wrap{top:14%;height:69%;left:calc(50% - 70px)}
+  .ww-scene[data-subject=tree] .ww-sun{left:calc(50% + 105px);top:10%}
+}
+@media(min-width:1650px){.ww-tree-wrap{top:13%;height:71%}}
+.ww-app[data-subject=tree] .ww-scene-switchbar{
+  padding:5px 9px;margin:2px auto 4px;border-radius:7px;
+  background:linear-gradient(90deg,rgba(var(--ww-wash),.87),rgba(var(--ww-wash),.70));
+  border-bottom:1px solid rgba(136,153,158,.16)
+}
+.ww-app[data-subject=tree] .ww-monthbar{
+  background:rgba(var(--ww-wash),.84);border-radius:7px;
+  border-bottom:1px solid rgba(136,153,158,.15);padding:4px 8px
+}
+.ww-app[data-subject=tree] .ww-tree-preview{gap:6px}
+.ww-app[data-subject=tree] .ww-tree-preset{min-height:30px}
+@media(max-width:1250px) and (min-width:721px){.ww-tree-wrap{top:15%;height:62%}}
+@media(max-width:720px){
+  .ww-tree-wrap{top:17%;height:48%;left:83%}
+  .ww-app[data-subject=tree] .ww-scene-switchbar{margin:0 0 3px;padding:5px;background:rgba(var(--ww-wash),.90)}
+  .ww-app[data-subject=tree] .ww-monthbar{padding:3px;background:rgba(var(--ww-wash),.9)}
+  .ww-app[data-subject=tree] .ww-tree-preview{gap:3px}
+  .ww-app[data-subject=tree] .ww-tree-preset{min-height:28px}
+}
+/* Errors stay readable without hiding the crown on desktop. */
+@media(min-width:1051px){.ww-app[data-subject=tree] .ww-error{max-width:520px;margin:5px 0;line-height:1.45}}
