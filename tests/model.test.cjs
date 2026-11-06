@@ -1,0 +1,52 @@
+'use strict';
+const assert=require('node:assert/strict');
+const M=require('../weather/model.js');
+let passed=0;
+function test(name,fn){try{fn();console.log('PASS '+name);passed++;}catch(e){console.error('FAIL '+name);throw e;}}
+function rawFixture(city=M.CITIES[0],now=Date.parse('2026-11-06T13:00:00Z')){
+ const d=M.demo(city,now),map={temperature_2m:'temp',apparent_temperature:'feels',relative_humidity_2m:'humidity',pressure_msl:'pressure',weather_code:'code',cloud_cover:'clouds',wind_speed_10m:'wind',wind_direction_10m:'direction',wind_gusts_10m:'gust',precipitation_probability:'pop',precipitation:'precip',uv_index:'uv',visibility:'visibility',is_day:'isDay'};
+ const offset=d.days[0].time-Date.parse(d.days[0].date+'T00:00:00Z')/1000;
+ const hourly={time:d.hours.map(h=>h.time)},current={time:d.current.time};
+ for(const[k,v]of Object.entries(map)){hourly[k]=d.hours.map(h=>v==='isDay'?+h[v]:h[v]);current[k]=v==='isDay'?+d.current[v]:d.current[v];}
+ const dm={temperature_2m_min:'min',temperature_2m_max:'max',weather_code:'code',sunrise:'sunrise',sunset:'sunset',precipitation_probability_max:'pop',precipitation_sum:'precip',wind_speed_10m_max:'wind',uv_index_max:'uv'};
+ const daily={time:d.days.map(d=>d.time)};for(const[k,v]of Object.entries(dm))daily[k]=d.days.map(d=>d[v]);
+ return {timezone:city.timezone,utc_offset_seconds:-offset,current,hourly,daily};
+}
+test('demo explicitly not live',()=>assert.equal(M.demo().live,false));
+test('14 demo days / 336 hours',()=>{assert.equal(M.demo().days.length,14);assert.equal(M.demo().hours.length,336);});
+test('temperature conversions',()=>{assert.equal(M.temperature(0,'F'),'+32°');assert.equal(M.temperature(-40,'F'),'-40°');assert.equal(M.temperature(12),' +12°'.trim());});
+test('missing values never become zero',()=>{assert.equal(M.temperature(null),'—');assert.equal(M.number(null),null);assert.equal(M.value(undefined),'—');assert.equal(M.number('0'),null);});
+test('coordinates validation',()=>{assert.ok(M.validCity(M.CITIES[0]));assert.ok(!M.validCity({...M.CITIES[0],latitude:91}));assert.throws(()=>M.cleanCity({name:'X'}));});
+test('city names and country retained',()=>{const city=M.cleanCity({...M.CITIES[0],name:'  Тест  '});assert.equal(city.name,'Тест');});
+test('timezone clocks independent of host',()=>{const t=Date.parse('2026-11-06T13:00:00Z')/1000;assert.equal(M.time(t,'Asia/Tokyo'),'22:00');assert.equal(M.time(t,'America/New_York'),'08:00');assert.equal(M.time(t,'Europe/Berlin'),'14:00');});
+test('date rolls over in Tokyo',()=>assert.equal(M.dateKey(Date.parse('2026-11-06T18:00:00Z')/1000,'Asia/Tokyo'),'2026-11-07'));
+test('invalid zone falls back to UTC',()=>assert.equal(M.timezone('bad/zone'),'UTC'));
+test('summer time conversion',()=>assert.equal(M.time(M.localEpoch('2026-07-01',12,'Europe/Berlin'),'Europe/Berlin'),'12:00'));
+test('winter time conversion',()=>assert.equal(M.localEpoch('2026-11-06',14,'Europe/Berlin'),Date.parse('2026-11-06T13:00:00Z')/1000));
+test('clear day and night icons',()=>{assert.equal(M.condition(0,true).icon,'sun');assert.equal(M.condition(0,false).icon,'moon');});
+test('WMO codes cover all precipitation groups',()=>{for(const code of [51,53,55,56,57,61,63,65,66,67,80,81,82])assert.equal(M.condition(code).key,'rain');for(const code of [71,73,75,77,85,86])assert.equal(M.condition(code).key,'snow');for(const code of [95,96,99])assert.equal(M.condition(code).key,'storm');});
+test('cloud/fog/unknown states',()=>{assert.equal(M.condition(45).key,'fog');assert.equal(M.condition(48).key,'fog');assert.equal(M.condition(2).key,'partly');assert.equal(M.condition(null).key,'unknown');});
+test('sun phase uses sunrise/set timestamps',()=>{const d={sunrise:10000,sunset:50000};assert.equal(M.phase({time:10000},d),'dawn');assert.equal(M.phase({time:30000},d),'day');assert.equal(M.phase({time:50000},d),'dusk');assert.equal(M.phase({time:70000},d),'night');});
+test('polar/missing solar data uses is_day',()=>{assert.equal(M.phase({time:5000,isDay:false},{sunrise:null,sunset:null}),'night');assert.equal(M.phase({time:5000,isDay:true},{sunrise:null,sunset:null}),'day');});
+test('wind direction compass',()=>{assert.equal(M.direction(0),'С');assert.equal(M.direction(270),'З');assert.equal(M.direction(360),'С');assert.equal(M.direction(null),'—');});
+test('URL only contains required coordinates, no user secrets',()=>{const u=new URL(M.forecastURL(M.CITIES[0]));assert.equal(u.searchParams.get('forecast_days'),'14');assert.equal(u.searchParams.get('timeformat'),'unixtime');assert.equal(u.searchParams.get('wind_speed_unit'),'ms');assert.ok(u.searchParams.get('hourly').includes('visibility'));assert.equal(u.searchParams.has('apikey'),false);});
+const fixture=rawFixture();let parsed;
+test('parse live response',()=>{parsed=M.parse(fixture,M.CITIES[0]);assert.equal(parsed.live,true);assert.equal(parsed.current.temp,12);assert.equal(parsed.days.length,14);assert.equal(parsed.hours.length,336);assert.equal(parsed.days[0].date,'2026-11-06');});
+test('no invented optional values',()=>{const r=structuredClone(fixture);r.current.pressure_msl=null;r.hourly.visibility=[];r.daily.uv_index_max=[];const p=M.parse(r,M.CITIES[0]);assert.equal(p.current.pressure,null);assert.equal(p.current.visibility,null);assert.equal(p.days[0].uv,null);});
+test('invalid required current temperature rejects data',()=>{const r=structuredClone(fixture);r.current.temperature_2m=null;assert.throws(()=>M.parse(r,M.CITIES[0]));});
+test('empty response rejects data',()=>assert.throws(()=>M.parse({},M.CITIES[0])));
+test('missing hourly data rejects data',()=>{const r=structuredClone(fixture);r.hourly.time=[];assert.throws(()=>M.parse(r,M.CITIES[0]));});
+test('stale state has 90 minute limit',()=>{const d={live:true,updatedAt:1000};assert.equal(M.stale(d,1000+89*60000),false);assert.equal(M.stale(d,1000+91*60000),true);assert.equal(M.stale({live:false},1e20),false);});
+const storage=new Map();global.localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
+test('save and recover live cache',()=>{assert.ok(M.save(parsed));assert.equal(M.cached(M.CITIES[0]).current.temp,12);});
+test('do not save demo as real cache',()=>assert.equal(M.save(M.demo()),false));
+test('city scoped cache',()=>assert.equal(M.cached(M.CITIES[1]),null));
+test('corrupted JSON ignored',()=>{storage.set('ayyy:v1:weather.scene.cache.'+M.cityKey(M.CITIES[1]),'{');assert.equal(M.cached(M.CITIES[1]),null);});
+test('corrupted dates ignored',()=>{const bad=structuredClone(parsed);bad.days[0].date='2026-99-99';assert.equal(M.validCache(bad,M.CITIES[0]),false);});
+test('bounded cache retains five cities',()=>{for(const city of M.CITIES)M.save(M.parse(rawFixture(city),city));assert.equal(M.read('weather.scene.cities').length,5);assert.equal(M.cached(M.CITIES[0]),null);});
+test('storage failure does not crash',()=>{global.localStorage={getItem(){throw Error('denied')},setItem(){throw Error('full')},removeItem(){}};assert.equal(M.read('x',42),42);assert.equal(M.write('x',{}),false);});
+test('home snapshot is backward compatible',()=>{const s=M.homeSnapshot(parsed);assert.equal(s.schema,2);assert.equal(s.hours.length,6);assert.equal(s.days.length,7);assert.equal(s.city,M.CITIES[0].name);assert.equal(s.observedAt,'2026-11-06T14:00');});
+test('no fake snapshot for demo',()=>assert.equal(M.homeSnapshot(M.demo()),null));
+test('Tokyo live response day mapping',()=>{const p=M.parse(rawFixture(M.CITIES[5]),M.CITIES[5]);assert.equal(M.time(p.current.time,p.timezone),'14:00');assert.equal(p.days[0].date,'2026-11-06');});
+console.log(`${passed} model tests PASS`);
+if(process.argv.includes('--fixture'))require('node:fs').writeFileSync(require('node:path').join(__dirname,'forecast.fixture.json'),JSON.stringify(fixture));

@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 dist/
 .openai/
+tests/forecast.fixture.json
+docs/weather-*.png
