@@ -103,13 +103,8 @@
     const q=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,timezone:'auto',timeformat:'unixtime',wind_speed_unit:'ms',forecast_days:'14',current:common,hourly:common+',precipitation_probability,uv_index,visibility',daily:'temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max'});
     return 'https://api.open-meteo.com/v1/forecast?'+q;
   }
-  // Browser-owned credential, deliberately outside the portal backup namespace.
-  const PROXY_KEY='ayyy:weather:proxy-key';
-  function getProxyKey(){try{return String(root.localStorage?.getItem(PROXY_KEY)||'').trim();}catch{return '';}}
-  function setProxyKey(value){
-    const key=String(value||'').trim();if(key.length>256)return false;
-    try{if(!root.localStorage)return false;if(key)root.localStorage.setItem(PROXY_KEY,key);else root.localStorage.removeItem(PROXY_KEY);return true;}catch{return false;}
-  }
+  // Public demo credential: publication explicitly authorized by the project owner.
+  const PROXY_KEY='a5fca891';
   async function requestJSON(url,signal,timeout,proxy=false){
     const controller=new AbortController();let timedOut=false;
     const cancel=()=>controller.abort();
@@ -128,12 +123,11 @@
     }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
   }
   async function json(url,signal) {
-    const key=getProxyKey();
-    try{return await requestJSON(url,signal,key?3500:14000);}
+    try{return await requestJSON(url,signal,3500);}
     catch(error){
       // User cancellation and provider/client errors must not launch a second request.
-      if(signal?.aborted||!key||!(error instanceof TypeError||error.retryable))throw error;
-      const proxy='https://corsproxy.io/?'+new URLSearchParams({key,url});
+      if(signal?.aborted||!(error instanceof TypeError||error.retryable))throw error;
+      const proxy='https://corsproxy.io/?'+new URLSearchParams({key:PROXY_KEY,url});
       return requestJSON(proxy,signal,10000,true);
     }
   }
@@ -194,7 +188,7 @@
     if(selected.length!==6||result.days.length!==7||[p.temp,p.feels,p.humidity,p.wind,p.code].some(v=>number(v)===null)||selected.some(h=>h.pop===null))return null;
     return result;
   }
-  const api={SCHEMA,TTL,CITIES,number,range,clamp,timezone,parts,dateKey,time,dateLabel,localEpoch,validCity,cleanCity,cityKey,condition,phase,direction,temperature,value,parse,forecastURL,forecast,search,read,write,cached,save,stale,demo,validCache,homeSnapshot,getProxyKey,setProxyKey};
+  const api={SCHEMA,TTL,CITIES,number,range,clamp,timezone,parts,dateKey,time,dateLabel,localEpoch,validCity,cleanCity,cityKey,condition,phase,direction,temperature,value,parse,forecastURL,forecast,search,read,write,cached,save,stale,demo,validCache,homeSnapshot};
   root.AYYYWeatherModel=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
