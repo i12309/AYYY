@@ -1,0 +1,42 @@
+"""Assertions for the approved tools composition, using local assets and real models."""
+from pathlib import Path
+import json
+from playwright.sync_api import sync_playwright
+# Reuse the repository's local-resource browser harness without executing its suite.
+exec((Path(__file__).parent/'corporate_browser.py').read_text().split('with sync_playwright() as pw:')[0])
+with sync_playwright() as pw:
+ browser=pw.chromium.launch(executable_path=shutil.which('chromium'),headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
+ p,errors=init(browser,(1600,900));nav(p,'loan');p.wait_for_selector('.city-reference-bottom')
+ check('real approved art, not flat tower SVG',p.locator('.city-art-frame').evaluate("e=>e.naturalWidth===1672 && e.naturalHeight===941 && e.src.includes('approved-city-frame.avif')"))
+ check('one same original numeric input per value',p.locator('[name=price]').count()==1 and p.locator('[name=currency]').count()==1)
+ check('amounts formatted without changing number values',p.locator('[name=price]').input_value()=='12000000' and '12' in p.locator('[name=price]+em+.city-number-display').inner_text())
+ check('readable input type size',p.locator('[name=price]').evaluate('e=>parseFloat(getComputedStyle(e).fontSize)>=13'))
+ check('readable key figures',p.locator('.city-kpi strong').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)>=24'))
+ check('scenario summary fits first screen',p.locator('.city-reference-bottom').bounding_box()['y']+p.locator('.city-reference-bottom').bounding_box()['height']<900)
+ check('separate cost card',p.locator('.city-loan-visual > .city-cost-summary').count()==1)
+ check('all nine tools retained',p.locator('.city-nav a').count()==9)
+ check('new scenario total equals the model',p.evaluate("document.querySelector('.city-brief dd').textContent===AYYYCity.fmt(AYYYLoans.calculate(AYYY.get('city.loan')).plan.principal,0)+' ₽'"))
+ svg=p.locator('#loan-chart svg');svg.hover(position={'x':250,'y':100});p.wait_for_timeout(30)
+ check('real chart hover values',p.locator('.city-chart-tooltip').is_visible() and 'Остаток:' in p.locator('.city-chart-tooltip').inner_text())
+ p.locator('[data-quick-scenarios]').click();check('summary opens editable scenarios',p.locator('[data-loan-tab=scenarios]').get_attribute('aria-selected')=='true')
+ p.locator('#loan-scenario-name').fill('QA scenario');p.locator('[data-city=save-scenario]').click();p.wait_for_timeout(30)
+ check('saved scenario appears in summary', 'QA scenario' in p.locator('.city-quick-scenarios').inner_text())
+ p.locator('[data-loan-tab=extra]').click();value(p,'[data-extra-field=amount]',500000)
+ check('summary tracks changed repayment','500' in p.locator('.city-quick-scenarios').inner_text())
+ p.locator('[name=currency]').select_option('USD');p.wait_for_timeout(300)
+ check('currency affects summary too','$' in p.locator('.city-brief').inner_text())
+ check('comparison never mixes currencies','QA scenario' not in p.locator('.city-quick-scenarios').inner_text())
+ p.evaluate('window.savedSet=AYYY.set; AYYY.set=()=>false');value(p,'[name=price]',13000000)
+ check('no stale supplemental figures if persistence fails',p.locator('.city-reference-bottom').count()==0)
+ check('main calculations still visible without storage',p.locator('.city-kpi').count()==4 and p.locator('.city-chart-card').count()==1)
+ p.evaluate('AYYY.set=window.savedSet');nav(p,'science');nav(p,'loan');p.wait_for_timeout(100)
+ check('remount has no duplicate panels',p.locator('.city-reference-bottom').count()==1)
+ check('no runtime errors',not errors);p.close()
+ for width in [360,390,768,1024,1366,1600,1920]:
+  p,errors=init(browser,(width,900));nav(p,'loan');p.wait_for_timeout(50)
+  check(f'no page overflow {width}',p.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
+  check(f'action buttons inside viewport {width}',p.locator('.city-actions').evaluate('e=>{const r=e.getBoundingClientRect();return r.left>=0 && r.right<=innerWidth+1}'))
+  check(f'no errors {width}',not errors);p.close()
+ browser.close()
+ print(f'{len(checks)} visual repair checks passed')
+ (ROOT/'docs/visual-repair-results.json').write_text(json.dumps({'passed':len(checks),'checks':checks},indent=2,ensure_ascii=False))
