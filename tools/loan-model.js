@@ -4,7 +4,7 @@
   const DAY=86400000;
   const money=n=>Math.round((n+Number.EPSILON)*100)/100;
   function fail(message){throw new Error(message);}
-  function number(value,name,min,max){const n=Number(value);if(value===''||value===null||!Number.isFinite(n)||n<min||n>max)fail('Проверьте '+name+'.');return n;}
+  function number(value,name,min,max){const n=Number(value);if(value===''||value===null||typeof value==='boolean'||!Number.isFinite(n)||n<min||n>max)fail('Проверьте '+name+'.');return n;}
   function date(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))fail('Дата должна быть в формате ГГГГ-ММ-ДД.');const d=new Date(value+'T00:00:00Z');if(!Number.isFinite(+d)||d.toISOString().slice(0,10)!==value||d.getUTCFullYear()<1900||d.getUTCFullYear()>2200)fail('Некорректная дата: '+value);return +d;}
   const iso=t=>new Date(t).toISOString().slice(0,10);
   function addMonths(value,n){const t=typeof value==='number'?value:date(value),d=new Date(t),day=d.getUTCDate();const y=d.getUTCFullYear(),m=d.getUTCMonth()+n;const last=new Date(Date.UTC(y,m+1,0)).getUTCDate();return Date.UTC(y,m,Math.min(day,last));}
@@ -25,6 +25,8 @@
     });
     c.rates=(raw.rates||[]).map(x=>{const t=date(x.date);if(t<start||t>maturity)fail('Изменение ставки должно попадать в срок кредита.');return {date:iso(t),rate:number(x.rate,'новую ставку',0,100)};});
     const seen=new Set();c.rates.forEach(x=>{if(seen.has(x.date))fail('Две ставки на одну дату.');seen.add(x.date);});
+    if(raw.repeat&&(typeof raw.repeat!=='object'||Array.isArray(raw.repeat)))fail('Некорректный регулярный взнос.');
+    if(raw.repeat)number(raw.repeat.amount,'регулярный взнос',0,1e10);
     if(raw.repeat&&Number(raw.repeat.amount)>0){
       const r=raw.repeat,from=date(r.from),to=date(r.to),every=number(r.every??1,'период повторения',1,12);
       if(!Number.isInteger(every)||from<start||to<from||to>maturity)fail('Проверьте даты и период повторяющегося взноса.');
@@ -41,10 +43,10 @@
   }
   function level(balance,accrued,from,rate,c,dates){
     let discount=1,sum=0,firstDiscount=1,last=from;
-    const future=dates.filter(t=>t>from);
-    if(!future.length)return money(balance+accrued);
-    for(let k=0;k<future.length;k++){
-      const end=future[k],ix=dates.indexOf(end),periodStart=ix?dates[ix-1]:date(c.start);
+    const first=dates.findIndex(t=>t>from);
+    if(first<0)return money(balance+accrued);
+    for(let ix=first;ix<dates.length;ix++){
+      const k=ix-first,end=dates[ix],periodStart=ix?dates[ix-1]:date(c.start);
       discount*=1+factor(last,end,rate,c.basis,periodStart,end);if(!k)firstDiscount=discount;sum+=1/discount;last=end;
     }
     return money((balance+accrued/firstDiscount)/sum);

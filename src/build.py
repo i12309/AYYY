@@ -7,13 +7,14 @@ Use --inline for the former bundled HTML (weather and artwork remain local asset
 from pathlib import Path
 import argparse
 import hashlib
+import posixpath
 import re
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css']
+CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css', '../tools/city.css']
 JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js',
-      'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', 'boot.js']
+      'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', '../tools/loan-model.js', '../tools/science-model.js', '../tools/common.js', '../tools/loan-view.js', '../tools/science-view.js', 'corporate-tools.js', 'boot.js']
 
 
 def build(destination: Path, inline: bool = False):
@@ -28,7 +29,7 @@ def build(destination: Path, inline: bool = False):
     else:
         def url(name):
             digest = hashlib.sha256((ROOT/name).read_bytes()).hexdigest()[:12]
-            return f'src/{name}?v={digest}'
+            return f'{posixpath.normpath("src/"+name)}?v={digest}' 
         styles = '\n  '.join(f'<link rel="stylesheet" href="{url(name)}">' for name in CSS)
         scripts = '\n  '.join(f'<script src="{url(name)}" defer></script>' for name in JS)
         html = template.replace('<style>/*__STYLES__*/</style>', styles)
@@ -38,9 +39,9 @@ def build(destination: Path, inline: bool = False):
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(html, encoding='utf-8')
     # Every output, including dist/, is a complete static site, not a broken HTML copy.
-    for name in ('assets', 'weather') + (() if inline else ('src',)):
+    for name in ('assets', 'weather', 'tools') + (() if inline else ('src',)):
         source, target = ROOT.parent/name, destination.parent/name
-        if source.is_dir() and source.resolve() != target.resolve():
+        if source.is_dir() and (source.resolve() != target.resolve()):
             shutil.copytree(source, target, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     (destination.parent/'.nojekyll').touch()
