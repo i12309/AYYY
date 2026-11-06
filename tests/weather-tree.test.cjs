@@ -42,4 +42,6 @@ test('Day-night artwork rules exist',css.includes('[data-phase=night] .ww-tree-w
 test('Weather snowfall rules exist',css.includes('[data-weather=snow] .ww-tree-snowcap'));
 test('Reduced motion available',css.includes('prefers-reduced-motion'));
 test('Artwork SVG is local',fs.existsSync(path.join(root,'weather/assets/tree-trunk.svg'))&&fs.existsSync(path.join(root,'weather/assets/tree-mountains.svg'))&&fs.existsSync(path.join(root,'weather/assets/tree-hill.svg')));
+test('Landscape buttons use querySelectorAll',view.includes("$$('[data-subject]').forEach"));
+test('Month buttons use querySelectorAll',view.includes("$$('[data-preview-month]').forEach"));
 console.log('AYYY weather tree: '+count+' PASS');

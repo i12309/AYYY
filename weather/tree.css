@@ -113,3 +113,7 @@
 }
 @media(max-width:380px){.ww-theme-switch button{min-width:70px}.ww-tree-wrap{left:79%;height:52%}}
 @media print{.ww-scene-switchbar,.ww-monthbar{display:none}.ww-tree-falling-leaf{display:none}}
+
+/* Richer hand-painted foliage without changing weather values. */
+.ww-app[data-subject=tree][data-season=autumn] .ww-tree-foliage-slot{filter:saturate(1.12)}
+.ww-app[data-subject=tree][data-season=spring] .ww-tree-foliage-slot{filter:saturate(1.08)}

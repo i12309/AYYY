@@ -148,12 +148,12 @@
       scene.update(scenePoint,sceneDay,state.override,{subject:state.subject,month:calendarMonth,latitude:state.city.latitude});
       scene.setPaused(state.paused);
       $('#ww-monthbar').hidden=state.subject!=='tree';$('#ww-tree-preview').hidden=state.subject!=='tree';
-      $('[data-subject]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.subject===state.subject)));
+      $$('[data-subject]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.subject===state.subject)));
       if(state.subject==='tree'&&root.AYYYWeatherTree){
         const month=Number(state.override.month)||calendarMonth;
         const season=root.AYYYWeatherTree.stage(month,state.city.latitude);
         $('#ww-month-caption').textContent=season.label+(state.override.month?' · предпросмотр':'');
-        $('[data-preview-month]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.previewMonth)===(Number(state.override.month)||0))));
+        $$('[data-preview-month]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.previewMonth)===(Number(state.override.month)||0))));
       }
       const phase=state.override.phase||M.phase(scenePoint,sceneDay),phrases={day:'День на светлой стороне.',night:'Свет остаётся с вами.',dawn:'Утро начинается с горизонта.',dusk:'День оставляет тёплый след.'};
       $('#ww-scene-subtitle').textContent=(state.subject==='tree'?'Дерево: ':'Маяк: ')+phrases[phase];

@@ -10,8 +10,8 @@ const STAGES=[
 {name:'Июнь',season:'summer',density:.97,label:'Пышная летняя крона',colors:['#578e6e','#7ea66f','#9bb66a','#4c836c']},
 {name:'Июль',season:'summer',density:1,label:'Лето · полная зелень',colors:['#4d8366','#82a46c','#adc078','#598f71']},
 {name:'Август',season:'summer',density:.93,label:'Позднее лето',colors:['#59876c','#96a46a','#c0ae69','#648b6d']},
-{name:'Сентябрь',season:'autumn',density:.77,label:'Начало золотой осени',colors:['#72936e','#c7ad65','#e5b05d','#a48e66','#cf9551']},
-{name:'Октябрь',season:'autumn',density:.50,label:'Золотые листья · листопад',colors:['#daa352','#e4bd67','#d7874c','#b67c43','#a9a06c']},
+{name:'Сентябрь',season:'autumn',density:.85,label:'Начало золотой осени',colors:['#72936e','#c7ad65','#e5b05d','#a48e66','#cf9551']},
+{name:'Октябрь',season:'autumn',density:.63,label:'Золотые листья · листопад',colors:['#daa352','#e4bd67','#d7874c','#b67c43','#a9a06c']},
 {name:'Ноябрь',season:'autumn',density:.11,label:'Поздний листопад',colors:['#ad7948','#c19157','#887a61','#d8aa70']},
 {name:'Декабрь',season:'winter',density:0,label:'Декабрь · деревья без листвы',colors:['#b2b8ad','#c2b9ad']}
 ];
@@ -30,14 +30,14 @@ function canopy(month,latitude=50){
  let washes='',leaves='',twigs='';
  for(let k=0;k<clusters.length;k++){
   const [cx,cy,rx,ry]=clusters[k],sz=.6+d*.55;
-  washes+=`<path d="M${cx-rx*sz} ${cy}Q${cx-rx*.91*sz} ${cy-ry*.85*sz} ${cx-rx*.28*sz} ${cy-ry*.94*sz}T${cx+rx*.49*sz} ${cy-ry*.65*sz}Q${cx+rx*sz} ${cy-ry*.38*sz} ${cx+rx*.92*sz} ${cy+ry*.17*sz}T${cx+rx*.20*sz} ${cy+ry*.87*sz}Q${cx-rx*.53*sz} ${cy+ry*.73*sz} ${cx-rx*sz} ${cy}Z" fill="${cs[k%cs.length]}" opacity="${(.085+d*.20).toFixed(2)}" filter="url(#ww-tree-paint)"/>`;
+  washes+=`<path d="M${cx-rx*sz} ${cy}Q${cx-rx*.91*sz} ${cy-ry*.85*sz} ${cx-rx*.28*sz} ${cy-ry*.94*sz}T${cx+rx*.49*sz} ${cy-ry*.65*sz}Q${cx+rx*sz} ${cy-ry*.38*sz} ${cx+rx*.92*sz} ${cy+ry*.17*sz}T${cx+rx*.20*sz} ${cy+ry*.87*sz}Q${cx-rx*.53*sz} ${cy+ry*.73*sz} ${cx-rx*sz} ${cy}Z" fill="${cs[k%cs.length]}" opacity="${(.12+d*.26).toFixed(2)}" filter="url(#ww-tree-paint)"/>`;
  }
- const count=Math.round(1020*d);
+ const count=Math.round(1520*d);
  for(let n=0;n<count;n++){
   const [cx,cy,rx,ry]=clusters[Math.floor(rnd()*clusters.length)],a=rnd()*Math.PI*2,rr=Math.sqrt(rnd())*(.83+d*.1);
   const x=cx+Math.cos(a)*rx*rr,y=cy+Math.sin(a)*ry*rr;
   if(x<55||x>850||y<118||y>640)continue;
-  const radius=(2.6+rnd()*6.5)*(d<.19?.64:1),rotate=Math.floor(rnd()*360);
+  const radius=(4.4+rnd()*8.6)*(d<.19?.64:1),rotate=Math.floor(rnd()*360);
   const color=cs[Math.floor(rnd()*cs.length)],alpha=(.42+rnd()*.42).toFixed(2);
   const shape=n%5===0?`<ellipse cx="0" cy="0" rx="${(radius*.62).toFixed(1)}" ry="${radius.toFixed(1)}"/>`:
    `<path d="M0 ${(-radius).toFixed(1)}Q${(radius*.91).toFixed(1)} ${(-radius*.6).toFixed(1)} ${radius.toFixed(1)} 0Q${(radius*.6).toFixed(1)} ${(radius*.75).toFixed(1)} 0 ${radius.toFixed(1)}Q${(-radius*.8).toFixed(1)} ${(radius*.4).toFixed(1)} ${(-radius).toFixed(1)} 0Q${(-radius*.56).toFixed(1)} ${(-radius*.72).toFixed(1)} 0 ${(-radius).toFixed(1)}Z"/>`;
