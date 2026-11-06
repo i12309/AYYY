@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='coast-6';
+  const VERSION='tree-1';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;
@@ -23,8 +23,9 @@
   function ensure(){
     if(loading)return loading;
     loading=(async()=>{
-      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true)]);
+      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('tree.css',true)]);
       if(!window.AYYYWeatherModel)await resource('model.js');
+      if(!window.AYYYWeatherTree)await resource('tree-art.js');
       if(!window.AYYYWeatherScene)await resource('scene.js');
       if(!window.AYYYWeather)await resource('view.js');
       if(!window.AYYYWeather?.mount)throw new Error('Weather module incomplete');
