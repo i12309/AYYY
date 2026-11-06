@@ -7,7 +7,7 @@ import shutil
 
 ROOT = Path(__file__).resolve().parent
 CSS = ['style.css', 'tools.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css']
-JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js', 'home-data.js', 'splash.js', 'connected.js', 'boot.js']
+JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js', 'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'boot.js']
 
 def build(destination: Path):
     template = (ROOT / 'template.html').read_text(encoding='utf-8')

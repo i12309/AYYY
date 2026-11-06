@@ -24,3 +24,57 @@ body[data-density=compact] .main-content{padding-top:20px}body[data-density=comp
 .overview-top .tiny-title{padding:0;text-align:left;min-width:0;gap:5px}
 #view:focus{outline:none}
 @media(max-width:760px){.sidebar{visibility:hidden}.nav-open .sidebar{visibility:visible}.hero-art{width:62%;right:-42px;top:16px}.ai-toolbar{flex-wrap:wrap}.ai-toolbar>span:last-child{margin-left:auto}.overview-card .overview-top{font-size:10px}.overview-bottom{font-size:10px}.service-card.compact .service-title{font-size:10px}}
+
+/* Gmail OAuth browser application; sensitive mailbox content is in memory only. */
+.gmail-page{max-width:1470px;margin:0 auto;padding-bottom:32px}
+.gmail-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:23px}
+.gmail-top h1{font:normal clamp(28px,3vw,40px)/1.2 Georgia,serif;color:var(--text);margin:0 0 6px}
+.gmail-top p{font-size:13px}
+.gmail-actions{display:flex;flex-wrap:wrap;gap:8px}
+.gmail-onboarding{max-width:790px;padding:22px;margin-bottom:18px}
+.gmail-onboarding h2{font-size:19px;margin-bottom:11px}
+.gmail-onboarding p{font-size:13px;line-height:1.6;margin-bottom:12px}
+.gmail-onboarding form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:16px 0}
+.gmail-onboarding form label{flex-basis:100%;margin-bottom:0}
+.gmail-onboarding input{flex:1;min-width:220px}
+.gmail-onboarding code{overflow-wrap:anywhere}
+.gmail-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0;font-size:12px;color:var(--muted)}
+.gmail-toolbar>div{display:flex;gap:8px}
+.gmail-folders{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.gmail-folders button{padding:10px 3px;font-size:13px;color:var(--muted)}
+.gmail-folders button.active{color:var(--text);border-bottom:2px solid var(--blue);font-weight:600}
+.gmail-search{display:flex;align-items:center;gap:8px;margin:13px 0 17px}
+.gmail-search input{flex:1;min-width:0}
+.gmail-columns{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(300px,1.25fr);gap:15px;min-height:390px}
+.gmail-columns .panel{padding:14px;min-width:0}
+.gmail-list{max-height:710px;overflow:auto}
+.gmail-list h2{font-size:14px;margin:5px 4px 12px}
+.gmail-mail-item{display:flex;width:100%;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;padding:12px 10px;color:var(--text);border:1px solid transparent;border-bottom-color:var(--line);border-radius:6px}
+.gmail-mail-item:hover,.gmail-mail-item.selected{background:var(--surface-2);border-color:var(--line)}
+.gmail-mail-item strong{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.gmail-mail-item>span{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.gmail-mail-item small{font-size:10px;line-height:1.5;color:var(--muted)}
+.gmail-list>[data-gmail-more]{margin:14px 6px}
+.gmail-reader{overflow:auto}
+.gmail-message h2{font-size:21px;line-height:1.4;overflow-wrap:anywhere}
+.gmail-message>p{margin-top:8px;margin-bottom:16px;line-height:1.6}
+.gmail-body{font:13px/1.65 "Segoe UI",Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;color:var(--text);margin:0;max-height:590px;overflow:auto}
+.gmail-empty{padding:45px 16px;text-align:center;color:var(--muted);font-size:14px}
+.gmail-empty p{margin-top:11px}
+.gmail-drafts{margin-top:17px;padding:17px}
+.gmail-drafts .panel-head{gap:12px}
+.gmail-drafts h2{font-size:15px}
+.gmail-draft-row{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:10px 0}
+.gmail-draft-row>button:first-child{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:5px;text-align:left}
+.gmail-draft-row strong{font-size:12px}
+.gmail-draft-row small{font-size:10px;color:var(--muted)}
+.gmail-page>.notice{margin:10px 0}
+.parcel-live-panel{margin-top:18px;max-width:100%;padding:20px}
+.parcel-live-panel .panel-head{align-items:flex-start}
+.parcel-live-panel .panel-head p{margin-top:7px;line-height:1.5}
+.parcel-live-panel #parcel-live-status{margin:11px 0;color:var(--muted)}
+.parcel-tracking-results{max-width:100%;overflow:hidden}
+.parcel-tracking-results iframe{max-width:100%;border-radius:7px}
+.ai-stream-preview{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto;margin:8px 0 0;color:var(--text);line-height:1.65}
+@media(max-width:880px){.gmail-columns{grid-template-columns:1fr}.gmail-top{flex-direction:column}.gmail-list{max-height:460px}}
+@media(max-width:560px){.gmail-onboarding form{display:block}.gmail-onboarding input{width:100%;margin:7px 0 10px}.gmail-toolbar{align-items:flex-start;flex-direction:column}.gmail-folders{gap:12px}.gmail-actions{width:100%}.gmail-page .panel{padding:13px}.parcel-live-panel .form-row{flex-wrap:wrap}}

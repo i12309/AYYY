@@ -111,7 +111,7 @@
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
     {id:'finance',name:'Валюты и рынки',desc:'Курсы, конвертер и индексы',icon:'chart',color:'green',group:'everyday',kind:'api',route:'finance'},
     {id:'parcels',name:'Мои посылки',desc:'Трек-номера под рукой',icon:'package',color:'orange',group:'everyday',kind:'link',route:'parcels'},
-    {id:'mail',name:'Почта',desc:'Продуманный почтовый кабинет',icon:'mail',color:'blue',group:'everyday',kind:'demo',route:'mail'},
+    {id:'mail',name:'Почта',desc:'Gmail по OAuth, чтение и отправка',icon:'mail',color:'blue',group:'everyday',kind:'connect',route:'mail'},
     {id:'calc',name:'Калькулятор',desc:'Посчитать быстро и точно',icon:'calculator',color:'blue',group:'tools',kind:'local',route:'tools',param:'calc'},
     {id:'percent',name:'Проценты',desc:'Скидки, доли и изменения',icon:'percent',color:'green',group:'tools',kind:'local',route:'tools',param:'percent'},
     {id:'converter',name:'Конвертер величин',desc:'Метры, градусы и мегабайты',icon:'ruler',color:'orange',group:'tools',kind:'local',route:'tools',param:'converter'},

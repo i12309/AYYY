@@ -207,29 +207,40 @@
     const data=app.getRates();
     return ['USD','EUR','GBP','CNY'].map(code=>`<article class="panel rate-card"><div class="rate-top"><span class="currency-avatar">${currencies[code].symbol}</span><span><strong>${code} / RUB</strong><small>${currencies[code].name}</small></span></div><div class="rate-value">${app.fmt(data[code],2)} <small>₽</small></div><div class="rate-foot">${data.live?'На '+esc(dateLabel(data.dates[code])):'Пример · не текущий курс'}</div></article>`).join('');
   }
+
+  // The TradingView widget supplies actual market data; no synthetic quotes.
   const markets=[
-    {id:'spx',name:'S&P 500',ticker:'SPX',price:5912.4,color:'#5687d8',url:'https://www.tradingview.com/symbols/SPX/',deltas:{day:0.0082,week:0.0146,month:0.0318}},
-    {id:'ndx',name:'NASDAQ 100',ticker:'NDX',price:20870.65,color:'#9472d1',url:'https://www.tradingview.com/symbols/NASDAQ-NDX/',deltas:{day:0.0113,week:0.0221,month:0.0457}},
-    {id:'imoex',name:'Индекс Мосбиржи',ticker:'IMOEX',price:2765.18,color:'#5baa90',url:'https://www.tradingview.com/symbols/MOEX-IMOEX/',deltas:{day:-0.0041,week:0.0087,month:-0.0172}}
+    {id:'spx',name:'S&P 500',ticker:'SP:SPX',url:'https://www.tradingview.com/symbols/SPX/'},
+    {id:'ndx',name:'NASDAQ 100',ticker:'NASDAQ:NDX',url:'https://www.tradingview.com/symbols/NASDAQ-NDX/'},
+    {id:'imoex',name:'Индекс Мосбиржи',ticker:'MOEX:IMOEX',url:'https://www.tradingview.com/symbols/MOEX-IMOEX/'}
   ];
-  function seriesFor(market,period) {
-    const count=37,delta=market.deltas[period],first=market.price/(1+delta),amp=market.price*({day:.0021,week:.0054,month:.009}[period]);
-    return Array.from({length:count},(_,i)=>first+(market.price-first)*i/(count-1)+Math.sin(i/(count-1)*Math.PI)*(Math.sin(i*1.4)+Math.cos(i*.65)*.7)*amp);
-  }
-  function linePath(values,width,height,pad=8) {
-    const min=Math.min(...values),max=Math.max(...values),range=Math.max(.01,max-min);
-    return values.map((value,i)=>`${i?'L':'M'}${(pad+i/(values.length-1)*(width-pad*2)).toFixed(1)},${(height-pad-(value-min)/range*(height-pad*2)).toFixed(1)}`).join(' ');
-  }
+  const marketInterval=()=>({day:'15',week:'60',month:'D'})[selectedPeriod]||'D';
   function marketDetail() {
-    const market=markets.find(m=>m.id===selectedMarket)||markets[0],values=seriesFor(market,selectedPeriod),delta=market.deltas[selectedPeriod],width=640,height=210,pad=20,path=linePath(values,width,height,pad),last=path.match(/L([\d.]+),([\d.]+)$/),min=Math.min(...values),max=Math.max(...values);
-    const ticks={day:['10:00','12:00','14:00','16:00','18:00'],week:['Пн','Вт','Ср','Чт','Пт'],month:['1-я неделя','2-я неделя','3-я неделя','4-я неделя']}[selectedPeriod];
-    return `<div class="data-market-head"><div><div class="data-market-name">${esc(market.name)} <span class="badge demo">Демо</span></div><div class="data-index-value">${app.fmt(market.price,2)} <span class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${app.fmt(delta*100,2)}%</span></div></div><div class="segmented" aria-label="Период демонстрационного графика">${[['day','1Д'],['week','1Н'],['month','1М']].map(([id,label])=>`<button data-market-period="${id}" class="${selectedPeriod===id?'active':''}" aria-pressed="${selectedPeriod===id}">${label}</button>`).join('')}</div></div><svg class="market-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Демонстрационный график ${esc(market.name)}, ${selectedPeriod==='day'?'день':selectedPeriod==='week'?'неделя':'месяц'}. Не рыночные данные."><defs><linearGradient id="data-market-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${market.color}" stop-opacity=".2"/><stop offset="1" stop-color="${market.color}" stop-opacity="0"/></linearGradient></defs>${[20,75,130,190].map((y,i)=>`<line x1="0" y1="${y}" x2="640" y2="${y}" stroke="var(--line)" stroke-dasharray="3 5"/><text x="0" y="${y-5}" fill="var(--muted)" font-size="9">${app.fmt(max-(max-min)*i/3,0)}</text>`).join('')}<path d="${path} L620,210 L20,210 Z" fill="url(#data-market-fill)"/><path d="${path}" fill="none" stroke="${market.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>${last?`<circle cx="${last[1]}" cy="${last[2]}" r="4" fill="${market.color}" stroke="var(--surface)" stroke-width="2"/>`:''}</svg><div class="chart-caption">${ticks.map(t=>`<span>${t}</span>`).join('')}</div><div class="data-market-disclaimer"><span>Образец графика, не котировка</span><a href="${market.url}" target="_blank" rel="noopener noreferrer">Открыть настоящий график ${app.icon('external',12)}</a></div>`;
+    const market=markets.find(m=>m.id===selectedMarket)||markets[0];
+    return `<div class="data-market-head"><div><div class="data-market-name">${esc(market.name)} <span class="badge live">Данные TradingView</span></div><p class="small muted" style="margin-top:8px">График загружается от TradingView. Котировки могут быть задержаны по правилам биржи.</p></div><div class="segmented" aria-label="Интервал графика">${[['day','1Д'],['week','1Н'],['month','1М']].map(([id,label])=>`<button data-market-period="${id}" class="${selectedPeriod===id?'active':''}" aria-pressed="${selectedPeriod===id}">${label}</button>`).join('')}</div></div>
+    <div id="ayyy-tv-widget" class="ayyy-tradingview-host" aria-label="График индекса ${esc(market.name)} от TradingView"><p class="muted">Подключение графика TradingView…</p></div>
+    <div class="data-market-disclaimer">Источник: <a href="${market.url}" target="_blank" rel="noopener noreferrer">Открыть ${esc(market.name)} на TradingView ${app.icon('external',12)}</a>. Если внешний виджет заблокирован браузером, используйте ссылку.</div>`;
   }
   function marketTable() {
-    return `<table class="market-list"><thead><tr><th>Индекс</th><th>Пример значения</th><th>Изменение</th><th class="data-spark-column">График</th><th><span class="data-visually-hidden">Открыть источник</span></th></tr></thead><tbody>${markets.map(market=>{
-      const delta=market.deltas[selectedPeriod];
-      return `<tr class="${selectedMarket===market.id?'data-market-selected':''}"><td><button class="data-market-select" data-market-index="${market.id}" aria-pressed="${selectedMarket===market.id}"><strong>${esc(market.name)}</strong><small>${esc(market.ticker)}</small></button></td><td>${app.fmt(market.price,2)}</td><td class="${delta>=0?'positive':'negative'}">${delta>=0?'+':''}${app.fmt(delta*100,2)}%</td><td class="data-spark-column"><svg class="mini-spark" viewBox="0 0 70 24" aria-hidden="true"><path d="${linePath(seriesFor(market,selectedPeriod),70,24,2)}" fill="none" stroke="${market.color}" stroke-width="1.6"/></svg></td><td><a class="icon-btn" href="${market.url}" target="_blank" rel="noopener noreferrer" aria-label="${esc(market.name)} на TradingView">${app.icon('external',14)}</a></td></tr>`;
-    }).join('')}</tbody></table>`;
+    return `<div class="market-symbol-picker" role="group" aria-label="Выбрать рыночный индекс">${markets.map(m=>`<button type="button" class="market-symbol-choice ${m.id===selectedMarket?'is-active':''}" data-market-index="${m.id}" aria-pressed="${m.id===selectedMarket}">${esc(m.name)} ${app.icon('arrow-right',14)}</button>`).join('')}</div>`;
+  }
+
+  function loadTradingView() {
+    if(app.route!=='finance')return;
+    const target=document.querySelector('#ayyy-tv-widget');
+    if(!target||!target.isConnected)return;
+    const market=markets.find(m=>m.id===selectedMarket)||markets[0];
+    // Third-party code must not run in the portal origin (Gmail tokens are private).
+    // A sandboxed srcdoc iframe gets an opaque origin: no parent DOM or storage access.
+    const iframe=document.createElement('iframe');
+    iframe.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    iframe.setAttribute('referrerpolicy','no-referrer');
+    iframe.setAttribute('title','График '+market.name+' от TradingView');
+    iframe.className='ayyy-tv-frame';
+    iframe.style.width='100%';iframe.style.height='100%';iframe.style.border='0';
+    const config={autosize:true,symbol:market.ticker,interval:marketInterval(),timezone:'Etc/UTC',theme:'light',style:'1',locale:'ru',backgroundColor:'#fffefc',gridColor:'rgba(32,54,64,0.07)',allow_symbol_change:false,hide_side_toolbar:true,hide_top_toolbar:false,withdateranges:true,save_image:false,calendar:false,details:false,hotlist:false};
+    iframe.srcdoc='<!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><style>html,body{margin:0;height:100%;background:#fffefc} .tradingview-widget-container{height:100%;width:100%}</style></head><body><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>'+JSON.stringify(config)+'</'+'script></div></body></html>';
+    target.replaceChildren(iframe);
   }
   function savedConversion() {
     const saved=app.get('finance.convert',{});
@@ -244,7 +255,7 @@
     render(){
       const data=app.getRates(),conversion=savedConversion();
       const options=selected=>codes.map(code=>`<option value="${code}" ${code===selected?'selected':''}>${code} · ${currencies[code].name}</option>`).join('');
-      return `<div class="data-finance">${app.heading('Валюты и рынки','Справочные курсы и удобный пересчёт в одном месте.',`<button class="btn" data-rates-refresh ${data.pending?'disabled':''}>${app.icon('refresh',17)} <span>${data.pending?'Обновляем…':'Обновить курсы'}</span></button>`)}<div id="data-rates-status">${ratesStatus()}</div><div class="rate-cards" id="data-rate-cards">${rateCards()}</div><div class="data-finance-layout"><section class="panel data-market-panel"><div class="panel-head"><h2>Биржевые индексы</h2><span class="badge demo">Демонстрационный виджет</span></div><div id="data-market-detail">${marketDetail()}</div><div id="data-market-table">${marketTable()}</div><p class="data-market-note">Числа и графики в этом блоке иллюстративные. Ссылки открывают соответствующие индексы на TradingView.</p></section><aside class="panel data-converter"><div class="panel-head"><h2>Конвертер валют</h2>${app.icon('coins',20)}</div><label class="data-field-label" for="data-amount">Сумма</label><input class="field data-amount" id="data-amount" value="${esc(conversion.amount)}" inputmode="decimal" maxlength="30" autocomplete="off"><div class="data-currency-pair"><label><span class="data-field-label">Из</span><select class="field" id="data-from">${options(conversion.from)}</select></label><button class="icon-btn data-currency-swap" id="data-swap" title="Поменять валюты местами" aria-label="Поменять валюты местами">${app.icon('refresh',17)}</button><label><span class="data-field-label">В</span><select class="field" id="data-to">${options(conversion.to)}</select></label></div><div class="convert-result" id="data-convert-result" aria-live="polite"></div><div class="market-source" id="data-conversion-source">${conversionSource()}</div><p class="data-converter-note">Пересчёт по справочным курсам. Курс банка и комиссии могут отличаться.</p><div class="data-rate-provider"><span class="data-provider-icon">${app.icon('globe',19)}</span><div><strong>Frankfurter</strong><p>Дневные курсы из официальных источников.</p><a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer">О данных ${app.icon('external',12)}</a></div></div></aside></div><div class="market-source data-finance-foot">${app.icon('shield',14)} <span>Конвертер работает в браузере. При обновлении запрашиваются только курсы, введённая сумма никуда не передаётся.</span></div></div>`;
+      return `<div class="data-finance">${app.heading('Валюты и рынки','Справочные курсы и удобный пересчёт в одном месте.',`<button class="btn" data-rates-refresh ${data.pending?'disabled':''}>${app.icon('refresh',17)} <span>${data.pending?'Обновляем…':'Обновить курсы'}</span></button>`)}<div id="data-rates-status">${ratesStatus()}</div><div class="rate-cards" id="data-rate-cards">${rateCards()}</div><div class="data-finance-layout"><section class="panel data-market-panel"><div class="panel-head"><h2>Биржевые индексы</h2><span class="badge live">TradingView</span></div><div id="data-market-detail">${marketDetail()}</div><div id="data-market-table">${marketTable()}</div><p class="data-market-note">Котировки и графики получаем из официального виджета TradingView. Возможна задержка данных.</p></section><aside class="panel data-converter"><div class="panel-head"><h2>Конвертер валют</h2>${app.icon('coins',20)}</div><label class="data-field-label" for="data-amount">Сумма</label><input class="field data-amount" id="data-amount" value="${esc(conversion.amount)}" inputmode="decimal" maxlength="30" autocomplete="off"><div class="data-currency-pair"><label><span class="data-field-label">Из</span><select class="field" id="data-from">${options(conversion.from)}</select></label><button class="icon-btn data-currency-swap" id="data-swap" title="Поменять валюты местами" aria-label="Поменять валюты местами">${app.icon('refresh',17)}</button><label><span class="data-field-label">В</span><select class="field" id="data-to">${options(conversion.to)}</select></label></div><div class="convert-result" id="data-convert-result" aria-live="polite"></div><div class="market-source" id="data-conversion-source">${conversionSource()}</div><p class="data-converter-note">Пересчёт по справочным курсам. Курс банка и комиссии могут отличаться.</p><div class="data-rate-provider"><span class="data-provider-icon">${app.icon('globe',19)}</span><div><strong>Frankfurter</strong><p>Дневные курсы из официальных источников.</p><a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer">О данных ${app.icon('external',12)}</a></div></div></aside></div><div class="market-source data-finance-foot">${app.icon('shield',14)} <span>Конвертер работает в браузере. При обновлении запрашиваются только курсы, введённая сумма никуда не передаётся.</span></div></div>`;
     },
     mount(){
       const root=document.querySelector('.data-finance'),amount=root.querySelector('#data-amount'),from=root.querySelector('#data-from'),to=root.querySelector('#data-to'),result=root.querySelector('#data-convert-result');
@@ -263,15 +274,15 @@
       const click=event=>{
         if(event.target.closest('[data-rates-refresh]'))app.refreshRates();
         if(event.target.closest('#data-swap')){const temp=from.value;from.value=to.value;to.value=temp;calculate();}
-        const period=event.target.closest('[data-market-period]');if(period&&['day','week','month'].includes(period.dataset.marketPeriod)){selectedPeriod=period.dataset.marketPeriod;root.querySelector('#data-market-detail').innerHTML=marketDetail();root.querySelector('#data-market-table').innerHTML=marketTable();}
-        const market=event.target.closest('[data-market-index]');if(market&&markets.some(m=>m.id===market.dataset.marketIndex)){selectedMarket=market.dataset.marketIndex;root.querySelector('#data-market-detail').innerHTML=marketDetail();root.querySelector('#data-market-table').innerHTML=marketTable();}
+        const period=event.target.closest('[data-market-period]');if(period&&['day','week','month'].includes(period.dataset.marketPeriod)){selectedPeriod=period.dataset.marketPeriod;root.querySelector('#data-market-detail').innerHTML=marketDetail();root.querySelector('#data-market-table').innerHTML=marketTable();loadTradingView();}
+        const market=event.target.closest('[data-market-index]');if(market&&markets.some(m=>m.id===market.dataset.marketIndex)){selectedMarket=market.dataset.marketIndex;root.querySelector('#data-market-detail').innerHTML=marketDetail();root.querySelector('#data-market-table').innerHTML=marketTable();loadTradingView();}
       };
       const input=event=>{if([amount,from,to].includes(event.target))calculate();};
       const update=()=>{
         if(!root.isConnected||app.route!=='finance')return;
         const data=app.getRates(),button=root.querySelector('[data-rates-refresh]');button.disabled=data.pending;button.querySelector('span').textContent=data.pending?'Обновляем…':'Обновить курсы';root.querySelector('#data-rate-cards').innerHTML=rateCards();root.querySelector('#data-rates-status').innerHTML=ratesStatus();root.querySelector('#data-conversion-source').innerHTML=conversionSource();calculate(false);
       };
-      root.addEventListener('click',click);root.addEventListener('input',input);root.addEventListener('change',input);document.addEventListener('ayyy:rates',update);calculate(false);
+      root.addEventListener('click',click);root.addEventListener('input',input);root.addEventListener('change',input);document.addEventListener('ayyy:rates',update);calculate(false);loadTradingView();
       return ()=>{root.removeEventListener('click',click);root.removeEventListener('input',input);root.removeEventListener('change',input);document.removeEventListener('ayyy:rates',update);};
     }
   });

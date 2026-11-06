@@ -2,7 +2,7 @@
   'use strict';
   const a=window.AYYY,e=a.escape,i=a.icon;
   const defaultAI={mode:'demo',endpoint:'',model:''};
-  let aiActive=a.get('aiActive',''),aiController=null,aiPending=false;
+  let aiActive=a.get('aiActive',''),aiController=null,aiPending=false,aiStreamText='';
   const chats=()=>a.get('aiChats',[]);
   const currentChat=()=>chats().find(c=>c.id===aiActive);
   const prompts=[['calendar','Помоги составить план дня'],['lightbulb','Объясни сложное простыми словами'],['sparkles','Придумай идею для проекта'],['type','Напиши короткий текст']];
@@ -20,14 +20,89 @@
   function endpointHost(value){try{return new URL(value).host;}catch{return'ваш API';}}
   function endpointOrigin(value){try{return new URL(value).origin;}catch{return'';}}
   function bindPrompts(){document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{const q=document.querySelector('#ai-query');q.value=b.dataset.prompt;q.focus();});}
-  function refreshMessages(){const el=document.querySelector('#ai-messages');if(!el)return;el.innerHTML=aiMessagesHTML()+(aiPending?`<div class="ai-connecting loading-dots">${i('sparkles',15)} ${a.get('aiConfig',defaultAI).mode==='demo'?'Показываем пример ответа':'Ожидаем ответ модели'}</div>`:'');el.scrollTop=el.scrollHeight;bindPrompts();const submit=document.querySelector('#ai-submit');if(submit)submit.disabled=aiPending;document.querySelector('#ai-stop')?.classList.toggle('hidden',!aiPending||a.get('aiConfig',defaultAI).mode==='demo');}
+  function refreshMessages(){const el=document.querySelector('#ai-messages');if(!el)return;el.innerHTML=aiMessagesHTML()+(aiPending?`<div class="ai-connecting loading-dots">${i('sparkles',15)} ${a.get('aiConfig',defaultAI).mode==='demo'?'Показываем пример ответа':'Ожидаем ответ модели'}<pre id="ai-stream-preview" class="ai-stream-preview">${e(aiStreamText)}</pre></div>`:'');el.scrollTop=el.scrollHeight;bindPrompts();const submit=document.querySelector('#ai-submit');if(submit)submit.disabled=aiPending;document.querySelector('#ai-stop')?.classList.toggle('hidden',!aiPending||a.get('aiConfig',defaultAI).mode==='demo');}
   function addMessage(role,content,extra={}){const list=chats();let chat=list.find(c=>c.id===aiActive);if(!chat){chat={id:crypto.randomUUID?.()||String(Date.now()),title:content.slice(0,45),messages:[]};aiActive=chat.id;list.unshift(chat);a.set('aiActive',aiActive);}chat.messages.push({role,content,...extra});chat.messages=chat.messages.slice(-40);chat.updatedAt=new Date().toISOString();a.set('aiChats',list.slice(0,30));return chat;}
-  async function sendAI(){if(aiPending)return;const input=document.querySelector('#ai-query');if(!input)return;const message=input.value.trim();if(!message)return;const cfg=a.get('aiConfig',defaultAI);if(cfg.mode==='live'&&(!cfg.endpoint||!cfg.model)){aiSettings();return;}
-    const chat=addMessage('user',message);const chatID=chat.id;input.value='';aiPending=true;refreshMessages();
-    try{if(cfg.mode==='demo'){await new Promise(resolve=>setTimeout(resolve,500));if(a.route==='ai'&&aiActive===chatID)addMessage('assistant',demoResponse(message),{demo:true});}
-      else{aiController=new AbortController();const timer=setTimeout(()=>aiController?.abort(),60000);try{const response=await fetch(apiURL(cfg.endpoint),{method:'POST',headers:{'Content-Type':'application/json',...(a.secrets.key?{Authorization:'Bearer '+a.secrets.key}:{})},body:JSON.stringify({model:cfg.model,messages:chat.messages.filter(m=>!m.demo&&!m.error).map(({role,content})=>({role,content})),stream:false}),signal:aiController.signal});if(!response.ok)throw new Error(response.status===401||response.status===403?'API отклонил доступ. Проверьте ключ и разрешение на модель.':`API вернул HTTP ${response.status}. Проверьте адрес и настройки сервера.`);const data=await response.json();const answer=data?.choices?.[0]?.message?.content;if(typeof answer!=='string'||!answer.trim())throw new Error('API вернул ответ в неподдерживаемом формате. Ожидается OpenAI-совместимый chat/completions.');if(aiActive===chatID)addMessage('assistant',answer.slice(0,60000));}finally{clearTimeout(timer);}}
-    }catch(error){if(a.route==='ai'&&aiActive===chatID)addMessage('assistant',error.name==='AbortError'?'Запрос остановлен или превышено время ожидания (60 секунд).':error instanceof TypeError?'Не удалось связаться с API. Проверьте доступность адреса, HTTPS и разрешение CORS для этого сайта. Ключ не сохраняется после перезагрузки.':error.message,{error:true});}
-    finally{aiPending=false;aiController=null;if(a.route==='ai'&&aiActive===chatID){refreshMessages();const el=document.querySelector('#ai-chat-list');if(el)el.innerHTML=chats().map(c=>`<button class="ai-conversation ${c.id===aiActive?'active':''}" data-chat="${e(c.id)}">${i('note',14)}<span>${e(c.title.slice(0,27))}</span></button>`).join('');document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{aiActive=b.dataset.chat;a.set('aiActive',aiActive);a.navigate('ai');});}}
+
+  // Read OpenAI-compatible SSE streams. Some compatible providers respond
+  // with regular JSON even when stream:true; both response types are supported.
+  async function fetchAICompletion(cfg,messages,signal,onChunk){
+    const response=await fetch(apiURL(cfg.endpoint),{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...(a.secrets.key?{Authorization:'Bearer '+a.secrets.key}:{})},
+      body:JSON.stringify({model:cfg.model,messages,stream:true}),
+      signal
+    });
+    if(!response.ok)throw new Error(response.status===401||response.status===403?'API отклонил доступ. Проверьте ключ и разрешение на модель.':`API вернул HTTP ${response.status}. Проверьте адрес и настройки сервера.`);
+    const contentType=response.headers.get('content-type')||'';
+    if(contentType.includes('text/event-stream')&&response.body?.getReader){
+      const reader=response.body.getReader(),decoder=new TextDecoder();
+      let buffer='',answer='';
+      const handle=block=>{
+        for(const line of block.split(/\r?\n/)){
+          if(!line.startsWith('data:'))continue;
+          const raw=line.slice(5).trim();if(!raw||raw==='[DONE]')continue;
+          let event;try{event=JSON.parse(raw);}catch{continue;}
+          if(event.error)throw new Error(typeof event.error==='string'?event.error:event.error.message||'Ошибка потоковой модели');
+          const content=event.choices?.[0]?.delta?.content;
+          if(typeof content==='string'&&content){answer=(answer+content).slice(0,60000);onChunk(answer);}
+        }
+      };
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        buffer+=decoder.decode(value,{stream:true});
+        const chunks=buffer.split(/\r?\n\r?\n/);buffer=chunks.pop()||'';
+        chunks.forEach(handle);
+        if(answer.length>=60000){await reader.cancel().catch(()=>{});break;}
+      }
+      if(buffer.trim())handle(buffer);
+      if(!answer.trim())throw new Error('API не вернул текст в потоковом ответе.');
+      return answer;
+    }
+    const data=await response.json();
+    const answer=data?.choices?.[0]?.message?.content;
+    if(typeof answer!=='string'||!answer.trim())throw new Error('API вернул неподдерживаемый формат. Ожидается OpenAI-совместимый chat/completions.');
+    onChunk(answer.slice(0,60000));
+    return answer.slice(0,60000);
+  }
+  async function sendAI(){
+    if(aiPending)return;
+    const input=document.querySelector('#ai-query');if(!input)return;
+    const message=input.value.trim();if(!message)return;
+    const cfg=a.get('aiConfig',defaultAI);
+    if(cfg.mode==='live'&&(!cfg.endpoint||!cfg.model)){aiSettings();return;}
+    const chat=addMessage('user',message),chatID=chat.id;
+    input.value='';aiPending=true;aiStreamText='';refreshMessages();
+    try {
+      if(cfg.mode==='demo'){
+        await new Promise(resolve=>setTimeout(resolve,500));
+        if(a.route==='ai'&&aiActive===chatID)addMessage('assistant',demoResponse(message),{demo:true});
+      }else{
+        aiController=new AbortController();
+        const controller=aiController,timer=setTimeout(()=>controller.abort(),60000);
+        try{
+          const answer=await fetchAICompletion(cfg,chat.messages.filter(m=>!m.demo&&!m.error).map(({role,content})=>({role,content})),controller.signal,text=>{
+            aiStreamText=text;
+            const preview=document.querySelector('#ai-stream-preview');
+            if(preview&&a.route==='ai'&&aiActive===chatID){preview.textContent=text;preview.closest('#ai-messages')?.scrollTo({top:1000000,behavior:'instant'});}
+          });
+          if(a.route==='ai'&&aiActive===chatID)addMessage('assistant',answer);
+        }finally{clearTimeout(timer);}
+      }
+    }catch(error){
+      if(a.route==='ai'&&aiActive===chatID){
+        if(error?.name==='AbortError'&&aiStreamText.trim())addMessage('assistant',aiStreamText+'\n\n[Генерация остановлена]');
+        else addMessage('assistant',error?.name==='AbortError'?'Запрос остановлен или превышено время ожидания (60 секунд).':error instanceof TypeError?'Не удалось связаться с API. Проверьте адрес, HTTPS и CORS. Ключ хранится только в памяти вкладки.':String(error?.message||error),{error:true});
+      }
+    }finally{
+      aiPending=false;aiController=null;aiStreamText='';
+      if(a.route==='ai'&&aiActive===chatID){
+        refreshMessages();
+        const el=document.querySelector('#ai-chat-list');
+        if(el)el.innerHTML=chats().map(c=>`<button class="ai-conversation ${c.id===aiActive?'active':''}" data-chat="${e(c.id)}">${i('note',14)}<span>${e(c.title.slice(0,27))}</span></button>`).join('');
+        document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{aiActive=b.dataset.chat;a.set('aiActive',aiActive);a.navigate('ai');});
+      }
+    }
   }
   function apiURL(endpoint){return endpoint.replace(/\/+$/,'').endsWith('/chat/completions')?endpoint.replace(/\/+$/,''):endpoint.replace(/\/+$/,'')+'/chat/completions';}
   function demoResponse(message){if(/план|день|успев|дело/i.test(message))return 'Давайте оставим в дне место для главного.\n\n1. Выберите одно дело, после которого день уже можно считать удачным.\n2. Отведите ему первые 25 минут без переключений. Таймер фокуса есть в AYYY.\n3. Запишите ещё два небольших дела в заметки.\n4. Оставьте свободный промежуток и время на прогулку.\n\nЭто заранее подготовленный пример ответа. Для персонального плана подключите свою модель в настройках.';
@@ -37,31 +112,5 @@
   function aiSettings(){const cfg=a.get('aiConfig',defaultAI);a.modal('Подключение ИИ',`<form id="ai-config-form"><div class="segmented" style="width:100%"><label class="chip" style="flex:1"><input type="radio" name="ai-mode" value="demo" ${cfg.mode==='demo'?'checked':''}> Демонстрация</label><label class="chip" style="flex:1"><input type="radio" name="ai-mode" value="live" ${cfg.mode==='live'?'checked':''}> Свой API</label></div><label class="field-label" for="ai-endpoint">Базовый адрес совместимого API</label><input class="field mono" id="ai-endpoint" type="url" value="${e(cfg.endpoint)}" placeholder="https://your-api.example/v1"><label class="field-label" for="ai-model">Название модели</label><input class="field mono" id="ai-model" value="${e(cfg.model)}" placeholder="Имя модели на вашем сервере" maxlength="150"><label class="field-label" for="ai-key">Ваш ключ, если сервер требует авторизацию</label><input class="field mono" id="ai-key" type="password" autocomplete="off" placeholder="${a.secrets.key?'Ключ задан для текущего сервера. Пустое поле сохранит его.':'Останется только в памяти этой вкладки'}" value=""><p class="small muted" style="margin-top:13px">Поддерживается формат chat/completions, в том числе совместимые серверы vLLM и Ollama. Сервер должен разрешать обращения с домена портала (CORS). Указывайте только доверенный адрес: ему будут отправлены сообщения и введённый ключ.</p><div class="notice" style="margin-top:14px">${i('lock',16)}<span>Ключ не записывается в файл или хранилище браузера. При смене сервера прежний ключ очищается: введите ключ для нового адреса. Общий ключ публичного сервиса нужно держать на сервере.</span></div><p id="ai-config-error" class="small" style="color:var(--red);margin-top:12px" role="alert"></p><div class="modal-footer"><button class="btn" type="button" data-close-modal>Отмена</button><button class="btn primary">Применить</button></div></form>`);document.querySelector('#ai-config-form').onsubmit=event=>{event.preventDefault();const mode=document.querySelector('input[name="ai-mode"]:checked').value;const endpoint=document.querySelector('#ai-endpoint').value.trim(),model=document.querySelector('#ai-model').value.trim();if(mode==='live'){try{const u=new URL(endpoint);if(u.username||u.password||u.hash||u.search)throw new Error('Укажите адрес без логина, пароля, параметров или #.');if(u.protocol!=='https:'&&!(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname)))throw new Error('Для внешнего API используйте HTTPS. HTTP допускается для localhost.');if(!model)throw new Error('Укажите название модели.');}catch(error){document.querySelector('#ai-config-error').textContent=error.message==='Invalid URL'?'Проверьте адрес API.':error.message;return;}}const enteredKey=document.querySelector('#ai-key').value.trim();a.secrets.key=enteredKey||(endpointOrigin(endpoint)===endpointOrigin(cfg.endpoint)?a.secrets.key:'');a.set('aiConfig',{mode,endpoint,model});a.closeModal();if(a.route==='ai')a.render();a.toast(mode==='demo'?'Демонстрационный режим включён':'Настройки сохранены. API будет вызван при отправке сообщения.');};}
   a.aiSettings=aiSettings;
 
-  const defaultMail=[
-    {id:'welcome',sender:'Команда AYYY',initials:'AY',email:'hello@ayyy.example',subject:'Добро пожаловать на ваш маяк',preview:'Пусть в интернете станет немного спокойнее.',time:'10:24',unread:true,starred:true,folder:'inbox',body:'Привет!\n\nИнтернет большой, а внимание — ценное. Мы придумали AYYY как спокойное место, с которого удобно начинать свой день.\n\nПоищите ответ, откройте калькулятор, сохраните мысль или немного порисуйте. Всё нужное постепенно соберётся здесь — на вашей стороне экрана.\n\nПопробуйте закрепить несколько сервисов звёздочкой. Они появятся в быстром доступе на главной.\n\nХорошего вам дня,\nКоманда AYYY\n\nP.S. Это демонстрационное письмо. Аккаунт почты не подключён.'},
-    {id:'ideas',sender:'Студия идей',initials:'СИ',email:'ideas@studio.example',subject:'Немного вдохновения для нового проекта',preview:'Три направления, с которых можно начать.',time:'09:15',unread:true,starred:false,folder:'inbox',body:'Здравствуйте!\n\nСобрали небольшой список идей для будущих сервисов:\n\n• Локальные QR-коды для ссылок и контактов.\n• Мировые часы для созвонов с друзьями.\n• Сжатие изображений без загрузки на сервер.\n\nВсе три направления хорошо подходят для браузерных инструментов.\n\nВложили демонстрационный текстовый план — его можно скачать.\n\nЭто вымышленное письмо для знакомства с интерфейсом.',attachment:true},
-    {id:'parcel-demo',sender:'Почтовый маршрут',initials:'ПМ',email:'delivery@route.example',subject:'Демонстрация уведомления о доставке',preview:'Ваша посылка готовится к следующему этапу.',time:'Вчера',unread:false,starred:false,folder:'inbox',body:'Это пример письма, которое могло бы приходить от службы доставки.\n\nВ рабочем сервисе из такого письма удобно добавить трек-номер в раздел «Мои посылки».\n\nВ этом макете нет реального отправления или заказа. Номер для примера не создавался.'},
-    {id:'reading',sender:'Клуб любопытных',initials:'КЛ',email:'read@club.example',subject:'Почему маяки светят по-разному?',preview:'Небольшая тема для вечернего чтения.',time:'Вчера',unread:false,starred:true,folder:'inbox',body:'Здравствуйте!\n\nСегодня предлагаем разобраться, как моряки узнают маяки по рисунку света.\n\nЭто хороший запрос для раздела «Поиск»: можно найти статьи, изображения и видео об устройстве линз и истории навигации.\n\nПисьмо вымышленное и показывает только дизайн чтения.'},
-    {id:'weekend',sender:'Мастерская',initials:'М',email:'hello@workshop.example',subject:'Пять минут на маленький рисунок',preview:'Не нужен повод, чтобы попробовать.',time:'Пн',unread:false,starred:false,folder:'inbox',body:'Откройте мастерскую AYYY, выберите цвет и попробуйте нарисовать дом у моря.\n\nСохранять результат необязательно. Иногда удовольствие — в самом процессе.\n\nЭто демонстрационное письмо.'}
-  ];
-  const mailItems=()=>a.get('mailDemo',defaultMail),drafts=()=>a.get('mailDrafts',[]);
-  let mailFolder='inbox',mailSelected='welcome';
-  function filteredMail(){const items=mailItems();if(mailFolder==='drafts')return drafts().map(d=>({...d,sender:'Черновик',preview:d.body,time:'Локально'}));return items.filter(m=>mailFolder==='starred'?m.starred&&m.folder!=='archive':m.folder===mailFolder);}
-  function mailDetail(m){if(!m)return`<div class="empty-state">${i('mail')}<h3>Здесь спокойно</h3><p>Выберите письмо из списка.</p></div>`;if(mailFolder==='drafts')return `<div class="mail-detail-actions"><span class="badge">Черновик · не отправлен</span><button class="icon-btn" id="mail-delete-draft" title="Удалить черновик">${i('trash',16)}</button></div><h2>${e(m.subject||'Без темы')}</h2><p class="small muted">Кому: ${e(m.to||'не указан')}</p><div class="mail-body" style="margin-top:25px">${e(m.body)}</div><button class="btn soft" id="mail-edit-draft" style="margin-top:24px">${i('edit',15)} Продолжить</button>`;return`<div class="mail-detail-actions"><span class="badge demo">Демонстрационное письмо</span><span><button class="icon-btn" id="mail-read-toggle" title="${m.unread?'Отметить прочитанным':'Отметить непрочитанным'}">${i(m.unread?'check':'mail',16)}</button><button class="icon-btn" id="mail-archive" title="${m.folder==='archive'?'Вернуть во входящие':'В архив'}">${i(m.folder==='archive'?'inbox':'archive',16)}</button></span></div><h2>${e(m.subject)}</h2><div class="mail-author"><span class="avatar gradient">${e(m.initials)}</span><span><strong>${e(m.sender)}</strong><small>${e(m.email)} · вымышленный адрес</small></span></div><div class="mail-body">${e(m.body)}</div>${m.attachment?`<button class="mail-attachment" id="mail-attachment" style="width:100%;text-align:left">${i('file',25)}<span>План_новых_идей.txt<small>Демонстрационный файл · 1 КБ</small></span>${i('download',16)}</button>`:''}<div class="mail-reply"><button class="btn soft" id="mail-reply">${i('undo',15)} Подготовить ответ</button></div>`;}
-  a.register('mail',{title:'Почта',render(){const all=mailItems(),list=filteredMail();if(!list.some(m=>m.id===mailSelected))mailSelected=list[0]?.id||'';const current=list.find(m=>m.id===mailSelected);return a.heading('Письма, которым есть место.','Спокойный почтовый кабинет внутри вашего пространства.',`<button class="btn" id="mail-connect">${i('plus',16)} Подключить почту</button>`)+`<div class="notice mail-demo-note">${i('mail',17)}<span><strong>Демонстрационная почта.</strong> Письма вымышлены. Чтение, избранное, архив и локальные черновики работают; отправки писем нет.</span></div><div class="mail-layout"><aside class="mail-folders"><button class="btn primary" id="mail-compose">${i('edit',15)} Написать</button><div style="margin-top:22px">${[['inbox','inbox','Входящие',all.filter(m=>m.folder==='inbox'&&m.unread).length],['starred','star','Избранное',all.filter(m=>m.starred&&m.folder!=='archive').length],['drafts','file','Черновики',drafts().length],['archive','archive','Архив',all.filter(m=>m.folder==='archive').length]].map(([id,icon,title,count])=>`<button class="mail-folder ${mailFolder===id?'active':''}" data-mail-folder="${id}">${i(icon,15)}${title}<span>${count||''}</span></button>`).join('')}</div><p class="small muted" style="margin:30px 10px 10px;font-size:9px">Открыть свою почту</p><div class="stack" style="gap:8px;padding:0 10px">${a.external('https://mail.google.com/','Gmail','external','text-link')}${a.external('https://outlook.live.com/mail/','Outlook','external','text-link')}${a.external('https://mail.yandex.ru/','Яндекс','external','text-link')}</div></aside><section class="mail-list"><div class="mail-list-title"><select id="mail-folder-select" aria-label="Папка писем" style="border:0;background:transparent;font-size:12px"><option value="inbox" ${mailFolder==='inbox'?'selected':''}>Входящие</option><option value="starred" ${mailFolder==='starred'?'selected':''}>Избранное</option><option value="drafts" ${mailFolder==='drafts'?'selected':''}>Черновики</option><option value="archive" ${mailFolder==='archive'?'selected':''}>Архив</option></select><button class="icon-btn" id="mail-compose-small" aria-label="Написать письмо">${i('edit',15)}</button></div>${list.length?list.map(m=>`<div class="mail-item ${m.id===mailSelected?'active':''}" data-mail-id="${e(m.id)}" role="button" tabindex="0" aria-label="${e(m.subject||'Черновик без темы')}"><div class="mail-sender"><span>${m.unread?'<i class="unread-dot"></i>':''}${e(m.sender)}</span><time>${e(m.time)}</time></div><h3>${e(m.subject||'Без темы')}</h3><p>${e(m.preview)}</p>${mailFolder==='drafts'?'':`<button class="mail-star ${m.starred?'active':''}" data-mail-star="${e(m.id)}" title="Избранное" aria-label="Избранное: ${e(m.subject)}" aria-pressed="${!!m.starred}">${i('star',14)}</button>`}</div>`).join(''):'<div class="empty-state"><p>В папке пока нет писем.</p></div>'}</section><article class="mail-detail">${mailDetail(current)}</article></div>`;},mount(){
-    document.querySelector('#mail-connect').onclick=mailConnect;
-    document.querySelector('#mail-compose').onclick=()=>composeMail();document.querySelector('#mail-compose-small').onclick=()=>composeMail();
-    document.querySelectorAll('[data-mail-folder]').forEach(b=>b.onclick=()=>{mailFolder=b.dataset.mailFolder;a.render();});document.querySelector('#mail-folder-select').onchange=ev=>{mailFolder=ev.target.value;a.render();};
-    document.querySelectorAll('[data-mail-id]').forEach(el=>{const select=()=>{mailSelected=el.dataset.mailId;const items=mailItems(),item=items.find(m=>m.id===mailSelected);if(item){item.unread=false;a.set('mailDemo',items);}a.render();};el.onclick=event=>{if(!event.target.closest('[data-mail-star]'))select();};el.onkeydown=event=>{if(event.target===el&&['Enter',' '].includes(event.key)){event.preventDefault();select();}};});
-    document.querySelectorAll('[data-mail-star]').forEach(b=>b.onclick=event=>{event.stopPropagation();const items=mailItems(),item=items.find(m=>m.id===b.dataset.mailStar);if(item){item.starred=!item.starred;a.set('mailDemo',items);a.render();}});
-    const current=filteredMail().find(m=>m.id===mailSelected);
-    if(document.querySelector('#mail-archive'))document.querySelector('#mail-archive').onclick=()=>{const items=mailItems(),item=items.find(m=>m.id===mailSelected);item.folder=item.folder==='archive'?'inbox':'archive';a.set('mailDemo',items);a.render();};
-    if(document.querySelector('#mail-read-toggle'))document.querySelector('#mail-read-toggle').onclick=()=>{const items=mailItems(),item=items.find(m=>m.id===mailSelected);item.unread=!item.unread;a.set('mailDemo',items);a.render();};
-    if(document.querySelector('#mail-reply'))document.querySelector('#mail-reply').onclick=()=>composeMail(null,{to:current.email,subject:'Re: '+current.subject,body:''});
-    if(document.querySelector('#mail-attachment'))document.querySelector('#mail-attachment').onclick=()=>a.download('AYYY_ideas_demo.txt','Демонстрационный план AYYY\n\n1. QR-коды\n2. Мировые часы\n3. Сжатие изображений\n\nЭто пример вложения, а не настоящий файл из почтового аккаунта.');
-    if(document.querySelector('#mail-edit-draft'))document.querySelector('#mail-edit-draft').onclick=()=>composeMail(current.id);
-    if(document.querySelector('#mail-delete-draft'))document.querySelector('#mail-delete-draft').onclick=()=>{a.modal('Удалить черновик?',`<p class="small muted">${e(current.subject||'Без темы')}</p><div class="modal-footer"><button class="btn" data-close-modal>Оставить</button><button class="btn danger" id="draft-delete-confirm">Удалить</button></div>`);document.querySelector('#draft-delete-confirm').onclick=()=>{a.set('mailDrafts',drafts().filter(d=>d.id!==current.id));a.closeModal();a.render();};};
-  }});
-  function composeMail(id=null,defaults={}){const d=drafts().find(x=>x.id===id)||{id:crypto.randomUUID?.()||String(Date.now()),to:'',subject:'',body:'',...defaults};a.modal('Новое письмо · локальный черновик',`<form id="mail-draft-form"><label class="field-label" for="draft-to">Кому</label><input class="field" id="draft-to" type="email" value="${e(d.to)}" placeholder="name@example.com"><label class="field-label" for="draft-subject">Тема</label><input class="field" id="draft-subject" maxlength="150" value="${e(d.subject)}" placeholder="О чём письмо"><label class="field-label" for="draft-body">Сообщение</label><textarea class="field" id="draft-body" rows="9" maxlength="30000" placeholder="Напишите что-нибудь хорошее…">${e(d.body)}</textarea><p class="small muted" style="margin-top:13px">Черновик сохранится только в этом браузере. Кнопка ниже не отправляет письмо.</p><div class="modal-footer"><button type="button" class="btn" data-close-modal>Закрыть</button><button class="btn primary">${i('check',15)} Сохранить черновик</button></div></form>`,true);document.querySelector('#mail-draft-form').onsubmit=event=>{event.preventDefault();const updated={id:d.id,to:document.querySelector('#draft-to').value.trim(),subject:document.querySelector('#draft-subject').value.trim()||'Без темы',body:document.querySelector('#draft-body').value,updatedAt:new Date().toISOString()};const list=drafts();const index=list.findIndex(x=>x.id===d.id);if(index>=0)list[index]=updated;else list.unshift(updated);if(a.set('mailDrafts',list)){mailFolder='drafts';mailSelected=d.id;a.closeModal();a.render();a.toast('Черновик сохранён. Письмо не отправлено.');}};}
-  function mailConnect(){a.modal('Ваша почта в AYYY',`<p class="muted">Сейчас можно открыть свой почтовый сервис. Встроенное чтение почты добавим после настройки авторизации у провайдера.</p><div class="stack" style="margin-top:20px">${a.external('https://mail.google.com/','Открыть Gmail','external','btn')}${a.external('https://outlook.live.com/mail/','Открыть Outlook','external','btn')}${a.external('https://mail.yandex.ru/','Открыть Яндекс Почту','external','btn')}${a.external('https://mail.proton.me/','Открыть Proton Mail','external','btn')}</div><div class="notice" style="margin-top:20px">${i('shield',16)}<span>Пароль от почты порталу не нужен. Будущая интеграция должна запрашивать разрешение через официальный вход провайдера.</span></div><div class="modal-footer"><button class="btn" data-close-modal>Понятно</button></div>`);}
+  // Gmail is implemented in gmail.js, loaded after this module.
 })();
