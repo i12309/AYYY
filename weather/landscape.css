@@ -1,0 +1,46 @@
+/* Final landscape treatment: continuous shoreline, no framed panels.
+   Kept separate from responsive structure so it cannot affect other services. */
+.ww-coast::before{content:"";position:absolute;inset:0;z-index:-1;background-image:url("coast.svg?v=coast-2");background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;opacity:.9;transition:filter 1.2s,opacity 1.2s}
+.ww-app[data-phase=night] .ww-coast::before{filter:brightness(.4) saturate(.6) hue-rotate(12deg);opacity:.85}
+.ww-app[data-phase=dawn] .ww-coast::before{filter:hue-rotate(335deg) saturate(.7)}
+.ww-app[data-weather=rain] .ww-coast::before,.ww-app[data-weather=storm] .ww-coast::before{filter:saturate(.55) brightness(.75)}
+.ww-app[data-weather=snow] .ww-coast::before{filter:saturate(.18) brightness(1.3)}
+.ww-app[data-phase=night][data-weather=snow] .ww-coast::before{filter:saturate(.25) brightness(.65)}
+.ww-app[data-phase=night][data-weather=rain] .ww-coast::before,.ww-app[data-phase=night][data-weather=storm] .ww-coast::before{filter:brightness(.35) saturate(.5)}
+.ww-app:not([data-phase=night]){--ww-muted:#526d76}
+.ww-current::before,.ww-period::before{filter:blur(15px);opacity:.92}
+.ww-day-icon{width:35px;height:35px}
+.ww-day-label b,.ww-day-temperatures b{font-size:13px}
+.ww-day-label small,.ww-day-temperatures small,.ww-forecast-labels{font-size:11px}
+.ww-day-pop,.ww-day-wind{font-size:11px}
+.ww-period-detail-grid span,.ww-metric label,.ww-sun-times small{font-size:11px}
+.ww-sourcebar,.ww-observation-label{font-size:10px}
+.ww-hour-label{font-size:12px}.ww-hour-value{font-size:10px}
+.ww-hours>svg.ww-hour-line{bottom:25px;height:25px}
+.ww-hourly::before{inset:2px -35px -8px;background:linear-gradient(180deg,transparent,rgba(var(--ww-wash),.72) 17%,rgba(var(--ww-wash),.82) 60%,rgba(var(--ww-wash),.68) 90%,transparent);filter:blur(10px)}
+.ww-center .ww-scene-controls{margin-bottom:14px}
+.ww-scene-buttons button{border:1px solid rgba(128,151,149,.15)!important;background:rgba(var(--ww-wash),.8);min-height:32px}
+.ww-footer{background:linear-gradient(90deg,transparent,rgba(var(--ww-wash),.78) 10%,rgba(var(--ww-wash),.78) 90%,transparent);line-height:1.5}
+.ww-app>.ww-scene{height:max(100svh,870px);min-height:870px}
+@media(min-width:1101px) and (max-height:850px){
+.ww-header{height:58px}.ww-topline{min-height:40px;padding-bottom:5px}.ww-sourcebar{min-height:26px;padding-bottom:7px}
+.ww-main{min-height:432px;gap:14px}.ww-current-main{margin-top:5px}.ww-temperature{font-size:80px}.ww-condition{font-size:20px}
+.ww-metrics{margin-top:12px;gap:9px 15px}.ww-daylight{padding-top:12px}.ww-day-note{display:none}
+.ww-day{min-height:40px;padding-top:3px!important;padding-bottom:3px!important}.ww-days{max-height:304px}.ww-period-top{margin-bottom:5px}
+.ww-period-detail{margin-top:7px;padding-top:8px}.ww-period-caption{margin-top:6px!important}
+.ww-hour{height:111px;min-height:111px}.ww-hourly{margin-top:5px;padding-top:5px}.ww-footer{padding-top:7px}
+.ww-app>.ww-scene{height:max(100svh,768px);min-height:768px}.ww-tower-wrap{height:84%}
+}
+@media(max-width:1100px){.ww-app>.ww-scene{height:1000px;min-height:0}.ww-coast::before{opacity:.58}.ww-center .ww-scene-controls{margin-bottom:12px}.ww-day-label small{font-size:10px}}
+@media(max-width:720px){
+.ww-app>.ww-scene{height:900px}.ww-coast::before{opacity:.54}.ww-day-label b{font-size:12px}.ww-period-detail-grid span{font-size:10px}
+.ww-metric label,.ww-sun-times small{font-size:10px}.ww-current::before{opacity:1}.ww-center .ww-scene-controls{margin-bottom:0}
+.ww-footer{background:rgba(var(--ww-wash),.65)}.ww-hourly::before{inset:0 -20px -8px}.ww-sourcebar{font-size:9px}.ww-source-label{display:none}
+.ww-source-actions .ww-link{font-size:10px!important}.ww-hour-value{font-size:10px}.ww-day-pop{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.ww-coast::before{transition:none}}
+/* Explicit tracks keep values clear of the graph and inside the scroll area. */
+.ww-app .ww-hour{display:grid;grid-template-rows:16px 30px 18px 22px 12px;gap:3px;align-content:start;justify-items:center;height:126px;min-height:126px;padding:7px 4px!important;line-height:1.15}
+.ww-hour-label{grid-row:1;line-height:16px}.ww-hour-icon{grid-row:2;width:30px;height:30px}.ww-hour-temp{grid-row:3;line-height:18px}.ww-hour-value{grid-row:5;margin:0;line-height:12px}
+.ww-hours>svg.ww-hour-line{bottom:23px;height:22px}
+@media(min-width:1101px){.ww-app .ww-day{height:43px;min-height:43px;padding:3px 8px!important;line-height:1.2}.ww-day-label small{margin-top:2px}.ww-days{max-height:345px}.ww-days:not(:has(>.ww-day:nth-child(8))){max-height:none}}
