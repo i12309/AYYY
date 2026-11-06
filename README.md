@@ -86,3 +86,4 @@ python tests/corporate_browser.py
 
 Справочник предыдущей версии сохранён без потери информации; в вопросах сборки и погоды
 приоритет имеют этот README и WEATHER_RELEASE.md.
+.
