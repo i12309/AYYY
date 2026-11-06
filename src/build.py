@@ -12,9 +12,9 @@ import re
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css', '../tools/city.css', '../tools/approved.css', '../tools/approved-responsive.css']
+CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css', '../tools/city.css', '../tools/approved.css', '../tools/approved-responsive.css', '../markets/style.css']
 JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js',
-      'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', '../tools/loan-model.js', '../tools/science-model.js', '../tools/common.js', '../tools/loan-view.js', '../tools/science-view.js', '../tools/approved-workspace.js', 'corporate-tools.js', 'boot.js']
+      'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', '../tools/loan-model.js', '../tools/science-model.js', '../tools/common.js', '../tools/loan-view.js', '../tools/science-view.js', '../tools/approved-workspace.js', 'corporate-tools.js', '../markets/model.js', '../markets/chart.js', '../markets/view.js', 'boot.js']
 
 
 def build(destination: Path, inline: bool = False):
@@ -39,7 +39,7 @@ def build(destination: Path, inline: bool = False):
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(html, encoding='utf-8')
     # Every output, including dist/, is a complete static site, not a broken HTML copy.
-    for name in ('assets', 'weather', 'tools') + (() if inline else ('src',)):
+    for name in ('assets', 'weather', 'tools', 'markets') + (() if inline else ('src',)):
         source, target = ROOT.parent/name, destination.parent/name
         if source.is_dir() and (source.resolve() != target.resolve()):
             shutil.copytree(source, target, dirs_exist_ok=True,
