@@ -25,8 +25,8 @@ def init(browser, size=(1600,950), reduced=False, fail_resource=None):
     page.set_default_timeout(6000)
     errors=[];requests=[]
     page.on('pageerror', lambda e: errors.append(str(e)))
-    # about:blank cannot persist real storage. Explicit in-memory browser fixture.
-    page.evaluate('''() => {
+    # Isolated storage and transport fixtures, installed before application scripts.
+    page.add_init_script('''(() => {
       window.__store=new Map();
       Object.defineProperty(window,'localStorage',{configurable:true,value:{
         getItem:k=>__store.get(k)||null,setItem:(k,v)=>__store.set(k,String(v)),removeItem:k=>__store.delete(k),
@@ -38,10 +38,10 @@ def init(browser, size=(1600,950), reduced=False, fail_resource=None):
       window.clearInterval=id=>{__intervals.delete(id);ci(id)};
       window.requestAnimationFrame=f=>{let id=raf(t=>{__rafs.delete(id);f(t)});__rafs.add(id);return id};
       window.cancelAnimationFrame=id=>{__rafs.delete(id);caf(id)};
-    }''')
+    })()''')
     def local(route):
         parsed=urlsplit(route.request.url)
-        path=unquote(parsed.path).removeprefix('/AYYY/')
+        path=unquote(parsed.path).removeprefix('/AYYY/') or 'index.html'
         requests.append(path)
         target=(ROOT/path).resolve()
         if fail_resource and path==fail_resource and requests.count(path)==1:
@@ -51,8 +51,8 @@ def init(browser, size=(1600,950), reduced=False, fail_resource=None):
         else:
             route.fulfill(status=404,body='Resource missing')
     page.route(BASE+'**',local)
-    # Render the real index with an explicit test base. No application source is altered.
-    page.set_content((ROOT/'index.html').read_text().replace('<head>','<head><base href="'+BASE+'">'),wait_until='load')
+    # A real document URL also exercises ordinary hash links, not just app.navigate.
+    page.goto(BASE,wait_until='load')
     page.wait_for_selector('.shore-home')
     return page,errors,requests
 
@@ -74,8 +74,27 @@ def mode(page,weather='',phase=''):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or shutil.which('chromium'),
                               args=['--no-sandbox','--disable-dev-shm-usage'])
+    # First-visit navigation and refresh must already use the new shared model.
     page,errors,requests=init(browser)
-    check('weather assets are lazy on home',not any(r.startswith('weather/') for r in requests))
+    initial_city=page.locator('[data-home-weather="city"]').inner_text()
+    page.locator('.shore-widget-title[data-action="city"]').click()
+    page.wait_for_selector('#ww-city-dialog[open]')
+    check('home city opens new weather picker on first visit',page.locator('#ww-city-dialog').is_visible())
+    check('first weather visit preserves home city',page.locator('.ww-place').inner_text()==initial_city)
+    page.close()
+    page,errors,requests=init(browser)
+    page.evaluate('''f=>{window.fetch=async(u,o)=>{__api.push(String(u));return new Response(JSON.stringify(f),{status:200})}}''',FIXTURE)
+    page.evaluate('AYYY.refreshWeather()')
+    check('first home refresh uses full forecast model','forecast_days=14' in page.evaluate('__api.at(-1)'))
+    check('first home refresh stores detailed forecast',page.evaluate('[...__store.keys()].some(k=>k.includes("weather.scene.cache."))'))
+    page.locator('.shore-weather-now').click()
+    page.wait_for_selector('.ww-app')
+    check('temperature link opens weather',page.evaluate('AYYY.route')=='weather')
+    check('home refresh available in detailed weather',page.locator('#ww-source-status').get_attribute('data-status')=='live')
+    check('no first-visit runtime errors',not errors)
+    page.close()
+    page,errors,requests=init(browser)
+    check('only weather model loads on home',[r for r in requests if r.startswith('weather/')]==['weather/model.js'])
     nav(page,'weather')
     check('weather route replaces service shell',page.locator('body').get_attribute('data-shell')=='weather')
     check('old sidebar hidden',not page.locator('body>.sidebar').is_visible())
@@ -138,7 +157,7 @@ with sync_playwright() as p:
     check('request asks for 14 days',page.evaluate('__api.at(-1).includes("forecast_days=14")'))
     check('home snapshot written',page.evaluate('[...__store.keys()].some(k=>k.includes("weather.cache."))'))
     nav(page,'home')
-    check('home shares city',page.locator('[data-home-weather="city"]').inner_text()=='Франкфурт-на-Майне')
+    check('home shares city',page.locator('[data-home-weather="city"]').inner_text()=='Москва')
     check('home receives live-shaped data',page.locator('[data-home-weather="status"]').get_attribute('data-state')=='live')
     nav(page,'weather')
     check('weather cache restored',page.locator('#ww-source-status').get_attribute('data-status')=='live')

@@ -16,6 +16,7 @@ build=importlib.util.module_from_spec(spec);spec.loader.exec_module(build)
 class StaticBuild(unittest.TestCase):
     def test_route_order(self):
         self.assertLess(build.JS.index('data.js'),build.JS.index('weather-route.js'))
+        self.assertLess(build.JS.index('../weather/model.js'),build.JS.index('weather-route.js'))
         self.assertLess(build.JS.index('weather-route.js'),build.JS.index('boot.js'))
     def test_versioned_local_resources(self):
         with tempfile.TemporaryDirectory() as tmp:

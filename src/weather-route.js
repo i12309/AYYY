@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='coast-2';
+  const VERSION='coast-4';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;
@@ -40,8 +40,13 @@
   function installBridge(){
     if(bridgeInstalled)return;bridgeInstalled=true;
     const M=window.AYYYWeatherModel;
+    // Preserve the home page's selected/default city before replacing its legacy API.
+    const previous=app.getWeather?.();
+    const inherited=previous&&{...previous,name:previous.city};
+    const defaultCity=M.validCity(inherited)?M.cleanCity(inherited):M.CITIES[0];
     let inFlight=null,controller=null,ticket=0,pendingKey='',error='';
-    const selected=()=>{const c=app.get('weather.city',M.CITIES[0]);return M.validCity(c)?M.cleanCity(c):M.CITIES[0];};
+    const selected=()=>{const c=app.get('weather.city',defaultCity);return M.validCity(c)?M.cleanCity(c):defaultCity;};
+    app.getWeatherCity=selected;
     const notify=()=>document.dispatchEvent(new CustomEvent('ayyy:weather'));
     const decorate=(value,city)=>{
       const weather=M.condition(value.code,value.isDay),kind=weather.key;
@@ -71,13 +76,16 @@
       pendingKey=key;error='';notify();const timer=setTimeout(()=>own.abort(),15000);
       inFlight=(async()=>{
         try{const data=await M.forecast(city,own.signal);if(n!==ticket)return false;M.save(data);const snapshot=M.homeSnapshot(data);if(snapshot)app.set('weather.cache.'+key,snapshot);app.set('weather.city',data.city);return true;}
-        catch(e){if(n===ticket)error=e.name==='AbortError'?'Источник не ответил за 15 секунд.':'Не удалось обновить погоду. Сохранённые данные не изменены.';return false;}
+        catch(e){if(n===ticket)error=e.name==='AbortError'?'Источник не ответил за 15 секунд.':(e.message||'Не удалось обновить погоду.')+' Сохранённые данные не изменены.';return false;}
         finally{clearTimeout(timer);if(n===ticket){pendingKey='';inFlight=null;controller=null;notify();}}
       })();return inFlight;
     };
     // The city picker now belongs to the detailed weather screen, not a second store.
     app.showCityPicker=()=>app.navigate('weather','city');
   }
+  // Share data and city navigation on the first home visit, not only after mounting
+  // the landscape. The small model is local; scene assets and API calls stay lazy.
+  installBridge();
   app.register('weather',{
     title:'Погода · живой маяк',
     render(){return '<div id="ayyy-weather-root"><div class="ww-route-message" role="status"><h1>Погода у маяка</h1><p>Подготавливаем пейзаж…</p><a href="#home">На главную</a></div></div>';},
@@ -86,7 +94,7 @@
       document.body.dataset.shell='weather';let active=true,view=null;
       const mount=()=>ensure().then(()=>{
         if(!active||!host.isConnected||app.route!=='weather')return;
-        view=window.AYYYWeather.mount(host,{assetURL:url('assets/lighthouse.avif'),homeURL:'#home',directoryURL:'#directory',motionEnabled:app.settings?.motion!==false,
+        view=window.AYYYWeather.mount(host,{city:app.getWeatherCity(),assetURL:url('assets/lighthouse.avif'),homeURL:'#home',directoryURL:'#directory',motionEnabled:app.settings?.motion!==false,
           onNavigate:route=>app.navigate(route),onData:(city,snapshot)=>app.acceptWeatherSnapshot(city,snapshot)});
         if(app.param==='city')host.querySelector('.ww-city-search')?.click();
       }).catch(()=>{
