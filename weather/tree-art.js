@@ -69,3 +69,4 @@ function paintMonth(scene,month,latitude=50){
 }
 root.AYYYWeatherTree={STAGES,stage,canopy,falling,sceneMarkup,paintMonth};
 })(typeof window!=='undefined'?window:globalThis);
+if(typeof module!=='undefined' && module.exports)module.exports=(typeof window!=='undefined'?window:globalThis).AYYYWeatherTree;
