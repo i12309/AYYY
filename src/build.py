@@ -11,7 +11,7 @@ import re
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-CSS = ['style.css', 'tools.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css']
+CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css']
 JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js',
       'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', 'boot.js']
 
