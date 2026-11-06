@@ -65,7 +65,7 @@
   async function load(signal){const response=await fetch(url(),{signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)throw new Error('Источник курсов: HTTP '+response.status);return parse(await response.json());}
   function widgetURL(instrument,range='1M',style='1'){
     const item=instruments.find(x=>x.id===instrument);if(!item)throw new Error('Неизвестный инструмент.');
-    const p=new URLSearchParams({symbol:item.symbol,interval:'D',range:['1M','3M','12M','60M'].includes(range)?range:'1M',theme:'light',style:style==='3'?'3':'1',locale:'ru',timezone:'Etc/UTC',hideideas:'1',hidesidetoolbar:'1',hidetoptoolbar:'0',symboledit:'0',saveimage:'0',withdateranges:'1',studies:'[]',toolbarbg:'ffffff',utm_source:'ayyy',utm_medium:'widget',utm_campaign:'chart'});
+    const p=new URLSearchParams({symbol:item.symbol,interval:'D',range:['1M','3M','6M','12M','60M'].includes(range)?range:'1M',theme:'light',style:style==='3'?'3':'1',locale:'ru',timezone:'Etc/UTC',hideideas:'1',hidesidetoolbar:'1',hidetoptoolbar:'0',symboledit:'0',saveimage:'0',withdateranges:'1',studies:'[]',toolbarbg:'ffffff',utm_source:'ayyy',utm_medium:'widget',utm_campaign:'chart'});
     return 'https://s.tradingview.com/widgetembed/?'+p;
   }
   const symbolURL=id=>'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(instruments.find(x=>x.id===id)?.symbol||'SP:SPX');
