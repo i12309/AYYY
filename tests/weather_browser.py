@@ -160,8 +160,8 @@ with sync_playwright() as p:
         nav(page,'weather');check('weather interval '+str(i),page.evaluate('__intervals.size')==base_intervals)
         nav(page,'directory');check('weather removed '+str(i),page.locator('.ww-app').count()==0)
         check('no leftover scene animation '+str(i),page.evaluate('__rafs.size')==0)
-        check('22 services remain '+str(i),page.locator('.shore-service-card').count()==22)
-    nav(page,'tools');check('calculator preserved',page.locator('#tools-calc-expression').count()>0 or page.locator('.tools-root').count()==1)
+        check('23 services remain including credit '+str(i),page.locator('.shore-service-card').count()==23)
+    nav(page,'tools');check('credit-first workspace available',page.locator('#loan-form').count()==1)
     check('no runtime errors',not errors)
     page.close()
     # Clean page for screenshots and responsive measurements.

@@ -1,6 +1,7 @@
 """Packaging checks: both local-resource and inline builds remain portable."""
 import hashlib
 import importlib.util
+import posixpath
 from pathlib import Path
 import re
 import subprocess
@@ -22,7 +23,7 @@ class StaticBuild(unittest.TestCase):
             html=out.read_text();self.assertNotIn('/*__SCRIPTS__*/',html)
             for name in build.CSS+build.JS:
                 digest=hashlib.sha256((ROOT/'src'/name).read_bytes()).hexdigest()[:12]
-                self.assertIn('src/'+name+'?v='+digest,html)
+                self.assertIn(posixpath.normpath('src/'+name)+'?v='+digest,html)
                 self.assertTrue((out.parent/'src'/name).is_file())
     def test_weather_assets_in_distribution(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -46,6 +47,17 @@ class StaticBuild(unittest.TestCase):
                 u=urlsplit(href)
                 if u.scheme or not u.path:continue
                 self.assertTrue((out.parent/unquote(u.path)).exists(),href)
+    def test_corporate_assets_in_distribution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out=Path(tmp)/'index.html';build.build(out)
+            for name in ('loan-model.js','science-model.js','common.js','loan-view.js','science-view.js','city.css','assets/city.avif'):
+                self.assertEqual((out.parent/'tools'/name).read_bytes(),(ROOT/'tools'/name).read_bytes())
+            self.assertNotIn('src/../',out.read_text())
+    def test_corporate_order(self):
+        self.assertLess(build.JS.index('tools.js'),build.JS.index('corporate-tools.js'))
+        self.assertLess(build.JS.index('../tools/loan-model.js'),build.JS.index('../tools/loan-view.js'))
+        self.assertLess(build.JS.index('../tools/science-model.js'),build.JS.index('../tools/science-view.js'))
+        self.assertLess(build.JS.index('corporate-tools.js'),build.JS.index('boot.js'))
     def test_deterministic(self):
         with tempfile.TemporaryDirectory() as tmp:
             out=Path(tmp)/'index.html';build.build(out);one=out.read_bytes()
