@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='coast-5';
+  const VERSION='coast-6';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;

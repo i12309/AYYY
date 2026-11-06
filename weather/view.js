@@ -42,13 +42,14 @@
   }
   const knownDays=[['day','День'],['dawn','Рассвет'],['dusk','Закат'],['night','Ночь']];
   const previewTypes=[['','По данным',2],['clear','Ясно',0],['partly','Облака',2],['cloudy','Пасмурно',3],['rain','Дождь',61],['snow','Снег',71],['storm','Гроза',95],['fog','Туман',45]];
+  const REFRESH_INTERVAL=15*60*1000, RETRY_INTERVAL=5*60*1000;
   function mount(host,options={}){
     if(!host)throw new Error('Weather mount target required.');
     let city=options.city||M.read('weather.city',M.CITIES[0]);city=M.validCity(city)?M.cleanCity(city):M.CITIES[0];
     const initial=M.cached(city)||M.demo(city);
     const state={city,data:initial,unit:M.read('weather.scene.unit','C')==='F'?'F':'C',period:7,metric:'temp',selectedDay:M.dateKey(initial.current.time,initial.timezone),selectedTime:null,
       override:{},paused:options.motionEnabled===false||M.read('weather.scene.paused',false)===true,busy:false,error:'',request:0,found:M.CITIES.slice(),searchBusy:false};
-    let active=true,weatherController=null,searchController=null,searchTicket=0,weatherTimer=null,searchTimer=null;
+    let active=true,weatherController=null,searchController=null,searchTicket=0,weatherTimer=null,searchTimer=null,nextAttempt=0;
     const app=document.createElement('div');app.className='ww-app';host.replaceChildren(app);
     const homeURL=options.homeURL||'../#home',directoryURL=options.directoryURL||'../#directory';
     app.innerHTML=`<header class="ww-header"><a class="ww-brand" data-ww-nav="home" href="${esc(homeURL)}" aria-label="AYYY — главная"><span class="ww-logo">ayyy<span>.</span></span><small>всегда есть ориентир</small></a><nav class="ww-nav" aria-label="Разделы портала"><a href="${esc(homeURL)}" data-ww-nav="home">Главная</a><a href="${esc(directoryURL)}" data-ww-nav="directory">Все сервисы</a><a href="#" class="ww-active" data-action="now" aria-current="page">Погода</a><button class="ww-icon-button" data-action="settings" aria-label="Настройки погоды" title="Настройки погоды">${icon('settings')}</button></nav></header>
@@ -83,7 +84,7 @@
     function renderStatus(){
       const d=state.data,isStale=M.stale(d),status=state.busy?'pending':state.error?'error':!d.live?'demo':isStale?'saved':'live';
       $('#ww-source-status').dataset.status=status;
-      $('#ww-source-text').textContent=state.busy?'Получаем прогноз…':!d.live?'Демо-прогноз · нажмите «Обновить»':state.error||isStale?`Сохранённый прогноз · ${M.time(d.updatedAt/1000,d.timezone)}`:`Обновлено ${M.time(d.updatedAt/1000,d.timezone)} · модельный прогноз`;
+      $('#ww-source-text').textContent=state.busy?'Получаем прогноз…':!d.live?'Демо-прогноз · нет актуальных данных':state.error||isStale?`Сохранённый прогноз · ${M.time(d.updatedAt/1000,d.timezone)}`:`Обновлено ${M.time(d.updatedAt/1000,d.timezone)} · модельный прогноз`;
       $('#ww-refresh-text').textContent=state.busy?'Обновляем…':'Обновить';$$('[data-action="refresh"]').forEach(b=>b.disabled=state.busy);
       const error=$('#ww-error');error.hidden=!state.error;error.querySelector('span').textContent=state.error;
       $('#ww-footer-date').textContent=d.live?`получено ${M.dateLabel(M.dateKey(d.updatedAt/1000,d.timezone),{day:'numeric',month:'short'})}, ${M.time(d.updatedAt/1000,d.timezone)}`:'демонстрационные данные';
@@ -149,6 +150,7 @@
     function resetTime(){state.selectedTime=null;state.selectedDay=M.dateKey(state.data.current.time,state.data.timezone);state.override={};render();scrollToCurrent();}
     function scrollToCurrent(){const b=$(`[data-hour="${selectedHour()}"]`),container=$('#ww-hour-scroll');if(b)container.scrollLeft=Math.max(0,b.offsetLeft-container.clientWidth/3);}
     async function refresh(){
+      nextAttempt=Date.now()+RETRY_INTERVAL;
       weatherController?.abort();clearTimeout(weatherTimer);const controller=new AbortController();weatherController=controller;const request=++state.request,city={...state.city};let timeout=false;
       state.busy=true;state.error='';renderStatus();weatherTimer=setTimeout(()=>{timeout=true;controller.abort();},15000);
       try{
@@ -164,6 +166,11 @@
         state.error=(timeout?'Источник не ответил за 15 секунд.':error instanceof TypeError?'Не удалось подключиться к погодному сервису. Проверьте интернет и повторите запрос.':error.message)+' '+(state.data.live?'Показан последний сохранённый прогноз.':'Пока показан демонстрационный пример.');
       }finally{clearTimeout(weatherTimer);if(active&&request===state.request){state.busy=false;render();}}
     }
+    function checkForUpdates(){
+      if(!active||state.busy||document.hidden||navigator.onLine===false||Date.now()<nextAttempt)return;
+      if(!state.data.live||Date.now()-state.data.updatedAt>=REFRESH_INTERVAL)refresh();
+    }
+    function reconnect(){nextAttempt=0;checkForUpdates();}
     function renderCityOptions(){
       $('#ww-city-options').innerHTML=state.found.map((c,i)=>`<button class="ww-city-option" data-city-index="${i}"><span><strong>${esc(c.name)}</strong><small>${esc(c.country)}</small></span>${icon(M.cityKey(c)===M.cityKey(state.city)?'check':'arrow')}</button>`).join('');
     }
@@ -214,11 +221,12 @@
     function animateChange(){state.paused=!$('#ww-animate-toggle').checked;M.write('weather.scene.paused',state.paused);renderScene();}
     function closeSearch(){searchTicket++;searchController?.abort();clearTimeout(searchTimer);state.searchBusy=false;$('#ww-city-form button').disabled=false;}
     app.addEventListener('click',click);document.addEventListener('keydown',key,true);$('#ww-city-form').addEventListener('submit',searchCities);$('#ww-animate-toggle').addEventListener('change',animateChange);$('#ww-city-dialog').addEventListener('close',closeSearch);
-    const clock=setInterval(()=>{if(!active||document.hidden)return;if(state.data.live){const el=$('#ww-city-clock');if(el)el.textContent=M.time(Date.now()/1000,state.data.timezone);renderStatus();if(state.selectedTime===null)renderScene();}},30000);
-    render();scrollToCurrent();
+    document.addEventListener('visibilitychange',checkForUpdates);window.addEventListener('online',reconnect);
+    const clock=setInterval(()=>{if(!active||document.hidden)return;checkForUpdates();if(state.data.live){const el=$('#ww-city-clock');if(el)el.textContent=M.time(Date.now()/1000,state.data.timezone);renderStatus();if(state.selectedTime===null)renderScene();}},30000);
+    render();scrollToCurrent();checkForUpdates();
     return {
       refresh,
-      destroy(){active=false;state.request++;searchTicket++;weatherController?.abort();searchController?.abort();clearTimeout(weatherTimer);clearTimeout(searchTimer);clearInterval(clock);scene.destroy();app.querySelectorAll('dialog[open]').forEach(d=>d.close());app.removeEventListener('click',click);document.removeEventListener('keydown',key,true);host.replaceChildren();},
+      destroy(){active=false;state.request++;searchTicket++;weatherController?.abort();searchController?.abort();clearTimeout(weatherTimer);clearTimeout(searchTimer);clearInterval(clock);document.removeEventListener('visibilitychange',checkForUpdates);window.removeEventListener('online',reconnect);scene.destroy();app.querySelectorAll('dialog[open]').forEach(d=>d.close());app.removeEventListener('click',click);document.removeEventListener('keydown',key,true);host.replaceChildren();},
       // Read-only state summary used by the regression suite, without private data.
       inspect(){return {city:state.city.name,live:state.data.live,selectedTime:state.selectedTime,selectedDay:state.selectedDay,phase:scene.phase,weather:scene.mode,paused:state.paused,unit:state.unit,period:state.period,busy:state.busy,error:state.error};}
     };

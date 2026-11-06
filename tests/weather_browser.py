@@ -62,6 +62,7 @@ def nav(page, route):
     page.wait_for_function('(r)=>AYYY.route===r',arg=route)
     if route=='weather':
         page.wait_for_function('!!document.querySelector(".ww-tower")?.naturalWidth')
+        page.wait_for_function('document.querySelector("#ww-source-status")?.dataset.status!=="pending"')
 
 
 def mode(page,weather='',phase=''):
@@ -99,7 +100,7 @@ with sync_playwright() as p:
     check('weather route replaces service shell',page.locator('body').get_attribute('data-shell')=='weather')
     check('old sidebar hidden',not page.locator('body>.sidebar').is_visible())
     check('all three weather styles load',all('weather/'+n in requests for n in ['style.css','seamless.css','landscape.css']))
-    check('no unsolicited weather API calls',page.evaluate('__api.length')==0)
+    check('weather automatically attempts direct and proxy requests',page.evaluate('__api.length')==2)
     check('demo labelled', 'Демо' in page.locator('#ww-source-text').inner_text())
     check('lighthouse decoded',page.locator('.ww-tower').evaluate('(e)=>e.naturalWidth')==560)
     check('full bleed scenery',page.locator('#ww-scene').evaluate('(e)=>Math.abs(e.getBoundingClientRect().width-innerWidth)<2'))
