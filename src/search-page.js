@@ -1,0 +1,142 @@
+/* AYYY search: isolated presentation, shared search and storage contracts. */
+(() => {
+  'use strict';
+  const a=window.AYYY,e=a.escape;
+  a.register('search',{title:'Поиск',render(){return `<div class="sp-app" id="search-page">
+  <!-- ART: only decorative. No meaningful content or UI controls are inside it. -->
+  <div class="sp-art" aria-hidden="true">
+    <svg class="sp-techlines sp-techlines-top" viewBox="0 0 1700 260" preserveAspectRatio="xMidYMin slice">
+      <defs>
+        <linearGradient id="topwash" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="#d4e7f5" stop-opacity=".46"/><stop offset=".55" stop-color="#eaf3fd" stop-opacity=".17"/><stop offset="1" stop-color="#efdcc2" stop-opacity=".39"/></linearGradient>
+        <filter id="watercolor" x="-10%" y="-15%" width="120%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".019" numOctaves="3" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="11"/></filter>
+      </defs>
+      <path d="M0 88Q164 4 354 39Q560 84 695 27T1072 49Q1310 4 1700 20L1700 245Q1280 178 1060 215Q785 166 535 232Q196 188 0 242Z" fill="url(#topwash)" filter="url(#watercolor)"/>
+      <g fill="none" stroke="#7cadd9" stroke-width="1.05" opacity=".58"><path d="M120 44h240l24 21h182l36-23h240l24 19h187"/><path d="M457 90h171l33 23h173l20-15h238"/><path d="M785 18l37 22h210l24 19h182l37-28h238"/><path d="M8 163h89l24-23h150"/><path d="M1288 176h133l24-25h161"/></g>
+      <g fill="none" stroke="#e7a047" stroke-width="1.6" opacity=".93"><path d="M547 65h45l18 17h80"/><path d="M1113 58l19-19h129"/><path d="M1367 176l20-26h74"/></g>
+      <g fill="#f38b32"><circle cx="546" cy="65" r="4"/><circle cx="1113" cy="58" r="3.5"/><circle cx="1262" cy="39" r="3.5"/><circle cx="1461" cy="150" r="3"/></g>
+      <g stroke="#719ac1" stroke-width=".9" opacity=".62"><path d="M848 17v12m-6-6h12"/><path d="M960 93v12m-6-6h12"/><path d="M1386 21v12m-6-6h12"/></g>
+      <g fill="#477cab" opacity=".5"><circle cx="1006" cy="15" r="1.8"/><circle cx="1018" cy="15" r="1.8"/><circle cx="1030" cy="15" r="1.8"/><circle cx="1042" cy="15" r="1.8"/><circle cx="1006" cy="27" r="1.8"/><circle cx="1018" cy="27" r="1.8"/><circle cx="1030" cy="27" r="1.8"/><circle cx="1042" cy="27" r="1.8"/></g>
+    </svg>
+    <img class="sp-art-magnifier" src="assets/search/magnifier.webp" width="325" height="470" alt="" loading="eager" decoding="async">
+    <img class="sp-art-monitor" src="assets/search/monitor.webp" width="352" height="475" alt="" loading="eager" decoding="async">
+    <div class="sp-floating-doc sp-floating-doc-one"><span class="sp-doc-icon"></span><span class="sp-doc-line"></span><span class="sp-doc-line short"></span><span class="sp-doc-line tiny"></span></div>
+    <div class="sp-floating-doc sp-floating-doc-two"><span class="sp-code">&lt;/&gt;</span><span class="sp-doc-line"></span><span class="sp-doc-line short"></span></div>
+    <svg class="sp-techlines sp-techlines-bottom" viewBox="0 0 1700 220" preserveAspectRatio="xMidYMax slice">
+      <defs><linearGradient id="bottomwash" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#c3d9ee" stop-opacity=".42"/><stop offset=".5" stop-color="#e9f1fa" stop-opacity=".29"/><stop offset="1" stop-color="#d7e5f5" stop-opacity=".39"/></linearGradient></defs>
+      <path d="M0 190Q180 130 380 163Q590 102 747 166Q968 125 1211 150Q1516 91 1700 148V220H0Z" fill="url(#bottomwash)" filter="url(#watercolor)"/>
+      <g fill="none" stroke="#90b5d1" stroke-width="1.2" opacity=".5"><path d="M440 170h270l40-27h179"/><path d="M1008 156h222l41-33h178"/><path d="M134 135h180l31 31h119"/></g>
+      <g stroke="#df9c40" stroke-width="1.3" opacity=".8" fill="none"><path d="M345 166h80"/><path d="M1294 123l35-26h114"/></g>
+      <g fill="#d99d47"><circle cx="345" cy="166" r="3.5"/><circle cx="1294" cy="123" r="3"/></g>
+    </svg>
+    <div class="sp-art-grid grid-a"></div><div class="sp-art-grid grid-b"></div>
+  </div>
+
+  <header class="sp-header">
+    <a class="sp-logo" href="#home" aria-label="AYYY — главная"><span class="sp-logo-word">ayyy<span>.</span></span></a>
+    <span class="sp-header-rule" aria-hidden="true"></span>
+    <span class="sp-header-caption">ПОИСК И ОТКРЫТИЯ</span>
+    <nav class="sp-header-nav" aria-label="Разделы AYYY">
+      <a href="#home">Главная</a>
+      <a href="#directory">Все сервисы <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></a>
+    </nav>
+  </header>
+
+  <main class="sp-main" id="search-content">
+    <section class="sp-intro" aria-labelledby="search-heading">
+      <p class="sp-eyebrow">AYYY / DISCOVERY <span class="sp-status-dot"></span> ПРОСТРАНСТВО ПОИСКА</p>
+      <h1 id="search-heading">Найдётся нужное направление.</h1>
+      <p class="sp-lead">Одна строка для поиска в интернете, видео, картах и знаниях.</p>
+    </section>
+
+    <section class="sp-workspace" aria-label="Поисковая система">
+      <form class="sp-form" id="sp-search-form" autocomplete="off" role="search">
+        <label class="sp-visually-hidden" for="search-query">Поисковый запрос</label>
+        <div class="sp-search-box">
+          <svg class="sp-search-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.7" cy="10.7" r="6.2"/><path d="m16 16 5 5"/></svg>
+          <input id="search-query" name="query" value="${e(a.param)}" maxlength="500" placeholder="Что вы хотите найти?" spellcheck="false" aria-describedby="sp-hint">
+          <span class="sp-search-shortcut" aria-hidden="true">/</span>
+          <button type="submit" class="sp-search-submit" aria-label="Начать поиск" title="Искать (Enter)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></button>
+        </div>
+      </form>
+
+      <div class="sp-modes" id="sp-modes" role="group" aria-label="Тип поиска">
+        <button type="button" class="sp-mode is-active" data-mode="web" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18"/></svg>Веб</button>
+        <button type="button" class="sp-mode" data-mode="images" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="9" cy="9" r="1.4"/><path d="m4 18 6-6 4 4 3-3 4 5"/></svg>Картинки</button>
+        <button type="button" class="sp-mode" data-mode="video" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8Z"/></svg>Видео</button>
+        <button type="button" class="sp-mode" data-mode="maps" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 3 6-2v15l-6 2-6-3-6 2ZM9 3v15M15 6v15"/></svg>Карты</button>
+        <button type="button" class="sp-mode" data-mode="wiki" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 5v15M20 5v15M4 20h16M8 8h8M8 12h8M8 16h5"/></svg>Знания</button>
+        <button type="button" class="sp-mode" data-mode="code" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6-6 6 6 6M16 6l6 6-6 6m-3-14-4 20"/></svg>Код</button>
+      </div>
+
+      <fieldset class="sp-providers" id="sp-providers">
+        <legend class="sp-visually-hidden">Выберите поисковую систему</legend>
+        <button type="button" class="sp-provider" data-provider="Google" aria-pressed="false"><span class="sp-provider-icon google">G</span><span>Google</span><span class="sp-provider-check" aria-hidden="true"></span></button>
+        <button type="button" class="sp-provider is-active" data-provider="Яндекс" aria-pressed="true"><span class="sp-provider-icon yandex">Я</span><span>Яндекс</span><span class="sp-provider-check" aria-hidden="true"></span></button>
+        <button type="button" class="sp-provider" data-provider="DuckDuckGo" aria-pressed="false"><span class="sp-provider-icon duck">D</span><span>DuckDuckGo</span><span class="sp-provider-check" aria-hidden="true"></span></button>
+        <button type="button" class="sp-provider" data-provider="Bing" aria-pressed="false"><span class="sp-provider-icon bing">b</span><span>Bing</span><span class="sp-provider-check" aria-hidden="true"></span></button>
+      </fieldset>
+      <p id="sp-hint" class="sp-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6m0-10v1"/></svg><span id="sp-hint-text">Результаты откроются в новой вкладке выбранного поисковика.</span></p>
+
+      <div class="sp-content-grid">
+        <section class="sp-info-panel sp-history" aria-labelledby="sp-history-heading">
+          <div class="sp-panel-heading sp-panel-green">
+            <h2 id="sp-history-heading">Недавно искали</h2>
+            <button class="sp-icon-button" id="sp-clear-history" type="button" aria-label="Очистить историю поиска" title="Очистить историю"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 10v7M14 10v7"/></svg></button>
+          </div>
+          <div class="sp-history-list" id="sp-history-list"></div>
+          <div class="sp-panel-footer"><span>ТОЛЬКО В ЭТОМ БРАУЗЕРЕ</span><span class="sp-hairline" aria-hidden="true"></span><span id="sp-history-count">0 / 10</span></div>
+        </section>
+        <section class="sp-info-panel sp-alternatives" aria-labelledby="sp-help-heading">
+          <div class="sp-panel-heading sp-panel-orange"><h2 id="sp-help-heading">Нужен другой подход?</h2><span class="sp-panel-motif" aria-hidden="true"></span></div>
+          <p>Попросите помощника объяснить сложную тему или найдите инструмент в каталоге.</p>
+          <div class="sp-panel-actions">
+            <a class="sp-action sp-action-ai" href="#ai"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 2.6 6.7L21 11l-6.4 2.3L12 20l-2.6-6.7L3 11l6.4-2.3ZM19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8Z"/></svg> Спросить ИИ</a>
+            <a class="sp-action sp-action-directory" href="#directory"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Сервисы</a>
+          </div>
+        </section>
+      </div>
+      <div class="sp-command-tip"><span class="sp-tip-bar"></span> <kbd>/</kbd> — перейти к поиску <span class="sp-tip-separator"></span> <kbd>Enter</kbd> — выполнить запрос</div>
+    </section>
+  </main>
+
+  <footer class="sp-footer">
+    <div class="sp-footer-brand"><span class="sp-footer-rule"></span><b>ayyy<span>.</span></b><span>Меньше шума. Больше полезного.</span></div>
+    <div class="sp-footer-links"><a href="#home" data-action="about">О проекте</a><span class="sp-footer-divider"></span><a href="#directory" data-action="design">Цели и характер</a><span class="sp-footer-divider"></span><span class="sp-local"><i></i> Ваше пространство</span></div>
+  </footer>
+  <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
+</div>`;},mount:mountSearch});
+  function mountSearch(){
+    const root=document.querySelector('#search-page');
+    const query=root.querySelector('#search-query');
+    const form=root.querySelector('#sp-search-form');
+    const list=root.querySelector('#sp-history-list');
+    const hints={web:'Результаты откроются в новой вкладке выбранного поисковика.',images:'Картинки откроются в Google Images.',video:'Видео откроются на YouTube.',maps:'Результаты откроются в Google Maps.',wiki:'Статьи откроются в Википедии.',code:'Код откроется в поиске GitHub.'};
+    let type='web',provider=a.get('searchEngine','Google');
+    if(!Object.hasOwn(a.searchProviders,provider))provider='Google';
+    const history=()=>{const saved=a.get('recentSearches',[]);return Array.isArray(saved)?saved.filter(q=>typeof q==='string').slice(0,10):[];};
+    function renderHistory(){
+      const recent=history();
+      list.innerHTML=recent.length?recent.slice(0,6).map((q,n)=>`<button type="button" class="sp-history-item" data-history-index="${n}">${a.icon('clock',20)}<span>${e(q)}</span>${a.icon('arrow-right',20)}</button>`).join(''):'<p class="sp-history-empty">Здесь появятся ваши запросы.<br>История хранится только в этом браузере.</p>';
+      root.querySelector('#sp-history-count').textContent=`${recent.length} / 10`;
+      root.querySelector('#sp-clear-history').disabled=!recent.length;
+    }
+    function update(){
+      root.querySelectorAll('[data-mode]').forEach(b=>{const active=b.dataset.mode===type;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',String(active));});
+      root.querySelectorAll('[data-provider]').forEach(b=>{const active=b.dataset.provider===provider;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',String(active));b.disabled=type!=='web';});
+      root.querySelector('#sp-hint-text').textContent=hints[type];
+    }
+    function submit(event){event.preventDefault();a.performSearch(query.value,'web',provider,type);renderHistory();}
+    function click(event){
+      const target=event.target.closest('button,a');if(!target||!root.contains(target))return;
+      if(target.dataset.mode&&Object.hasOwn(hints,target.dataset.mode)){type=target.dataset.mode;update();}
+      if(target.dataset.provider&&!target.disabled&&Object.hasOwn(a.searchProviders,target.dataset.provider)){provider=target.dataset.provider;a.set('searchEngine',provider);update();}
+      if(target.dataset.historyIndex!==undefined){query.value=history()[Number(target.dataset.historyIndex)]||'';query.focus();}
+      if(target.id==='sp-clear-history'){a.set('recentSearches',[]);renderHistory();a.toast('История поиска очищена');}
+      // The existing document handler opens portal dialogs; prevent only the link's navigation.
+      if(target.dataset.action)event.preventDefault();
+    }
+    form.addEventListener('submit',submit);root.addEventListener('click',click);
+    update();renderHistory();
+    return ()=>{form.removeEventListener('submit',submit);root.removeEventListener('click',click);};
+  }
+})();

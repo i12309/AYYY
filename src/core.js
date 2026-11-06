@@ -96,7 +96,7 @@
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
       document.body.dataset.page=app.route;
-      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':app.route==='tools'?'tools':'service';
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':app.route==='tools'?'tools':app.route==='search'?'search':'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;

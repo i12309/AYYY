@@ -12,9 +12,9 @@ import re
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css', '../tools/city.css', '../tools/approved.css', '../tools/approved-responsive.css', '../markets/style.css']
+CSS = ['style.css', 'tools.css', 'tools-page.css', 'creative.css', 'data.css', 'productivity.css', 'splash.css', 'search-page.css', '../tools/city.css', '../tools/approved.css', '../tools/approved-responsive.css', '../markets/style.css']
 JS = ['core.js', 'tools.js', 'creative.js', 'data.js', 'productivity.js', 'pages.js',
-      'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', '../tools/loan-model.js', '../tools/science-model.js', '../tools/common.js', '../tools/loan-view.js', '../tools/science-view.js', '../tools/approved-workspace.js', 'corporate-tools.js', '../markets/model.js', '../markets/chart.js', '../markets/view.js', 'boot.js']
+      'search-page.js', 'home-data.js', 'splash.js', 'connected.js', 'gmail.js', 'weather-route.js', '../tools/loan-model.js', '../tools/science-model.js', '../tools/common.js', '../tools/loan-view.js', '../tools/science-view.js', '../tools/approved-workspace.js', 'corporate-tools.js', '../markets/model.js', '../markets/chart.js', '../markets/view.js', 'boot.js']
 
 
 def build(destination: Path, inline: bool = False):

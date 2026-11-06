@@ -3,9 +3,10 @@ import base64
 import sys
 base=Path(__file__).resolve().parent
 html=(base/'index.html').read_text(encoding='utf-8')
-css=(base/'styles.css').read_text(encoding='utf-8')
+css=(base/'styles.css').read_text(encoding='utf-8')+'\n'+(base/'reference.css').read_text(encoding='utf-8')
 js=(base/'app.js').read_text(encoding='utf-8')
 html=html.replace('<link rel="stylesheet" href="styles.css">','<style>\n'+css+'\n</style>')
+html=html.replace('<link rel="stylesheet" href="reference.css">','')
 html=html.replace('<script src="app.js" defer></script>','<script>\n'+js.replace('</script','<\\/script')+'\n</script>')
 for name in ['magnifier.webp','monitor.webp']:
  source=base/'assets'/name
