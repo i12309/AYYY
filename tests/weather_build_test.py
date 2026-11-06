@@ -22,7 +22,7 @@ class StaticBuild(unittest.TestCase):
             out=Path(tmp)/'index.html';build.build(out)
             html=out.read_text();self.assertNotIn('/*__SCRIPTS__*/',html)
             for name in build.CSS+build.JS:
-                digest=hashlib.sha256((ROOT/'src'/name).read_bytes()).hexdigest()[:12]
+                digest=hashlib.sha256((ROOT/'src'/name).read_text(encoding='utf-8').encode('utf-8')).hexdigest()[:12]
                 self.assertIn(posixpath.normpath('src/'+name)+'?v='+digest,html)
                 self.assertTrue((out.parent/'src'/name).is_file())
     def test_weather_assets_in_distribution(self):

@@ -28,7 +28,7 @@ def build(destination: Path, inline: bool = False):
         html = template.replace('/*__STYLES__*/', styles).replace('/*__SCRIPTS__*/', scripts)
     else:
         def url(name):
-            digest = hashlib.sha256((ROOT/name).read_bytes()).hexdigest()[:12]
+            digest = hashlib.sha256((ROOT/name).read_text(encoding='utf-8').encode('utf-8')).hexdigest()[:12]
             return f'{posixpath.normpath("src/"+name)}?v={digest}' 
         styles = '\n  '.join(f'<link rel="stylesheet" href="{url(name)}">' for name in CSS)
         scripts = '\n  '.join(f'<script src="{url(name)}" defer></script>' for name in JS)
@@ -37,7 +37,7 @@ def build(destination: Path, inline: bool = False):
     if '/*__STYLES__*/' in html or '/*__SCRIPTS__*/' in html:
         raise ValueError('Template markers were not replaced')
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(html, encoding='utf-8')
+    destination.write_text(html, encoding='utf-8', newline='\n')
     # Every output, including dist/, is a complete static site, not a broken HTML copy.
     for name in ('assets', 'weather', 'tools', 'markets') + (() if inline else ('src',)):
         source, target = ROOT.parent/name, destination.parent/name
