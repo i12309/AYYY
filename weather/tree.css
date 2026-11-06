@@ -36,9 +36,9 @@
 .ww-tree-hill{position:absolute;bottom:0;left:-3%;width:106%;height:43%;object-fit:fill;opacity:.78;z-index:2;mask-image:linear-gradient(to bottom,transparent 0%,#000 29%,#000 67%,transparent 100%);transition:filter 1.3s,opacity 1.3s}
 .ww-tree-wrap{position:absolute;left:50%;top:8%;height:77%;max-width:none;width:auto;aspect-ratio:900/1000;z-index:4;transform:translateX(-50%);filter:drop-shadow(7px 12px 9px rgba(63,67,50,.06));transition:filter 1.3s}
 .ww-tree-trunk,.ww-tree-foliage-slot,.ww-tree-snowcap,.ww-tree-fall-slot{position:absolute;inset:0;width:100%;height:100%}
-.ww-tree-foliage-slot{z-index:2;opacity:1;transition:opacity 1.1s,filter 1.1s}
+.ww-tree-foliage-slot{z-index:3;opacity:1;transition:opacity 1.1s,filter 1.1s}
 .ww-tree-foliage{display:block;width:100%;height:100%;overflow:visible}
-.ww-tree-trunk{z-index:3;object-fit:fill;user-select:none;pointer-events:none}
+.ww-tree-trunk{z-index:2;object-fit:fill;user-select:none;pointer-events:none}
 .ww-tree-snowcap{z-index:4;opacity:0;transition:opacity 1.4s}
 .ww-tree-fall-slot{z-index:5;pointer-events:none}
 .ww-tree-falling-leaf{position:absolute;left:var(--fx);top:var(--fy);display:block;width:var(--leaf-size);height:calc(var(--leaf-size)*1.45);border-radius:80% 15% 80% 18%;background:var(--leaf-color);transform:rotate(26deg);box-shadow:0 0 2px #976c3730;opacity:.7;animation:ww-tree-leaf-drift var(--duration) ease-in-out var(--delay) infinite}
@@ -117,3 +117,10 @@
 /* Richer hand-painted foliage without changing weather values. */
 .ww-app[data-subject=tree][data-season=autumn] .ww-tree-foliage-slot{filter:saturate(1.12)}
 .ww-app[data-subject=tree][data-season=spring] .ww-tree-foliage-slot{filter:saturate(1.08)}
+
+/* Painterly foliage sits in front of fine branches; keep the trunk clear. */
+.ww-tree-foliage-slot {transform:translateY(5px)}
+.ww-app[data-subject=tree] .ww-tree-trunk{filter:saturate(.78) contrast(.91)}
+@media(max-width:720px){.ww-tree-foliage-slot{transform:translateY(3px)}}
+/* Leave the forecast readable by shifting the tree slightly left. */
+@media(min-width:1251px){.ww-tree-wrap{left:calc(50% - 55px)}}
