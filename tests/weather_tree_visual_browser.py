@@ -8,6 +8,7 @@ from pathlib import Path
 from base64 import b64encode
 import json
 import re
+import shutil
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +45,8 @@ def inline_fixture():
 def run():
     html = inline_fixture()
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
+        chromium = shutil.which('chromium') or shutil.which('chromium-browser')
+        browser = pw.chromium.launch(headless=True, **({'executable_path': chromium} if chromium else {}))
         for width in [360, 390, 768, 1024, 1600]:
             page = browser.new_page(viewport={'width': width, 'height': 900}, reduced_motion='reduce')
             errors = []
