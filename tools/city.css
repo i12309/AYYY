@@ -152,3 +152,51 @@ body[data-shell="tools"] {--bg:#f9fbfd;--surface:#fff;--surface-2:#f2f6fa;--text
 .city-table td small {font-size:8px}
 .city-save-row {gap:7px;margin-bottom:8px}
 .city-save-row input {font-size:10px}
+.city-science-layout {grid-template-columns:275px minmax(0,1fr);gap:10px}
+.city-scientific,.city-plot-panel {padding:12px}
+.city-scientific .city-panel-title h2 {font-size:12px}
+.city-field textarea {font-size:12px;line-height:1.4;min-height:55px}
+.city-science-result {min-height:62px;margin:6px 0 9px;padding:8px 10px;border-radius:5px}
+.city-science-result output {font-size:23px;line-height:1.25}
+.city-science-result>span {font-size:9px}
+.city-engineer-keys {gap:3px}
+.city-engineer-keys button {min-height:29px;padding:5px 2px;font-size:10px}
+.city-engineer-keys button.is-digit {font-size:12px}
+.city-variable-controls {gap:7px;margin-top:8px}
+.city-slider-label {gap:7px;margin-bottom:8px}
+.city-history-row {padding:5px 0;font-size:10px}
+.city-functions {gap:7px;margin-bottom:9px}
+.city-function b {font-size:10px;margin-bottom:3px}
+.city-function input {font-size:11px;padding:6px 7px;height:31px}
+.city-plot-controls {gap:6px;padding:7px 0 2px}
+.city-plot-controls .city-field {max-width:80px;margin-bottom:6px}
+.city-plot-controls .city-field input {height:29px;padding:4px 6px}
+.city-auto {font-size:9px;margin-top:5px}
+.city-zoom {gap:3px;margin-bottom:6px}
+.city-zoom button {min-width:27px;height:28px}
+.city-science-plot {min-height:196px;padding-top:6px}
+.city-science-plot .city-chart {min-height:0;max-height:235px}
+.city-plot-foot {gap:7px;padding-top:5px}
+.city-plot-foot>div {gap:4px}
+.city-plot-foot .city-button {min-height:26px;padding:4px 7px;font-size:9px}
+.city-numerical {margin-top:9px}
+.city-numerical-fields {gap:7px}
+.city-analysis-actions {gap:5px;margin:0 0 7px}
+.city-analysis-actions button {min-height:29px;padding:5px 8px;font-size:10px}
+.city-analysis-result {padding-top:7px;font-size:11px}
+.city-stage .city-legacy.tools-root {--tools-card-padding:12px}
+.city-legacy .tools-layout {grid-template-columns:minmax(0,1fr) 270px;gap:10px}
+.city-legacy .tools-workspace {min-height:0}
+.city-legacy .tools-workspace-head h2 {font-size:17px}
+.city-legacy .tools-context-card {padding:12px!important}
+.city-legacy .tools-note {padding:9px}
+.city-legacy .tools-result-big output {font-size:26px}
+.city-legacy .tools-text-editor,.city-legacy .tools-code-editor {line-height:1.4}
+.city-footer {margin-top:8px;padding:7px 0;font-size:9px}
+@media(min-width:1650px){.city-loan-layout{grid-template-columns:264px minmax(0,1fr)}.city-science-layout{grid-template-columns:285px minmax(0,1fr)}}
+@media(max-width:1220px){.city-loan-layout{grid-template-columns:232px minmax(0,1fr);gap:9px}.city-science-layout{grid-template-columns:248px minmax(0,1fr)}.city-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.city-kpi{min-height:67px}.city-chart-split{grid-template-columns:minmax(0,1fr)}.city-cost-summary{display:grid;grid-template-columns:auto 100px 1fr;align-items:center;gap:7px;border:0;border-top:1px solid #e3ebf2;padding:7px 0 0}.city-cost-summary dl{min-width:0}.city-cost-summary .city-donut{margin:0}.city-cost-summary p{display:none}.city-legacy .tools-layout{grid-template-columns:minmax(0,1fr) 230px}}
+@media(max-width:940px){.city-loan-layout{grid-template-columns:226px minmax(0,1fr)}.city-science-layout{grid-template-columns:1fr}.city-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.city-scientific{display:block}.city-panel{padding:10px}.city-events{padding:0 10px 9px}.city-chart-split{grid-template-columns:1fr}.city-legacy .tools-layout{grid-template-columns:1fr}}
+@media(max-width:780px){.city-loan-layout,.city-science-layout{grid-template-columns:1fr}.city-parameters #loan-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 9px}.city-property-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 9px}.city-property-fields,.city-parameters .city-details,.city-parameters .city-full,.city-term-note{grid-column:1/-1}.city-field-meta{grid-column:1/-1}.city-parameters .city-form-grid{grid-column:1/-1}.city-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.city-kpi strong{font-size:16px}.city-kpi.is-main strong{font-size:19px}.city-chart-split{grid-template-columns:minmax(0,1fr) 138px}.city-cost-summary{display:block;border:0;border-left:1px solid #e3ebf2;padding:0 0 0 9px}.city-cost-summary p{display:block}.city-event-row{grid-template-columns:repeat(3,minmax(0,1fr)) 22px}.city-event-row .city-field:nth-child(3){grid-column:auto;grid-row:auto}.city-event-row .city-icon-button{grid-column:auto;grid-row:auto}.city-science-layout{gap:9px}.city-functions{grid-template-columns:repeat(3,minmax(0,1fr))}.city-function{display:block}}
+@media(max-width:610px){.city-nav{margin-bottom:7px}.city-nav a{min-height:33px;padding:6px 8px}.city-section-head{flex-wrap:wrap}.city-actions{width:100%;justify-content:flex-start}.city-actions .city-button{font-size:10px;gap:5px}.city-loan-layout{gap:8px}.city-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.city-chart-split{grid-template-columns:1fr}.city-cost-summary{display:grid;grid-template-columns:auto 90px 1fr;align-items:center;gap:7px;border:0;border-top:1px solid #e3ebf2;padding:8px 0 0}.city-cost-summary p{display:none}.city-event-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 23px}.city-event-row .city-field:nth-child(3){grid-column:1/3;grid-row:2}.city-event-row .city-icon-button{grid-column:3;grid-row:1/3}.city-parameters #loan-form{grid-template-columns:repeat(2,minmax(0,1fr))}.city-panel{padding:10px}.city-functions{grid-template-columns:1fr}.city-function{display:grid;grid-template-columns:39px 1fr}.city-function small{grid-column:2}.city-numerical-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:390px){.city-global-header nav{gap:9px;font-size:10px}.city-brand-label{display:none}.city-kpi{padding:8px}.city-kpi strong{font-size:15px}.city-kpi.is-main strong{font-size:18px}.city-panel{padding:9px}.city-event-row{gap:5px}.city-field input,.city-field select{font-size:10px}.city-parameters #loan-form{gap:0 7px}.city-property-fields{gap:0 7px}}
+@media print{.city-stage{font-size:10pt}.city-wrap{padding:0}.city-kpis{grid-template-columns:repeat(4,1fr)}.city-panel{background:white;box-shadow:none}.city-loan-layout{grid-template-columns:230px minmax(0,1fr)}}
