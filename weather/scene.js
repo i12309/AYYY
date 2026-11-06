@@ -35,7 +35,6 @@
       <div class="ww-boat"><svg viewBox="0 0 100 90"><path d="m17 66 68-1-14 12-40 1Z" fill="currentColor"/><path d="M52 10v59M50 15 24 58h25M56 26l22 34H56" fill="var(--ww-paper)" stroke="currentColor" stroke-width="1.1"/><path d="M17 82h65" stroke="currentColor" opacity=".4"/></svg></div>
       <div class="ww-tower-wrap"><div class="ww-beam"></div><img class="ww-tower" src="${asset}" width="560" height="990" alt="" draggable="false" decoding="async"><div class="ww-lantern"></div><div class="ww-window ww-window-top"></div><div class="ww-window ww-window-low"></div><svg class="ww-snow-cover" viewBox="0 0 560 990" preserveAspectRatio="none"><path d="m210 163 54-45 61 44-30-5-28-25-27 25Z M175 281q88-20 180 1l-5 9q-87-12-172 0ZM190 495q76-18 149 5l2 15q-75-22-152-7ZM120 845q160-20 275 3l5 12q-136-20-282 0ZM68 918l61-40 58 9-39 17-50 13-30 19ZM233 951l40-31 43 3 12 13-44-1-33 27ZM405 922l32-10 54 32-44-12Z" fill="#f6fcff" opacity=".8"/></svg></div>
       <div class="ww-rock-edge ww-rock-edge-left"><img src="${asset}" alt="" draggable="false"></div><div class="ww-rock-edge ww-rock-edge-right"><img src="${asset}" alt="" draggable="false"></div>
-      ${root.AYYYWeatherTree?.sceneMarkup(asset)||''}
       <div class="ww-birds">${[0,1,2].map((n)=>`<svg class="ww-bird ww-bird-${n}" viewBox="0 0 100 40"><path d="M2 25q22-19 46 1Q70 5 98 14L65 17 48 29 23 20Z" fill="var(--ww-paper)" stroke="currentColor" stroke-width="1.3"/><path d="m3 25 22-5 23 9 17-12 33-3" fill="none" stroke="currentColor" stroke-width="2"/></svg>`).join('')}</div>
       <div class="ww-lightning"><svg viewBox="0 0 80 210"><path d="m49 4-24 77 25-13-31 71 20-10-24 75 47-105-22 12 29-63-28 17Z" fill="#f6eaca"/></svg></div>
       <div class="ww-fog ww-fog-back"></div><div class="ww-fog ww-fog-front"></div><canvas class="ww-precipitation"></canvas>
@@ -43,7 +42,7 @@
   }
   class Scene {
     constructor(host,asset){
-      this.host=host;host.innerHTML=markup(asset);this.canvas=host.querySelector('canvas');this.ctx=this.canvas.getContext('2d');this.frame=0;this.previous=0;this.time=0;this.alive=true;this.paused=false;this.mode='partly';this.wind=4;this.phase='day';this.subject='lighthouse';this.tick=this.tick.bind(this);host.dataset.subject='lighthouse';
+      this.host=host;host.innerHTML=markup(asset);this.canvas=host.querySelector('canvas');this.ctx=this.canvas.getContext('2d');this.frame=0;this.previous=0;this.time=0;this.alive=true;this.paused=false;this.mode='partly';this.wind=4;this.phase='day';this.tick=this.tick.bind(this);
       this.motion=matchMedia('(prefers-reduced-motion: reduce)');this.onMotion=()=>this.sync();this.onVisibility=()=>this.sync();
       this.motion.addEventListener('change',this.onMotion);document.addEventListener('visibilitychange',this.onVisibility);
       this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(host);this.resize();
@@ -53,14 +52,7 @@
       const r=this.host.getBoundingClientRect();this.width=r.width;this.height=r.height;const dpr=Math.min(window.devicePixelRatio||1,2);
       this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);this.ctx?.setTransform(dpr,0,0,dpr,0,0);this.draw(0);
     }
-    update(point,day,override={},context={}){
-      this.setSubject(context.subject||'lighthouse');
-      if(this.subject==='tree'&&root.AYYYWeatherTree){
-        const month=Number(override.month)||Number(context.month)||new Date(point.time*1000).getUTCMonth()+1;
-        const seasonal=root.AYYYWeatherTree.paintMonth(this.host,month,context.latitude??50);
-        this.host.dataset.season=seasonal.season;
-        const app=this.host.closest('.ww-app');if(app){app.dataset.season=seasonal.season;app.dataset.month=String(seasonal.month);}
-      }
+    update(point,day,override={}){
       const mode=override.weather||M.condition(point.code,point.isDay).key;
       this.mode=mode;this.phase=override.phase||M.phase(point,day);this.wind=M.number(point.wind)===null?3:point.wind;
       this.host.dataset.weather=mode;this.host.dataset.phase=this.phase;
@@ -68,13 +60,8 @@
       const duration=Math.max(3,15-this.wind*.55);this.host.style.setProperty('--ww-wave-duration',duration+'s');
       this.host.style.setProperty('--ww-cloud-duration',Math.max(18,75-this.wind*3)+'s');
       this.drift=Math.sin(((point.direction??250)+180)*Math.PI/180);this.host.style.setProperty('--ww-drift',this.drift<0?'-24px':'24px');
-      this.host.setAttribute('aria-label',`Художественная сцена: ${this.subject==='tree'?'дерево на холме и горы':'маяк у моря'}, ${M.condition(point.code,point.isDay).label}, ${this.phase==='night'?'ночь':this.phase==='dusk'?'закат':this.phase==='dawn'?'рассвет':'день'}. Иллюстрация не является наблюдением природы.`);
+      this.host.setAttribute('aria-label',`Художественная сцена: ${M.condition(point.code,point.isDay).label}, ${this.phase==='night'?'ночь':this.phase==='dusk'?'закат':this.phase==='dawn'?'рассвет':'день'}. Море не является морским прогнозом.`);
       this.sync();
-    }
-    setSubject(subject){
-      const next=subject==='tree'&&root.AYYYWeatherTree?'tree':'lighthouse';
-      this.subject=next;this.host.dataset.subject=next;
-      const app=this.host.closest('.ww-app');if(app)app.dataset.subject=next;
     }
     setPaused(paused){this.paused=paused;this.sync();}
     sync(){
