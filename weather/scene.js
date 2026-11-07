@@ -55,7 +55,7 @@
     update(point,day,override={}){
       const mode=override.weather||M.condition(point.code,point.isDay).key;
       this.intensity=override.intensity??.5;this.host.dataset.flashes=String(override.flashes!==false);this.mode=mode;this.phase=override.phase||M.phase(point,day);this.wind=M.number(point.wind)===null?3:point.wind;
-      this.host.dataset.weather=mode;this.host.dataset.phase=this.phase;
+      this.host.querySelectorAll('.ww-cloud').forEach((el,i)=>{el.style.opacity=M.number(override.cloudCover)===null?'':String(override.cloudCover*(i===2?.35:.65));});this.host.dataset.weather=mode;this.host.dataset.phase=this.phase;
       const area=this.host.closest('.ww-app');if(area){area.dataset.weather=mode;area.dataset.phase=this.phase;}
       const duration=Math.max(3,15-this.wind*.55);this.host.style.setProperty('--ww-wave-duration',duration+'s');
       this.host.style.setProperty('--ww-cloud-duration',Math.max(18,75-this.wind*3)+'s');

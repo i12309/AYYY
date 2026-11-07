@@ -4,3 +4,5 @@ dist/
 .openai/
 tests/forecast.fixture.json
 docs/weather-*.png
+
+dist-inline/

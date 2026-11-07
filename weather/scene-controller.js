@@ -15,12 +15,12 @@
    try{
     if(!root.AYYYTreeScene){treeModule??=load(this.options.treeURL).catch(e=>{treeModule=null;throw e;});await treeModule;}
     if(!this.alive||n!==this.generation)return false;
-    node=document.createElement('div');node.className='ww-tree-scene';node.style.visibility='hidden';node.innerHTML=['sky','world','atmosphere'].map(name=>`<canvas data-layer="${name}"></canvas>`).join('');this.app.prepend(node);
+    node=document.createElement('div');node.className='ww-tree-scene';node.setAttribute('role','img');node.setAttribute('aria-label','Художественная погодная сцена с деревом');node.style.visibility='hidden';node.innerHTML=['sky','world','atmosphere'].map(name=>`<canvas data-layer="${name}"></canvas>`).join('');this.app.prepend(node);
     candidate=new root.AYYYTreeScene(node,this.app,this.options.treeAssetURL);candidate.params.paused=true;
     await candidate.readyPromise;
     if(candidate.error)throw new Error('Не удалось загрузить изображения дерева. Повторите выбор оформления.');
     if(!this.alive||n!==this.generation){candidate.destroy();node.remove();return false;}
-    this.renderer.destroy();this.renderer=candidate;this.treeHost=node;this.host.hidden=true;this.theme='tree';this.host.hidden=true;this.app.dataset.sceneTheme='tree';node.style.visibility='';this.update(this.params);return true;
+    this.renderer.destroy();this.renderer=candidate;this.treeHost=node;this.host.hidden=true;this.theme='tree';this.host.hidden=true;this.app.dataset.sceneTheme='tree';node.style.visibility='';candidate.resize();this.update(this.params);return true;
    }catch(e){candidate?.destroy();node?.remove();if(this.alive&&n===this.generation)throw e;return false;}
   }
   destroy(){this.alive=false;this.generation++;this.renderer?.destroy();this.treeHost?.remove();}

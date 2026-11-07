@@ -18,7 +18,7 @@
   if(Number.isFinite(override.wind))state.windSpeed=override.wind;
   if(Number.isFinite(override.intensity))state.precipitationEffect=override.intensity;
   if(override.phase){state.minute={dawn:360,day:840,dusk:1080,night:0}[override.phase];}
-  const sunValid=M.number(state.sunrise)!==null&&M.number(state.sunset)!==null&&state.sunset>state.sunrise;
+  const sunValid=M.number(state.sunrise)!==null&&M.number(state.sunset)!==null&&state.sunset>state.sunrise&&M.time(state.sunset,data.timezone)>M.time(state.sunrise,data.timezone);
   let light;
   if(override.phase&&sunValid){const sr=M.parts(state.sunrise,data.timezone),ss=M.parts(state.sunset,data.timezone);const rise=Number(sr.hour)*60+Number(sr.minute),set=Number(ss.hour)*60+Number(ss.minute);state.minute={dawn:rise,day:(rise+set)/2,dusk:set,night:0}[override.phase];}
 

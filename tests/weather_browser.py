@@ -69,7 +69,7 @@ def mode(page,weather='',phase=''):
     page.locator('#ww-scenes-button').click()
     page.locator('[data-scene-weather="'+weather+'"]').click()
     page.locator('[data-scene-phase="'+phase+'"]').click()
-    page.locator('#ww-settings-dialog [data-close]').last.click()
+    page.locator('#ww-settings-dialog [data-action="close-settings"]').last.click()
 
 
 with sync_playwright() as p:
@@ -143,9 +143,9 @@ with sync_playwright() as p:
     pixels='''() => {const c=document.querySelector('.ww-precipitation');return c.toDataURL()}'''
     first=page.evaluate(pixels);page.wait_for_timeout(150)
     check('rain is animated',first!=page.evaluate(pixels))
-    page.locator('#ww-pause-button').click();first=page.evaluate(pixels);page.wait_for_timeout(150)
+    page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape');first=page.evaluate(pixels);page.wait_for_timeout(150)
     check('pause freezes rain',first==page.evaluate(pixels))
-    page.locator('#ww-pause-button').click()
+    page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape')
     page.evaluate('''() => {Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));}''')
     check('hidden tab stops scene',page.locator('#ww-scene').get_attribute('data-still')=='true')
     page.evaluate("() => {delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));}")
@@ -192,7 +192,7 @@ with sync_playwright() as p:
         check('tower visible '+str(w),page.locator('.ww-tower').is_visible())
         check('hour labels contained '+str(w),page.locator('.ww-hour').first.evaluate('(e)=>e.scrollHeight<=e.clientHeight+2'))
     if os.environ.get('AYYY_SCREENSHOTS')=='1':
-        page.set_viewport_size({'width':1600,'height':950});page.locator('#ww-pause-button').click();page.wait_for_timeout(100)
+        page.set_viewport_size({'width':1600,'height':950});page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape');page.wait_for_timeout(100)
         page.screenshot(path=str(OUT/'weather-day.png'),full_page=True,animations='disabled',timeout=15000)
         mode(page,'','night');page.wait_for_timeout(2100);page.screenshot(path=str(OUT/'weather-night.png'),full_page=True,animations='disabled',timeout=15000)
         mode(page,'rain','day');page.wait_for_timeout(2100);page.screenshot(path=str(OUT/'weather-rain.png'),full_page=True,animations='disabled',timeout=15000)

@@ -34,6 +34,8 @@ scene=scene.replace('this.params.weather].join', 'this.params.weather,this.param
 scene=scene.replace('const w=this.layout.clientWidth,small=w<=1100;', 'const w=this.layout.clientWidth,small=w<=1100;')
 scene=scene.replace('const top=small?spacer.y+4:Math.max(controls.bottom+12,spacer.y+30);','const top=small?spacer.y+45:Math.max(controls.bottom+12,spacer.y+50);')
 scene=scene.replace('this.onTick?.(dt);','this.onTick?.(dt);')
+scene=scene.replace('this.drawWorld();this.sync();', 'this.drawWorld();if(prev.paused!==this.params.paused)this.sync();else if(this.still)this.draw(0);')
+scene=scene.replace('if(!this.still)this.raf=requestAnimationFrame(this.tick);}', 'if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}')
 scene=scene.replace('root.AYYYAtmosphere=Scene;','root.AYYYTreeScene=Scene;')
 scene=scene.replace("host.replaceChildren();", "host.replaceChildren();")
 (ROOT/'weather/tree-scene.js').write_text(scene,encoding='utf-8',newline='\n')

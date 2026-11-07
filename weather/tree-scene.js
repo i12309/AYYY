@@ -337,10 +337,10 @@ class Scene{
   if(this.params.month!==this.month||prev.snowCover!==this.params.snowCover)this.prepareSeason();
   if(prev.weather!==this.params.weather){this.bolt=null;this.nextBolt=this.time+4+this.rand()*3;}
   if(!this.params.flashes||this.params.weather!=='storm')this.bolt=null;
-  this.drawWorld();this.sync();
+  this.drawWorld();if(prev.paused!==this.params.paused)this.sync();else if(this.still)this.draw(0);
  }
- sync(){if(!this.alive)return;cancelAnimationFrame(this.raf);this.raf=0;this.last=0;this.layout.dataset.treeMotion=this.still?'still':'animated';if(this.still)this.bolt=null;this.draw(0);if(!this.still)this.raf=requestAnimationFrame(this.tick);}
- tick(stamp){this.raf=0;if(this.still)return;const dt=this.last?Math.min(.05,(stamp-this.last)/1000):0;this.last=stamp;this.time+=dt;this.onTick?.(dt);this.drawWorld();this.draw(dt);if(!this.still)this.raf=requestAnimationFrame(this.tick);}
+ sync(){if(!this.alive)return;cancelAnimationFrame(this.raf);this.raf=0;this.last=0;this.layout.dataset.treeMotion=this.still?'still':'animated';if(this.still)this.bolt=null;this.draw(0);if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}
+ tick(stamp){this.raf=0;if(this.still)return;const dt=this.last?Math.min(.05,(stamp-this.last)/1000):0;this.last=stamp;this.time+=dt;this.onTick?.(dt);this.drawWorld();this.draw(dt);if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}
  drawSky(){
   const c=this.ctx[0];if(!c||!this.g)return;const p=this.params,l=p.light,g=this.g,w=this.w,h=this.h,skyEnd=Math.max(480,g.skyBottom+180);
   c.clearRect(0,0,w,h);const bg=c.createLinearGradient(0,0,0,skyEnd);bg.addColorStop(0,rgba(l.sky));bg.addColorStop(.54,rgba(l.horizon));bg.addColorStop(1,rgba(l.paper));c.fillStyle=bg;c.fillRect(0,0,w,h);
