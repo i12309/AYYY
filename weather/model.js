@@ -51,7 +51,7 @@
     if([51,53,55,56,57].includes(code))return {key:'rain',label:[56,57].includes(code)?'Переохлаждённая морось':'Морось',icon:'rain'};
     if([61,63,65,66,67,80,81,82].includes(code))return {key:'rain',label:[65,67,82].includes(code)?'Сильный дождь':[66,67].includes(code)?'Ледяной дождь':'Дождь',icon:'rain'};
     if([71,73,75,77,85,86].includes(code))return {key:'snow',label:[75,86].includes(code)?'Сильный снег':'Снег',icon:'snow'};
-    if([95,96,99].includes(code))return {key:'storm',label:[96,99].includes(code)?'Гроза с градом':'Гроза',icon:'storm'};
+    if([95,96,97,99].includes(code))return {key:'storm',label:[96,99].includes(code)?'Гроза с градом':'Гроза',icon:'storm'};
     return {key:'unknown',label:'Нет данных об облачности',icon:'cloud'};
   }
   function phase(point,day) {
@@ -79,7 +79,7 @@
       humidity:row(h,'relative_humidity_2m',i,0,100),code:row(h,'weather_code',i,0,99),
       pressure:row(h,'pressure_msl',i,800,1150),clouds:row(h,'cloud_cover',i,0,100),
       wind:row(h,'wind_speed_10m',i,0,150),direction:row(h,'wind_direction_10m',i,0,360),gust:row(h,'wind_gusts_10m',i,0,200),
-      pop:row(h,'precipitation_probability',i,0,100),precip:row(h,'precipitation',i,0,1000),uv:row(h,'uv_index',i,0,40),
+      interval:3600,precipUnit:raw.hourly_units?.precipitation==='mm'?'mm':null,pop:row(h,'precipitation_probability',i,0,100),precip:row(h,'precipitation',i,0,1000),uv:row(h,'uv_index',i,0,40),
       visibility:row(h,'visibility',i,0,1e6),isDay:h.is_day?.[i]===1
     })).filter(p=>range(p.time,1,1e11)&&p.temp!==null);
     const days=d.time.slice(0,14).map((stamp,i)=>({
@@ -91,7 +91,7 @@
     })).filter(p=>range(p.time,1,1e11)&&p.min!==null&&p.max!==null&&p.min<=p.max);
     const close=hours.reduce((best,p)=>Math.abs(p.time-c.time)<Math.abs(best.time-c.time)?p:best,hours[0]||{time:c.time});
     const read=(key,min,max)=>range(c[key],min,max)?c[key]:null;
-    const current={...close,time:c.time,temp:read('temperature_2m',-110,70),feels:read('apparent_temperature',-140,100),
+    const current={...close,interval:range(c.interval,1,86400)?c.interval:null,precipUnit:raw.current_units?.precipitation==='mm'?'mm':null,time:c.time,temp:read('temperature_2m',-110,70),feels:read('apparent_temperature',-140,100),
       humidity:read('relative_humidity_2m',0,100),pressure:read('pressure_msl',800,1150),code:read('weather_code',0,99),
       clouds:read('cloud_cover',0,100),wind:read('wind_speed_10m',0,150),direction:read('wind_direction_10m',0,360),gust:read('wind_gusts_10m',0,200),
       precip:read('precipitation',0,1000),isDay:c.is_day===1};

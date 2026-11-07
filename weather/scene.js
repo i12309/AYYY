@@ -54,7 +54,7 @@
     }
     update(point,day,override={}){
       const mode=override.weather||M.condition(point.code,point.isDay).key;
-      this.mode=mode;this.phase=override.phase||M.phase(point,day);this.wind=M.number(point.wind)===null?3:point.wind;
+      this.intensity=override.intensity??.5;this.host.dataset.flashes=String(override.flashes!==false);this.mode=mode;this.phase=override.phase||M.phase(point,day);this.wind=M.number(point.wind)===null?3:point.wind;
       this.host.dataset.weather=mode;this.host.dataset.phase=this.phase;
       const area=this.host.closest('.ww-app');if(area){area.dataset.weather=mode;area.dataset.phase=this.phase;}
       const duration=Math.max(3,15-this.wind*.55);this.host.style.setProperty('--ww-wave-duration',duration+'s');
@@ -75,7 +75,7 @@
     }
     draw(dt){
       if(!this.ctx||!this.particles)return;const c=this.ctx,w=this.width,h=this.height;c.clearRect(0,0,w,h);if(!['rain','snow','storm'].includes(this.mode))return;
-      const snow=this.mode==='snow',count=snow?60:this.mode==='storm'?100:65;
+      const snow=this.mode==='snow',count=Math.round((snow?120:150)*this.intensity);
       c.strokeStyle=this.phase==='night'?'rgba(174,212,231,.35)':'rgba(78,133,156,.38)';c.fillStyle=this.phase==='night'?'rgba(231,244,251,.8)':'rgba(255,255,255,.94)';c.lineWidth=1;
       for(let i=0;i<count;i++){
         const p=this.particles[i];p.y=(p.y+dt*(snow?.035:.62)*p.s)%1;p.x=(p.x+dt*this.drift*(snow?.024:.13)+1)%1;

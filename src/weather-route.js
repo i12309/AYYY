@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='coast-6';
+  const VERSION='themes-1';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;
@@ -23,8 +23,11 @@
   function ensure(){
     if(loading)return loading;
     loading=(async()=>{
-      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true)]);
+      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('scene-controls.css',true)]);
       if(!window.AYYYWeatherModel)await resource('model.js');
+      if(!window.AYYYTreePalette)await resource('tree-palette.js');
+      if(!window.AYYYSceneState)await resource('scene-state.js');
+      if(!window.AYYYSceneController)await resource('scene-controller.js');
       if(!window.AYYYWeatherScene)await resource('scene.js');
       if(!window.AYYYWeather)await resource('view.js');
       if(!window.AYYYWeather?.mount)throw new Error('Weather module incomplete');
@@ -94,7 +97,7 @@
       document.body.dataset.shell='weather';let active=true,view=null;
       const mount=()=>ensure().then(()=>{
         if(!active||!host.isConnected||app.route!=='weather')return;
-        view=window.AYYYWeather.mount(host,{city:app.getWeatherCity(),assetURL:url('assets/lighthouse.avif'),homeURL:'#home',directoryURL:'#directory',motionEnabled:app.settings?.motion!==false,
+        view=window.AYYYWeather.mount(host,{treeURL:url('tree-scene.js'),treeAssetURL:new URL('assets/tree/',base).href,city:app.getWeatherCity(),assetURL:url('assets/lighthouse.avif'),homeURL:'#home',directoryURL:'#directory',motionEnabled:app.settings?.motion!==false,
           onNavigate:route=>app.navigate(route),onData:(city,snapshot)=>app.acceptWeatherSnapshot(city,snapshot)});
         if(app.param==='city')host.querySelector('.ww-city-search')?.click();
       }).catch(()=>{
