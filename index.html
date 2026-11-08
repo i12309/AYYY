@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="AYYY — ваш маяк в интернете. Поиск, полезные инструменты, заметки, творчество и игры на одной странице.">
+  <meta name="description" content="AYYY — ваш маяк в интернете. Поиск, погода, полезные инструменты и игры на одной странице.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>AYYY — ваш маяк в интернете</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='13' fill='%23ff7200'/%3E%3Cpath d='M20 17h8l5 23H15l5-23zM18 12l6-5 6 5M19 12h10v5H19zM16 40h16M18 29h12' fill='none' stroke='white' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="src/style.css?v=a4bcb37c21f9">
+  <link rel="stylesheet" href="src/style.css?v=440333b782b6">
   <link rel="stylesheet" href="src/tools.css?v=9180a5798e56">
   <link rel="stylesheet" href="src/tools-page.css?v=829520c66006">
-  <link rel="stylesheet" href="src/creative.css?v=7df2d1a1b187">
+  <link rel="stylesheet" href="src/creative.css?v=e65a25adfdeb">
   <link rel="stylesheet" href="src/data.css?v=79ff93d5b549">
-  <link rel="stylesheet" href="src/productivity.css?v=7d5dcd61dedf">
+  <link rel="stylesheet" href="src/productivity.css?v=7285ac88f2c9">
   <link rel="stylesheet" href="src/splash.css?v=03f0234b26e4">
   <link rel="stylesheet" href="src/search-page.css?v=aaeaf066e58a">
   <link rel="stylesheet" href="tools/city.css?v=0e2e596a9abc">
@@ -28,22 +28,17 @@
     <nav class="nav-scroll">
       <div class="nav-section">
         <a href="#home" class="nav-item active" data-nav="home" title="Главная" aria-label="Главная"><span data-icon="home"></span><span>Главная</span></a>
-        <a href="#directory" class="nav-item" data-nav="directory" title="Все сервисы" aria-label="Все сервисы"><span data-icon="grid"></span><span>Все сервисы</span><span class="nav-count">22</span></a>
+        <a href="#directory" class="nav-item" data-nav="directory" title="Все сервисы" aria-label="Все сервисы"><span data-icon="grid"></span><span>Все сервисы</span><span class="nav-count">17</span></a>
         <a href="#search" class="nav-item" data-nav="search" title="Поиск" aria-label="Поиск"><span data-icon="search"></span><span>Поиск</span></a>
         <a href="#ai" class="nav-item" data-nav="ai" title="ИИ-помощник" aria-label="ИИ-помощник"><span data-icon="sparkles"></span><span>ИИ-помощник</span><span class="nav-new"></span></a>
       </div>
       <div class="nav-section"><div class="nav-section-label">На каждый день</div>
-        <a href="#mail" class="nav-item" data-nav="mail" title="Почта" aria-label="Почта"><span data-icon="mail"></span><span>Почта</span></a>
-        <a href="#parcels" class="nav-item" data-nav="parcels" title="Мои посылки" aria-label="Мои посылки"><span data-icon="package"></span><span>Мои посылки</span></a>
         <a href="#weather" class="nav-item" data-nav="weather" title="Погода" aria-label="Погода"><span data-icon="sun"></span><span>Погода</span></a>
         <a href="#finance" class="nav-item" data-nav="finance" title="Валюты и рынки" aria-label="Валюты и рынки"><span data-icon="chart"></span><span>Валюты и рынки</span></a>
       </div>
       <div class="nav-section"><div class="nav-section-label">Создавайте и пробуйте</div>
         <a href="#tools" class="nav-item" data-nav="tools" title="Инструменты" aria-label="Инструменты"><span data-icon="calculator"></span><span>Инструменты</span></a>
-        <a href="#paint" class="nav-item" data-nav="paint" title="Мастерская" aria-label="Мастерская"><span data-icon="brush"></span><span>Мастерская</span></a>
         <a href="#games" class="nav-item" data-nav="games" title="Игры" aria-label="Игры"><span data-icon="gamepad"></span><span>Игры</span></a>
-        <a href="#notes" class="nav-item" data-nav="notes" title="Заметки и задачи" aria-label="Заметки и задачи"><span data-icon="note"></span><span>Заметки и задачи</span></a>
-        <a href="#bookmarks" class="nav-item" data-nav="bookmarks" title="Мои закладки" aria-label="Мои закладки"><span data-icon="bookmark"></span><span>Мои закладки</span></a>
         <a href="#focus" class="nav-item" data-nav="focus" title="Время фокуса" aria-label="Время фокуса"><span data-icon="focus"></span><span>Время фокуса</span></a>
       </div>
     </nav>
@@ -58,17 +53,16 @@
   <dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button class="icon-btn" data-close-modal aria-label="Закрыть окно"><span data-icon="x"></span></button></div><div id="modal-body"></div></dialog>
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
   <noscript><div style="padding:30px;margin-left:220px">Для работы инструментов AYYY включите JavaScript в браузере.</div></noscript>
-  <script src="src/core.js?v=3c445e8a871e" defer></script>
+  <script src="src/core.js?v=7ba51fdb286c" defer></script>
   <script src="src/tools.js?v=fa79c41369e6" defer></script>
-  <script src="src/creative.js?v=fcf674f8bd36" defer></script>
+  <script src="src/creative.js?v=2ec12a6860f1" defer></script>
   <script src="src/data.js?v=4c49b2b5b1ee" defer></script>
-  <script src="src/productivity.js?v=d12b7a35de82" defer></script>
-  <script src="src/pages.js?v=18931239f548" defer></script>
+  <script src="src/productivity.js?v=7aefbd833c8f" defer></script>
+  <script src="src/pages.js?v=2cdb3aa97386" defer></script>
   <script src="src/search-page.js?v=fab806e8bc26" defer></script>
   <script src="src/home-data.js?v=e86d600aa60a" defer></script>
-  <script src="src/splash.js?v=520a0402519b" defer></script>
-  <script src="src/connected.js?v=dc2e80556042" defer></script>
-  <script src="src/gmail.js?v=67992c1a3048" defer></script>
+  <script src="src/splash.js?v=c54b093160ca" defer></script>
+  <script src="src/connected.js?v=764a375f7617" defer></script>
   <script src="weather/model.js?v=0e7399948ca0" defer></script>
   <script src="src/weather-route.js?v=f2134f114a5e" defer></script>
   <script src="tools/loan-model.js?v=6a32f8e861b0" defer></script>
@@ -81,6 +75,6 @@
   <script src="markets/model.js?v=8b4517133391" defer></script>
   <script src="markets/chart.js?v=ec1ebfdfd2ad" defer></script>
   <script src="markets/view.js?v=0babd9dff791" defer></script>
-  <script src="src/boot.js?v=83c8db231bc3" defer></script>
+  <script src="src/boot.js?v=70a4fa3344c0" defer></script>
 </body>
 </html>
