@@ -15,102 +15,6 @@
     return result;
   };
   const timeLabel = seconds => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-  const shapeIcon = name => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${name === 'rectangle' ? '<rect x="4" y="5" width="16" height="14" rx="2"/>' : name === 'ellipse' ? '<circle cx="12" cy="12" r="8"/>' : '<path d="m5 19 14-14"/><circle cx="5" cy="19" r="1"/><circle cx="19" cy="5" r="1"/>'}</svg>`;
-  const PALETTE = ['#2D5BCE', '#E87861', '#369B87', '#E7B74C', '#8C79C6', '#29384A', '#ED88AB', '#FFFFFF'];
-  const PAINT_TOOLS = [{id:'brush', label:'Кисть', icon:'brush'}, {id:'eraser',label:'Ластик',icon:'eraser'}, {id:'line',label:'Линия'}, {id:'rectangle',label:'Прямоугольник'}, {id:'ellipse',label:'Эллипс'}];
-
-  function paintRender() {
-    return `<div class="creative-intro"><div><span class="creative-eyebrow">НЕБОЛЬШАЯ ТВОРЧЕСКАЯ ПАУЗА</span><h2>Место для ваших идей</h2><p class="muted">Нарисуйте, набросайте схему или добавьте цвет в свой день.</p></div><span class="creative-local">${icon('check',15)} Рисунок остаётся у вас</span></div>
-    <div class="paint-layout">
-      <section class="panel paint-studio" aria-label="Редактор рисунка">
-        <div class="paint-topline"><div><strong>Мой альбом</strong><span class="paint-sheet-label" id="paint-sheet-label">Лист 01 · 1200 × 760</span></div><div class="paint-file-actions"><button class="btn" type="button" id="paint-import">${icon('image',16)}<span>Открыть фото</span></button><button class="btn primary" type="button" id="paint-export">${icon('download',16)}<span>Скачать PNG</span></button><input id="paint-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div></div>
-        <div class="paint-toolbar"><div class="paint-tool-group" role="group" aria-label="Инструмент">${PAINT_TOOLS.map((tool,index)=>`<button type="button" class="paint-tool ${index===0?'active':''}" data-paint-tool="${tool.id}" title="${tool.label}" aria-label="${tool.label}" aria-pressed="${index===0}">${tool.icon?icon(tool.icon,20):shapeIcon(tool.id)}</button>`).join('')}</div><span class="paint-divider"></span><div class="paint-color-row" role="group" aria-label="Цвет кисти">${PALETTE.map((color,index)=>`<button type="button" class="paint-color ${index===0?'active':''}" data-paint-color="${color}" style="--swatch:${color}" title="${color}" aria-label="Цвет ${color}" aria-pressed="${index===0}"></button>`).join('')}<label class="paint-custom-color" title="Другой цвет"><input type="color" id="paint-custom-color" value="#2d5bce" aria-label="Выбрать другой цвет">${icon('plus',14)}</label></div><label class="paint-size">Толщина<input id="paint-size" type="range" min="1" max="48" value="7" aria-label="Толщина линии"><output id="paint-size-value">7</output></label><div class="paint-history"><button class="icon-btn" type="button" id="paint-undo" title="Отменить" aria-label="Отменить" disabled>${icon('undo',18)}</button><button class="icon-btn" type="button" id="paint-redo" title="Повторить" aria-label="Повторить" disabled>${icon('redo',18)}</button></div></div>
-        <div id="paint-confirm" class="paint-confirm" hidden><span>Очистить холст? Рисунок можно вернуть кнопкой «Отменить».</span><button type="button" class="btn" id="paint-cancel-clear">Отмена</button><button type="button" class="btn primary" id="paint-confirm-clear">Очистить</button></div>
-        <div class="paint-canvas-wrap"><canvas id="paint-canvas" width="1200" height="760" aria-label="Холст для рисования. Используйте мышь, стилус или касание.">Для рисования нужен браузер с поддержкой Canvas.</canvas></div>
-        <div class="paint-status"><span id="paint-status" aria-live="polite"><span class="paint-status-dot"></span>Пример · нарисуйте что-нибудь поверх</span><span id="paint-active-tool">Кисть · 7 px</span></div>
-      </section>
-      <aside class="paint-aside"><section class="panel paint-note"><span class="paint-note-icon">${icon('sparkles',22)}</span><h3>С чего начнём?</h3><p>Иногда хорошая идея начинается с одной линии.</p><div class="paint-prompts"><button type="button" data-paint-prompt="place">Место, куда хочется</button><button type="button" data-paint-prompt="idea">Схема вашей идеи</button><button type="button" data-paint-prompt="mood">Цвет настроения</button></div><p class="paint-prompt-text" id="paint-prompt-text">Маяк уже на холсте. Можно добавить облака, лодку или целый остров.</p></section><section class="panel paint-help"><h3>Под рукой</h3><p>${icon('brush',16)} Мышь, палец или стилус</p><p>${icon('undo',16)} До 16 шагов истории</p><p>${icon('download',16)} PNG в полном размере</p><button class="btn paint-clear" type="button" id="paint-clear">${icon('refresh',16)} С чистого листа</button><small class="muted">Черновик хранится в этом браузере. Чтобы сохранить рисунок отдельно, скачайте PNG.</small></section></aside>
-    </div>`;
-  }
-
-  function drawSample(ctx) {
-    const w=ctx.canvas.width, h=ctx.canvas.height;
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
-    ctx.save(); ctx.translate(160,55); ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.fillStyle='#F5F8FE'; ctx.beginPath(); ctx.ellipse(445,355,335,248,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#F8DF9D';ctx.beginPath();ctx.arc(656,161,57,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#E7B74C';ctx.lineWidth=3;
-    for(let j=0;j<8;j++){const a=j*Math.PI/4;ctx.beginPath();ctx.moveTo(656+Math.cos(a)*70,161+Math.sin(a)*70);ctx.lineTo(656+Math.cos(a)*80,161+Math.sin(a)*80);ctx.stroke();}
-    ctx.fillStyle='#DCEEE9';ctx.beginPath();ctx.moveTo(190,488);ctx.bezierCurveTo(261,452,330,452,401,468);ctx.bezierCurveTo(446,440,518,448,584,490);ctx.lineTo(584,521);ctx.lineTo(190,521);ctx.fill();
-    ctx.strokeStyle='#3D5A7D';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(387,451);ctx.lineTo(408,217);ctx.lineTo(477,217);ctx.lineTo(502,452);ctx.closePath();ctx.fillStyle='#FFFFFF';ctx.fill();ctx.stroke();
-    ctx.fillStyle='#E88773';ctx.beginPath();ctx.moveTo(401,293);ctx.lineTo(485,293);ctx.lineTo(490,339);ctx.lineTo(397,339);ctx.closePath();ctx.fill();
-    ctx.beginPath();ctx.moveTo(392,391);ctx.lineTo(496,391);ctx.lineTo(501,435);ctx.lineTo(388,435);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#E9F0FC';ctx.fillRect(410,171,66,45);ctx.strokeRect(410,171,66,45);
-    ctx.strokeStyle='#3D5A7D';ctx.beginPath();ctx.moveTo(443,171);ctx.lineTo(443,215);ctx.stroke();
-    ctx.fillStyle='#3D5A7D';ctx.beginPath();ctx.moveTo(399,169);ctx.lineTo(443,131);ctx.lineTo(488,169);ctx.closePath();ctx.fill();
-    ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(400,220);ctx.lineTo(487,220);ctx.moveTo(443,132);ctx.lineTo(443,114);ctx.stroke();
-    ctx.fillStyle='#3D5A7D';ctx.beginPath();ctx.roundRect(431,408,25,44,[12,12,0,0]);ctx.fill();
-    ctx.strokeStyle='#6B92C5';ctx.lineWidth=3;
-    for(let row=0;row<4;row++){const yy=511+row*26;for(let col=0;col<6;col++){const xx=222+col*78+(row%2)*26;ctx.beginPath();ctx.moveTo(xx,yy);ctx.quadraticCurveTo(xx+22,yy-12,xx+43,yy);ctx.quadraticCurveTo(xx+53,yy+5,xx+64,yy);ctx.stroke();}}
-    ctx.strokeStyle='#D1DFEE';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(198,229);ctx.bezierCurveTo(206,205,231,206,241,221);ctx.bezierCurveTo(249,198,284,202,292,223);ctx.bezierCurveTo(308,219,320,225,322,239);ctx.lineTo(196,239);ctx.stroke();
-    ctx.strokeStyle='#3D5A7D';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(556,258);ctx.quadraticCurveTo(569,246,582,257);ctx.quadraticCurveTo(595,245,607,256);ctx.moveTo(621,285);ctx.quadraticCurveTo(631,276,641,285);ctx.quadraticCurveTo(652,275,663,284);ctx.stroke();
-    ctx.strokeStyle='#A9C8BB';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(312,472);ctx.lineTo(309,427);ctx.moveTo(311,451);ctx.lineTo(296,439);ctx.moveTo(310,443);ctx.lineTo(322,431);ctx.stroke();
-    ctx.restore();
-  }
-
-  function paintMount() {
-    const root=$('#view'); const canvas=$('#paint-canvas',root); if(!canvas)return;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true}); if(!ctx){A.toast('В этом браузере Canvas недоступен.');return;}
-    let active=true, tool='brush', color=PALETTE[0], size=7, pointer=null, start=null, last=null, basePixels=null, history=[], historyAt=-1, loading=false, saveTimer=0, snapshotVersion=0;
-    const status=$('#paint-status',root), undo=$('#paint-undo',root), redo=$('#paint-redo',root), custom=$('#paint-custom-color',root);
-    const updateControls=()=>{undo.disabled=loading||historyAt<=0;redo.disabled=loading||historyAt>=history.length-1;$('#paint-import',root).disabled=loading;$('#paint-clear',root).disabled=loading;$('#paint-active-tool',root).textContent=`${PAINT_TOOLS.find(t=>t.id===tool).label} · ${size}${tool==='eraser'?' × 2':''} px`;};
-    const setStatus=text=>{status.textContent=text;};
-    const persist=png=>{if(!png)return;if(png.length>1600000){setStatus('Большой рисунок · сохраните PNG отдельно');return;}try{const saved=A.set('paint_draft',{png,modified:Date.now()});setStatus(saved===false?'Не удалось сохранить черновик · скачайте PNG':'Черновик сохранён в этом браузере');}catch(_){setStatus('Хранилище заполнено · сохраните PNG');}};
-    const remember=()=>{
-      if(!active)return;
-      let png;try{png=canvas.toDataURL('image/png');}catch(_){A.toast('Не получилось сохранить снимок холста.');return;}
-      history=history.slice(0,historyAt+1); history.push(png);
-      while(history.length>16 || (history.length>2 && history.reduce((sum,s)=>sum+s.length,0)>20000000))history.shift();
-      historyAt=history.length-1; updateControls();clearTimeout(saveTimer);setStatus('Сохраняем черновик…');saveTimer=setTimeout(()=>persist(png),350);
-    };
-    const restore=next=>{
-      if(loading||pointer!==null||next<0||next>=history.length)return;
-      loading=true;updateControls();const version=++snapshotVersion;const image=new Image();
-      image.onload=()=>{if(!active||version!==snapshotVersion)return;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0);historyAt=next;loading=false;updateControls();persist(history[historyAt]);};
-      image.onerror=()=>{if(!active)return;loading=false;updateControls();A.toast('Не удалось восстановить шаг.');};image.src=history[next];
-    };
-    const point=event=>{const rect=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(canvas.width,(event.clientX-rect.left)*canvas.width/rect.width)),y:Math.max(0,Math.min(canvas.height,(event.clientY-rect.top)*canvas.height/rect.height))};};
-    const penStyle=event=>{ctx.strokeStyle=tool==='eraser'?'#fff':color;ctx.fillStyle=ctx.strokeStyle;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=size*(tool==='eraser'?2:1)*(event.pointerType==='pen'?.4+Math.max(.1,event.pressure)*1.1:1);};
-    const previewShape=(p,event)=>{ctx.putImageData(basePixels,0,0);penStyle(event);ctx.beginPath();if(tool==='line'){ctx.moveTo(start.x,start.y);ctx.lineTo(p.x,p.y);}else if(tool==='rectangle'){ctx.rect(start.x,start.y,p.x-start.x,p.y-start.y);}else{ctx.ellipse((start.x+p.x)/2,(start.y+p.y)/2,Math.max(.1,Math.abs(p.x-start.x)/2),Math.max(.1,Math.abs(p.y-start.y)/2),0,0,Math.PI*2);}ctx.stroke();};
-    const down=event=>{if(loading||pointer!==null||event.button>0)return;event.preventDefault();pointer=event.pointerId;canvas.setPointerCapture(pointer);start=point(event);last=start;penStyle(event);if(['line','rectangle','ellipse'].includes(tool)){basePixels=ctx.getImageData(0,0,canvas.width,canvas.height);}else{ctx.beginPath();ctx.arc(start.x,start.y,ctx.lineWidth/2,0,Math.PI*2);ctx.fill();}setStatus('Рисуем…');};
-    const move=event=>{if(event.pointerId!==pointer)return;event.preventDefault();const p=point(event);if(basePixels){previewShape(p,event);}else{penStyle(event);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();}last=p;};
-    const end=event=>{if(event.pointerId!==pointer)return;if(!['pointercancel','lostpointercapture'].includes(event.type))move(event);const endedPointer=pointer;pointer=null;basePixels=null;try{if(canvas.hasPointerCapture(endedPointer))canvas.releasePointerCapture(endedPointer);}catch(_){}remember();};
-    const blur=()=>{if(pointer!==null)end({pointerId:pointer,type:'pointercancel'});};
-    canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('lostpointercapture',end);window.addEventListener('blur',blur);
-    $$('[data-paint-tool]',root).forEach(button=>button.addEventListener('click',()=>{tool=button.dataset.paintTool;$$('[data-paint-tool]',root).forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});canvas.style.cursor=tool==='eraser'?'cell':'crosshair';updateControls();}));
-    const chooseColor=value=>{color=value;custom.value=value;$$('[data-paint-color]',root).forEach(b=>{const selected=b.dataset.paintColor.toLowerCase()===value.toLowerCase();b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});};
-    $$('[data-paint-color]',root).forEach(button=>button.addEventListener('click',()=>chooseColor(button.dataset.paintColor)));
-    custom.addEventListener('input',()=>chooseColor(custom.value));$('#paint-size',root).addEventListener('input',event=>{size=Number(event.target.value);$('#paint-size-value',root).textContent=size;updateControls();});
-    undo.addEventListener('click',()=>restore(historyAt-1));redo.addEventListener('click',()=>restore(historyAt+1));
-    $('#paint-clear',root).addEventListener('click',()=>{$('#paint-confirm',root).hidden=false;$('#paint-confirm-clear',root).focus();});$('#paint-cancel-clear',root).addEventListener('click',()=>{$('#paint-confirm',root).hidden=true;});
-    $('#paint-confirm-clear',root).addEventListener('click',()=>{if(loading)return;ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);$('#paint-confirm',root).hidden=true;remember();});
-    $('#paint-export',root).addEventListener('click',()=>{canvas.toBlob(blob=>{if(!blob){A.toast('Не удалось подготовить PNG.');return;}const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`ayyy-drawing-${new Date().toISOString().slice(0,10)}.png`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1500);A.toast('Рисунок готов к скачиванию');},'image/png');});
-    $('#paint-import',root).addEventListener('click',()=>$('#paint-file',root).click());$('#paint-file',root).addEventListener('change',event=>{
-      const file=event.target.files[0];event.target.value='';if(!file)return;
-      if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)){A.toast('Откройте PNG, JPEG, WebP или GIF.');return;}if(file.size>12*1024*1024){A.toast('Выберите изображение размером до 12 МБ.');return;}
-      const url=URL.createObjectURL(file);const image=new Image();loading=true;updateControls();
-      image.onload=()=>{URL.revokeObjectURL(url);if(!active)return;loading=false;if(image.width*image.height>40000000){updateControls();A.toast('Изображение слишком большое. Уменьшите его до 40 мегапикселей.');return;}const scale=Math.min(canvas.width/image.width,canvas.height/image.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,(canvas.width-image.width*scale)/2,(canvas.height-image.height*scale)/2,image.width*scale,image.height*scale);remember();A.toast('Фото на холсте. Теперь можно рисовать поверх.');};
-      image.onerror=()=>{URL.revokeObjectURL(url);if(!active)return;loading=false;updateControls();A.toast('Не удалось открыть это изображение.');};image.src=url;
-    });
-    const promptText={place:'Как выглядит ваше любимое место? Начните с горизонта, добавьте несколько деталей и один яркий акцент.',idea:'Разместите главную мысль в центре, а вокруг нарисуйте связанные идеи. Прямоугольники и линии уже под рукой.',mood:'Выберите три цвета, которые похожи на ваше настроение. Пусть линии свободно встречаются на холсте.'};
-    $$('[data-paint-prompt]',root).forEach(button=>button.addEventListener('click',()=>{$('#paint-prompt-text',root).textContent=promptText[button.dataset.paintPrompt];$$('[data-paint-prompt]',root).forEach(b=>b.classList.toggle('active',b===button));}));
-    const keydown=event=>{if(/INPUT|TEXTAREA|SELECT/.test(event.target.tagName))return;if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){event.preventDefault();restore(historyAt+(event.shiftKey?1:-1));}else if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){event.preventDefault();restore(historyAt+1);}};
-    document.addEventListener('keydown',keydown);
-    const saved=A.get('paint_draft',null);const png=typeof saved==='string'?saved:saved&&saved.png;
-    if(png&&/^data:image\/png;base64,/.test(png)&&png.length<1800000){loading=true;updateControls();const image=new Image();image.onload=()=>{if(!active)return;ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);history=[canvas.toDataURL('image/png')];historyAt=0;loading=false;setStatus('Ваш последний рисунок · сохранён в браузере');updateControls();};image.onerror=()=>{if(!active)return;drawSample(ctx);history=[canvas.toDataURL('image/png')];historyAt=0;loading=false;setStatus('Новый холст · пример');updateControls();};image.src=png;}else{drawSample(ctx);history=[canvas.toDataURL('image/png')];historyAt=0;updateControls();}
-    return()=>{blur();clearTimeout(saveTimer);if(historyAt>0||history.length>1)persist(history[historyAt]);active=false;snapshotVersion++;document.removeEventListener('keydown',keydown);window.removeEventListener('blur',blur);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);};
-  }
-
   const GAME_DATA=[{id:'memory',title:'Найди пару',desc:'Немного внимания, немного памяти',tag:'Внимание',color:'purple',metric:'От 6 пар'},{id:'2048',title:'2048',desc:'Четыре направления. Много вариантов.',tag:'Логика',color:'amber',metric:'Личный рекорд'},{id:'math',title:'Считаем играя',desc:'Первые маленькие победы с числами',tag:'Для детей',color:'green',metric:'10 заданий'}];
   const SHAPES=[
     {name:'солнышко',color:'#D79A33',bg:'#FFF2CA',path:'<circle cx="24" cy="24" r="9"/><path d="M24 5v5m0 28v5M5 24h5m28 0h5M10.5 10.5l3.5 3.5m20 20 3.5 3.5m0-27-3.5 3.5m-20 20-3.5 3.5"/>'},
@@ -199,6 +103,5 @@
     const keydown=event=>{if(/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)||event.ctrlKey||event.metaKey||event.altKey||event.repeat)return;if(['1','2','3','4'].includes(event.key)&&!answered&&!$('#math-question-area',root).hidden){event.preventDefault();respond(question.options[Number(event.key)-1]);}};document.addEventListener('keydown',keydown);restart();return()=>document.removeEventListener('keydown',keydown);
   }
 
-  A.register('paint',{title:'Мастерская',render:paintRender,mount:paintMount});
   A.register('games',{title:'Игры',render:gamesRender,mount:gamesMount});
 })();
