@@ -1,4 +1,4 @@
-/* AYYY · Notes, tasks, bookmarks, and a deadline-based focus timer. */
+/* AYYY · A deadline-based focus timer with session history. */
 (() => {
   'use strict';
   const app = window.AYYY;
@@ -8,7 +8,6 @@
   const bind = (el, type, handler, cleanup) => {el.addEventListener(type,handler);cleanup.push(()=>el.removeEventListener(type,handler));};
   const plural = (n,forms) => {const a=Math.abs(n)%100;return forms[a>10&&a<20?2:a%10===1?0:a%10>1&&a%10<5?1:2];};
   const dayKey = value => {const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-  // The focus timer is independent of the removed Notes and Tasks modules.
   const formError = (root,message) => {const el=root.querySelector('[data-form-error]');if(el){el.textContent=message;el.hidden=!message;}};
 
   // One timer per portal; routes do not own or stop it. Deadlines handle background throttling.

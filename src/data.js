@@ -230,7 +230,7 @@
     const target=document.querySelector('#ayyy-tv-widget');
     if(!target||!target.isConnected)return;
     const market=markets.find(m=>m.id===selectedMarket)||markets[0];
-    // Third-party code must not run in the portal origin (Gmail tokens are private).
+    // Third-party code must not run in the portal origin (the user's local data is private).
     // A sandboxed srcdoc iframe gets an opaque origin: no parent DOM or storage access.
     const iframe=document.createElement('iframe');
     iframe.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
