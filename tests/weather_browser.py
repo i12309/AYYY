@@ -66,10 +66,12 @@ def nav(page, route):
 
 
 def mode(page,weather='',phase=''):
-    page.locator('#ww-scenes-button').click()
-    page.locator('[data-scene-weather="'+weather+'"]').click()
-    page.locator('[data-scene-phase="'+phase+'"]').click()
-    page.locator('#ww-settings-dialog [data-action="close-settings"]').last.click()
+    if weather:
+        page.locator('[data-scene-weather="'+weather+'"]').click()
+    else:
+        page.locator('#ww-now-button').click()
+    if phase:
+        page.locator('[data-scene-phase="'+phase+'"]').click()
 
 
 with sync_playwright() as p:
@@ -116,7 +118,10 @@ with sync_playwright() as p:
       const t=document.querySelector('.ww-hour-temp').getBoundingClientRect(),g=document.querySelector('.ww-hour-line').getBoundingClientRect();return t.bottom<=g.top;
     }'''))
     original=page.locator('.ww-temperature').inner_text()
-    for w in ['clear','partly','cloudy','rain','snow','storm','fog']:
+    check('weather controls open on arrival',page.locator('#ww-scene-controls').is_visible())
+    check('all six weather choices visible',page.locator('[data-scene-weather]:visible').count()==6)
+    check('all four daylight choices visible',page.locator('[data-scene-phase]:visible').count()==4)
+    for w in ['clear','cloudy','rain','snow','storm','fog']:
         mode(page,w,'day');check('weather '+w,page.locator('.ww-app').get_attribute('data-weather')==w)
     for phase in ['dawn','day','dusk','night']:
         mode(page,'',phase);check('phase '+phase,page.locator('.ww-app').get_attribute('data-phase')==phase)
@@ -143,9 +148,9 @@ with sync_playwright() as p:
     pixels='''() => {const c=document.querySelector('.ww-precipitation');return c.toDataURL()}'''
     first=page.evaluate(pixels);page.wait_for_timeout(150)
     check('rain is animated',first!=page.evaluate(pixels))
-    page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape');first=page.evaluate(pixels);page.wait_for_timeout(150)
+    page.locator('#ww-pause-button').click();first=page.evaluate(pixels);page.wait_for_timeout(150)
     check('pause freezes rain',first==page.evaluate(pixels))
-    page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape')
+    page.locator('#ww-pause-button').click()
     page.evaluate('''() => {Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));}''')
     check('hidden tab stops scene',page.locator('#ww-scene').get_attribute('data-still')=='true')
     page.evaluate("() => {delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));}")
@@ -157,6 +162,11 @@ with sync_playwright() as p:
     check('fixture replaces demo',page.locator('#ww-source-status').get_attribute('data-status')=='live')
     check('request asks for 14 days',page.evaluate('__api.at(-1).includes("forecast_days=14")'))
     check('home snapshot written',page.evaluate('[...__store.keys()].some(k=>k.includes("weather.cache."))'))
+    partly=json.loads(json.dumps(FIXTURE));partly['current']['weather_code']=1
+    page.evaluate('f=>{fetch=async()=>new Response(JSON.stringify(f),{status:200})}',partly)
+    page.locator('.ww-source-actions [data-action="refresh"]').click()
+    page.wait_for_function('document.querySelector("#ww-source-status").dataset.status==="live"')
+    check('partly cloudy provider data remains supported',page.locator('.ww-app').get_attribute('data-weather')=='partly')
     nav(page,'home')
     check('home shares city',page.locator('[data-home-weather="city"]').inner_text()=='Москва')
     check('home receives live-shaped data',page.locator('[data-home-weather="status"]').get_attribute('data-state')=='live')
@@ -192,7 +202,7 @@ with sync_playwright() as p:
         check('tower visible '+str(w),page.locator('.ww-tower').is_visible())
         check('hour labels contained '+str(w),page.locator('.ww-hour').first.evaluate('(e)=>e.scrollHeight<=e.clientHeight+2'))
     if os.environ.get('AYYY_SCREENSHOTS')=='1':
-        page.set_viewport_size({'width':1600,'height':950});page.locator('#ww-scenes-button').click();page.locator('#ww-pause-button').click();page.keyboard.press('Escape');page.wait_for_timeout(100)
+        page.set_viewport_size({'width':1600,'height':950});page.locator('#ww-pause-button').click();page.wait_for_timeout(100)
         page.screenshot(path=str(OUT/'weather-day.png'),full_page=True,animations='disabled',timeout=15000)
         mode(page,'','night');page.wait_for_timeout(2100);page.screenshot(path=str(OUT/'weather-night.png'),full_page=True,animations='disabled',timeout=15000)
         mode(page,'rain','day');page.wait_for_timeout(2100);page.screenshot(path=str(OUT/'weather-rain.png'),full_page=True,animations='disabled',timeout=15000)

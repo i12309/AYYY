@@ -3,7 +3,7 @@ Run node tests/model.test.cjs --fixture before this test.
 """
 from pathlib import Path
 from urllib.parse import urlsplit,unquote
-import json,mimetypes
+import json,mimetypes,os
 from playwright.sync_api import sync_playwright
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -15,7 +15,7 @@ def check(name,ok):
     checks.append(name);print('PASS',name,flush=True)
 
 with sync_playwright() as pw:
-    browser=pw.chromium.launch()
+    browser=pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,args=['--no-sandbox','--disable-dev-shm-usage'])
     def init(failure=False,offline=False,defer=False):
         page=browser.new_page();page.set_default_timeout(6000)
         page.clock.install()
