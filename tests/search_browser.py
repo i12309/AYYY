@@ -164,6 +164,12 @@ with sync_playwright() as pw:
     page.wait_for_function('Array.from(document.querySelectorAll(".sp-art img")).every(e=>e.complete)')
     check('local atlas artwork loaded',page.locator('.sp-art img').evaluate_all('(els)=>els.length>0&&els.every(e=>e.complete&&e.naturalWidth>0)'))
     check('the thought atlas replaces the old magnifier',page.locator('.sp-art img').get_attribute('src')=='assets/search/thought-atlas.svg')
+    atlas_svg=(ROOT/'assets/search/thought-atlas.svg').read_text(encoding='utf-8')
+    check('atlas contains dozens of small practical symbols',
+          atlas_svg.count('<symbol ')>=45 and atlas_svg.count('<use ')>=120
+          and '<symbol id="s-receipt"' in atlas_svg and '<symbol id="s-train"' in atlas_svg)
+    check('oversized romantic washes and italic labels are gone',
+          '<radialGradient ' not in atlas_svg and 'font-style="italic"' not in atlas_svg)
     check('provider controls have a tab rather than a card style',page.locator('[data-provider="Google"]').evaluate("""e=>{
       const s=getComputedStyle(e);
       return s.borderTopWidth==='0px' && s.backgroundColor==='rgba(0, 0, 0, 0)'
@@ -202,6 +208,11 @@ with sync_playwright() as pw:
               page.locator('.sp-art').evaluate("e=>getComputedStyle(e).pointerEvents==='none'"))
         check('art positioning follows breakpoint '+str(width),
               page.locator('.sp-art').evaluate("e=>getComputedStyle(e).position=== (innerWidth>720?'fixed':'absolute')"))
+        if width>720:
+            check('illustration stays below logo '+str(width),
+                  page.locator('.sp-art').evaluate("e=>e.getBoundingClientRect().top>=document.querySelector('.shore-header').getBoundingClientRect().bottom-1"))
+            check('illustration uses less than 30 percent of screen width '+str(width),
+                  page.locator('.sp-art').evaluate("e=>e.getBoundingClientRect().width<=innerWidth*.30+1"))
         if width>=1440:
             layout=page.evaluate('({height:innerHeight,documentHeight:document.documentElement.scrollHeight})')
             check('desktop fits one screen '+str(width),layout['documentHeight']<=layout['height']+1,layout)
