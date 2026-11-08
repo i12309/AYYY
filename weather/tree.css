@@ -339,7 +339,7 @@
   .ww-app[data-scene-theme=tree] .ww-days:not(:has(>.ww-day:nth-child(8))) { max-height:354px; }
   .ww-app[data-scene-theme=tree] .ww-current,
   .ww-app[data-scene-theme=tree] .ww-period { padding-top:29px; }
-  .ww-app[data-scene-theme=tree] .ww-scene-controls { top:72px; }
+  .ww-app[data-scene-theme=tree] .ww-scene-anchor { top:72px; }
 }
 @container ww-viewport (min-width:1101px) and (max-width:1450px) {
   .ww-app[data-scene-theme=tree] .ww-page { --ww-page-gutter:28px; }
@@ -347,7 +347,7 @@
   .ww-app[data-scene-theme=tree] .ww-nav { gap:18px; }
   .ww-app[data-scene-theme=tree] .ww-brand small { font-size:9px; }
   .ww-app[data-scene-theme=tree] .ww-main { grid-template-columns:280px minmax(0,1fr) 375px; gap:12px; min-height:548px; }
-  .ww-app[data-scene-theme=tree] .ww-scene-controls { left:25%; width:44.5%; }
+  .ww-app[data-scene-theme=tree] .ww-scene-anchor { left:25%; width:44.5%; }
   .ww-app[data-scene-theme=tree] .ww-city-search { width:211px; }
   .ww-app[data-scene-theme=tree] .ww-title>span { display:none; }
   .ww-app[data-scene-theme=tree] .ww-temperature { font-size:87px; }
@@ -369,7 +369,6 @@
   .ww-app[data-scene-theme=tree] .ww-shell { display:contents; }
   .ww-app[data-scene-theme=tree] .ww-header { order:0; height:57px; }
   .ww-app[data-scene-theme=tree] .ww-topline { order:1; }
-  .ww-app[data-scene-theme=tree] .ww-scene-controls { order:2; }
   .ww-app[data-scene-theme=tree] .ww-sourcebar { order:3; position:static; min-height:20px; padding:2px 0; font-size:8px; }
   .ww-app[data-scene-theme=tree] .ww-error { order:4; }
   .ww-app[data-scene-theme=tree] .ww-main { order:5; grid-template-columns:1fr 1fr; min-height:0; gap:20px; padding-top:0; }

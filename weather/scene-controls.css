@@ -1,5 +1,4 @@
-/* Visible scene controls shared by the existing lighthouse and v5 tree.
-   No weather, time, month, or season control is placed behind a popover. */
+/* Shared inputs for both scene themes. scene-panel.css owns the disclosure. */
 .ww-app .ww-viewport { position:relative; z-index:3; container:ww-viewport / inline-size; }
 .ww-app .ww-page { position:relative; }
 .ww-app .ww-theme-control { position:absolute; left:34%; top:9px; display:flex; gap:11px; align-items:center; }
@@ -11,22 +10,6 @@
 .ww-app .ww-theme-switch img:not([src]) { display:none; }
 .ww-app .ww-theme-switch img[src]+svg { display:none; }
 .ww-app .ww-theme-switch svg { width:18px; height:18px; color:var(--ww-muted); }
-.ww-app .ww-scene-controls {
-  position:absolute;
-  z-index:4;
-  left:25.5%;
-  top:68px;
-  width:45%;
-  min-width:0;
-  max-width:none;
-  margin:0;
-  padding:0;
-  border:0;
-  background:none;
-  text-align:center;
-  pointer-events:auto;
-  align-self:auto;
-}
 .ww-app .ww-weather-controls,
 .ww-app .ww-lighting-controls { display:flex; align-items:center; justify-content:center; gap:6px; min-height:28px; }
 .ww-app .ww-lighting-controls { margin-top:4px; }
@@ -94,8 +77,6 @@
 @container ww-viewport (max-width:1100px) {
   .ww-app .ww-theme-control { left:29%; top:9px; }
   .ww-app .ww-theme-control>.ww-tiny-label { display:none; }
-  .ww-app .ww-scene-controls { position:relative; left:auto; top:auto; width:auto; margin:9px 26px; }
-  .ww-app[data-scene-theme=tree] .ww-scene-controls { width:100%; margin:9px 0; }
   .ww-app .ww-weather-controls,
   .ww-app .ww-lighting-controls { flex-wrap:wrap; }
   .ww-app .ww-control-row { flex-wrap:wrap; justify-content:center; }
@@ -107,8 +88,6 @@
   .ww-app .ww-theme-control { left:105px; top:12px; }
   .ww-app .ww-theme-switch button { min-width:76px; min-height:28px; font-size:10px; padding:3px 8px; }
   .ww-app .ww-theme-switch img { width:22px; height:22px; }
-  .ww-app .ww-scene-controls { margin:6px 17px 0; }
-  .ww-app[data-scene-theme=tree] .ww-scene-controls { margin:6px 0 0; }
   .ww-app .ww-weather-controls,
   .ww-app .ww-lighting-controls { justify-content:center; gap:4px; padding-bottom:3px; }
   .ww-app .ww-control-label { display:block; font-size:9px; }

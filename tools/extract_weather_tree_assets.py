@@ -20,7 +20,7 @@ scene=scene.replace('constructor(host,onTick){','constructor(host,layout,assetBa
 scene=scene.replace('this.onTick=onTick;','')
 scene=scene.replace("host.querySelector('#'+id)","host.querySelector('[data-layer=\"'+id+'\"]')")
 scene=scene.replace("document.querySelector('.page')","this.layout")
-scene=scene.replace("document.querySelector('.center-spacer')","this.layout.querySelector('.ww-center')").replace("document.querySelector('.scene-controls')","this.layout.querySelector('.ww-scene-controls')").replace("document.querySelector('.hourly')","this.layout.querySelector('.ww-hourly')")
+scene=scene.replace("document.querySelector('.center-spacer')","this.layout.querySelector('.ww-center')").replace("document.querySelector('.scene-controls')","this.layout.querySelector('.ww-scene-anchor')").replace("document.querySelector('.hourly')","this.layout.querySelector('.ww-hourly')")
 # The canvas belongs to the app, not the document. Translate every anchor to
 # its local origin once so embedding/scrolling cannot shift the artwork.
 scene=scene.replace("const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y+scrollY,w:r.width,h:r.height,bottom:r.bottom+scrollY};};", "const origin=this.host.getBoundingClientRect();\n  const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.left-origin.left,y:r.top-origin.top,w:r.width,h:r.height,bottom:r.bottom-origin.top};};")

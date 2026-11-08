@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='themes-v5-3';
+  const VERSION='themes-v5-4';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;
@@ -23,7 +23,7 @@
   function ensure(){
     if(loading)return loading;
     loading=(async()=>{
-      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('scene-controls.css',true),resource('tree.css',true),resource('viewport-fit.css',true)]);
+      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('scene-controls.css',true),resource('tree.css',true),resource('viewport-fit.css',true),resource('scene-panel.css',true)]);
       if(!window.AYYYWeatherModel)await resource('model.js');
       if(!window.AYYYTreePalette)await resource('tree-palette.js');
       if(!window.AYYYSceneState)await resource('scene-state.js');

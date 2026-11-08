@@ -316,7 +316,7 @@ class Scene{
  geometry(){
   const origin=this.host.getBoundingClientRect();
   const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.left-origin.left,y:r.top-origin.top,w:r.width,h:r.height,bottom:r.bottom-origin.top};};
-  const spacer=bounds(this.layout.querySelector('.ww-center')),controls=bounds(this.layout.querySelector('.ww-scene-controls')),hourly=bounds(this.layout.querySelector('.ww-hourly'));
+  const spacer=bounds(this.layout.querySelector('.ww-center')),controls=bounds(this.layout.querySelector('.ww-scene-anchor')),hourly=bounds(this.layout.querySelector('.ww-hourly'));
   const frame=this.layout.querySelector('.ww-viewport'),page=bounds(this.layout.querySelector('.ww-page'));
   const uiScale=parseFloat(this.layout.style.getPropertyValue('--ww-ui-scale'))||1;
   const w=this.host.clientWidth,small=(frame?.clientWidth||w/uiScale)<=1100;
