@@ -1,5 +1,6 @@
 /* Visible scene controls shared by the existing lighthouse and v5 tree.
    No weather, time, month, or season control is placed behind a popover. */
+.ww-app .ww-viewport { position:relative; z-index:3; container:ww-viewport / inline-size; }
 .ww-app .ww-page { position:relative; }
 .ww-app .ww-theme-control { position:absolute; left:34%; top:9px; display:flex; gap:11px; align-items:center; }
 .ww-app .ww-tiny-label { font-size:9px; font-weight:600; white-space:nowrap; }
@@ -76,7 +77,7 @@
 .ww-app .ww-scene[data-flashes=false] .ww-lightning { display:none; }
 .ww-app[data-scene-theme=tree][data-tree-dark=true] .ww-season-story img { filter:brightness(.70) saturate(.65); }
 .ww-app[data-tree-motion=still] .ww-time-play { opacity:.55; }
-@media(min-width:1101px) and (max-width:1450px) {
+@container ww-viewport (min-width:1101px) and (max-width:1450px) {
   .ww-app .ww-control-label { display:none; }
   .ww-app .ww-control-row { gap:3px; }
   .ww-app .ww-control-row button { padding:4px 6px; font-size:9px; }
@@ -90,7 +91,7 @@
   .ww-app .ww-precipitation-strip { gap:5px; font-size:8px; }
   .ww-app .ww-precipitation-strip input[type=range] { width:60px; }
 }
-@media(max-width:1100px) {
+@container ww-viewport (max-width:1100px) {
   .ww-app .ww-theme-control { left:29%; top:9px; }
   .ww-app .ww-theme-control>.ww-tiny-label { display:none; }
   .ww-app .ww-scene-controls { position:relative; left:auto; top:auto; width:auto; margin:9px 26px; }
@@ -102,7 +103,7 @@
   .ww-app .ww-season-story { display:flex; flex-wrap:wrap; gap:7px 14px; }
   .ww-app .ww-season-hint { margin-top:4px; }
 }
-@media(max-width:700px) {
+@container ww-viewport (max-width:700px) {
   .ww-app .ww-theme-control { left:105px; top:12px; }
   .ww-app .ww-theme-switch button { min-width:76px; min-height:28px; font-size:10px; padding:3px 8px; }
   .ww-app .ww-theme-switch img { width:22px; height:22px; }
@@ -127,7 +128,7 @@
   .ww-app .ww-precipitation-strip input[type=range] { width:78px; }
   .ww-app .ww-precipitation-strip .ww-wind-tuning input { width:62px; }
 }
-@media(max-width:365px) {
+@container ww-viewport (max-width:365px) {
   .ww-app .ww-theme-control { left:95px; }
   .ww-app .ww-theme-switch button { min-width:72px; }
   .ww-app .ww-time-tuning input { width:60px; }
@@ -137,7 +138,7 @@
 }
 
 /* Keep every mobile control reachable without a popover or a clipped row. */
-@media(max-width:700px) {
+@container ww-viewport (max-width:700px) {
  .ww-app .ww-scene-controls .ww-control-label { display:none; }
  .ww-app .ww-lighting-controls { flex-wrap:nowrap; gap:3px; }
  .ww-app .ww-lighting-controls .ww-control-row { flex-wrap:nowrap; gap:3px; }

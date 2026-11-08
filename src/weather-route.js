@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;
   if(!app)return;
-  const VERSION='themes-v5-2';
+  const VERSION='themes-v5-3';
   const base=new URL('weather/',document.baseURI);
   const url=name=>new URL(name+'?v='+VERSION,base).href;
   let loading=null,bridgeInstalled=false;
@@ -29,6 +29,7 @@
       if(!window.AYYYSceneState)await resource('scene-state.js');
       if(!window.AYYYSceneController)await resource('scene-controller.js');
       if(!window.AYYYWeatherScene)await resource('scene.js');
+      if(!window.AYYYWeatherViewport)await resource('viewport-fit.js');
       if(!window.AYYYWeather)await resource('view.js');
       if(!window.AYYYWeather?.mount)throw new Error('Weather module incomplete');
       installBridge();

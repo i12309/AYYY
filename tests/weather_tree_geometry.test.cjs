@@ -13,7 +13,11 @@ const rect = (x, y, width, height) => ({ x, y, left: x, top: y, width, height, b
 const element = bounds => ({ getBoundingClientRect: () => bounds });
 
 function makeScene(source, fixture, offset = { x: 0, y: 0, scroll: 0 }) {
-  const nodes = Object.fromEntries(Object.entries(fixture.anchors).map(([name, values]) => {
+  const uiScale = fixture.uiScale || 1;
+  const hourly = fixture.anchors['.hourly'];
+  const pageHeight = fixture.pageHeight ?? Math.max(fixture.height, hourly[1] + hourly[3] + 90);
+  const anchors = { ...fixture.anchors, '.page': [0, 0, fixture.width, pageHeight] };
+  const nodes = Object.fromEntries(Object.entries(anchors).map(([name, values]) => {
     const [x, y, width, height] = values;
     return [name, element(rect(x + offset.x, y + offset.y - offset.scroll, width, height))];
   }));
@@ -34,8 +38,13 @@ function makeScene(source, fixture, offset = { x: 0, y: 0, scroll: 0 }) {
   vm.runInNewContext(source, sandbox);
   const Type = sandbox.AYYYTreeScene || sandbox.AYYYAtmosphere;
   const scene = Object.create(Type.prototype);
-  const aliases = { '.ww-center': '.center-spacer', '.ww-scene-controls': '.scene-controls', '.ww-hourly': '.hourly' };
-  scene.layout = { clientWidth: fixture.width, querySelector: name => nodes[aliases[name]], querySelectorAll: () => images };
+  const aliases = { '.ww-center': '.center-spacer', '.ww-scene-controls': '.scene-controls', '.ww-hourly': '.hourly', '.ww-page': '.page' };
+  scene.layout = {
+    clientWidth: fixture.width,
+    style: { getPropertyValue: name => name === '--ww-ui-scale' ? String(uiScale) : '' },
+    querySelector: name => name === '.ww-viewport' ? { clientWidth: fixture.width / uiScale } : nodes[aliases[name]],
+    querySelectorAll: () => images
+  };
   scene.host = { ...element(rect(offset.x, offset.y - offset.scroll, fixture.width, fixture.height)), clientWidth: fixture.width };
   return { scene, images };
 }
@@ -52,10 +61,40 @@ test('tree geometry matches v5 at each breakpoint, including embedded and scroll
   for (const fixture of fixtures) {
     const expected = plain(makeScene(scripts[2], fixture).scene.geometry());
     for (const offset of [{ x: 0, y: 0, scroll: 0 }, { x: 80, y: 140, scroll: 245 }]) {
-      const actual = plain(makeScene(renderer, fixture, offset).scene.geometry());
+      const { uiScale, ...actual } = plain(makeScene(renderer, fixture, offset).scene.geometry());
+      assert.equal(uiScale, 1, 'unscaled geometry metadata');
       assert.deepEqual(actual, expected, `${fixture.width}px, offset ${JSON.stringify(offset)}`);
     }
   }
+});
+
+test('tree geometry scales proportionally with the UI, including a desktop narrower than 1100px after zoom', () => {
+  const fixture = fixtures[0];
+  const expected = plain(makeScene(scripts[2], fixture).scene.geometry());
+  for (const uiScale of [.5, .75, 1.25, 2]) {
+    const scaled = {
+      width: fixture.width * uiScale,
+      height: fixture.height * uiScale,
+      pageHeight: expected.h * uiScale,
+      uiScale,
+      anchors: Object.fromEntries(Object.entries(fixture.anchors).map(([name, values]) => [name, values.map(value => value * uiScale)]))
+    };
+    for (const offset of [{ x: 0, y: 0, scroll: 0 }, { x: 80, y: 140, scroll: 245 }]) {
+      const actual = plain(makeScene(renderer, scaled, offset).scene.geometry());
+      assert.equal(actual.uiScale, uiScale, 'shared scale for all scene layers');
+      for (const [key, value] of Object.entries(expected)) {
+        if (typeof value === 'number') assert.ok(Math.abs(actual[key] - value * uiScale) < 1e-9, `${key} at ${uiScale} scale`);
+        else assert.equal(actual[key], value, `${key} at ${uiScale} scale`);
+      }
+    }
+  }
+});
+
+test('canvas height follows the complete page without adding artificial scrolling below a fitted footer', () => {
+  const fixture = { ...fixtures[0], height: 900, pageHeight: 890,
+    anchors: { ...fixtures[0].anchors, '.hourly': [50, 730, 1340, 150] } };
+  assert.equal(makeScene(renderer, fixture).scene.geometry().h, 900, 'fitted page fills the viewport exactly');
+  assert.equal(makeScene(renderer, { ...fixture, pageHeight: 1160 }).scene.geometry().h, 1160, 'scrolling page includes its actual footer');
 });
 
 test('the approved connected-tree helper and all 11 PNG assets stay unchanged', () => {

@@ -1,14 +1,17 @@
-"""Browser parity with the approved v5 artwork and desktop layout.
+"""Browser parity with the approved v5 tree artwork and desktop layout.
 
 The API fixture deliberately matches the prototype's sample numbers, solar times,
 wind and cloud coverage. Real production data is not replaced by this fixture.
-Canvas pixels are compared in the same Chromium run, so no platform PNG golden
-or extra image-library dependency is needed. Mobile's newly visible controls are
-covered by weather_themes_browser.py rather than the prototype's hidden controls.
+All twelve composed tree images are compared in the same Chromium run, so no
+platform PNG golden or extra image-library dependency is needed. The background
+has deliberately changed to repair seams already present in the prototype; its
+continuity is covered separately instead of preserving those defective pixels.
+Mobile's newly visible controls are covered by weather_themes_browser.py rather
+than the prototype's hidden controls.
 Set CHROMIUM_PATH for a custom browser and AYYY_VISUAL_OUTPUT to save screenshots.
 """
 from pathlib import Path
-import json, mimetypes, os, sys
+import json, math, mimetypes, os, sys
 from urllib.parse import urlsplit,unquote
 from datetime import datetime,timezone
 from playwright.sync_api import sync_playwright
@@ -69,32 +72,57 @@ def capture(p,kind,width,height,scale=1):
  p.mouse.move(1,1);p.locator('body').click(position={'x':1,'y':1})
  if OUT:p.screenshot(path=str(OUT/f'{kind}-{width}.png'),full_page=True)
  sels=['.header','.scene-controls','.weather-columns','.current','.forecast','.center-spacer','.hourly','.current-temperature','.metrics','.daylight'] if kind=='reference' else ['.ww-header','.ww-scene-controls','.ww-main','.ww-current','.ww-period','.ww-center','.ww-hourly','.ww-current-main','.ww-metrics','.ww-daylight']
- result=p.evaluate('''sels=>({geometry:__tree.inspect().treeGeometry,palette:__tree.params.light,els:sels.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [s,{x:r.x,y:r.y,width:r.width,height:r.height,fontSize:c.fontSize,lineHeight:c.lineHeight,fontWeight:c.fontWeight}]}),overflow:document.documentElement.scrollWidth>innerWidth})''',sels)
- result['hashes']=p.evaluate("""async()=>{const r=__tree,h=Math.floor(r.g.artBottom),hashes=[];for(const c of r.canvases){const data=c.getContext('2d').getImageData(0,0,c.width,Math.floor(h*devicePixelRatio)).data;const hash=await crypto.subtle.digest('SHA-256',data);hashes.push([...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join(''));}return hashes;}""")
+ result=p.evaluate('''sels=>{
+   const app=document.querySelector('.ww-app'),page=document.querySelector('.ww-page')||document.querySelector('.page');
+   const uiScale=app?Number(app.style.getPropertyValue('--ww-ui-scale'))||1:1;
+   return {geometry:__tree.inspect().treeGeometry,palette:__tree.params.light,uiScale,logicalWidth:page.getBoundingClientRect().width/uiScale,
+    els:sels.map(s=>{const e=document.querySelector(s),r=e.getBoundingClientRect(),c=getComputedStyle(e);return [s,{x:r.x,y:r.y,width:r.width,height:r.height,fontSize:c.fontSize,lineHeight:c.lineHeight,fontWeight:c.fontWeight}]}),overflow:document.documentElement.scrollWidth>innerWidth};
+ }''',sels)
+ result['artwork']=p.evaluate("""async kind => {
+   const hash = async c => {
+     const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+     const bytes=await crypto.subtle.digest('SHA-256',data);
+     return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
+   };
+   const months=[];
+   for(let month=0;month<12;month++)months.push(await hash(__tree.composeTree(month,true)));
+   const wood=await hash(__tree.artwork.wood),bareWinter=[];
+   for(const month of [0,1,11])bareWinter.push(kind==='reference'?wood:await hash(__tree.composeTree(month,false)));
+   return {months,bareWinter};
+ }""",kind)
  result['errors']=errors
  if OUT:(OUT/f'{kind}-{width}.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
- print(kind,width,'geometry',result['geometry'],'overflow',result['overflow'],'errors',errors,flush=True)
+ print(kind,width,'UI scale',result['uiScale'],'geometry',result['geometry'],'overflow',result['overflow'],'errors',errors,flush=True)
  return result
 if __name__=='__main__':
  with sync_playwright() as pw:
   browser=pw.chromium.launch(executable_path=CHROME,args=['--no-sandbox','--disable-dev-shm-usage'])
   for width,height,scale in [(1122,1047,1.25),(1440,1000,1),(1920,1080,1)]:
-   results={}
-   for kind in ['reference','integrated']:
-    context=browser.new_context(viewport={'width':width,'height':height},device_scale_factor=scale,reduced_motion='reduce')
-    page=context.new_page();page.set_default_timeout(30000);attach(page,ROOT)
-    results[kind]=capture(page,kind,width,height,scale);context.close()
-   ref,actual=results['reference'],results['integrated']
+   context=browser.new_context(viewport={'width':width,'height':height},device_scale_factor=scale,reduced_motion='reduce')
+   page=context.new_page();page.set_default_timeout(30000);attach(page,ROOT)
+   actual=capture(page,'integrated',width,height,scale);context.close()
+   # Compare the original prototype at the fitted UI's logical width. Uniform
+   # zoom changes screen coordinates, not the approved composition. The browser
+   # viewport is integral while zoomed layout widths are fractional, so allow
+   # one logical pixel for the resulting subpixel layout and text rounding.
+   ui_scale=actual['uiScale']
+   reference_width=round(actual['logicalWidth']);reference_height=math.ceil(height/ui_scale)
+   context=browser.new_context(viewport={'width':reference_width,'height':reference_height},device_scale_factor=scale,reduced_motion='reduce')
+   page=context.new_page();page.set_default_timeout(30000);attach(page,ROOT)
+   ref=capture(page,'reference',reference_width,reference_height,scale);context.close()
    assert not actual['errors'] and not actual['overflow'],(width,actual['errors'])
-   assert actual['geometry']==ref['geometry'],(width,ref['geometry'],actual['geometry'])
+   for key,value in ref['geometry'].items():
+    tolerance=.005 if key=='scale' else 1
+    assert abs(actual['geometry'][key]/ui_scale-value)<=tolerance,(width,key,ref['geometry'],actual['geometry'],ui_scale)
    assert actual['palette']==ref['palette'],(width,'palette differs')
-   assert actual['hashes']==ref['hashes'],(width,'sky, tree/landscape or atmosphere pixels differ')
+   assert actual['artwork']==ref['artwork'],(width,'approved monthly tree pixels or bare winter branches differ')
    # The forecast column stretches empty space differently. The hourly
    # section also contains the newly visible extra controls below its chart.
    # Both keep the reference origin/width; all other anchors match in full.
    for index,(expected,found) in enumerate(zip(ref['els'],actual['els'])):
     keys=['x','y','width'] if index in (4,6) else ['x','y','width','height']
-    assert all(expected[1][k]==found[1][k] for k in keys),(width,expected,found)
-   print('PASS v5 geometry, palette, all three canvas layers and layout:',width,flush=True)
+    assert all(abs(expected[1][k]-found[1][k]/ui_scale)<=1 for k in keys),(width,expected,found,ui_scale)
+    assert expected[1]['fontSize']==found[1]['fontSize'] and expected[1]['fontWeight']==found[1]['fontWeight'],(width,'logical typography changed',expected,found)
+   print('PASS v5 geometry, palette, twelve monthly trees, bare winter branches and layout:',width,flush=True)
   browser.close()
  print('3 v5 desktop visual parity cases PASS')

@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import urlsplit,unquote
 import json,mimetypes,os,shutil
 from playwright.sync_api import sync_playwright
+from weather_viewport_browser import settle
 ROOT=Path(__file__).resolve().parents[1];BASE='https://ayyy.test/AYYY/'
 FIX=json.loads((ROOT/'tests/forecast.fixture.json').read_text());checks=[];failures=[]
 def check(name,ok):
@@ -102,10 +103,12 @@ with sync_playwright() as pw:
  check('A02 saved tree with reset manual context','сейчас' in p.locator('#ww-scene-context').inner_text().lower())
  for w in [360,390,768,1024,1440,1920]:
   p.set_viewport_size({'width':w,'height':844})
+  settle(p)
   check('A28 no overflow '+str(w),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   check('all controls remain open at '+str(w),controls_visible())
   check('all twelve months fit viewport at '+str(w),p.locator('[data-scene-month]').evaluate_all('(buttons)=>buttons.length===12&&buttons.every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1})'))
  p.set_viewport_size({'width':1440,'height':1000})
+ settle(p)
  for _ in range(3):theme('lighthouse');theme('tree')
  check('A23 no duplicate tree canvases',p.locator('.ww-tree-scene canvas').count()==3)
  theme('lighthouse');fail['image']=True;p.reload();p.wait_for_selector('.ww-tower');p.locator('[data-theme="tree"]').click();p.wait_for_function('document.querySelector("#ww-theme-status").textContent.includes("изображения")')

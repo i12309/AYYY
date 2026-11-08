@@ -29,7 +29,7 @@ class StaticBuild(unittest.TestCase):
     def test_weather_assets_in_distribution(self):
         with tempfile.TemporaryDirectory() as tmp:
             out=Path(tmp)/'index.html';build.build(out)
-            for name in ('index.html','model.js','scene.js','view.js','style.css','seamless.css','landscape.css','scene-controls.css','tree.css','scene-state.js','scene-controller.js','tree-palette.js','tree-scene.js','assets/tree/tree-structure.png','coast.svg','assets/lighthouse.avif'):
+            for name in ('index.html','model.js','scene.js','view.js','style.css','seamless.css','landscape.css','scene-controls.css','tree.css','scene-state.js','scene-controller.js','viewport-fit.js','tree-palette.js','tree-scene.js','assets/tree/tree-structure.png','coast.svg','assets/lighthouse.avif'):
                 self.assertEqual((out.parent/'weather'/name).read_bytes(),(ROOT/'weather'/name).read_bytes())
             self.assertTrue((out.parent/'.nojekyll').exists())
     def test_inline_still_supported(self):

@@ -5,8 +5,61 @@
 const S=root.AYYYTreePalette;
 const createCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
 const files=['tree-structure.png','leaves-autumn.png','leaves-summer.png','leaves-spring.png','leaves-buds.png','tree-legacy-mask.png','terrain.png','mountains.png','cloud-field-0.png','cloud-field-1.png','cloud-field-2.png'];
-let preparedArtwork=null;
+let preparedArtwork=null,preparedBackgrounds=null;
 const rgba=(rgb,a=1)=>`rgba(${rgb.join(',')},${a})`;
+/* The approved background PNGs contain baked side joins and non-periodic cloud
+   edges. Repair only those source boundaries once, before seasonal colouring.
+   Blend premultiplied colour so transparent matte pixels cannot add dark halos. */
+function prepareSceneBackgrounds(assets, createCanvas) {
+  const smooth = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+  const raster = image => {
+    const canvas = createCanvas(image.width, image.height);
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    return { canvas, context, pixels: context.getImageData(0, 0, canvas.width, canvas.height) };
+  };
+  const landscape = image => {
+    const { canvas, context, pixels } = raster(image), p = pixels.data, source = p.slice();
+    const radius = 48;
+    // These are the two joins in the reference's extended 1672px panorama.
+    // The central hill, mountains and tree attachment remain pixel-identical.
+    for (const join of [150, 1300]) {
+      for (let y = 0; y < canvas.height; y++) for (let x = join - radius; x < join + radius; x++) {
+        const mirrored = 2 * join - 1 - x;
+        const a = (y * canvas.width + Math.min(x, mirrored)) * 4;
+        const b = (y * canvas.width + Math.max(x, mirrored)) * 4;
+        const target = (y * canvas.width + x) * 4, t = smooth((x - join + radius) / (radius * 2 - 1));
+        const left = source[a + 3] * (1 - t), right = source[b + 3] * t, alpha = left + right;
+        for (let channel = 0; channel < 3; channel++) p[target + channel] = alpha ? (source[a + channel] * left + source[b + channel] * right) / alpha : 0;
+        p[target + 3] = alpha;
+      }
+    }
+    context.putImageData(pixels, 0, 0);
+    return canvas;
+  };
+  const cloud = image => {
+    const { canvas, context, pixels } = raster(image), p = pixels.data;
+    const band = 64;
+    for (let y = 0; y < canvas.height; y++) {
+      // Every cloud may cross the viewport top; no opaque rectangular edge.
+      const top = smooth(y / band);
+      for (let x = 0; x < canvas.width; x++) p[(y * canvas.width + x) * 4 + 3] *= top;
+      // Match both sides of the repeating field without a dark transparent gap.
+      for (let x = 0; x < band; x++) {
+        const a = (y * canvas.width + x) * 4 + 3, b = (y * canvas.width + canvas.width - 1 - x) * 4 + 3;
+        const left = p[a], right = p[b], t = (1 - smooth(x / (band - 1))) * .5;
+        p[a] = left * (1 - t) + right * t;
+        p[b] = right * (1 - t) + left * t;
+      }
+    }
+    context.putImageData(pixels, 0, 0);
+    return canvas;
+  };
+  return {
+    mountains: landscape(assets['mountains.png']), terrain: landscape(assets['terrain.png']),
+    clouds: [0, 1, 2].map(i => cloud(assets['cloud-field-' + i + '.png']))
+  };
+}
 /* Prepare once. All seasons share the same high-resolution, connected wood. */
 function prepareTreeArtwork(assets, createCanvas) {
   const W = 500, H = 380, SCALE = 2, N = W * H;
@@ -255,7 +308,7 @@ class Scene{
   this.observer=new ResizeObserver(this.onResize);this.observer.observe(this.layout);
   window.addEventListener('resize',this.onResize);this.motion.addEventListener('change',this.sync);document.addEventListener('visibilitychange',this.sync);
   this.hide=()=>{cancelAnimationFrame(this.raf);this.raf=0;this.last=0;};window.addEventListener('pagehide',this.hide);window.addEventListener('pageshow',this.sync);
-  this.readyPromise=Promise.all(files.map(async name=>{const img=new Image();img.src=new URL(name,this.assetBase).href;await img.decode();this.assets[name]=img;})).then(()=>{if(!this.alive)return;this.artwork=preparedArtwork||(preparedArtwork=prepareTreeArtwork(this.assets,createCanvas));this.ready=true;this.prepareSeason();this.renderTreePreviews();this.resize();this.sync();}).catch(error=>{this.error=String(error);console.error('Scene artwork',error);});
+  this.readyPromise=Promise.all(files.map(async name=>{const img=new Image();img.src=new URL(name,this.assetBase).href;await img.decode();this.assets[name]=img;})).then(()=>{if(!this.alive)return;this.artwork=preparedArtwork||(preparedArtwork=prepareTreeArtwork(this.assets,createCanvas));this.backgrounds=preparedBackgrounds||(preparedBackgrounds=prepareSceneBackgrounds(this.assets,createCanvas));this.ready=true;this.prepareSeason();this.renderTreePreviews();this.resize();this.sync();}).catch(error=>{this.error=String(error);console.error('Scene artwork',error);});
   this.resize();
  }
  rand(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
@@ -264,14 +317,16 @@ class Scene{
   const origin=this.host.getBoundingClientRect();
   const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.left-origin.left,y:r.top-origin.top,w:r.width,h:r.height,bottom:r.bottom-origin.top};};
   const spacer=bounds(this.layout.querySelector('.ww-center')),controls=bounds(this.layout.querySelector('.ww-scene-controls')),hourly=bounds(this.layout.querySelector('.ww-hourly'));
-  const w=this.host.clientWidth,small=w<=1100;
-  const top=small?spacer.y+4:Math.max(controls.bottom+12,spacer.y+30);
-  const baseY=small?spacer.bottom-70:hourly.y-81;
-  const scale=Math.max(.38,Math.min((baseY-top)/368,(small?w-30:spacer.w+92)/500,1.28));
-  return {w,h:Math.max(window.innerHeight,hourly.bottom+90),rootX:small?w*.5:spacer.x+spacer.w*.48,baseY,scale,artBottom:small?baseY+100*scale:Math.min(hourly.y+40,baseY+145*(w/1672)),skyBottom:baseY+50,small};
+  const frame=this.layout.querySelector('.ww-viewport'),page=bounds(this.layout.querySelector('.ww-page'));
+  const uiScale=parseFloat(this.layout.style.getPropertyValue('--ww-ui-scale'))||1;
+  const w=this.host.clientWidth,small=(frame?.clientWidth||w/uiScale)<=1100;
+  const top=small?spacer.y+4*uiScale:Math.max(controls.bottom+12*uiScale,spacer.y+30*uiScale);
+  const baseY=small?spacer.bottom-70*uiScale:hourly.y-81*uiScale;
+  const scale=Math.max(.38*uiScale,Math.min((baseY-top)/368,(small?w-30*uiScale:spacer.w+92*uiScale)/500,1.28*uiScale));
+  return {w,h:Math.max(window.innerHeight,page.bottom),rootX:small?w*.5:spacer.x+spacer.w*.48,baseY,scale,artBottom:small?baseY+100*scale:Math.min(hourly.y+40*uiScale,baseY+145*(w/1672)),skyBottom:baseY+50*uiScale,small,uiScale};
  }
  resize(){
-  if(!this.alive)return;const g=this.geometry();this.g=g;this.w=g.w;this.h=g.h;this.host.style.height=g.h+'px';const d=Math.min(devicePixelRatio||1,1.5);this.dpr=d;
+  if(!this.alive)return;const g=this.geometry();this.g=g;this.w=g.w;this.h=g.h;this.host.style.height=g.h+'px';const d=Math.min(devicePixelRatio||1,2,Math.sqrt((3840*2160)/(g.w*g.h)));this.dpr=d;
   this.canvases.forEach((canvas,i)=>{canvas.width=Math.round(g.w*d);canvas.height=Math.round(g.h*d);this.ctx[i]?.setTransform(d,0,0,d,0,0);});
   this.key='';this.drawWorld();this.draw(0);
  }
@@ -309,7 +364,7 @@ class Scene{
  prepareSeason(){
   if(!this.ready)return;const m=this.params.month,s=S.season(m);this.month=m;
   this.tree=this.composeTree(m);
-  const terrain=createCanvas(1672,760),tc=terrain.getContext('2d');tc.drawImage(this.assets['terrain.png'],0,0);const d=tc.getImageData(0,0,1672,760),p=d.data;
+  const terrain=createCanvas(1672,760),tc=terrain.getContext('2d');tc.drawImage(this.backgrounds.terrain,0,0);const d=tc.getImageData(0,0,1672,760),p=d.data;
   for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const r=p[i],g=p[i+1],b=p[i+2],l=r*.25+g*.6+b*.15;
    if(s.asset==='winter'&&this.params.snowCover){
     const rock=Math.min(1,l/145);p[i]=128+rock*111;p[i+1]=148+rock*96;p[i+2]=161+rock*87;
@@ -334,12 +389,12 @@ class Scene{
   const ctx=this.ctx[1],w=this.w,h=this.h;ctx.clearRect(0,0,w,h);
   // One shared transformation for all landscape layers. No image of a bright sky.
   const envScale=Math.max(w/1450,g.scale),envW=1672*envScale,envX=Math.max(w-envW,Math.min(0,g.rootX-736*envScale)),y=g.baseY-578*envScale;
-  const mountains=this.tint(this.assets['mountains.png'],l),terrain=this.tint(this.terrain,l),tree=this.tint(this.tree,l);
+  const mountains=this.tint(this.backgrounds.mountains,l),terrain=this.tint(this.terrain,l),tree=this.tint(this.tree,l);
   ctx.globalAlpha=.54;ctx.drawImage(mountains,envX,y,envW,760*envScale);ctx.globalAlpha=.94;ctx.drawImage(terrain,envX,y,envW,760*envScale);ctx.globalAlpha=1;
   ctx.drawImage(tree,g.rootX-226*g.scale,g.baseY-368*g.scale,500*g.scale,380*g.scale);
   // Full-width fade into the surrounding paper, not four feathered image edges.
-  ctx.globalCompositeOperation='destination-out';const mask=ctx.createLinearGradient(0,g.artBottom-42,0,g.artBottom+42);mask.addColorStop(0,'rgba(0,0,0,0)');mask.addColorStop(1,'rgba(0,0,0,1)');ctx.fillStyle=mask;ctx.fillRect(0,g.artBottom-42,w,h);ctx.globalCompositeOperation='source-over';
-  this.cloudTints=[0,1,2].map(i=>{const img=this.assets['cloud-field-'+i+'.png'],c=createCanvas(img.width,img.height),x=c.getContext('2d');x.drawImage(img,0,0);x.globalCompositeOperation='source-in';
+  ctx.globalCompositeOperation='destination-out';const fade=42*(g.uiScale||1),mask=ctx.createLinearGradient(0,g.artBottom-fade,0,g.artBottom+fade);mask.addColorStop(0,'rgba(0,0,0,0)');mask.addColorStop(1,'rgba(0,0,0,1)');ctx.fillStyle=mask;ctx.fillRect(0,g.artBottom-fade,w,h);ctx.globalCompositeOperation='source-over';
+  this.cloudTints=[0,1,2].map(i=>{const img=this.backgrounds.clouds[i],c=createCanvas(img.width,img.height),x=c.getContext('2d');x.drawImage(img,0,0);x.globalCompositeOperation='source-in';
    let col=l.night>.65?S.mix([45,59,77],[20,32,48],l.severity):S.mix([175,193,204],[33,50,73],l.severity);col=col.map(v=>Math.max(0,Math.min(255,v+(k=>k===0?-9:k===1?13:-6)(i))));
    x.fillStyle=rgba(col);x.fillRect(0,0,c.width,c.height);return c;});
  }
@@ -353,7 +408,7 @@ class Scene{
  sync(){if(!this.alive)return;cancelAnimationFrame(this.raf);this.raf=0;this.last=0;this.layout.dataset.treeMotion=this.still?'still':'animated';if(this.still)this.bolt=null;this.draw(0);if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}
  tick(stamp){this.raf=0;if(this.still)return;const dt=this.last?Math.min(.05,(stamp-this.last)/1000):0;this.last=stamp;this.time+=dt;this.onTick?.(dt);this.drawWorld();this.draw(dt);if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}
  drawSky(){
-  const c=this.ctx[0];if(!c||!this.g)return;const p=this.params,l=p.light,g=this.g,w=this.w,h=this.h,skyEnd=Math.max(480,g.skyBottom+180);
+  const c=this.ctx[0];if(!c||!this.g)return;const p=this.params,l=p.light,g=this.g,w=this.w,h=this.h,uiScale=g.uiScale||1,skyEnd=Math.max(480*uiScale,g.skyBottom+180*uiScale);
   c.clearRect(0,0,w,h);const bg=c.createLinearGradient(0,0,0,skyEnd);bg.addColorStop(0,rgba(l.sky));bg.addColorStop(.54,rgba(l.horizon));bg.addColorStop(1,rgba(l.paper));c.fillStyle=bg;c.fillRect(0,0,w,h);
   const clearFactor=Math.max(0,1-l.cloudCover*.96),stars=l.stars*clearFactor;
   if(stars>.02){c.fillStyle='#e1e9ed';for(const s of this.stars){c.globalAlpha=stars*s.a;c.beginPath();c.arc(s.x*w,s.y*g.baseY*.82,s.r,0,Math.PI*2);c.fill();}c.globalAlpha=1;}
@@ -365,8 +420,8 @@ class Scene{
   // The texture itself is horizontally periodic; there are no visible rectangles.
   for(let k=0;k<3;k++){
    const tile=this.cloudTints?.[k];if(!tile)continue;
-   const width=w*(1.16+k*.24),height=Math.min(g.baseY*.91,620)*(1-k*.13),speed=(.7+p.wind*.16)*(1+k*.47),offset=(this.time*speed+width*(.24+k*.19))%width;
-   const top=-90+k*57;c.globalAlpha=l.cloudCover*(k===0?.66:k===1?.40:.30);
+   const width=w*(1.16+k*.24),height=Math.min(g.baseY*.91,620*uiScale)*(1-k*.13),speed=(.7+p.wind*.16)*(1+k*.47),offset=(this.time*speed+width*(.24+k*.19))%width;
+   const top=(-90+k*57)*uiScale;c.globalAlpha=l.cloudCover*(k===0?.66:k===1?.40:.30);
    c.drawImage(tile,offset-width,top,width,height);c.drawImage(tile,offset,top,width,height);
   }c.globalAlpha=1;
  }
