@@ -20,7 +20,8 @@
   if(override.phase){state.minute={dawn:360,day:840,dusk:1080,night:0}[override.phase];}
   const sunValid=M.number(state.sunrise)!==null&&M.number(state.sunset)!==null&&state.sunset>state.sunrise&&M.time(state.sunset,data.timezone)>M.time(state.sunrise,data.timezone);
   let light;
-  if(override.phase&&sunValid){const sr=M.parts(state.sunrise,data.timezone),ss=M.parts(state.sunset,data.timezone);const rise=Number(sr.hour)*60+Number(sr.minute),set=Number(ss.hour)*60+Number(ss.minute);state.minute={dawn:rise,day:(rise+set)/2,dusk:set,night:0}[override.phase];}
+  if(override.phase&&sunValid){const sr=M.parts(state.sunrise,data.timezone),ss=M.parts(state.sunset,data.timezone);const rise=Number(sr.hour)*60+Number(sr.minute),set=Number(ss.hour)*60+Number(ss.minute);// Match the v5 preset's morning glow and blue dusk around the city's real solar times.
+  state.minute={dawn:Math.min(1439,rise+6),day:(rise+set)/2,dusk:Math.min(1439,set+43),night:0}[override.phase];}
 
   if(sunValid){const a=M.parts(state.sunrise,data.timezone),b=M.parts(state.sunset,data.timezone);light=P.lighting(state.minute,Number(a.hour)*60+Number(a.minute),Number(b.hour)*60+Number(b.minute));}
   else{const phase=override.phase||(state.isDay===false?'night':'day');light={...P.palettes[phase==='night'?'night':phase==='day'?'day':phase==='dawn'?'gold':'blue'],phase,stars:phase==='night'?1:0};}
