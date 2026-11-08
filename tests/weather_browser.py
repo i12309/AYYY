@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, unquote
 import json, mimetypes, os, shutil
 from playwright.sync_api import sync_playwright
+from weather_test_controls import set_scene_settings
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT/'docs'
@@ -67,10 +68,12 @@ def nav(page, route):
 
 def mode(page,weather='',phase=''):
     if weather:
+        set_scene_settings(page, True)
         page.locator('[data-scene-weather="'+weather+'"]').click()
     else:
         page.locator('#ww-now-button').click()
     if phase:
+        set_scene_settings(page, True)
         page.locator('[data-scene-phase="'+phase+'"]').click()
 
 
@@ -118,7 +121,9 @@ with sync_playwright() as p:
       const t=document.querySelector('.ww-hour-temp').getBoundingClientRect(),g=document.querySelector('.ww-hour-line').getBoundingClientRect();return t.bottom<=g.top;
     }'''))
     original=page.locator('.ww-temperature').inner_text()
-    check('weather controls open on arrival',page.locator('#ww-scene-controls').is_visible())
+    check('weather controls collapsed on arrival',page.locator('#ww-scene-controls').is_hidden() and page.locator('#ww-scene-settings-toggle').get_attribute('aria-expanded')=='false')
+    check('scene settings toggle beside theme choices',page.locator('.ww-theme-control #ww-scene-settings-toggle').is_visible())
+    set_scene_settings(page, True)
     check('all six weather choices visible',page.locator('[data-scene-weather]:visible').count()==6)
     check('all four daylight choices visible',page.locator('[data-scene-phase]:visible').count()==4)
     for w in ['clear','cloudy','rain','snow','storm','fog']:
@@ -128,7 +133,7 @@ with sync_playwright() as p:
     check('scene presets preserve readings',page.locator('.ww-temperature').inner_text()==original)
     check('preset label visible',page.locator('#ww-override-note').is_visible())
     page.locator('#ww-now-button').click()
-    check('now removes presets',not page.locator('#ww-override-note').is_visible())
+    check('now removes presets',page.locator('#ww-override-note').evaluate('e=>e.hidden') and 'сейчас' in page.locator('#ww-scene-context').inner_text().lower())
     page.locator('[data-period="14"]').click();check('14 days selectable',page.locator('[data-day]').count()==14)
     page.locator('[data-period="7"]').click()
     page.locator('[data-day]').nth(3).click()

@@ -6,8 +6,8 @@ All twelve composed tree images are compared in the same Chromium run, so no
 platform PNG golden or extra image-library dependency is needed. The background
 has deliberately changed to repair seams already present in the prototype; its
 continuity is covered separately instead of preserving those defective pixels.
-Mobile's newly visible controls are covered by weather_themes_browser.py rather
-than the prototype's hidden controls.
+The disclosed controls are covered by weather_themes_browser.py. A separate
+noninteractive anchor preserves the illustration when the panel opens or closes.
 Set CHROMIUM_PATH for a custom browser and AYYY_VISUAL_OUTPUT to save screenshots.
 """
 from pathlib import Path
@@ -15,6 +15,7 @@ import json, math, mimetypes, os, sys
 from urllib.parse import urlsplit,unquote
 from datetime import datetime,timezone
 from playwright.sync_api import sync_playwright
+from weather_test_controls import set_scene_settings
 ROOT=Path(__file__).resolve().parents[1]
 REF=ROOT/'prototypes/weather-tree-v5/reference.html'
 OUT=Path(os.environ['AYYY_VISUAL_OUTPUT']) if os.environ.get('AYYY_VISUAL_OUTPUT') else None
@@ -63,16 +64,18 @@ def capture(p,kind,width,height,scale=1):
   p.evaluate('AYYYTreePrototype.setScene({month:9,weather:"clear",minute:1050,paused:true,rainPercent:50})')
  else:
   p.wait_for_function('document.querySelector(".ww-app")?.dataset.sceneTheme==="tree"&&document.querySelector("#ww-source-status")?.dataset.status==="live"')
+  set_scene_settings(p, True)
   p.locator('[data-scene-weather="clear"]').click()
   p.locator('[data-scene-month="9"]').click()
   p.locator('#ww-scene-minute').fill('1050');p.locator('#ww-scene-minute').dispatch_event('input')
   p.locator('#ww-scene-wind').fill('7');p.locator('#ww-scene-wind').dispatch_event('input')
+  set_scene_settings(p, False)
   p.evaluate('document.querySelector("#ww-hour-scroll").scrollLeft=0')
  p.evaluate('scrollTo(0,0);__tree.time=0;__tree.resize();__tree.draw(0)')
  p.wait_for_timeout(250)
  p.mouse.move(1,1);p.locator('body').click(position={'x':1,'y':1})
  if OUT:p.screenshot(path=str(OUT/f'{kind}-{width}.png'),full_page=True)
- sels=['.header','.scene-controls','.weather-columns','.current','.forecast','.center-spacer','.hourly','.current-temperature','.metrics','.daylight'] if kind=='reference' else ['.ww-header','.ww-scene-controls','.ww-main','.ww-current','.ww-period','.ww-center','.ww-hourly','.ww-current-main','.ww-metrics','.ww-daylight']
+ sels=['.header','.scene-controls','.weather-columns','.current','.forecast','.center-spacer','.hourly','.current-temperature','.metrics','.daylight'] if kind=='reference' else ['.ww-header','.ww-scene-anchor','.ww-main','.ww-current','.ww-period','.ww-center','.ww-hourly','.ww-current-main','.ww-metrics','.ww-daylight']
  result=p.evaluate('''sels=>{
    const app=document.querySelector('.ww-app'),page=document.querySelector('.ww-page')||document.querySelector('.page');
    const uiScale=app?Number(app.style.getPropertyValue('--ww-ui-scale'))||1:1;
@@ -118,7 +121,7 @@ if __name__=='__main__':
    assert actual['palette']==ref['palette'],(width,'palette differs')
    assert actual['artwork']==ref['artwork'],(width,'approved monthly tree pixels or bare winter branches differ')
    # The forecast column stretches empty space differently. The hourly
-   # section also contains the newly visible extra controls below its chart.
+   # section also contains the production status and return-to-weather row.
    # Both keep the reference origin/width; all other anchors match in full.
    for index,(expected,found) in enumerate(zip(ref['els'],actual['els'])):
     keys=['x','y','width'] if index in (4,6) else ['x','y','width','height']

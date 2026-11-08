@@ -2,7 +2,8 @@
 
 The fixture and local routes are shared with the artwork parity test. These are
 layout tests, not screenshot goldens: hiding overflow cannot make out-of-bounds
-controls pass. The hourly strip may scroll horizontally and the 14-day list may
+controls pass. The scene-settings panel is explicitly opened when testing its
+controls; its requested collapsed state is checked independently. The hourly strip may scroll horizontally and the 14-day list may
 scroll internally, as before. Small screens must retain usable document scroll.
 Set CHROMIUM_PATH for a custom browser and AYYY_VISUAL_OUTPUT for screenshots.
 """
@@ -10,6 +11,7 @@ import json
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 from weather_v5_visual_browser import BASE, CHROME, OUT, ROOT, attach
+from weather_test_controls import set_scene_settings
 
 
 def settle(page):
@@ -37,6 +39,9 @@ def settle(page):
 def inspect(page):
     return page.evaluate("""() => {
       const problems = [], bounds = {}, app = document.querySelector('.ww-app');
+      const theme = app.dataset.sceneTheme || 'lighthouse';
+      const panel = app.querySelector('#ww-scene-controls'), toggle = app.querySelector('#ww-scene-settings-toggle');
+      const expanded = toggle?.getAttribute('aria-expanded') === 'true';
       const inside = r => r.width > 0 && r.height > 0 && r.left >= -1 && r.top >= -1
         && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1;
       const name = e => e.id ? '#' + e.id : e.outerHTML.slice(0, 140);
@@ -49,8 +54,13 @@ def inspect(page):
         return s.display !== 'none' && s.visibility === 'visible' && Number(s.opacity) > 0
           && r.width > 0 && r.height > 0;
       };
-      for (const selector of ['.ww-header', '.ww-topline', '.ww-current', '.ww-period',
-        '.ww-scene-controls', '.ww-hourly', '.ww-scene-adjustments', '.ww-hourly-foot', '.ww-footer']) {
+      if (!panel || !toggle || toggle.getAttribute('aria-controls') !== panel.id
+        || panel.hidden === expanded || visible(panel) !== expanded)
+        problems.push({selector:'#ww-scene-controls', reason:'disclosure state or accessible relationship is inconsistent'});
+      const sections = ['.ww-header', '.ww-topline', '.ww-current', '.ww-period',
+        '.ww-hourly', '.ww-scene-summary', '.ww-hourly-foot', '.ww-footer'];
+      if (expanded) sections.push('.ww-scene-controls', '.ww-scene-adjustments');
+      for (const selector of sections) {
         const e = document.querySelector(selector);
         bounds[selector] = e && rect(e);
         if (!e || !visible(e) || !inside(e.getBoundingClientRect()))
@@ -61,19 +71,28 @@ def inspect(page):
         if (app.querySelectorAll(selector).length !== count)
           problems.push({selector, reason:'missing public controls'});
       }
-      const controls = app.querySelectorAll('[data-theme], [data-scene-weather], '
+      const controls = app.querySelectorAll('#ww-scene-settings-toggle, [data-action="close-scene-settings"], [data-theme], [data-scene-weather], '
         + '[data-scene-phase], [data-scene-month], [data-season], [data-period], '
         + '#ww-scene-minute, #ww-cycle, #ww-scene-intensity, #ww-scene-wind, #ww-flashes, '
         + '#ww-now-button, #ww-pause-button, .ww-units button, .ww-city-search, '
         + '.ww-chart-tabs button, .ww-chart-arrows button, [data-action="about"]');
       for (const e of controls) {
+        const inPanel = panel.contains(e);
+        const hiddenByDesign = inPanel && (!expanded || (theme === 'lighthouse' && !!e.closest('[data-tree-settings]')));
+        if (hiddenByDesign) {
+          if (visible(e)) problems.push({selector:name(e), reason:'collapsed or tree-only control is still visible'});
+          continue;
+        }
         const r = e.getBoundingClientRect();
         if (!visible(e) || !inside(r)) {
           problems.push({selector:name(e), reason:'control outside viewport or hidden', rect:rect(e)});
           continue;
         }
         const target = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-        if (!target || !(e === target || e.contains(target)))
+        // A nonmodal settings panel may cover the illustration or a control
+        // behind it. Its own controls and the header must always remain usable.
+        const coveredByPanel = expanded && !inPanel && !e.closest('.ww-header') && target && panel.contains(target);
+        if ((!target || !(e === target || e.contains(target))) && !coveredByPanel)
           problems.push({selector:name(e), reason:'control occluded', target:target && name(target)});
         // A visible rectangle can still be clipped by an ancestor. Exclude the
         // intentionally horizontal hourly chart; none of these controls live in it.
@@ -86,7 +105,7 @@ def inspect(page):
           }
         }
       }
-      const root = document.documentElement, theme = app.dataset.sceneTheme || 'lighthouse';
+      const root = document.documentElement;
       const scene = app.querySelector(theme === 'tree' ? '.ww-tree-scene' : '#ww-scene');
       const tower = scene?.querySelector('.ww-tower');
       const canvas = [...(scene?.querySelectorAll('canvas') || [])].map(c => ({
@@ -94,7 +113,7 @@ def inspect(page):
       }));
       return {viewport:[innerWidth, innerHeight], dpr:devicePixelRatio,
         document:[root.scrollWidth, root.scrollHeight], scroll:[scrollX, scrollY],
-        theme, fitMode:app.dataset.viewportFit, uiScale:Number(app.style.getPropertyValue('--ww-ui-scale')) || 1,
+        theme, settingsExpanded:expanded, fitMode:app.dataset.viewportFit, uiScale:Number(app.style.getPropertyValue('--ww-ui-scale')) || 1,
         scene:scene && rect(scene), sceneVisible:!!scene && visible(scene),
         tower:tower && {rect:rect(tower), visible:visible(tower), naturalWidth:tower.naturalWidth, source:tower.currentSrc},
         treeLayers:app.querySelectorAll('.ww-tree-scene').length,
@@ -153,29 +172,65 @@ def open_weather(page, standalone=False, theme='tree'):
     attach(page, ROOT, theme=theme)
     page.goto(BASE + ('weather/' if standalone else '#weather'))
     wait_theme(page, theme)
+    assert page.locator('#ww-scene-settings-toggle').get_attribute('aria-expanded') == 'false', 'settings must start collapsed on each mount'
+    assert page.locator('#ww-scene-controls').is_hidden(), 'settings unexpectedly open on arrival'
 
 
 def switch_theme(page, theme):
+    expanded = page.locator('#ww-scene-settings-toggle').get_attribute('aria-expanded')
     page.locator('.ww-theme-switch [data-theme="' + theme + '"]').click()
     wait_theme(page, theme)
+    assert page.locator('#ww-scene-settings-toggle').get_attribute('aria-expanded') == expanded, 'theme switch unexpectedly changed panel state'
+
+
+def check_panel_fit(page, label):
+    set_scene_settings(page, False)
+    before = check_fit(page, label + '-closed')
+    set_scene_settings(page, True)
+    opened = check_fit(page, label + '-open')
+    assert opened['settingsExpanded'], (label, 'settings did not open')
+    if before['theme'] == 'tree':
+        for key, value in before['geometry'].items():
+            assert abs(opened['geometry'][key] - value) < .1, (label, 'opening settings moves the tree', key, before['geometry'], opened['geometry'])
+    set_scene_settings(page, False)
+    settle(page)
+    after = inspect(page)
+    assert not after['settingsExpanded'] and not after['problems'], (label, after)
+    assert abs(after['uiScale'] - before['uiScale']) < .0001, (label, 'closing settings changes the UI scale')
+    if before['theme'] == 'tree':
+        for key, value in before['geometry'].items():
+            assert abs(after['geometry'][key] - value) < .1, (label, 'closing settings moves the tree', key, before['geometry'], after['geometry'])
 
 
 def check_small_scroll(page, label):
+    set_scene_settings(page, False)
     settle(page)
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), (label, 'small-screen horizontal overflow')
     assert page.evaluate('document.documentElement.scrollHeight > innerHeight'), (label, 'small-screen content was clipped instead of scrollable')
     assert page.locator('.ww-app').get_attribute('data-viewport-fit') == 'scroll', (label, 'desktop fit remained active')
     assert page.locator('.ww-app').evaluate("e => (Number(e.style.getPropertyValue('--ww-ui-scale')) || 1) === 1"), (label, 'small screen retained desktop scale')
-    for selector in ['.ww-theme-switch [data-theme="lighthouse"]', '.ww-theme-switch [data-theme="tree"]',
-                     '#ww-scene-minute', '[data-scene-month="11"]', '#ww-scene-wind', '#ww-now-button',
-                     '#ww-pause-button', '.ww-footer [data-action="about"]']:
+
+    def reachable(selector):
         page.locator(selector).scroll_into_view_if_needed()
         assert page.locator(selector).is_visible(), (label, 'control missing', selector)
-        assert page.locator(selector).evaluate('''e => {
+        assert page.locator(selector).evaluate("""e => {
           const r=e.getBoundingClientRect(), target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
           return r.top >= -1 && r.bottom <= innerHeight + 1 && !!target && (e===target || e.contains(target));
-        }'''), (label, 'control unreachable or occluded', selector)
-    print('PASS small-screen scrolling and lower controls', label, flush=True)
+        }"""), (label, 'control unreachable or occluded', selector)
+
+    for selector in ['.ww-theme-switch [data-theme="lighthouse"]', '.ww-theme-switch [data-theme="tree"]',
+                     '#ww-scene-settings-toggle', '#ww-now-button', '#ww-pause-button', '.ww-footer [data-action="about"]']:
+        reachable(selector)
+    set_scene_settings(page, True)
+    fields = ['#ww-scene-minute', '#ww-scene-wind', '#ww-flashes', '[data-action="close-scene-settings"]']
+    if page.locator('.ww-app').get_attribute('data-scene-theme') == 'tree':
+        fields += ['[data-scene-month="11"]', '[data-season="winter"]', '#ww-cycle']
+    else:
+        assert page.locator('#ww-scene-controls [data-tree-settings]:visible').count() == 0, (label, 'lighthouse shows irrelevant season controls')
+    for selector in fields:
+        reachable(selector)
+    set_scene_settings(page, False)
+    print('PASS small-screen disclosure and lower controls', label, flush=True)
 
 
 def check_lighthouse_viewports(browser, errors):
@@ -187,8 +242,9 @@ def check_lighthouse_viewports(browser, errors):
         page.set_default_timeout(30000)
         page.on('pageerror', lambda error: errors.append(str(error)))
         open_weather(page, standalone=label == 'compact', theme='lighthouse')
-        check_fit(page, 'lighthouse-' + label)
+        check_panel_fit(page, 'lighthouse-' + label)
         if label == 'desktop':
+            set_scene_settings(page, True)
             switch_theme(page, 'tree')
             check_fit(page, 'lighthouse-to-tree')
             switch_theme(page, 'lighthouse')
@@ -298,7 +354,10 @@ if __name__ == '__main__':
             page.on('pageerror', lambda error: errors.append(str(error)))
             open_weather(page, standalone=label == 'qhd')
             check_fit(page, label)
+            if label in ('compact-desktop', 'short-desktop', 'full-hd', '4k', 'zoom-125-chrome'):
+                check_panel_fit(page, label)
             if label == 'full-hd':
+                set_scene_settings(page, True)
                 page.locator('[data-scene-weather="rain"]').click()
                 page.locator('[data-scene-phase="day"]').click()
                 page.locator('[data-period="14"]').click()

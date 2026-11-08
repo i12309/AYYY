@@ -38,7 +38,7 @@ function makeScene(source, fixture, offset = { x: 0, y: 0, scroll: 0 }) {
   vm.runInNewContext(source, sandbox);
   const Type = sandbox.AYYYTreeScene || sandbox.AYYYAtmosphere;
   const scene = Object.create(Type.prototype);
-  const aliases = { '.ww-center': '.center-spacer', '.ww-scene-controls': '.scene-controls', '.ww-hourly': '.hourly', '.ww-page': '.page' };
+  const aliases = { '.ww-center': '.center-spacer', '.ww-scene-anchor': '.scene-controls', '.ww-scene-controls': '.scene-controls', '.ww-hourly': '.hourly', '.ww-page': '.page' };
   scene.layout = {
     clientWidth: fixture.width,
     style: { getPropertyValue: name => name === '--ww-ui-scale' ? String(uiScale) : '' },
@@ -86,6 +86,17 @@ test('tree geometry scales proportionally with the UI, including a desktop narro
         if (typeof value === 'number') assert.ok(Math.abs(actual[key] - value * uiScale) < 1e-9, `${key} at ${uiScale} scale`);
         else assert.equal(actual[key], value, `${key} at ${uiScale} scale`);
       }
+    }
+  }
+});
+
+test('opening and closing the settings panel never changes the illustration anchor', () => {
+  for (const fixture of fixtures) {
+    const { scene } = makeScene(renderer, fixture);
+    const expected = plain(scene.geometry()), query = scene.layout.querySelector;
+    for (const panel of [rect(0, 0, 0, 0), rect(320, 72, 600, 360)]) {
+      scene.layout.querySelector = name => name === '.ww-scene-controls' ? element(panel) : query(name);
+      assert.deepEqual(plain(scene.geometry()), expected, 'tree must use its independent anchor, not the popup rectangle');
     }
   }
 });
