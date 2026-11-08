@@ -6,7 +6,7 @@
     ${a.shoreChrome.navigation('search')}
     <main class="sp-main" id="search-content">
       <div class="sp-art" aria-hidden="true">
-        <img class="sp-art-magnifier" src="assets/search/magnifier.webp" width="325" height="470" alt="" fetchpriority="high" decoding="async">
+        <img class="sp-art-atlas" src="assets/search/thought-atlas.svg" width="820" height="1800" alt="" fetchpriority="high" decoding="async">
       </div>
       <div class="sp-content">
         <section class="sp-intro" aria-labelledby="search-heading">
@@ -33,6 +33,7 @@
 
       <fieldset class="sp-providers" id="sp-providers">
         <legend class="sp-visually-hidden">Выберите поисковую систему</legend>
+        <span class="sp-provider-caption" aria-hidden="true">Поисковик</span>
         <button type="button" class="sp-provider" data-provider="Google" aria-pressed="false"><span class="sp-provider-icon google">G</span><span>Google</span><span class="sp-provider-check" aria-hidden="true"></span></button>
         <button type="button" class="sp-provider is-active" data-provider="Яндекс" aria-pressed="true"><span class="sp-provider-icon yandex">Я</span><span>Яндекс</span><span class="sp-provider-check" aria-hidden="true"></span></button>
         <button type="button" class="sp-provider" data-provider="DuckDuckGo" aria-pressed="false"><span class="sp-provider-icon duck">D</span><span>DuckDuckGo</span><span class="sp-provider-check" aria-hidden="true"></span></button>
