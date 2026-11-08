@@ -1,21 +1,21 @@
-/* Watercolor paper, ink and sunlight. Scoped to the two public entry pages. */
-body[data-shell="splash"] {
+/* Watercolor paper, ink and sunlight. Shared by the home, directory and search pages. */
+body:is([data-shell="splash"],[data-shell="search"]) {
   --paper:#fffefc; --ink:#203640; --sea:#3d8491; --sunlight:#e77d36;
   --bg:var(--paper); --surface:#ffffff; --surface-2:#f7f6f1; --text:var(--ink);
   --muted:#768185; --line:#e3e3da; --blue:#c9692b; --blue-soft:#fbecda;
   background:var(--paper); color:var(--ink);
 }
-body[data-shell="splash"] > .sidebar,
-body[data-shell="splash"] > .nav-scrim,
-body[data-shell="splash"] > .mobile-nav,
-body[data-shell="splash"] .main-wrap > .topbar,
-body[data-shell="splash"] .main-content > .footer {display:none!important}
-body[data-shell="splash"] .main-wrap {margin:0;min-height:100svh}
-body[data-shell="splash"] .main-content {padding:0!important;max-width:none;min-height:100svh;margin:0}
-body[data-shell="splash"] #view {animation:none}
-body[data-shell="splash"] ::selection {background:#f4d4ac;color:var(--ink)}
-body[data-shell="splash"] :is(button,a,input,select):focus-visible {outline:2px solid var(--sea);outline-offset:4px;box-shadow:none}
-body[data-shell="splash"] .toasts {bottom:22px}
+body:is([data-shell="splash"],[data-shell="search"]) > .sidebar,
+body:is([data-shell="splash"],[data-shell="search"]) > .nav-scrim,
+body:is([data-shell="splash"],[data-shell="search"]) > .mobile-nav,
+body:is([data-shell="splash"],[data-shell="search"]) .main-wrap > .topbar,
+body:is([data-shell="splash"],[data-shell="search"]) .main-content > .footer {display:none!important}
+body:is([data-shell="splash"],[data-shell="search"]) .main-wrap {margin:0;min-height:100svh}
+body:is([data-shell="splash"],[data-shell="search"]) .main-content {padding:0!important;max-width:none;min-height:100svh;margin:0}
+body:is([data-shell="splash"],[data-shell="search"]) #view {animation:none}
+body:is([data-shell="splash"],[data-shell="search"]) ::selection {background:#f4d4ac;color:var(--ink)}
+body:is([data-shell="splash"],[data-shell="search"]) :is(button,a,input,select):focus-visible {outline:2px solid var(--sea);outline-offset:4px;box-shadow:none}
+body:is([data-shell="splash"],[data-shell="search"]) .toasts {bottom:22px}
 
 .shore-page {position:relative;isolation:isolate;overflow:clip;min-height:100svh;max-width:1840px;margin:auto;background:var(--paper);font-family:"Segoe UI",Arial,sans-serif;letter-spacing:0}
 .shore-page::before {content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.012;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.68' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.65' filter='url(%23n)'/%3E%3C/svg%3E")}

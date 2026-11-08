@@ -26,6 +26,9 @@
 
   const footer = () => `<footer class="shore-footer"><span>Найти. Придумать. Немного поиграть.</span><span class="shore-footer-links"><button data-action="about">О маяке</button><button data-action="design">Цвета и характер</button><span class="shore-footer-mark">${icon('lighthouse',15)} AYYY</span></span></footer>`;
 
+  // Public pages share one header and footer; search renders after module registration.
+  a.shoreChrome = { navigation, footer };
+
   const beam = id => `<svg class="shore-beam" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x1="0%" y1="50%" x2="100%" y2="50%"><stop stop-color="#ffbf57" stop-opacity=".48"/><stop offset=".48" stop-color="#ffc46c" stop-opacity=".18"/><stop offset="1" stop-color="#ffe6b6" stop-opacity="0"/></linearGradient></defs><path class="shore-beam-fill" fill="url(#${id})"/><path class="shore-beam-edge" fill="none" stroke="#de9a52" stroke-width=".65"/></svg>`;
 
   const picture = extra => `<img class="shore-lighthouse ${extra||''}" src="${artwork}" width="1024" height="1536" alt="Акварельный маяк на скалистом берегу: оранжевый свет, бирюзовое море и парусники" fetchpriority="high" decoding="async">`;
