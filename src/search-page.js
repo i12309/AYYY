@@ -5,9 +5,6 @@
   a.register('search',{title:'Поиск',render(){return `<div class="shore-page shore-search sp-app" id="search-page">
     ${a.shoreChrome.navigation('search')}
     <main class="sp-main" id="search-content">
-      <div class="sp-art" aria-hidden="true">
-        <img class="sp-art-atlas" src="assets/search/thought-atlas.svg" width="820" height="1800" alt="" fetchpriority="high" decoding="async">
-      </div>
       <div class="sp-content">
         <section class="sp-intro" aria-labelledby="search-heading">
           <h1 id="search-heading">Поиск</h1>
