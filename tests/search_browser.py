@@ -1,6 +1,7 @@
-"""Search integration: real hash links, shared storage, URLs and reference geometry.
+"""Search integration: shared portal styling, storage, URLs and accessible layouts.
 Run: python tests/search_browser.py (requires Python Playwright and Chromium).
 SEARCH_ROOT optionally points to an isolated release checkout.
+CHROMIUM_PATH selects a local browser; SEARCH_VISUAL_OUTPUT saves screenshots.
 """
 from pathlib import Path
 from urllib.parse import urlsplit, unquote, quote
@@ -9,16 +10,87 @@ from playwright.sync_api import sync_playwright
 
 ROOT=Path(os.environ.get('SEARCH_ROOT',Path(__file__).resolve().parents[1]))
 BASE='https://ayyy.test/AYYY/'
-OUT=Path(__file__).resolve().parents[1]/'docs/search'
+OUT=Path(os.environ['SEARCH_VISUAL_OUTPUT']) if os.environ.get('SEARCH_VISUAL_OUTPUT') else None
+CHROME=os.environ.get('CHROMIUM_PATH') or None
+if OUT:OUT.mkdir(parents=True,exist_ok=True)
 checks=[]
-def check(name,condition):
-    assert condition,name
+def check(name,condition,details=None):
+    assert condition,(name,details) if details is not None else name
     checks.append(name)
     print('PASS',name,flush=True)
 
+
+def settle(page):
+    page.evaluate('''async () => {
+      await document.fonts.ready;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }''')
+
+
+def navigate(page,route):
+    page.evaluate('(r)=>AYYY.navigate(r)',route)
+    page.wait_for_function('(r)=>AYYY.route===r',arg=route)
+    settle(page)
+
+
+def portal_skin(page):
+    # Compare actual shared visual properties with the other entry pages. Layout
+    # widths and copy may differ; colours, shapes and typography belong together.
+    page.mouse.move(0,0)
+    page.evaluate('document.activeElement?.blur()')
+    return page.evaluate('''() => {
+      const style = (selector, properties) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const computed = getComputedStyle(element);
+        return Object.fromEntries(properties.map(key => [key, computed.getPropertyValue(key).trim()]));
+      };
+      return {
+        palette: style('body', ['--paper','--ink','--sea','--sunlight']),
+        page: style('.shore-page', ['background-color','color','font-family']),
+        header: style('.shore-header', ['height','padding','gap','background-color']),
+        logo: style('.shore-brand', ['color','font-family','font-size','font-weight','letter-spacing','transform']),
+        heading: style('.shore-page h1', ['font-family','font-weight','color']),
+        footer: style('.shore-footer', ['color','font-family','font-size','border-top-color']),
+        search: style('.shore-search-box', ['background-color','border-top-color','border-top-width','border-radius','box-shadow']),
+        submit: style('.shore-search-submit', ['background-color','color','font-family','font-weight','border-radius'])
+      };
+    }''')
+
+
+def reachable_controls(page):
+    selectors = ['.shore-header .shore-brand', '.shore-header .shore-catalog-link',
+                 '.shore-settings', '#search-query', '.sp-search-submit',
+                 '[data-mode]', '[data-provider]', '.sp-history-item',
+                 '#sp-clear-history:enabled', '.sp-action-ai', '.sp-action-directory',
+                 '.shore-footer [data-action]']
+    problems=[]
+    for selector in selectors:
+        for control in page.locator(selector).all():
+            if not control.is_visible():
+                problems.append((selector,'hidden'));continue
+            control.scroll_into_view_if_needed()
+            result=control.evaluate('''element => {
+              const r=element.getBoundingClientRect();
+              const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+              const overflow=element.hasAttribute('data-provider')?[...element.children].flatMap(child=>{
+                const c=child.getBoundingClientRect();
+                if (!c.width||!c.height) return [];
+                return c.left<r.left-1||c.right>r.right+1||c.top<r.top-1||c.bottom>r.bottom+1
+                  ?[{child:child.className,left:c.left-r.left,right:c.right-r.right}]:[];
+              }):[];
+              return {inside:r.width>0&&r.height>0&&r.left>=-1&&r.top>=-1
+                &&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,
+                hit:!!hit&&(element===hit||element.contains(hit)),overflow};
+            }''')
+            if not result['inside'] or not result['hit'] or result['overflow']:problems.append((selector,result))
+    page.evaluate('window.scrollTo({top:0,left:0,behavior:"instant"});document.querySelector(".sp-modes").scrollLeft=0')
+    return problems
+
+
 with sync_playwright() as pw:
-    browser=pw.chromium.launch()
-    context=browser.new_context(viewport={'width':1672,'height':941})
+    browser=pw.chromium.launch(executable_path=CHROME,args=['--no-sandbox','--disable-dev-shm-usage'])
+    context=browser.new_context(viewport={'width':1672,'height':941},reduced_motion='reduce')
     page=context.new_page()
     errors=[];external=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
@@ -90,22 +162,43 @@ with sync_playwright() as pw:
     page.locator('#sp-clear-history').click();page.locator('#search-query').fill('')
     page.reload();page.wait_for_selector('#search-query')
     page.wait_for_function('Array.from(document.querySelectorAll(".sp-art img")).every(e=>e.complete)')
-    check('local artwork loaded',page.locator('.sp-art img').evaluate_all('(els)=>els.every(e=>e.complete&&e.naturalWidth>0)'))
-    # Compare key rectangles against the provided 1672 x 941 reference.
-    box=page.locator('.sp-search-box').bounding_box()
-    check('reference search placement',abs(box['x']-360)<4 and abs(box['y']-267)<8 and abs(box['width']-952)<5)
-    box=page.locator('.sp-content-grid').bounding_box()
-    check('reference lower panels placement',abs(box['x']-348)<4 and abs(box['y']-536)<8)
-    OUT.mkdir(parents=True,exist_ok=True)
-    page.screenshot(path=str(OUT/'desktop-1672.png'),full_page=True)
-    for width in [360,390,768,1024,1440,1672,1920]:
-        page.set_viewport_size({'width':width,'height':844 if width<630 else 900})
-        check('no page overflow '+str(width),page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
-        check('submit accessible '+str(width),page.locator('.sp-search-submit').is_visible())
-        if width in [390,1440]:page.screenshot(path=str(OUT/f'{"mobile" if width==390 else "desktop"}-{width}.png'),full_page=True)
+    check('local artwork loaded',page.locator('.sp-art img').evaluate_all('(els)=>els.length>0&&els.every(e=>e.complete&&e.naturalWidth>0)'))
+    settle(page)
+    if OUT:page.screenshot(path=str(OUT/'desktop-1672.png'),full_page=True)
+    navigate(page,'home');home=portal_skin(page)
+    navigate(page,'directory');directory=portal_skin(page)
+    navigate(page,'search');search=portal_skin(page)
+    check('shared palette is defined',all(home['palette'].values()))
+    for part in ['palette','page','header','logo','footer']:
+        check('shared '+part+' matches home and directory',search[part] is not None and search[part]==home[part]==directory[part],
+              {'search':search[part],'home':home[part],'directory':directory[part]})
+    # Home's compact h1 labels its shortcuts, while search and directory use page headings.
+    check('page heading styling matches directory',search['heading'] is not None and search['heading']==directory['heading'],
+          {'search':search['heading'],'directory':directory['heading']})
+    for part in ['search','submit']:
+        check('shared '+part+' styling matches home',search[part] is not None and search[part]==home[part],
+              {'search':search[part],'home':home[part]})
+    check('search action has a visible text label','Найти' in page.locator('.sp-search-submit').inner_text())
+    # A full local history and a long query must fit just as the empty state does.
+    page.evaluate('''AYYY.set('recentSearches',[
+      'Длинный запрос '.repeat(35),...Array.from({length:9},(_,i)=>'query '+i)
+    ]);AYYY.render()''')
+    for width,height in [(320,740),(390,844),(768,1024),(1024,768),(1440,900),(1920,1080),(3840,2160)]:
+        page.set_viewport_size({'width':width,'height':height});settle(page)
+        check('no page overflow '+str(width),page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
+        problems=reachable_controls(page)
+        check('controls reachable without overlap '+str(width),not problems,problems)
+        check('no horizontal page scroll after controls '+str(width),page.evaluate('scrollX===0&&document.documentElement.scrollWidth<=innerWidth+1'))
+        if width>=1440:
+            layout=page.evaluate('({height:innerHeight,documentHeight:document.documentElement.scrollHeight})')
+            check('desktop fits one screen '+str(width),layout['documentHeight']<=layout['height']+1,layout)
+        if width==3840:
+            check('4K keeps the portal composition bounded',page.locator('.shore-page').evaluate('e=>e.getBoundingClientRect().width<=1841'))
+        if OUT and width in [390,1440,1920,3840]:
+            page.screenshot(path=str(OUT/f'{"mobile" if width==390 else "desktop"}-{width}.png'),full_page=True)
     page.evaluate('document.documentElement.dataset.theme="dark"')
-    check('search remains light in dark portal',page.locator('.sp-app').evaluate('(e)=>getComputedStyle(e).color')=='rgb(36, 49, 61)')
-    page.locator('.sp-footer [data-action="about"]').click()
+    check('search keeps shared paper and ink in dark portal',portal_skin(page)['page']==home['page'] and portal_skin(page)['palette']==home['palette'])
+    page.locator('.shore-footer [data-action="about"]').click()
     check('footer opens real about dialog',page.locator('#modal').is_visible())
     page.keyboard.press('Escape')
     check('footer dialog does not navigate away',page.evaluate('AYYY.route')=='search')

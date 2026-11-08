@@ -4,7 +4,7 @@
 .sp-app :is(a,button,input):focus-visible {outline:2px solid var(--sea);outline-offset:4px}
 .sp-visually-hidden {position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;padding:0;margin:-1px;border:0}
 
-.sp-main {position:relative;flex:1;display:grid;grid-template-columns:minmax(200px,28%) minmax(0,1fr);gap:clamp(28px,4vw,72px);align-items:center;padding:26px var(--shore-gutter) 44px}
+.sp-main {position:relative;flex:1;display:grid;grid-template-columns:minmax(200px,28%) minmax(0,1fr);gap:clamp(28px,4vw,72px);align-items:center;padding:26px var(--shore-gutter) 28px}
 .sp-art {align-self:stretch;display:flex;align-items:center;justify-content:center;min-width:0;pointer-events:none}
 .sp-art-magnifier {display:block;width:100%;max-width:360px;height:auto;mix-blend-mode:multiply;filter:saturate(.8);mask-image:linear-gradient(transparent,#000 6%,#000 90%,transparent),linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-composite:intersect}
 .sp-content {width:100%;max-width:1000px;min-width:0;padding:6px 0 18px}
@@ -98,6 +98,10 @@
   .sp-alternatives>p {max-width:none}
   .sp-panel-actions {margin-top:13px}
   .sp-command-tip {display:none}
+}
+@media (max-width:370px) {
+  .sp-provider {padding-inline:9px;gap:7px}
+  .sp-provider-check {display:none}
 }
 @media (min-width:721px) and (max-height:720px) {
   .sp-main {padding-top:12px;padding-bottom:24px;align-items:start}
