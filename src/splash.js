@@ -3,15 +3,16 @@
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
   const artwork = 'assets/lighthouse-watercolor.webp';
-  const defaults = ['memory', 'paint', 'ai', 'calc', 'notes', 'parcels'];
+  const defaults = ['memory', 'ai', 'calc', 'weather', 'focus', 'search'];
   const groups = [['all','Все'],['everyday','Каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
-  const shortNames = {memory:'Игры',paint:'Рисовать',ai:'Спросить ИИ',calc:'Посчитать',notes:'Записать',parcels:'Посылки'};
-  const shortDescriptions = {memory:'Пять минут для себя',paint:'Дайте идеям цвет',ai:'Разобраться вместе',calc:'Сложное — в простое',notes:'Поймать хорошую мысль',parcels:'Что там уже в пути?'};
+  const shortNames = {memory:'Игры',ai:'Спросить ИИ',calc:'Посчитать',weather:'Погода',focus:'Фокус',search:'Поиск'};
+  const shortDescriptions = {memory:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',focus:'Время для важного',search:'Найти направление'};
   a.catalogCategory = 'all';
 
   const shortcutIds = () => {
     const saved = a.get('home.shortcuts', defaults);
-    return [...new Set(Array.isArray(saved) ? saved : defaults)].filter(id => a.services.some(s => s.id===id)).slice(0,6);
+    const available = [...new Set(Array.isArray(saved) ? saved : defaults)].filter(id => a.services.some(s => s.id===id));
+    return (available.length ? available : defaults).slice(0,6);
   };
 
   const navigation = page => `<header class="shore-header">

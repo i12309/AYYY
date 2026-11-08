@@ -100,6 +100,7 @@
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
+      document.querySelectorAll('.nav-count').forEach(el=>el.textContent=String(app.services.length));
       document.querySelector('#view').innerHTML=view.render();
       const result=view.mount?.();if(typeof result==='function')app.cleanup=result;
       document.body.classList.remove('nav-open');document.querySelector('[data-action=menu]')?.setAttribute('aria-expanded','false');window.scrollTo({top:0,behavior:'instant'});
@@ -110,8 +111,6 @@
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
     {id:'finance',name:'Валюты и рынки',desc:'Курсы, конвертер и индексы',icon:'chart',color:'green',group:'everyday',kind:'api',route:'finance'},
-    {id:'parcels',name:'Мои посылки',desc:'Трек-номера под рукой',icon:'package',color:'orange',group:'everyday',kind:'link',route:'parcels'},
-    {id:'mail',name:'Почта',desc:'Gmail по OAuth, чтение и отправка',icon:'mail',color:'blue',group:'everyday',kind:'connect',route:'mail'},
     {id:'calc',name:'Калькулятор',desc:'Посчитать быстро и точно',icon:'calculator',color:'blue',group:'tools',kind:'local',route:'tools',param:'calc'},
     {id:'percent',name:'Проценты',desc:'Скидки, доли и изменения',icon:'percent',color:'green',group:'tools',kind:'local',route:'tools',param:'percent'},
     {id:'converter',name:'Конвертер величин',desc:'Метры, градусы и мегабайты',icon:'ruler',color:'orange',group:'tools',kind:'local',route:'tools',param:'converter'},
@@ -120,16 +119,14 @@
     {id:'json',name:'JSON-редактор',desc:'Проверить и отформатировать',icon:'code',color:'purple',group:'tools',kind:'local',route:'tools',param:'json'},
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
-    {id:'paint',name:'Мастерская',desc:'Рисуйте и сохраняйте идеи',icon:'brush',color:'pink',group:'creative',kind:'local',route:'paint',tag:'Попробуйте'},
-    {id:'notes',name:'Заметки и задачи',desc:'Освободите голову для главного',icon:'note',color:'amber',group:'personal',kind:'local',route:'notes'},
     {id:'focus',name:'Время фокуса',desc:'25 минут на одно важное дело',icon:'focus',color:'purple',group:'personal',kind:'local',route:'focus'},
-    {id:'bookmarks',name:'Мои закладки',desc:'Личные маршруты в интернете',icon:'bookmark',color:'orange',group:'personal',kind:'local',route:'bookmarks'},
     {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
     {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},
     {id:'math',name:'Математика в игре',desc:'Считать становится интересно',icon:'plus',color:'green',group:'games',kind:'local',route:'games',param:'math'},
     {id:'translate',name:'Переводчик',desc:'Открыть Google Переводчик',icon:'translate',color:'blue',group:'everyday',kind:'link',url:'https://translate.google.com/'}
   ];
   app.kindLabels={local:'В браузере',api:'Открытый API',link:'Внешний сервис',connect:'Подключаемый',demo:'Демо-экран'};
-  app.favorites=()=>app.get('favorites',['ai','calc','paint','notes','memory','password','parcels','translate']);
+  // Keep historical local favorites intact, but never surface retired services.
+  app.favorites=()=>{const ids=app.get('favorites',['ai','calc','weather','memory','password','translate']);return Array.isArray(ids)?ids.filter(id=>app.services.some(s=>s.id===id)):[];};
   app.serviceCard=(s,compact=false)=>`<article class="service-card ${compact?'compact':''}"><button class="service-open" ${s.url?`data-external="${app.escape(s.url)}"`:`data-route="${s.route}" data-param="${s.param||''}"`}><span class="service-icon ${s.color}">${app.icon(s.icon,24)}</span><span class="service-title">${s.name}</span><span class="service-desc">${s.desc}</span>${compact?'':`<span class="service-kind"><i class="status-dot ${s.kind==='local'?'green':''}"></i>${app.kindLabels[s.kind]}</span>`}</button><button class="favorite-btn ${app.favorites().includes(s.id)?'selected':''}" data-favorite="${s.id}" title="${app.favorites().includes(s.id)?'Убрать из избранного':'В избранное'}" aria-label="${app.favorites().includes(s.id)?'Убрать из избранного':'В избранное'}: ${s.name}" aria-pressed="${app.favorites().includes(s.id)}">${app.icon('star',15)}</button></article>`;
 })();
