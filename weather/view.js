@@ -40,8 +40,33 @@
     else s=cloud+'<g stroke="currentColor" stroke-width="1.3" opacity=".6"><path d="M8 51h43M17 57h41M7 61h28"/></g>';
     return `<svg viewBox="0 0 64 66" fill="none" aria-hidden="true">${s}</svg>`;
   }
-  const knownDays=[['day','День'],['dawn','Рассвет'],['dusk','Закат'],['night','Ночь']];
-  const previewTypes=[['','По данным',2],['clear','Ясно',0],['partly','Облака',2],['cloudy','Пасмурно',3],['rain','Дождь',61],['snow','Снег',71],['storm','Гроза',95],['fog','Туман',45]];
+  Object.assign(paths,{
+    tree:'<path d="M12 22v-8m0 3-4-3m4 1 4-3M6 14a4 4 0 0 1-2-7 4 4 0 0 1 8-3 4 4 0 0 1 7 3 4 4 0 0 1-1 7Z"/>',
+    cloud:'<path d="M5 18a4 4 0 1 1 1-8 6 6 0 0 1 11-2 5 5 0 1 1 1 10H5Z"/>',
+    storm:'<path d="m14 2-9 12h7l-2 8 9-12h-7l2-8Z"/>',
+    snow:'<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10M9 4l3 3 3-3M9 20l3-3 3 3"/>',
+    fog:'<path d="M4 8h16M2 12h17M7 16h15M4 20h11"/>',
+    moon:'<path d="M20 15A9 9 0 0 1 9 3a9 9 0 1 0 11 12Z"/>'
+  });
+  const knownDays=[['dawn','Утро','sunrise'],['day','День','sun'],['dusk','Сумерки','sunset'],['night','Ночь','moon']];
+  const previewTypes=[['clear','Ясно','sun'],['cloudy','Пасмурно','cloud'],['rain','Дождь','drop'],['storm','Гроза','storm'],['snow','Снег','snow'],['fog','Туман','fog']];
+  const monthNames=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const shortMonths=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  const seasons=[['spring','Весна','почки и листья',3],['summer','Лето','зелёная крона',6],['autumn','Осень','золото и листопад',9],['winter','Зима','те же ветви, снег',11]];
+  function sceneControls(){
+    return `<section class="ww-scene-controls" id="ww-scene-controls" aria-label="Предпросмотр пейзажа">
+      <div class="ww-weather-controls"><span class="ww-control-label">Погода в сцене:</span><div class="ww-control-row" id="ww-scene-presets" role="group" aria-label="Предпросмотр погоды">${previewTypes.map(([key,label,symbol])=>`<button type="button" data-scene-weather="${key}" aria-pressed="false">${icon(symbol)}${label}</button>`).join('')}</div></div>
+      <div class="ww-lighting-controls"><span class="ww-control-label">Свет:</span><div class="ww-control-row" role="group" aria-label="Предпросмотр времени суток">${knownDays.map(([key,label,symbol])=>`<button type="button" data-scene-phase="${key}" aria-pressed="false">${icon(symbol)}${label}</button>`).join('')}</div><label class="ww-time-tuning"><input id="ww-scene-minute" type="range" min="0" max="1439" step="1" aria-label="Местное время художественной сцены"><output id="ww-minute-label" for="ww-scene-minute"></output></label><button class="ww-time-play" data-action="cycle" id="ww-cycle" data-tree-control aria-pressed="false" title="Плавно показать суточный цикл" aria-label="Показать суточный цикл">▷</button></div>
+      <div class="ww-months"><span class="ww-control-label">Месяц:</span><button class="ww-month-step" data-action="month-prev" data-tree-control aria-label="Предыдущий месяц">‹</button><div class="ww-month-items" id="ww-scene-month" role="group" aria-label="Месяц пейзажа">${shortMonths.map((name,n)=>`<button data-scene-month="${n}" data-tree-control aria-label="${monthNames[n]}" aria-pressed="false">${name}</button>`).join('')}</div><button class="ww-month-step" data-action="month-next" data-tree-control aria-label="Следующий месяц">›</button></div>
+      <div class="ww-season-story" role="group" aria-label="Четыре сезона одного дерева">${seasons.map(([key,label,description])=>`<button data-season="${key}" data-tree-control aria-pressed="false"><img data-tree-preview="${key}" alt="" width="43" height="34"><span>${label}<small>${description}</small></span></button>`).join('')}</div>
+      <p class="ww-season-hint" id="ww-season-hint"></p>
+      <span id="ww-theme-status" role="status"></span>
+    </section>`;
+  }
+  function sceneAdjustments(){
+    return `<div class="ww-scene-adjustments" aria-label="Дополнительные настройки пейзажа">      <div class="ww-precipitation-strip"><label id="ww-intensity-wrap"><span id="ww-intensity-title">Осадки</span><input id="ww-scene-intensity" type="range" min="0" max="100" step="1" aria-label="Сила осадков в сцене, процентов"><output id="ww-intensity-label" for="ww-scene-intensity"></output></label><label class="ww-wind-tuning">Ветер<input id="ww-scene-wind" type="range" min="0" max="40" step="0.5" aria-label="Ветер в сцене, метров в секунду"><output id="ww-wind-label" for="ww-scene-wind"></output></label><label><input id="ww-flashes" type="checkbox" checked>Вспышки</label></div>
+      <div class="ww-scene-status"><span class="ww-scene-context" id="ww-scene-context"></span><button data-action="now" id="ww-now-button">${icon('refresh')}К реальной погоде</button></div><p class="ww-override-note" id="ww-override-note" hidden>Предпросмотр оформления. Показатели не изменены.</p></div>`;
+  }
   const REFRESH_INTERVAL=15*60*1000, RETRY_INTERVAL=5*60*1000;
   function mount(host,options={}){
     if(!host)throw new Error('Weather mount target required.');
@@ -49,33 +74,57 @@
     const initial=M.cached(city)||M.demo(city);
     const state={city,data:initial,unit:M.read('weather.scene.unit','C')==='F'?'F':'C',period:7,metric:'temp',selectedDay:M.dateKey(initial.current.time,initial.timezone),selectedTime:null,
       theme:['tree','lighthouse'].includes(M.read('weather.scene.theme'))?M.read('weather.scene.theme'):'lighthouse',flashes:M.read('weather.scene.flashes',true)!==false,cycle:false,override:{},paused:options.motionEnabled===false||M.read('weather.scene.paused',false)===true,busy:false,error:'',request:0,found:M.CITIES.slice(),searchBusy:false};
-    let active=true,weatherController=null,searchController=null,searchTicket=0,weatherTimer=null,searchTimer=null,nextAttempt=0;
+    let active=true,weatherController=null,searchController=null,searchTicket=0,weatherTimer=null,searchTimer=null,nextAttempt=0,themeRequest=0;
     const app=document.createElement('div');app.className='ww-app';host.replaceChildren(app);
     const homeURL=options.homeURL||'../#home',directoryURL=options.directoryURL||'../#directory';
-    app.innerHTML=`<header class="ww-header"><a class="ww-brand" data-ww-nav="home" href="${esc(homeURL)}" aria-label="AYYY — главная"><span class="ww-logo">ayyy<span>.</span></span><small>всегда есть ориентир</small></a><nav class="ww-nav" aria-label="Разделы портала"><a href="${esc(homeURL)}" data-ww-nav="home">Главная</a><a href="${esc(directoryURL)}" data-ww-nav="directory">Все сервисы</a><a href="#" class="ww-active" data-action="now" aria-current="page">Погода</a><button class="ww-icon-button" data-action="settings" aria-label="Настройки погоды" title="Настройки погоды">${icon('settings')}</button></nav></header>
+    app.innerHTML=`<div class="ww-page"><header class="ww-header"><a class="ww-brand" data-ww-nav="home" href="${esc(homeURL)}" aria-label="AYYY — главная"><span class="ww-logo">ayyy<span>.</span></span><small>всегда есть ориентир</small></a><div class="ww-theme-control"><span class="ww-tiny-label">Режим сцены:</span><div class="ww-theme-switch" role="group" aria-label="Оформление сцены"><button data-theme="lighthouse" aria-pressed="true">${icon('lighthouse')}Маяк</button><button data-theme="tree" aria-pressed="false"><img data-tree-preview="autumn" alt="" width="25" height="23">${icon('tree')}Дерево</button></div></div><nav class="ww-nav" aria-label="Разделы портала"><a href="${esc(homeURL)}" data-ww-nav="home">Главная</a><a href="${esc(directoryURL)}" data-ww-nav="directory">Все сервисы</a><a href="#" class="ww-active" data-action="now" aria-current="page">Погода</a><button class="ww-icon-button" data-action="about" aria-label="О погоде и пейзаже" title="О погоде и пейзаже">${icon('settings')}</button></nav></header>${sceneControls()}
       <main class="ww-shell"><div class="ww-topline"><div class="ww-title"><h1>Погода</h1><span>У каждого дня — своё настроение.</span></div><div class="ww-location-tools"><button class="ww-city-search" data-action="city">${icon('search')}<span>Найти другой город</span><kbd>/</kbd></button><div class="ww-units" role="group" aria-label="Единицы температуры"><button data-unit="C" aria-pressed="true">°C</button><button data-unit="F" aria-pressed="false">°F</button></div></div></div>
       <div class="ww-sourcebar"><div class="ww-data-status" id="ww-source-status" role="status"><i class="ww-data-dot"></i><span id="ww-source-text"></span></div><div class="ww-source-actions"><span class="ww-source-label">Open-Meteo</span><button class="ww-link" data-action="refresh">${icon('refresh')}<span id="ww-refresh-text">Обновить</span></button></div></div>
       <div class="ww-error" id="ww-error" role="alert" hidden>${icon('info')}<span></span><button data-action="refresh">Повторить</button></div>
       <div class="ww-main"><section class="ww-current" id="ww-current" aria-label="Погода в выбранный момент"></section>
-        <section class="ww-center" aria-label="Погодная сцена"><div class="ww-scene-title ww-screenreader">Пейзаж вашего дня<span id="ww-scene-subtitle"></span></div><div class="ww-scene" id="ww-scene" role="img"></div><div class="ww-scene-controls"><div class="ww-scene-context" id="ww-scene-context"></div><div class="ww-scene-buttons"><div class="ww-theme-switch" role="group" aria-label="Оформление сцены"><button data-theme="lighthouse" aria-pressed="true">Маяк</button><button data-theme="tree" aria-pressed="false">Дерево</button></div><button data-action="settings" id="ww-scenes-button" aria-expanded="false" aria-controls="ww-settings-dialog">${icon('settings')}Настроить сцену</button><button data-action="now" id="ww-now-button">К реальной погоде</button></div><span id="ww-theme-status" role="status"></span><p class="ww-override-note" id="ww-override-note" hidden>Предпросмотр оформления. Показатели не изменены.</p><p class="ww-art-caption">Свет, небо и море — в ритме прогноза.</p></div></section>
+        <section class="ww-center" aria-label="Погодная сцена"><div class="ww-scene-title ww-screenreader">Пейзаж вашего дня<span id="ww-scene-subtitle"></span></div><div class="ww-scene" id="ww-scene" role="img"></div></section>
         <section class="ww-period" id="ww-period" aria-label="Прогноз на период"></section></div>
-      <section class="ww-hourly" aria-labelledby="ww-hourly-title"><div class="ww-hourly-heading"><div class="ww-hourly-title"><h2 id="ww-hourly-title">В течение дня</h2><span id="ww-hourly-date"></span></div><div class="ww-chart-toolbar"><div class="ww-chart-tabs" role="group" aria-label="Показатель графика"><button data-metric="temp" aria-pressed="true">Температура</button><button data-metric="pop" aria-pressed="false">Осадки</button><button data-metric="wind" aria-pressed="false">Ветер</button></div><div class="ww-chart-arrows"><button data-action="hours-back" aria-label="Предыдущие часы">${icon('left')}</button><button data-action="hours-next" aria-label="Следующие часы">${icon('right')}</button></div></div></div><div class="ww-hour-scroll" id="ww-hour-scroll"><div class="ww-hours" id="ww-hours"></div></div><div class="ww-hourly-foot"><span>${icon('info')}Выберите час: сцена покажет этот момент прогноза.</span><span id="ww-timezone-note"></span></div></section>
-      <footer class="ww-footer"><span>Прогноз: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a> · <span id="ww-footer-date"></span></span><button data-action="about">Море — художественный образ, не морской прогноз</button></footer></main>
+      <section class="ww-hourly" aria-labelledby="ww-hourly-title"><div class="ww-hourly-heading"><div class="ww-hourly-title"><h2 id="ww-hourly-title">В течение дня</h2><span id="ww-hourly-date"></span></div><div class="ww-chart-toolbar"><div class="ww-chart-tabs" role="group" aria-label="Показатель графика"><button data-metric="temp" aria-pressed="true">Температура</button><button data-metric="pop" aria-pressed="false">Осадки</button><button data-metric="wind" aria-pressed="false">Ветер</button></div><div class="ww-chart-arrows"><button data-action="hours-back" aria-label="Предыдущие часы">${icon('left')}</button><button data-action="hours-next" aria-label="Следующие часы">${icon('right')}</button></div></div></div><div class="ww-hour-scroll" id="ww-hour-scroll"><div class="ww-hours" id="ww-hours"></div></div>${sceneAdjustments()}<div class="ww-hourly-foot"><span>${icon('info')}Выберите час: сцена покажет этот момент прогноза.</span><button data-action="pause" id="ww-pause-button" aria-pressed="false">${icon('pause')}Пауза анимации</button><span id="ww-timezone-note"></span></div></section>
+      <footer class="ww-footer"><span>Прогноз: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a> · <span id="ww-footer-date"></span></span><button data-action="about">О графике и сезонах ${icon('info')}</button></footer></main></div>
       <dialog id="ww-city-dialog" aria-labelledby="ww-city-dialog-title"><div class="ww-dialog-head"><h2 id="ww-city-dialog-title">Выберите город</h2><button class="ww-icon-button" data-close aria-label="Закрыть выбор города">${icon('close')}</button></div><p class="ww-dialog-description">Выберите город. Местное время и прогноз изменятся вместе с ним.</p><form class="ww-search-form" id="ww-city-form"><input class="ww-input" id="ww-city-input" aria-label="Название города" placeholder="Город или населённый пункт" minlength="2" maxlength="100" autocomplete="off" required><button class="ww-primary" type="submit">${icon('search')}Найти</button></form><p class="ww-search-status" id="ww-search-status" role="status">Популярные города. Поиск отправляется только по кнопке.</p><div class="ww-city-options" id="ww-city-options"></div></dialog>
-      <div popover="auto" id="ww-settings-dialog" role="dialog" aria-labelledby="ww-settings-title"><div class="ww-dialog-head"><h2 id="ww-settings-title">Настройки погоды</h2><button class="ww-icon-button" data-action="close-settings" aria-label="Закрыть настройки сцены">${icon('close')}</button></div><details class="ww-proxy-settings"><summary>Подключение и источник данных</summary><p class="ww-dialog-description">Если Open-Meteo недоступен напрямую, запрос будет отправлен через corsproxy.io. Прокси получит координаты выбранного города.</p><p class="ww-dialog-description">Резервное подключение уже настроено и включается автоматически. Вводить ключ не нужно.</p></details><p class="ww-dialog-description">Сцена следует данным прогноза. Здесь можно посмотреть, как она выглядит в другой погоде — цифры прогноза не меняются.</p><p class="ww-dialog-section">Погода в сцене</p><div class="ww-scene-presets" id="ww-scene-presets" role="group" aria-label="Предпросмотр погоды">${previewTypes.map(([key,label,code])=>`<button class="ww-scene-preset" data-scene-weather="${key}" aria-pressed="${key===''}">${weatherIcon(code)}${label}</button>`).join('')}</div><p class="ww-dialog-section">Время суток</p><div class="ww-phase-presets" role="group" aria-label="Предпросмотр времени суток"><button data-scene-phase="" aria-pressed="true">По прогнозу</button>${knownDays.map(([k,n])=>`<button data-scene-phase="${k}" aria-pressed="false">${n}</button>`).join('')}</div><label class="ww-toggle-row"><input type="checkbox" id="ww-animate-toggle" checked>Облака, волны, луч и осадки в движении</label><p class="ww-dialog-description">Системная настройка уменьшения движения имеет приоритет. В скрытой вкладке анимация приостанавливается.</p><div class="ww-manual-fields"><label>Местное время <output id="ww-minute-label"></output><input id="ww-scene-minute" type="range" min="0" max="1439" step="1"></label><label data-tree-only>Месяц <select id="ww-scene-month">${Array.from({length:12},(_,n)=>`<option value="${n}">${M.dateLabel(`2026-${String(n+1).padStart(2,'0')}-15`,{month:'long'})}</option>`).join('')}</select></label><div data-tree-only><button data-action="month-prev" aria-label="Предыдущий месяц">←</button><button data-action="month-next" aria-label="Следующий месяц">→</button><button data-action="cycle" id="ww-cycle" aria-pressed="false">Суточный цикл</button></div><label id="ww-intensity-wrap">Сила эффекта осадков <input id="ww-scene-intensity" type="range" min="0" max="100"></label><label>Ветер, м/с <output id="ww-wind-label"></output><input id="ww-scene-wind" type="range" min="0" max="40" step="0.5"></label><label><input id="ww-flashes" type="checkbox" checked> Вспышки грозы</label><button data-action="pause" id="ww-pause-button">Пауза</button></div><div class="ww-dialog-footer"><button class="ww-link" data-action="reset-scene">${icon('refresh')}К реальной погоде</button><button class="ww-primary" data-action="close-settings">Готово</button></div></div>
-      <dialog id="ww-about-dialog" aria-labelledby="ww-about-title"><div class="ww-dialog-head"><h2 id="ww-about-title">Как живёт эта страница</h2><button class="ww-icon-button" data-close aria-label="Закрыть информацию">${icon('close')}</button></div><div class="ww-about-text"><p>Пейзаж — художественный образ. Цвет неба, облака, дождь, снег, освещение и движение воды определяются прогнозом выбранного города. Высота волн не является морским прогнозом.</p><p>Погода и поиск города поступают от Open-Meteo. Для реального прогноза нажмите «Обновить». До первого успешного запроса показан явно обозначенный демонстрационный пример.</p><p>Время указано для выбранного города, а не для вашего устройства. Выбор дня или часа переключает режим на просмотр прогноза; кнопка «Сейчас» возвращает текущие условия.</p><p>Последний успешный прогноз сохраняется локально. После 90 минут он помечается устаревшим. Координаты геолокации устройства не запрашиваются.</p><p>Ключей API, регистрации и внешних шрифтов нет. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Документация источника</a>.</p></div></dialog>`;
+      <dialog id="ww-about-dialog" aria-labelledby="ww-about-title"><div class="ww-dialog-head"><h2 id="ww-about-title">Как живёт эта страница</h2><button class="ww-icon-button" data-close aria-label="Закрыть информацию">${icon('close')}</button></div><div class="ww-about-text"><p>Пейзаж — художественный образ. Цвет неба, облака, дождь, снег, освещение и движение пейзажа определяются прогнозом выбранного города. Открытые настройки позволяют посмотреть другую погоду, время и сезон; показатели прогноза при этом не меняются. Высота волн не является морским прогнозом.</p><p>Погода и поиск города поступают от Open-Meteo. Для реального прогноза нажмите «Обновить». До первого успешного запроса показан явно обозначенный демонстрационный пример.</p><p>Время указано для выбранного города, а не для вашего устройства. Выбор дня или часа переключает режим на просмотр прогноза; кнопка «Сейчас» возвращает текущие условия.</p><p>Последний успешный прогноз сохраняется локально. После 90 минут он помечается устаревшим. Координаты геолокации устройства не запрашиваются.</p><p>Ключей API, регистрации и внешних шрифтов нет. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Документация источника</a>.</p></div></dialog>`;
     const $=s=>app.querySelector(s),$$=s=>[...app.querySelectorAll(s)];
     // The atmosphere belongs to the whole page, not to the center column.
     app.prepend($('#ww-scene'));
-    const scene=new root.AYYYSceneController($('#ww-scene'),{assetURL:options.assetURL||'assets/lighthouse.avif',treeURL:options.treeURL||new URL('tree-scene.js?v=themes-1',document.currentScript?.src||document.baseURI).href,treeAssetURL:options.treeAssetURL||new URL('assets/tree/',document.baseURI).href});
+    const scene=new root.AYYYSceneController($('#ww-scene'),{assetURL:options.assetURL||'assets/lighthouse.avif',treeURL:options.treeURL||new URL('tree-scene.js?v=themes-v5-2',document.currentScript?.src||document.baseURI).href,treeAssetURL:options.treeAssetURL||new URL('assets/tree/',document.baseURI).href});
     let sceneParameters=null;
-    async function selectTheme(theme){state.theme=theme;state.cycle=false;M.write('weather.scene.theme',theme);$('#ww-theme-status').textContent=theme==='tree'?'Подготавливаем дерево…':'';try{await scene.select(theme);if(!active)return;$('#ww-theme-status').textContent='';}catch(error){if(!active)return;$('#ww-theme-status').textContent=error.message;}renderScene();}
+    async function selectTheme(theme){
+      if(!['tree','lighthouse'].includes(theme))return;
+      const request=++themeRequest;state.cycle=false;
+      $('#ww-theme-status').textContent=theme==='tree'?'Подготавливаем дерево…':'';
+      try{
+        const changed=await scene.select(theme);
+        if(!active||request!==themeRequest||!changed)return;
+        state.theme=scene.theme;M.write('weather.scene.theme',state.theme);
+        $('#ww-theme-status').textContent='';
+      }catch(error){
+        if(!active||request!==themeRequest)return;
+        $('#ww-theme-status').textContent=error.message;
+      }
+      render();
+    }
     function enterManual(){if(!state.override.base)state.override={base:{...sceneParameters,light:{...sceneParameters.light}}};}
-    function closeSettings(focus=false){$('#ww-settings-dialog').hidePopover();if(focus)$('#ww-scenes-button').focus();}
-    function toggleSettings(){const panel=$('#ww-settings-dialog');if(panel.matches(':popover-open')){closeSettings(true);return;}panel.showPopover();const r=$('#ww-scenes-button').getBoundingClientRect();panel.style.left=Math.max(10,Math.min(innerWidth-panel.offsetWidth-10,r.left))+'px';panel.style.top=Math.max(10,Math.min(innerHeight-panel.offsetHeight-10,r.bottom+8))+'px';}
-    function controlsInput(event){const id=event.target.id;if(['ww-scene-minute','ww-scene-month','ww-scene-intensity','ww-scene-wind'].includes(id)){enterManual();state.cycle=false;const key={'ww-scene-minute':'minute','ww-scene-month':'month','ww-scene-intensity':'intensity','ww-scene-wind':'wind'}[id];state.override[key]=Number(event.target.value)/(key==='intensity'?100:1);delete state.override.phase;renderScene();}if(id==='ww-flashes'){state.flashes=event.target.checked;M.write('weather.scene.flashes',state.flashes);renderScene();}}
-    const panelToggle=()=>$('#ww-scenes-button').setAttribute('aria-expanded',String($('#ww-settings-dialog').matches(':popover-open')));
-    $('#ww-settings-dialog').addEventListener('toggle',panelToggle);app.addEventListener('input',controlsInput);app.addEventListener('change',controlsInput);
+    function setMonth(month){
+      if(scene.theme!=='tree')return;
+      enterManual();state.cycle=false;state.override.month=(month+12)%12;renderScene();
+    }
+    function controlsInput(event){
+      const id=event.target.id;
+      if(['ww-scene-minute','ww-scene-intensity','ww-scene-wind'].includes(id)){
+        enterManual();state.cycle=false;
+        const key={'ww-scene-minute':'minute','ww-scene-intensity':'intensity','ww-scene-wind':'wind'}[id];
+        state.override[key]=Number(event.target.value)/(key==='intensity'?100:1);
+        if(key==='minute')delete state.override.phase;
+        renderScene();
+      }
+      if(id==='ww-flashes'){state.flashes=event.target.checked;M.write('weather.scene.flashes',state.flashes);renderScene();}
+    }
+    app.addEventListener('input',controlsInput);app.addEventListener('change',controlsInput);
     const temp=n=>M.temperature(n,state.unit),val=M.value;
     const selectedPoint=()=>state.selectedTime===null?state.data.current:state.data.hours.find(h=>h.time===state.selectedTime)||state.data.current;
     const selectedDay=()=>state.data.days.find(d=>d.date===state.selectedDay)||state.data.days[0];
@@ -106,12 +155,14 @@
       const daylight=duration===null?'Нет данных':`${Math.floor(duration/3600)} ч ${Math.round(duration%3600/60)} мин`;
       const progress=duration>0?M.clamp((p.time-day.sunrise)/duration,0,1):0;
       const cx=16+228*progress,cy=57-186*progress*(1-progress);
+      const tree=scene.theme==='tree';
+      const sunChart=tree?`<svg class="ww-sun-path" viewBox="0 0 360 48" aria-hidden="true"><path d="M8 42h344" fill="none" stroke="currentColor" opacity=".13"/><path d="M97 42Q175-35 266 42" fill="none" stroke="currentColor" opacity=".18" stroke-dasharray="2 3"/><path d="M97 42Q175-35 266 42" fill="none" stroke="#e68e3b" stroke-width="1.3" pathLength="100" stroke-dasharray="${(progress*100).toFixed(1)} 100"/><circle cx="${(97*(1-progress)**2+350*(1-progress)*progress+266*progress**2).toFixed(1)}" cy="${(42-154*progress*(1-progress)).toFixed(1)}" r="2.4" fill="#e68e3b"/></svg>`:null;
       const metric=(name,label,value,suffix='')=>`<div class="ww-metric">${icon(name)}<label>${label}</label><strong>${value}${suffix?` <small>${suffix}</small>`:''}</strong></div>`;
-      $('#ww-current').innerHTML=`<p class="ww-eyebrow">${preview?'Выбранный момент':!d.live?'Пример прогноза':'Сейчас в городе'}</p><h2 class="ww-place"><button class="ww-place-button" data-action="city">${esc(d.city.name)}${icon('down')}</button></h2><p class="ww-local-time">${esc(d.city.country)} · <time id="ww-city-clock">${M.time(localClock,d.timezone)}</time></p>
+      $('#ww-current').innerHTML=`<p class="ww-eyebrow">${preview?'Выбранный момент':!d.live?'Пример прогноза':'Сейчас в городе'}</p><h2 class="ww-place"><button class="ww-place-button" data-action="city">${esc(d.city.name)}${icon('down')}</button></h2><p class="ww-local-time">${esc(d.city.country)}${tree?' · '+esc(d.city.name):''} · <time id="ww-city-clock">${M.time(localClock,d.timezone)}</time></p>
         <div class="ww-current-main"><strong class="ww-temperature">${temp(p.temp)}</strong><span class="ww-current-icon">${weatherIcon(p.code,p.isDay)}</span></div><p class="ww-condition">${c.label}</p><p class="ww-range-note"><span>Днём <strong>${temp(day.max)}</strong></span><span>Ночью <strong>${temp(day.min)}</strong></span></p>
         <div class="ww-observation-label">${preview?`${M.dateLabel(state.selectedDay,{day:'numeric',month:'short'})} · ${M.time(p.time,d.timezone)} · прогноз`:!d.live?'Пример оформления · не текущая погода':`Данные на ${M.time(p.time,d.timezone)}`}</div>
         <div class="ww-metrics">${metric('thermometer','Ощущается',temp(p.feels))}${metric('wind','Ветер',val(p.wind,1),'м/с · '+M.direction(p.direction))}${metric('drop','Влажность',val(p.humidity),' %')}${metric('gauge','Давление',val(p.pressure),'гПа')}${metric('umbrella','Вероятность осадков',val(p.pop),'%')}${metric('eye','Видимость',p.visibility!==null?val(p.visibility/1000,1):'—','км')}</div>
-        <section class="ww-daylight" aria-label="Световой день"><div class="ww-card-heading"><h3>Световой день</h3><small>${daylight}</small></div><svg class="ww-sun-path" viewBox="0 0 260 68" aria-hidden="true"><path d="M16 57Q130-36 244 57" fill="none" stroke="var(--ww-line)" stroke-width="1.4" stroke-dasharray="3 5"/><path d="M16 57Q130-36 244 57" fill="none" stroke="var(--ww-accent)" stroke-width="1.6" pathLength="100" stroke-dasharray="${(progress*100).toFixed(1)} 100"/><path d="M10 58h240" stroke="var(--ww-line)"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="var(--ww-accent)" opacity=".12"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="var(--ww-accent)"/></svg><div class="ww-sun-times"><div>${icon('sunrise')}<span><small>Восход</small><strong>${M.time(day.sunrise,d.timezone)}</strong></span></div><div>${icon('sunset')}<span><small>Закат</small><strong>${M.time(day.sunset,d.timezone)}</strong></span></div></div></section>
+        <section class="ww-daylight" aria-label="Световой день"><div class="ww-card-heading"><h3>Световой день</h3><small>${daylight}</small></div>${sunChart||`<svg class="ww-sun-path" viewBox="0 0 260 68" aria-hidden="true"><path d="M16 57Q130-36 244 57" fill="none" stroke="var(--ww-line)" stroke-width="1.4" stroke-dasharray="3 5"/><path d="M16 57Q130-36 244 57" fill="none" stroke="var(--ww-accent)" stroke-width="1.6" pathLength="100" stroke-dasharray="${(progress*100).toFixed(1)} 100"/><path d="M10 58h240" stroke="var(--ww-line)"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="var(--ww-accent)" opacity=".12"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="var(--ww-accent)"/></svg>`}<div class="ww-sun-times"><div>${icon('sunrise')}<span><small>Восход</small><strong>${M.time(day.sunrise,d.timezone)}</strong></span></div><div>${icon('sunset')}<span><small>Закат</small><strong>${M.time(day.sunset,d.timezone)}</strong></span></div></div></section>
         <div class="ww-day-note">${icon(c.key==='rain'?'umbrella':c.key==='storm'?'info':p.wind>=9?'wind':'lighthouse')}<span><b>${note[0]}</b>${note[1]}</span></div>`;
     }
     function renderPeriod(){
@@ -126,32 +177,47 @@
     function renderHours(){
       const scroller=$('#ww-hour-scroll'),scroll=scroller.scrollLeft,hours=visibleHours(),n=hours.length||1;
       const values=hours.map(h=>h[state.metric]);const numbers=values.filter(v=>M.number(v)!==null);const low=numbers.length?Math.min(...numbers):0,high=numbers.length?Math.max(...numbers):1,span=Math.max(1,high-low);
-      const x=i=>(i+.5)*70,y=v=>M.number(v)===null?null:39-(v-low)/span*31;
+      const cell=scene.theme==='tree'?55:70;
+      const x=i=>(i+.5)*cell,y=v=>M.number(v)===null?null:39-(v-low)/span*31;
       let path='',prev=false;
       values.forEach((v,i)=>{if(v===null){prev=false;return;}path+=(prev?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ';prev=true;});
       const bars=state.metric==='pop'?hours.map((h,i)=>h.pop===null?'':`<rect x="${x(i)-9}" y="${45-h.pop/100*36}" width="18" height="${h.pop/100*36}" rx="3" fill="var(--ww-sea)" opacity=".28"/>`).join(''):'';
       $('#ww-hourly-date').textContent=M.dateLabel(state.selectedDay,{day:'numeric',month:'long'});
-      const hourRoot=$('#ww-hours');hourRoot.style.gridTemplateColumns=`repeat(${n},minmax(68px,1fr))`;hourRoot.style.minWidth=`${n*70}px`;
-      hourRoot.innerHTML=`<svg class="ww-hour-line" viewBox="0 0 ${n*70} 48" preserveAspectRatio="none" aria-hidden="true">${bars}${state.metric!=='pop'?`<path d="${path}" fill="none" stroke="${state.metric==='wind'?'var(--ww-sea)':'var(--ww-accent)'}" stroke-width="1.3" vector-effect="non-scaling-stroke"/>${values.map((v,i)=>v===null?'':`<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="var(--ww-paper)" stroke="var(--ww-accent)"/>`).join('')}`:''}</svg>${hours.map(h=>`<button class="ww-hour" data-hour="${h.time}" aria-pressed="${h.time===selectedHour()}" aria-label="${M.time(h.time,state.data.timezone)}, ${temp(h.temp)}, ${M.condition(h.code,h.isDay).label}, осадки ${val(h.pop)} процентов, ветер ${val(h.wind,1)} метров в секунду"><span class="ww-hour-label">${M.time(h.time,state.data.timezone)}</span><span class="ww-hour-icon">${weatherIcon(h.code,h.isDay)}</span><span class="ww-hour-temp">${state.metric==='temp'?temp(h.temp):state.metric==='pop'?val(h.pop)+'%':val(h.wind,1)+' м/с'}</span><span class="ww-hour-value">${icon(state.metric==='wind'?'wind':'drop')}${state.metric==='wind'?M.direction(h.direction):val(h.pop)+'%'}</span></button>`).join('')}`;
+      const hourRoot=$('#ww-hours');hourRoot.style.gridTemplateColumns=`repeat(${n},minmax(${cell}px,1fr))`;hourRoot.style.minWidth=`${n*cell}px`;
+      hourRoot.innerHTML=`<svg class="ww-hour-line" viewBox="0 0 ${n*cell} 48" preserveAspectRatio="none" aria-hidden="true">${bars}${state.metric!=='pop'?`<path d="${path}" fill="none" stroke="${state.metric==='wind'?'var(--ww-sea)':'var(--ww-accent)'}" stroke-width="1.3" vector-effect="non-scaling-stroke"/>${scene.theme==='tree'?'':values.map((v,i)=>v===null?'':`<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="var(--ww-paper)" stroke="var(--ww-accent)"/>`).join('')}`:''}</svg>${hours.map(h=>`<button class="ww-hour" data-hour="${h.time}" aria-pressed="${h.time===selectedHour()}" aria-label="${M.time(h.time,state.data.timezone)}, ${temp(h.temp)}, ${M.condition(h.code,h.isDay).label}, осадки ${val(h.pop)} процентов, ветер ${val(h.wind,1)} метров в секунду"><span class="ww-hour-label">${M.time(h.time,state.data.timezone)}</span><span class="ww-hour-icon">${weatherIcon(h.code,h.isDay)}</span><span class="ww-hour-temp">${state.metric==='temp'?temp(h.temp):state.metric==='pop'?val(h.pop)+'%':val(h.wind,1)+' м/с'}</span><span class="ww-hour-value">${icon(state.metric==='wind'?'wind':'drop')}${state.metric==='wind'?M.direction(h.direction):val(h.pop)+'%'}</span></button>`).join('')}`;
       scroller.scrollLeft=scroll;$$('[data-metric]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.metric===state.metric)));
     }
     function renderScene(){
       const data=state.data;
       sceneParameters=root.AYYYSceneState.build(data,selectedPoint(),state.selectedTime,state.override,{paused:state.paused,flashes:state.flashes});
       scene.update(sceneParameters);
-      const phase=sceneParameters.phase;
+      const phase=sceneParameters.phase,tree=scene.theme==='tree';
+      const manual=sceneParameters.source==='manual',season=root.AYYYTreePalette.season(sceneParameters.seasonMonth);
       $('#ww-scene-subtitle').textContent='Пейзаж по данным погоды';
-      $('#ww-scene-context').textContent=sceneParameters.source==='manual'?'Ручной просмотр':state.selectedTime===null?'Сейчас':`Прогноз · ${M.dateLabel(M.dateKey(sceneParameters.sceneTime,data.timezone))} · ${M.time(sceneParameters.sceneTime,data.timezone)}`;
-      const override=sceneParameters.source==='manual';$('#ww-override-note').hidden=!override;$('#ww-scenes-button').dataset.override=String(override);$('#ww-now-button').hidden=!override&&state.selectedTime===null;
+      $('#ww-scene-context').textContent=manual?'Ручной просмотр':state.selectedTime===null?'Сейчас · по данным погоды':`Прогноз · ${M.dateLabel(M.dateKey(sceneParameters.sceneTime,data.timezone))} · ${M.time(sceneParameters.sceneTime,data.timezone)}`;
+      $('#ww-override-note').hidden=!manual;
       $$('[data-theme]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===scene.theme)));
-      $$('[data-tree-only]').forEach(b=>b.hidden=scene.theme!=='tree');
-      $('#ww-scene-minute').value=sceneParameters.minute;$('#ww-minute-label').textContent=String(Math.floor(sceneParameters.minute/60)).padStart(2,'0')+':'+String(Math.floor(sceneParameters.minute%60)).padStart(2,'0');
-      $('#ww-scene-month').value=sceneParameters.calendarMonth;$('#ww-scene-wind').value=sceneParameters.windSpeed;$('#ww-wind-label').textContent=sceneParameters.windSpeed.toFixed(1);$('#ww-scene-intensity').value=sceneParameters.precipitationEffect*100;$('#ww-intensity-wrap').hidden=!['rain','snow','storm'].includes(sceneParameters.weather);$('#ww-flashes').checked=state.flashes;$('#ww-cycle').setAttribute('aria-pressed',String(state.cycle));
-      if(scene.theme==='tree')scene.renderer.onTick=dt=>{if(!state.cycle)return;state.override.minute=((state.override.minute??sceneParameters.minute)+dt*80)%1440;renderScene();};
-      $('#ww-pause-button').innerHTML=icon(state.paused?'play':'pause')+(state.paused?'Движение':'Пауза');$('#ww-pause-button').setAttribute('aria-pressed',String(state.paused));
-      $('#ww-animate-toggle').checked=!state.paused;
-      $$('[data-scene-weather]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sceneWeather===(state.override.weather||''))));
-      $$('[data-scene-phase]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scenePhase===(state.override.phase||''))));
+      $$('[data-tree-control]').forEach(b=>{b.disabled=!tree;b.title=tree?'':'Сезоны и суточный цикл доступны в сцене «Дерево»';});
+      $('#ww-scene-minute').value=Math.round(sceneParameters.minute);
+      const time=String(Math.floor(sceneParameters.minute/60)).padStart(2,'0')+':'+String(Math.floor(sceneParameters.minute%60)).padStart(2,'0');
+      $('#ww-minute-label').textContent=time;$('#ww-scene-minute').setAttribute('aria-valuetext',time);
+      $$('[data-scene-month]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.sceneMonth)===sceneParameters.calendarMonth)));
+      $$('[data-season]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.season===season.asset)));
+      $('#ww-season-hint').textContent=tree?season.description:'Маяк · свет, небо и море в ритме погоды';
+      $('#ww-scene-wind').value=sceneParameters.windSpeed;$('#ww-wind-label').textContent=M.value(sceneParameters.windSpeed,1)+' м/с';
+      const intensity=Math.round(sceneParameters.precipitationEffect*100);
+      $('#ww-scene-intensity').value=intensity;$('#ww-intensity-label').textContent=intensity+'%';
+      $('#ww-intensity-title').textContent=sceneParameters.weather==='snow'?'Снег':'Осадки';
+      $('#ww-flashes').checked=state.flashes;
+      $('#ww-cycle').setAttribute('aria-pressed',String(state.cycle));$('#ww-cycle').textContent=state.cycle?'Ⅱ':'▷';
+      if(tree){
+        scene.renderer.onTick=dt=>{if(!state.cycle)return;state.override.minute=((state.override.minute??sceneParameters.minute)+dt*80)%1440;delete state.override.phase;renderScene();};
+        $$('[data-tree-preview]').forEach(img=>{const src=scene.renderer.preview?.(img.dataset.treePreview);if(src&&img.getAttribute('src')!==src)img.src=src;});
+      }
+      $('#ww-pause-button').innerHTML=icon(state.paused?'play':'pause')+(state.paused?'Продолжить анимацию':'Пауза анимации');$('#ww-pause-button').setAttribute('aria-pressed',String(state.paused));
+      $$('[data-scene-weather]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sceneWeather===sceneParameters.weather)));
+      $$('[data-scene-phase]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scenePhase===phase)));
+
     }
     function render({hours=true}={}){
       if(!active)return;const daysScroll=$('#ww-days')?.scrollTop||0;
@@ -187,7 +253,7 @@
       $('#ww-city-options').innerHTML=state.found.map((c,i)=>`<button class="ww-city-option" data-city-index="${i}"><span><strong>${esc(c.name)}</strong><small>${esc(c.country)}</small></span>${icon(M.cityKey(c)===M.cityKey(state.city)?'check':'arrow')}</button>`).join('');
     }
     function openDialog(id){const d=$(id);if(!d.open)d.showModal();}
-    function openCity(){closeSettings();state.found=M.CITIES.slice();$('#ww-city-input').value='';$('#ww-search-status').textContent='Популярные города. Поиск отправляется только по кнопке.';renderCityOptions();openDialog('#ww-city-dialog');$('#ww-city-input').focus();}
+    function openCity(){state.found=M.CITIES.slice();$('#ww-city-input').value='';$('#ww-search-status').textContent='Популярные города. Поиск отправляется только по кнопке.';renderCityOptions();openDialog('#ww-city-dialog');$('#ww-city-input').focus();}
     function chooseCity(c){state.cycle=false;
       state.request++;weatherController?.abort();searchController?.abort();clearTimeout(weatherTimer);clearTimeout(searchTimer);searchTicket++;
       state.city=M.cleanCity(c);state.data=M.cached(state.city)||M.demo(state.city);M.write('weather.city',state.city);state.error='';state.selectedTime=null;state.selectedDay=M.dateKey(state.data.current.time,state.data.timezone);state.override={};$('#ww-city-dialog').close();render();refresh();
@@ -214,15 +280,15 @@
       if(b.dataset.day){const day=state.data.days.find(d=>d.date===b.dataset.day);if(!day)return;state.selectedDay=day.date;const hours=visibleHours();const noon=hours.find(h=>M.parts(h.time,state.data.timezone).hour==='12')||hours[0];state.selectedTime=noon?.time??null;state.cycle=false;state.override={};const scroll=$('#ww-days')?.scrollLeft||0;render();$('#ww-days').scrollLeft=scroll;$(`[data-day="${day.date}"]`)?.focus({preventScroll:true});scrollToCurrent();return;}
       if(b.dataset.hour){const stamp=Number(b.dataset.hour);if(!state.data.hours.some(h=>h.time===stamp))return;state.cycle=false;state.selectedTime=stamp;state.override={};render({hours:false});return;}
       if(b.dataset.theme){selectTheme(b.dataset.theme);return;}
+      if(b.dataset.sceneMonth!==undefined){setMonth(Number(b.dataset.sceneMonth));return;}
+      if(b.dataset.season){const season=seasons.find(s=>s[0]===b.dataset.season);if(season)setMonth(season[3]);return;}
       if(b.dataset.sceneWeather!==undefined){if(!b.dataset.sceneWeather){resetTime();return;}enterManual();state.override.weather=b.dataset.sceneWeather;renderScene();return;}
-      if(b.dataset.scenePhase!==undefined){if(!b.dataset.scenePhase){resetTime();return;}enterManual();state.override.phase=b.dataset.scenePhase;renderScene();return;}
+      if(b.dataset.scenePhase!==undefined){if(!b.dataset.scenePhase){resetTime();return;}enterManual();state.cycle=false;state.override.phase=b.dataset.scenePhase;renderScene();return;}
       const action=b.dataset.action;
       if(action==='city'){openCity();return;}
       if(action==='refresh'){if(!state.busy)refresh();return;}
-      if(action==='settings'){toggleSettings();return;}
-      if(action==='close-settings'){closeSettings(true);return;}
-      if(action==='month-prev'||action==='month-next'){enterManual();state.override.month=(sceneParameters.calendarMonth+(action==='month-prev'?11:1))%12;renderScene();return;}
-      if(action==='cycle'){enterManual();state.cycle=!state.cycle;renderScene();return;}
+      if(action==='month-prev'||action==='month-next'){setMonth(sceneParameters.calendarMonth+(action==='month-prev'?-1:1));return;}
+      if(action==='cycle'){if(scene.theme!=='tree')return;enterManual();state.cycle=!state.cycle;if(state.cycle){state.override.minute=sceneParameters.minute;delete state.override.phase;state.paused=false;M.write('weather.scene.paused',false);}renderScene();return;}
       if(action==='about'){openDialog('#ww-about-dialog');return;}
       if(action==='pause'){state.paused=!state.paused;M.write('weather.scene.paused',state.paused);renderScene();return;}
       if(action==='now'){event.preventDefault();resetTime();return;}
@@ -231,19 +297,17 @@
     }
     function key(event){
       if(!active||!app.isConnected||!(event.target===document.body||app.contains(event.target)))return;
-      if(event.key==='Escape'&&$('#ww-settings-dialog').matches(':popover-open')){event.preventDefault();closeSettings(true);return;}
       if(event.key==='/'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)&&!app.querySelector('dialog[open]')){event.preventDefault();event.stopPropagation();openCity();}
       const b=event.target.closest('[data-hour]');if(b&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const buttons=$$('[data-hour]'),idx=buttons.indexOf(b),to=event.key==='Home'?0:event.key==='End'?buttons.length-1:M.clamp(idx+(event.key==='ArrowLeft'?-1:1),0,buttons.length-1);buttons[to]?.focus({preventScroll:true});buttons[to]?.click();const box=$('#ww-hour-scroll'),target=buttons[to];if(target&&(target.offsetLeft<box.scrollLeft||target.offsetLeft>box.scrollLeft+box.clientWidth-70))box.scrollLeft=Math.max(0,target.offsetLeft-box.clientWidth/2);}
     }
-    function animateChange(){state.paused=!$('#ww-animate-toggle').checked;M.write('weather.scene.paused',state.paused);renderScene();}
     function closeSearch(){searchTicket++;searchController?.abort();clearTimeout(searchTimer);state.searchBusy=false;$('#ww-city-form button').disabled=false;}
-    app.addEventListener('click',click);document.addEventListener('keydown',key,true);$('#ww-city-form').addEventListener('submit',searchCities);$('#ww-animate-toggle').addEventListener('change',animateChange);$('#ww-city-dialog').addEventListener('close',closeSearch);
+    app.addEventListener('click',click);document.addEventListener('keydown',key,true);$('#ww-city-form').addEventListener('submit',searchCities);$('#ww-city-dialog').addEventListener('close',closeSearch);
     document.addEventListener('visibilitychange',checkForUpdates);window.addEventListener('online',reconnect);
     const clock=setInterval(()=>{if(!active||document.hidden)return;checkForUpdates();if(state.data.live){const el=$('#ww-city-clock');if(el)el.textContent=M.time(Date.now()/1000,state.data.timezone);renderStatus();if(state.selectedTime===null)renderScene();}},30000);
     render();scrollToCurrent();if(state.theme==='tree')selectTheme('tree');checkForUpdates();
     return {
       refresh,
-      destroy(){active=false;state.request++;searchTicket++;weatherController?.abort();searchController?.abort();clearTimeout(weatherTimer);clearTimeout(searchTimer);clearInterval(clock);document.removeEventListener('visibilitychange',checkForUpdates);window.removeEventListener('online',reconnect);scene.destroy();app.removeEventListener('input',controlsInput);app.removeEventListener('change',controlsInput);app.querySelectorAll('dialog[open]').forEach(d=>d.close());app.removeEventListener('click',click);document.removeEventListener('keydown',key,true);host.replaceChildren();},
+      destroy(){active=false;themeRequest++;state.request++;searchTicket++;weatherController?.abort();searchController?.abort();clearTimeout(weatherTimer);clearTimeout(searchTimer);clearInterval(clock);document.removeEventListener('visibilitychange',checkForUpdates);window.removeEventListener('online',reconnect);scene.destroy();app.removeEventListener('input',controlsInput);app.removeEventListener('change',controlsInput);app.querySelectorAll('dialog[open]').forEach(d=>d.close());app.removeEventListener('click',click);document.removeEventListener('keydown',key,true);host.replaceChildren();},
       // Read-only state summary used by the regression suite, without private data.
       inspect(){return {city:state.city.name,live:state.data.live,selectedTime:state.selectedTime,selectedDay:state.selectedDay,theme:scene.theme,phase:sceneParameters?.phase,weather:sceneParameters?.weather,paused:state.paused,unit:state.unit,period:state.period,busy:state.busy,error:state.error};}
     };

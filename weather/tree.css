@@ -1,0 +1,476 @@
+/* AYYY tree page: the approved v5 prototype, scoped away from the lighthouse
+   and the rest of the portal. The renderer owns the live palette variables. */
+.ww-app[data-scene-theme=tree] {
+  --ww-paper:#f7faf8;
+  --ww-ink:#19323f;
+  --ww-muted:#506e7d;
+  --ww-accent:#e28c40;
+  --ww-sea:#78a7b9;
+  --ww-line:#9ab5bf30;
+  --ww-wash:247,250,248;
+  --ww-card:transparent;
+  --ww-soft:#efbb8129;
+  --ww-page-gutter:clamp(22px,3vw,58px);
+  min-width:320px;
+  min-height:100svh;
+  color:var(--ww-ink);
+  background:var(--ww-paper);
+  font-family:'Segoe UI',Arial,sans-serif;
+  font-size:12px;
+  line-height:1.45;
+  letter-spacing:normal;
+  color-scheme:light;
+  transition:none;
+}
+.ww-app[data-scene-theme=tree][data-tree-dark=true] {
+  --ww-line:#90acc52c;
+  --ww-sea:#85adc1;
+  color-scheme:dark;
+}
+.ww-app[data-scene-theme=tree]::before,
+.ww-app[data-scene-theme=tree]::after,
+.ww-app[data-scene-theme=tree] .ww-header::before,
+.ww-app[data-scene-theme=tree] .ww-current::before,
+.ww-app[data-scene-theme=tree] .ww-period::before,
+.ww-app[data-scene-theme=tree] .ww-hourly::before,
+.ww-app[data-scene-theme=tree] .ww-period-detail::before { display:none; }
+.ww-app[data-scene-theme=tree] .ww-page {
+  position:relative;
+  z-index:3;
+  min-height:100svh;
+  max-width:1920px;
+  margin:auto;
+  padding:0 var(--ww-page-gutter);
+}
+.ww-app[data-scene-theme=tree] .ww-tree-scene {
+  position:absolute;
+  inset:0 0 auto;
+  width:100%;
+  height:100svh;
+  z-index:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.ww-app[data-scene-theme=tree] .ww-tree-scene canvas {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.ww-app[data-scene-theme=tree] h1,
+.ww-app[data-scene-theme=tree] h2,
+.ww-app[data-scene-theme=tree] h3 { font-weight:400; letter-spacing:normal; line-height:inherit; }
+.ww-app:where([data-scene-theme=tree]) p { line-height:inherit; }
+.ww-app:where([data-scene-theme=tree]) small { font-size:smaller; }
+.ww-app[data-scene-theme=tree] h1,
+.ww-app[data-scene-theme=tree] h2,
+.ww-app[data-scene-theme=tree] .ww-condition,
+.ww-app[data-scene-theme=tree] .ww-daylight h3,
+.ww-app[data-scene-theme=tree] .ww-period-detail h3 { font-family:Georgia,'Times New Roman',serif; }
+.ww-app[data-scene-theme=tree] button:focus-visible,
+.ww-app[data-scene-theme=tree] a:focus-visible,
+.ww-app[data-scene-theme=tree] input:focus-visible { outline:2px solid var(--ww-accent); outline-offset:3px; }
+.ww-app[data-scene-theme=tree] svg { flex-shrink:0; }
+
+/* Header and title share the prototype's single 1920px page boundary. */
+.ww-app[data-scene-theme=tree] .ww-header {
+  max-width:none;
+  width:auto;
+  height:60px;
+  margin:0;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:25px;
+  z-index:5;
+}
+.ww-app[data-scene-theme=tree] .ww-brand { gap:25px; }
+.ww-app[data-scene-theme=tree] .ww-logo {
+  font:800 44px/1 'Trebuchet MS','Segoe UI',sans-serif;
+  letter-spacing:-4.3px;
+  transform:rotate(-3deg);
+  color:var(--ww-ink);
+}
+.ww-app[data-scene-theme=tree] .ww-logo span { color:#e78236; }
+.ww-app[data-scene-theme=tree] .ww-brand small {
+  display:block;
+  padding:0;
+  font-size:10px;
+  letter-spacing:.15px;
+  color:var(--ww-muted);
+  white-space:nowrap;
+}
+.ww-app[data-scene-theme=tree] .ww-nav { margin-left:auto; gap:25px; font-size:11px; }
+.ww-app[data-scene-theme=tree] .ww-nav a { padding:0; }
+.ww-app[data-scene-theme=tree] .ww-nav a:hover { color:var(--ww-accent); }
+.ww-app[data-scene-theme=tree] .ww-nav .ww-active::after { bottom:-10px; border-radius:50%; transform:none; }
+.ww-app[data-scene-theme=tree] .ww-icon-button {
+  display:inline-grid;
+  place-items:center;
+  flex-shrink:0;
+  width:30px;
+  height:30px;
+  font-size:22px;
+  line-height:1;
+  border:1px solid var(--ww-line)!important;
+  border-radius:50%;
+  background:rgba(var(--ww-wash),.22)!important;
+}
+.ww-app[data-scene-theme=tree] .ww-icon-button svg { width:15px; height:15px; }
+.ww-app[data-scene-theme=tree] .ww-shell { position:relative; max-width:none; margin:0; padding:0; pointer-events:auto; }
+.ww-app[data-scene-theme=tree] .ww-topline { min-height:46px; padding:0; border:0; gap:0; }
+.ww-app[data-scene-theme=tree] .ww-title { gap:15px; }
+.ww-app[data-scene-theme=tree] .ww-topline .ww-title h1 { font-size:34px; line-height:1.45; letter-spacing:-.5px; }
+.ww-app[data-scene-theme=tree] .ww-topline .ww-title span { color:var(--ww-muted); font-size:10px; opacity:1; }
+.ww-app[data-scene-theme=tree] .ww-location-tools { gap:14px; }
+.ww-app[data-scene-theme=tree] .ww-city-search {
+  width:250px;
+  height:36px;
+  gap:9px;
+  padding:7px 11px!important;
+  border:1px solid var(--ww-line)!important;
+  border-radius:5px;
+  background:rgba(var(--ww-wash),.22)!important;
+  color:var(--ww-muted)!important;
+  font-size:10px!important;
+}
+.ww-app[data-scene-theme=tree] .ww-city-search>svg { width:15px; height:15px; }
+.ww-app[data-scene-theme=tree] .ww-city-search kbd { margin-left:auto; font-size:10px; }
+.ww-app[data-scene-theme=tree] .ww-units { gap:3px; padding:0; border:0; border-radius:0; background:none; }
+.ww-app[data-scene-theme=tree] .ww-units button { width:30px; height:30px; padding:0; font-size:10px; border-radius:50%; color:var(--ww-muted); }
+.ww-app[data-scene-theme=tree] .ww-units button[aria-pressed=true] { color:#ce7c39; background:#edba7933; font-weight:400; }
+.ww-app[data-scene-theme=tree] .ww-sourcebar {
+  position:absolute;
+  top:59px;
+  left:0;
+  right:0;
+  z-index:4;
+  min-height:13px;
+  padding:0;
+  border:0;
+  font-size:9px;
+}
+.ww-app[data-scene-theme=tree] .ww-data-status { gap:6px; }
+.ww-app[data-scene-theme=tree] .ww-data-dot { width:4px; height:4px; }
+.ww-app[data-scene-theme=tree] .ww-source-actions { gap:12px; }
+.ww-app[data-scene-theme=tree] .ww-source-actions .ww-link { font-size:9px!important; }
+.ww-app[data-scene-theme=tree] .ww-error:not([hidden]) { position:relative; z-index:5; margin-top:24px; }
+
+/* A fixed left and right column leave the same open tree stage as v5. */
+.ww-app[data-scene-theme=tree] .ww-main {
+  display:grid;
+  grid-template-columns:320px minmax(0,1fr) 430px;
+  gap:20px;
+  min-height:558px;
+  padding-top:23px;
+  align-items:start;
+}
+.ww-app[data-scene-theme=tree] .ww-current,
+.ww-app[data-scene-theme=tree] .ww-period {
+  position:relative;
+  width:auto;
+  min-width:0;
+  margin:0;
+  border:0;
+  background:none;
+  isolation:auto;
+  order:0;
+  grid-column:auto;
+  grid-row:auto;
+}
+.ww-app[data-scene-theme=tree] .ww-current { max-width:340px; padding-top:24px; }
+.ww-app[data-scene-theme=tree] .ww-period { padding-top:25px; }
+.ww-app[data-scene-theme=tree] .ww-eyebrow { display:none; }
+.ww-app[data-scene-theme=tree] .ww-center {
+  display:block;
+  width:auto;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  padding:0;
+  margin:0;
+  grid-column:auto;
+  grid-row:auto;
+  order:0;
+  align-self:stretch;
+  pointer-events:none;
+}
+.ww-app[data-scene-theme=tree] .ww-art-caption { display:none; }
+.ww-app[data-scene-theme=tree] .ww-place { margin:0!important; font-size:25px; font-weight:400; line-height:1.2; letter-spacing:-.4px; }
+.ww-app[data-scene-theme=tree] .ww-place-button { display:flex; font:inherit; gap:8px; }
+.ww-app[data-scene-theme=tree] .ww-place-button svg { width:12px; height:12px; color:var(--ww-muted); }
+.ww-app[data-scene-theme=tree] .ww-local-time { font-size:10px; margin-top:6px!important; }
+.ww-app[data-scene-theme=tree] .ww-local-time time { color:var(--ww-muted); }
+.ww-app[data-scene-theme=tree] .ww-current-main { margin-top:22px; gap:17px; }
+.ww-app[data-scene-theme=tree] .ww-temperature { font:400 96px/1.02 Georgia,'Times New Roman',serif; letter-spacing:-6px; }
+.ww-app[data-scene-theme=tree] .ww-current-icon { width:60px; height:64px; color:#7eacb9; }
+.ww-app[data-scene-theme=tree] .ww-condition { font-size:24px; line-height:1.2; margin-top:7px; white-space:nowrap; letter-spacing:normal; }
+.ww-app[data-scene-theme=tree] .ww-range-note { margin-top:8px!important; gap:15px; font-size:11px; }
+.ww-app[data-scene-theme=tree] .ww-observation-label { display:table; margin-top:8px!important; font-size:9px; line-height:1.3; padding:3px 7px; color:#c77935; background:#efbb8129; border-radius:3px; }
+.ww-app[data-scene-theme=tree] .ww-observation-label:empty { display:none; }
+.ww-app[data-scene-theme=tree][data-tree-dark=true] .ww-observation-label { color:#edb777; background:#a4743d29; }
+.ww-app[data-scene-theme=tree] .ww-metrics { display:grid; grid-template-columns:1fr 1fr; gap:15px 22px; margin-top:22px; padding:0; border:0; }
+.ww-app[data-scene-theme=tree] .ww-metric { grid-template-columns:22px 1fr; grid-template-rows:auto auto; gap:0 9px; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-metric>svg { display:block; grid-row:1/3; align-self:center; width:22px; height:22px; stroke-width:1.4; }
+.ww-app[data-scene-theme=tree] .ww-metric label { font-size:10px; line-height:1.25; }
+.ww-app[data-scene-theme=tree] .ww-metric strong { font-size:15px; font-weight:600; line-height:1.35; font-variant-numeric:normal; }
+.ww-app[data-scene-theme=tree] .ww-metric strong small { font-size:10px; font-weight:400; }
+.ww-app[data-scene-theme=tree] .ww-daylight { margin-top:23px; padding-top:0; border:0; }
+.ww-app[data-scene-theme=tree] .ww-card-heading { align-items:center; }
+.ww-app[data-scene-theme=tree] .ww-card-heading h3 { font-size:18px; line-height:1.2; margin:0; }
+.ww-app[data-scene-theme=tree] .ww-card-heading small { font-size:9px; }
+.ww-app[data-scene-theme=tree] .ww-sun-path { width:100%; height:38px; margin-top:2px; }
+.ww-app[data-scene-theme=tree] .ww-sun-times { margin-top:0; align-items:center; }
+.ww-app[data-scene-theme=tree] .ww-sun-times>div { gap:9px; }
+.ww-app[data-scene-theme=tree] .ww-sun-times svg { display:block; width:22px; height:22px; }
+.ww-app[data-scene-theme=tree] .ww-sun-times small { font-size:10px; line-height:1.3; }
+.ww-app[data-scene-theme=tree] .ww-sun-times strong { display:block; font-size:14px; font-weight:600; line-height:1.3; }
+.ww-app[data-scene-theme=tree] .ww-day-note { line-height:1.45; display:flex; gap:10px; margin-top:16px; padding:0; background:none; border:0; border-radius:0; }
+.ww-app[data-scene-theme=tree] .ww-day-note svg { width:17px; height:22px; }
+.ww-app[data-scene-theme=tree] .ww-day-note b { font-size:10px; font-weight:600; margin-bottom:3px; }
+.ww-app[data-scene-theme=tree] .ww-day-note span { font-size:9px; }
+
+/* Forecast typography, tracks, and transparent selection surfaces. */
+.ww-app[data-scene-theme=tree] .ww-period-top { margin-bottom:0; gap:10px; }
+.ww-app[data-scene-theme=tree] .ww-period-top h2 { font-size:27px; line-height:1.15; letter-spacing:normal; }
+.ww-app[data-scene-theme=tree] .ww-period .ww-segments { border:1px solid var(--ww-line); border-radius:20px; padding:2px; gap:0; background:rgba(var(--ww-wash),.18); }
+.ww-app[data-scene-theme=tree] .ww-period .ww-segments button { padding:5px 9px; border-radius:18px; font-size:10px; color:var(--ww-muted); font-weight:400; }
+.ww-app[data-scene-theme=tree] .ww-period .ww-segments button[aria-pressed=true] { color:var(--ww-ink); background:#efb77d30; }
+.ww-app[data-scene-theme=tree] .ww-forecast-labels { display:grid; grid-template-columns:1fr 54px 31px; gap:5px; margin:12px 7px 10px; padding:0; font-size:10px; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-days { display:block; max-height:323px; max-width:100%; margin:0; padding:0; overflow-x:hidden; overflow-y:auto; scrollbar-width:thin; }
+.ww-app[data-scene-theme=tree] .ww-days:not(:has(>.ww-day:nth-child(8))) { max-height:323px; }
+.ww-app[data-scene-theme=tree] .ww-day {
+  display:grid;
+  grid-template-columns:64px 32px minmax(80px,1fr) 51px 30px;
+  align-items:center;
+  gap:5px;
+  width:100%;
+  height:auto;
+  min-height:43px;
+  padding:4px 7px!important;
+  text-align:left;
+  border:1px solid transparent!important;
+  border-radius:24px!important;
+  background:transparent;
+  box-shadow:none;
+  line-height:1.45;
+}
+.ww-app[data-scene-theme=tree] .ww-day:not([aria-pressed=true]):hover { background:#cca66a15!important; }
+.ww-app[data-scene-theme=tree] .ww-day[aria-pressed=true] { border-color:#d5ae7829!important; background:linear-gradient(90deg,#eeb97a27,#eeb97a17)!important; box-shadow:none; }
+.ww-app[data-scene-theme=tree] .ww-day-label { text-align:left; }
+.ww-app[data-scene-theme=tree] .ww-day-label b { font-size:12px; font-weight:500; line-height:1.3; }
+.ww-app[data-scene-theme=tree] .ww-day-label small { font-size:9px; margin-top:0; }
+.ww-app[data-scene-theme=tree] .ww-day-label .ww-weekend { color:#b9753d; }
+.ww-app[data-scene-theme=tree][data-tree-dark=true] .ww-day-label .ww-weekend { color:#dcb07c; }
+.ww-app[data-scene-theme=tree] .ww-day-icon { width:31px; height:31px; color:#82aebb; }
+.ww-app[data-scene-theme=tree] .ww-day-temperatures { gap:7px; font-variant-numeric:normal; }
+.ww-app[data-scene-theme=tree] .ww-day-temperatures>small { order:0; min-width:22px; font-size:10px; text-align:left; }
+.ww-app[data-scene-theme=tree] .ww-day-temperatures>b { min-width:27px; font-size:12px; font-weight:500; }
+.ww-app[data-scene-theme=tree] .ww-temperature-track { display:block; height:3px; border-radius:4px; background:#9bbdc933; }
+.ww-app[data-scene-theme=tree] .ww-temperature-track i { height:3px; border-radius:4px; background:linear-gradient(90deg,#91b4c1,#dba16b); }
+.ww-app[data-scene-theme=tree] .ww-day-pop { display:flex; gap:2px; font-size:10px; }
+.ww-app[data-scene-theme=tree] .ww-day-pop svg { width:10px; height:12px; }
+.ww-app[data-scene-theme=tree] .ww-day-wind { display:block; font-size:10px; line-height:1.15; }
+.ww-app[data-scene-theme=tree] .ww-day-wind span { font-size:9px; }
+.ww-app[data-scene-theme=tree] .ww-period-detail { display:block; border-top:1px solid var(--ww-line); margin-top:13px; padding:12px 0 0; }
+.ww-app[data-scene-theme=tree] .ww-period-detail h3 { min-width:0; margin-bottom:9px; font-size:19px; }
+.ww-app[data-scene-theme=tree] .ww-period-detail-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.ww-app[data-scene-theme=tree] .ww-period-detail-grid span { font-size:10px; }
+.ww-app[data-scene-theme=tree] .ww-period-detail-grid strong { margin-top:0; font-size:14px; font-weight:600; }
+.ww-app[data-scene-theme=tree] .ww-period-caption { max-width:none; margin-top:13px!important; font-size:9px!important; line-height:1.6; }
+
+/* The hourly band is drawn directly over the same scene, without a wash. */
+.ww-app[data-scene-theme=tree] .ww-hourly { margin-top:10px; padding-top:8px; border:0; z-index:4; isolation:auto; }
+.ww-app[data-scene-theme=tree] .ww-hourly-heading { gap:12px; margin-bottom:6px; }
+.ww-app[data-scene-theme=tree] .ww-hourly-title { gap:17px; }
+.ww-app[data-scene-theme=tree] .ww-hourly-title h2 { font-size:27px; line-height:1.15; letter-spacing:normal; }
+.ww-app[data-scene-theme=tree] .ww-hourly-title span { font-size:10px; }
+.ww-app[data-scene-theme=tree] .ww-chart-toolbar { gap:8px; }
+.ww-app[data-scene-theme=tree] .ww-chart-tabs { gap:17px; margin-right:10px; }
+.ww-app[data-scene-theme=tree] .ww-chart-tabs button { font-size:11px; padding:4px 0; border-bottom:1px solid transparent; }
+.ww-app[data-scene-theme=tree] .ww-chart-tabs button[aria-pressed=true] { border-bottom-color:var(--ww-accent); }
+.ww-app[data-scene-theme=tree] .ww-chart-arrows { gap:4px; }
+.ww-app[data-scene-theme=tree] .ww-chart-arrows button { width:30px; height:30px; border:1px solid var(--ww-line); border-radius:50%; background:rgba(var(--ww-wash),.22); }
+.ww-app[data-scene-theme=tree] .ww-chart-arrows svg { width:15px; height:15px; }
+.ww-app[data-scene-theme=tree] .ww-hour-scroll { overflow-x:auto; padding:0; scrollbar-width:thin; scroll-snap-type:x proximity; }
+.ww-app[data-scene-theme=tree] .ww-hours { display:grid; grid-template-columns:repeat(24,minmax(55px,1fr)); min-width:1320px; padding:0 0 3px; }
+.ww-app[data-scene-theme=tree] .ww-hour {
+  display:grid;
+  grid-template-rows:18px 32px 22px 22px 15px;
+  gap:2px;
+  align-items:center;
+  align-content:normal;
+  justify-items:center;
+  height:auto;
+  min-height:123px;
+  padding:6px 2px!important;
+  border:1px solid transparent!important;
+  border-radius:18px;
+  background:none;
+  font-variant-numeric:normal;
+  line-height:1.45;
+  scroll-snap-align:start;
+}
+.ww-app[data-scene-theme=tree] .ww-hour[aria-pressed=true] { background:#efb67323; border-color:#eaba702d!important; }
+.ww-app[data-scene-theme=tree] .ww-hour:hover { background:#cca66a15; }
+.ww-app[data-scene-theme=tree] .ww-hour-label { grid-row:1; font-size:10px; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-hour-icon { grid-row:2; width:31px; height:31px; color:#83afba; }
+.ww-app[data-scene-theme=tree] .ww-hour-temp { grid-row:3; font-size:14px; font-weight:600; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-hour-value { grid-row:5; margin:0; display:flex; gap:3px; font-size:9px; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-hour-value svg { width:9px; height:10px; }
+.ww-app[data-scene-theme=tree] .ww-hours>svg.ww-hour-line { bottom:23px; height:26px; }
+.ww-app[data-scene-theme=tree] .ww-hourly-foot { gap:14px; align-items:center; margin-top:8px; padding-top:0; font-size:9px; }
+.ww-app[data-scene-theme=tree] .ww-hourly-foot span:first-child { display:flex; align-items:center; gap:7px; max-width:none; }
+.ww-app[data-scene-theme=tree] .ww-hourly-foot svg { width:13px; height:13px; }
+.ww-app[data-scene-theme=tree] .ww-hourly-foot button { display:flex; align-items:center; gap:6px; min-height:26px; font-size:10px; }
+.ww-app[data-scene-theme=tree] .ww-footer { gap:14px; font-size:9px; padding:11px 0 14px; border:0; background:none; line-height:1.45; }
+.ww-app[data-scene-theme=tree] .ww-footer button { display:flex; gap:6px; align-items:center; font-size:9px; }
+.ww-app[data-scene-theme=tree] .ww-footer svg { width:12px; height:12px; }
+
+@media(min-width:1750px) {
+  .ww-app[data-scene-theme=tree] .ww-main { grid-template-columns:355px minmax(0,1fr) 480px; min-height:610px; }
+  .ww-app[data-scene-theme=tree] .ww-temperature { font-size:104px; }
+  .ww-app[data-scene-theme=tree] .ww-metrics { gap:18px 22px; margin-top:26px; }
+  .ww-app[data-scene-theme=tree] .ww-current-main { margin-top:27px; }
+  .ww-app[data-scene-theme=tree] .ww-day { min-height:47px; }
+  .ww-app[data-scene-theme=tree] .ww-days,
+  .ww-app[data-scene-theme=tree] .ww-days:not(:has(>.ww-day:nth-child(8))) { max-height:354px; }
+  .ww-app[data-scene-theme=tree] .ww-current,
+  .ww-app[data-scene-theme=tree] .ww-period { padding-top:29px; }
+  .ww-app[data-scene-theme=tree] .ww-scene-controls { top:72px; }
+}
+@media(min-width:1101px) and (max-width:1450px) {
+  .ww-app[data-scene-theme=tree] { --ww-page-gutter:28px; }
+  .ww-app[data-scene-theme=tree] .ww-theme-control { left:31%; }
+  .ww-app[data-scene-theme=tree] .ww-nav { gap:18px; }
+  .ww-app[data-scene-theme=tree] .ww-brand small { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-main { grid-template-columns:280px minmax(0,1fr) 375px; gap:12px; min-height:548px; }
+  .ww-app[data-scene-theme=tree] .ww-scene-controls { left:25%; width:44.5%; }
+  .ww-app[data-scene-theme=tree] .ww-city-search { width:211px; }
+  .ww-app[data-scene-theme=tree] .ww-title>span { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-temperature { font-size:87px; }
+  .ww-app[data-scene-theme=tree] .ww-condition { font-size:21px; }
+  .ww-app[data-scene-theme=tree] .ww-card-heading h3 { font-size:21px; }
+  .ww-app[data-scene-theme=tree] .ww-metrics { gap:14px 12px; }
+  .ww-app[data-scene-theme=tree] .ww-period-top h2 { font-size:25px; }
+  .ww-app[data-scene-theme=tree] .ww-day { grid-template-columns:57px 28px minmax(70px,1fr) 43px 27px; gap:4px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures { gap:4px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures>b { min-width:26px; }
+  .ww-app[data-scene-theme=tree] .ww-day-pop { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-daylight { margin-top:20px; }
+}
+@media(max-width:1100px) {
+  .ww-app[data-scene-theme=tree] { --ww-page-gutter:26px; }
+  /* The shell is transparent to this layout so the title stays before the
+     always-visible controls even when controls are a direct page child. */
+  .ww-app[data-scene-theme=tree] .ww-page { display:grid; grid-template-columns:minmax(0,1fr); align-content:start; }
+  .ww-app[data-scene-theme=tree] .ww-shell { display:contents; }
+  .ww-app[data-scene-theme=tree] .ww-header { order:0; height:57px; }
+  .ww-app[data-scene-theme=tree] .ww-topline { order:1; }
+  .ww-app[data-scene-theme=tree] .ww-scene-controls { order:2; }
+  .ww-app[data-scene-theme=tree] .ww-sourcebar { order:3; position:static; min-height:20px; padding:2px 0; font-size:8px; }
+  .ww-app[data-scene-theme=tree] .ww-error { order:4; }
+  .ww-app[data-scene-theme=tree] .ww-main { order:5; grid-template-columns:1fr 1fr; min-height:0; gap:20px; padding-top:0; }
+  .ww-app[data-scene-theme=tree] .ww-hourly { order:6; }
+  .ww-app[data-scene-theme=tree] .ww-footer { order:7; }
+  .ww-app[data-scene-theme=tree] .ww-logo { font-size:38px; }
+  .ww-app[data-scene-theme=tree] .ww-brand small,
+  .ww-app[data-scene-theme=tree] .ww-title>span { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-theme-control { left:29%; top:9px; }
+  .ww-app[data-scene-theme=tree] .ww-theme-control>.ww-tiny-label { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-nav { gap:17px; }
+  .ww-app[data-scene-theme=tree] .ww-nav a:first-child { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-center { grid-column:1/-1; grid-row:1; height:355px; }
+  .ww-app[data-scene-theme=tree] .ww-current { grid-column:1; grid-row:2; max-width:none; padding-top:19px; }
+  .ww-app[data-scene-theme=tree] .ww-period { grid-column:2; grid-row:2; padding-top:21px; }
+  .ww-app[data-scene-theme=tree] .ww-temperature { font-size:83px; }
+  .ww-app[data-scene-theme=tree] .ww-condition { font-size:21px; }
+  .ww-app[data-scene-theme=tree] .ww-card-heading h3 { font-size:21px; }
+  .ww-app[data-scene-theme=tree] .ww-metrics { gap:14px; }
+  .ww-app[data-scene-theme=tree] .ww-day { grid-template-columns:52px 26px minmax(65px,1fr) 37px 24px; gap:3px; padding:4px!important; min-height:42px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures { gap:4px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures>b { font-size:11px; min-width:24px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures>small { font-size:9px; min-width:19px; }
+  .ww-app[data-scene-theme=tree] .ww-day-pop { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-period-top h2 { font-size:24px; }
+  .ww-app[data-scene-theme=tree] .ww-forecast-labels { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-period .ww-segments button { font-size:9px; padding:4px 7px; }
+  .ww-app[data-scene-theme=tree] .ww-period-detail-grid { gap:8px; }
+  .ww-app[data-scene-theme=tree] .ww-period-detail-grid span { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly { margin-top:24px; }
+  .ww-app[data-scene-theme=tree] .ww-day-note { margin-top:13px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot { flex-wrap:wrap; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot>span:last-child { width:100%; justify-content:flex-end; }
+}
+@media(max-width:700px) {
+  .ww-app[data-scene-theme=tree] { --ww-page-gutter:17px; }
+  .ww-app[data-scene-theme=tree] .ww-header { height:55px; }
+  .ww-app[data-scene-theme=tree] .ww-logo { font-size:36px; }
+  .ww-app[data-scene-theme=tree] .ww-nav { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-theme-control { left:105px; top:12px; }
+  .ww-app[data-scene-theme=tree] .ww-topline { gap:8px; min-height:46px; }
+  .ww-app[data-scene-theme=tree] .ww-topline .ww-title h1 { font-size:29px; }
+  .ww-app[data-scene-theme=tree] .ww-location-tools { gap:4px; }
+  .ww-app[data-scene-theme=tree] .ww-city-search { width:149px; height:32px; padding:7px!important; font-size:9px!important; gap:6px; }
+  .ww-app[data-scene-theme=tree] .ww-city-search kbd { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-units { gap:0; }
+  .ww-app[data-scene-theme=tree] .ww-units button { width:25px; height:27px; font-size:10px; }
+  .ww-app[data-scene-theme=tree] .ww-sourcebar { gap:6px; flex-wrap:wrap; }
+  .ww-app[data-scene-theme=tree] .ww-data-status { max-width:none; }
+  .ww-app[data-scene-theme=tree] .ww-source-actions { margin-left:auto; }
+  .ww-app[data-scene-theme=tree] .ww-main { display:flex; flex-direction:column; gap:19px; }
+  .ww-app[data-scene-theme=tree] .ww-center { order:-1; width:100%; height:clamp(300px,92vw,460px); flex-shrink:0; }
+  .ww-app[data-scene-theme=tree] .ww-current { width:100%; padding-top:17px; }
+  .ww-app[data-scene-theme=tree] .ww-place { font-size:23px; }
+  .ww-app[data-scene-theme=tree] .ww-current-main { margin-top:9px; gap:13px; }
+  .ww-app[data-scene-theme=tree] .ww-temperature { font-size:78px; letter-spacing:-4px; }
+  .ww-app[data-scene-theme=tree] .ww-current-icon { width:50px; height:54px; }
+  .ww-app[data-scene-theme=tree] .ww-condition { font-size:22px; margin-top:2px; }
+  .ww-app[data-scene-theme=tree] .ww-card-heading h3 { font-size:22px; margin-top:2px; }
+  .ww-app[data-scene-theme=tree] .ww-range-note { font-size:10px; margin-top:6px!important; }
+  .ww-app[data-scene-theme=tree] .ww-observation-label { margin-top:7px!important; font-size:8px; }
+  .ww-app[data-scene-theme=tree] .ww-metrics { margin-top:18px; gap:15px 20px; }
+  .ww-app[data-scene-theme=tree] .ww-daylight { margin-top:22px; }
+  .ww-app[data-scene-theme=tree] .ww-day-note { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-period { width:100%; padding-top:10px; }
+  .ww-app[data-scene-theme=tree] .ww-period-top { margin-bottom:12px; }
+  .ww-app[data-scene-theme=tree] .ww-period-top h2 { font-size:26px; }
+  .ww-app[data-scene-theme=tree] .ww-forecast-labels { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-period .ww-segments button { font-size:10px; }
+  .ww-app[data-scene-theme=tree] .ww-days,
+  .ww-app[data-scene-theme=tree] .ww-days:not(:has(>.ww-day:nth-child(8))) { display:grid; grid-template-columns:repeat(7,96px); overflow-x:auto; overflow-y:hidden; max-height:165px; max-width:100%; }
+  .ww-app[data-scene-theme=tree] .ww-day { display:flex; flex-direction:column; gap:6px; min-height:136px; padding:9px 5px!important; border-radius:13px!important; }
+  .ww-app[data-scene-theme=tree] .ww-day-label { text-align:center; }
+  .ww-app[data-scene-theme=tree] .ww-day-label b { font-size:11px; }
+  .ww-app[data-scene-theme=tree] .ww-day-wind,
+  .ww-app[data-scene-theme=tree] .ww-temperature-track { display:none; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures { gap:12px; }
+  .ww-app[data-scene-theme=tree] .ww-day-temperatures>small { order:2; }
+  .ww-app[data-scene-theme=tree] .ww-period-detail { margin-top:10px; }
+  .ww-app[data-scene-theme=tree] .ww-period-detail h3 { font-size:18px; }
+  .ww-app[data-scene-theme=tree] .ww-period-detail-grid span { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly { margin-top:22px; padding-top:0; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-heading { flex-direction:column; align-items:stretch; gap:9px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-title { justify-content:space-between; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-title h2 { font-size:26px; }
+  .ww-app[data-scene-theme=tree] .ww-chart-toolbar { justify-content:space-between; }
+  .ww-app[data-scene-theme=tree] .ww-chart-tabs { flex:1; gap:20px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot { align-items:flex-start; gap:8px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot>span:first-child { font-size:8px; max-width:64%; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot button { font-size:9px; }
+  .ww-app[data-scene-theme=tree] .ww-hourly-foot>span:last-child { font-size:8px; }
+  .ww-app[data-scene-theme=tree] .ww-footer { font-size:8px; flex-direction:column; align-items:flex-start; gap:9px; padding-bottom:18px; }
+  .ww-app[data-scene-theme=tree] .ww-footer button { font-size:8px; }
+}
+@media(max-width:365px) {
+  .ww-app[data-scene-theme=tree] { --ww-page-gutter:13px; }
+  .ww-app[data-scene-theme=tree] .ww-city-search { width:132px; }
+  .ww-app[data-scene-theme=tree] .ww-theme-control { left:95px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ww-app[data-scene-theme=tree] *,
+  .ww-app[data-scene-theme=tree] *::before,
+  .ww-app[data-scene-theme=tree] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+}

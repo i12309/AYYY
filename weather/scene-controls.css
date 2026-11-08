@@ -1,29 +1,156 @@
-.ww-theme-switch{display:flex;gap:2px;border:1px solid var(--ww-line);border-radius:18px;padding:2px;background:var(--ww-paper)}
-.ww-theme-switch button{border:0!important;padding:7px 12px!important;background:transparent;font:inherit;color:inherit}
-.ww-theme-switch [aria-pressed=true]{background:var(--ww-accent)!important;color:var(--ww-paper)!important;border-radius:16px}
-.ww-scene-buttons{flex-wrap:wrap;justify-content:center}
-.ww-scene-buttons #ww-scenes-button{display:flex;gap:5px;align-items:center}
-.ww-scene-buttons #ww-scenes-button svg{width:15px;height:15px}
-#ww-theme-status{font-size:11px;display:block;max-width:300px;line-height:1.5}
-.ww-app [hidden]{display:none!important}
-#ww-settings-dialog{position:fixed;inset:auto;margin:0;width:360px;max-width:calc(100vw - 20px);max-height:calc(100svh - 20px);overflow:auto;box-sizing:border-box;border:1px solid var(--ww-line);border-radius:12px;padding:18px;background:var(--ww-paper);color:var(--ww-ink);box-shadow:0 12px 45px #17354133;z-index:100}
-#ww-settings-dialog::backdrop{background:transparent;pointer-events:none}
-#ww-settings-dialog .ww-dialog-head h2{font:22px Georgia,serif}
-#ww-settings-dialog .ww-scene-presets{grid-template-columns:repeat(4,1fr);gap:4px}
-#ww-settings-dialog .ww-scene-preset{font-size:10px;padding:6px 3px}
-#ww-settings-dialog .ww-scene-preset svg{width:28px;height:28px}
-.ww-manual-fields{display:grid;gap:12px;margin:16px 0}
-.ww-manual-fields label{display:block;font-size:12px;line-height:1.7}
-.ww-manual-fields input[type=range]{display:block;width:100%;accent-color:var(--ww-accent)}
-.ww-manual-fields select{padding:7px;background:var(--ww-paper);color:var(--ww-ink);border:1px solid var(--ww-line);border-radius:6px;margin-left:10px}
-.ww-manual-fields button{border:1px solid var(--ww-line);border-radius:6px;padding:7px 10px;color:inherit;background:transparent}
-.ww-app .ww-tree-scene{position:absolute;inset:0 0 auto;z-index:0;pointer-events:none;overflow:hidden}
-.ww-tree-scene canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.ww-app[data-scene-theme=tree]{background:var(--ww-paper)}
-.ww-app[data-scene-theme=tree] .ww-current::before,.ww-app[data-scene-theme=tree] .ww-period::before{background:radial-gradient(ellipse,var(--ww-paper),transparent 73%);opacity:.8}
-.ww-app[data-scene-theme=tree] .ww-center{min-height:480px}
-.ww-scene[data-flashes=false] .ww-lightning{display:none}
-@media(max-width:1100px){.ww-app[data-scene-theme=tree] .ww-center{min-height:490px}.ww-app[data-scene-theme=tree] .ww-main{display:flex;flex-wrap:wrap}.ww-app[data-scene-theme=tree] .ww-current{width:46%;order:1}.ww-app[data-scene-theme=tree] .ww-period{width:48%;order:2}.ww-app[data-scene-theme=tree] .ww-center{order:3;width:100%}}
-@media(max-width:600px){.ww-app[data-scene-theme=tree] .ww-main{display:block}.ww-app[data-scene-theme=tree] .ww-current,.ww-app[data-scene-theme=tree] .ww-period{width:100%}.ww-app[data-scene-theme=tree] .ww-center{min-height:440px}.ww-scene-buttons{gap:6px}.ww-scene-buttons button{min-height:35px}}
+/* Visible scene controls shared by the existing lighthouse and v5 tree.
+   No weather, time, month, or season control is placed behind a popover. */
+.ww-app .ww-page { position:relative; }
+.ww-app .ww-theme-control { position:absolute; left:34%; top:9px; display:flex; gap:11px; align-items:center; }
+.ww-app .ww-tiny-label { font-size:9px; font-weight:600; white-space:nowrap; }
+.ww-app .ww-theme-switch { display:flex; gap:2px; border:1px solid var(--ww-line); border-radius:22px; padding:2px; background:none; }
+.ww-app .ww-theme-switch button { display:flex; gap:7px; align-items:center; justify-content:center; min-width:86px; min-height:31px; padding:4px 10px; border:1px solid transparent; border-radius:19px; background:none; color:inherit; font-size:10px; white-space:nowrap; }
+.ww-app .ww-theme-switch button[aria-pressed=true] { border-color:var(--ww-accent); background:#f4b87422; color:var(--ww-ink); }
+.ww-app .ww-theme-switch img { width:25px; height:23px; object-fit:contain; }
+.ww-app .ww-theme-switch img:not([src]) { display:none; }
+.ww-app .ww-theme-switch img[src]+svg { display:none; }
+.ww-app .ww-theme-switch svg { width:18px; height:18px; color:var(--ww-muted); }
+.ww-app .ww-scene-controls {
+  position:absolute;
+  z-index:4;
+  left:25.5%;
+  top:68px;
+  width:45%;
+  min-width:0;
+  max-width:none;
+  margin:0;
+  padding:0;
+  border:0;
+  background:none;
+  text-align:center;
+  pointer-events:auto;
+  align-self:auto;
+}
+.ww-app .ww-weather-controls,
+.ww-app .ww-lighting-controls { display:flex; align-items:center; justify-content:center; gap:6px; min-height:28px; }
+.ww-app .ww-lighting-controls { margin-top:4px; }
+.ww-app .ww-control-label { font-size:9px; color:var(--ww-muted); white-space:nowrap; }
+.ww-app .ww-control-row { display:flex; gap:5px; white-space:nowrap; }
+.ww-app .ww-control-row button { display:flex; align-items:center; justify-content:center; gap:4px; min-height:26px; padding:4px 8px; border:1px solid var(--ww-line); border-radius:17px; background:rgba(var(--ww-wash),.15); color:inherit; font-size:10px; }
+.ww-app .ww-control-row svg { width:14px; height:14px; color:var(--ww-sea); }
+.ww-app .ww-control-row button[aria-pressed=true] { color:var(--ww-ink); border-color:#e9a965aa; background:#f3b77224; }
+.ww-app .ww-control-row button[aria-pressed=true] svg { color:var(--ww-accent); }
+.ww-app .ww-time-tuning { display:flex; align-items:center; gap:6px; font-size:9px; color:var(--ww-muted); }
+.ww-app .ww-time-tuning input { width:82px; height:13px; margin:0; accent-color:#d99b58; }
+.ww-app .ww-time-tuning output { min-width:32px; font-variant-numeric:tabular-nums; }
+.ww-app .ww-time-play { width:24px; height:24px; display:grid; place-items:center; border:1px solid var(--ww-line); border-radius:50%; padding:0; font-size:16px; flex-shrink:0; }
+.ww-app .ww-time-play svg { width:16px; height:16px; }
+.ww-app .ww-time-play[aria-pressed=true] { color:var(--ww-accent); background:#efb57b22; }
+.ww-app .ww-months { display:flex; align-items:center; justify-content:center; gap:5px; margin:4px 0 0; }
+.ww-app .ww-month-items { display:flex; gap:2px; min-width:0; }
+.ww-app .ww-month-items button { min-width:30px; min-height:26px; border-radius:18px; padding:3px 6px; font-size:9px; white-space:nowrap; }
+.ww-app .ww-month-items button[aria-pressed=true] { background:#efb57b30; color:var(--ww-ink); }
+.ww-app .ww-month-step { display:grid; place-items:center; width:25px; height:25px; flex-shrink:0; border:1px solid var(--ww-line); border-radius:50%; padding:0; font-size:20px; line-height:1; }
+.ww-app .ww-month-step svg { width:13px; height:13px; }
+.ww-app .ww-season-story { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:3px; min-height:41px; }
+.ww-app .ww-season-story button { display:flex; gap:4px; align-items:center; min-height:39px; padding:0; border-bottom:1px solid transparent; }
+.ww-app .ww-season-story button[aria-pressed=true] { border-bottom-color:#c2916066; }
+.ww-app .ww-season-story img { width:43px; height:34px; object-fit:contain; }
+.ww-app .ww-season-story span { font-size:9px; text-align:left; }
+.ww-app .ww-season-story small { display:block; font-size:8px; color:var(--ww-muted); }
+.ww-app .ww-season-hint { min-height:13px; margin-top:0; font-size:9px; line-height:1.3; color:var(--ww-muted); }
+.ww-app .ww-precipitation-strip { display:flex; align-items:center; justify-content:center; gap:6px 10px; flex-wrap:wrap; min-height:30px; margin-top:3px; font-size:9px; color:var(--ww-muted); }
+.ww-app .ww-precipitation-strip label { display:flex; gap:5px; align-items:center; white-space:nowrap; }
+.ww-app .ww-precipitation-strip input[type=range] { width:88px; height:12px; margin:0; accent-color:var(--ww-sea); }
+.ww-app .ww-precipitation-strip .ww-wind-tuning input { width:58px; }
+.ww-app .ww-precipitation-strip output { min-width:26px; font-variant-numeric:tabular-nums; }
+.ww-app .ww-precipitation-strip input[type=checkbox] { margin:0; width:12px; height:12px; accent-color:#d99c58; }
+.ww-app .ww-rain-description { min-width:74px; color:var(--ww-ink); }
+.ww-app .ww-scene-status { display:flex; flex-wrap:wrap; gap:3px 10px; align-items:center; justify-content:center; min-height:22px; margin-top:1px; font-size:9px; line-height:1.3; color:var(--ww-muted); }
+.ww-app .ww-scene-context { font-size:9px; letter-spacing:0; text-transform:none; }
+.ww-app .ww-scene-status button { display:inline-flex; align-items:center; gap:4px; min-height:24px; padding:3px 8px; border:1px solid var(--ww-line); border-radius:14px; font-size:9px; background:rgba(var(--ww-wash),.15); }
+.ww-app .ww-scene-status button svg { width:12px; height:12px; }
+.ww-app #ww-theme-status { display:block; max-width:none; font-size:9px; line-height:1.4; color:var(--ww-muted); }
+.ww-app #ww-theme-status:empty { display:none; }
+.ww-app .ww-override-note { margin:0!important; padding:0; max-width:none; font-size:9px; color:var(--ww-muted); background:none; border-radius:0; }
+.ww-app .ww-scene-adjustments { display:flex; flex-wrap:wrap; gap:4px 18px; justify-content:center; align-items:center; padding:6px 0 0; color:var(--ww-muted); }
+.ww-app .ww-scene-adjustments .ww-override-note { flex-basis:100%; text-align:center; line-height:1.3; }
+.ww-app .ww-scene-adjustments .ww-precipitation-strip,.ww-app .ww-scene-adjustments .ww-scene-status { margin:0; }
+.ww-app .ww-scene-controls button:disabled { cursor:default; opacity:.45; }
+.ww-app .ww-scene-controls input:disabled { cursor:default; opacity:.45; }
+.ww-app .ww-scene[data-flashes=false] .ww-lightning { display:none; }
+.ww-app[data-scene-theme=tree][data-tree-dark=true] .ww-season-story img { filter:brightness(.70) saturate(.65); }
+.ww-app[data-tree-motion=still] .ww-time-play { opacity:.55; }
+@media(min-width:1101px) and (max-width:1450px) {
+  .ww-app .ww-control-label { display:none; }
+  .ww-app .ww-control-row { gap:3px; }
+  .ww-app .ww-control-row button { padding:4px 6px; font-size:9px; }
+  .ww-app .ww-time-tuning input { width:64px; }
+  .ww-app .ww-season-story { gap:7px; }
+  .ww-app .ww-season-story span { font-size:8px; }
+  .ww-app .ww-season-story small { font-size:7.5px; }
+  .ww-app .ww-season-story img { width:33px; }
+  .ww-app .ww-month-items { gap:0; }
+  .ww-app .ww-month-items button { min-width:27px; padding:3px 5px; }
+  .ww-app .ww-precipitation-strip { gap:5px; font-size:8px; }
+  .ww-app .ww-precipitation-strip input[type=range] { width:60px; }
+}
+@media(max-width:1100px) {
+  .ww-app .ww-theme-control { left:29%; top:9px; }
+  .ww-app .ww-theme-control>.ww-tiny-label { display:none; }
+  .ww-app .ww-scene-controls { position:relative; left:auto; top:auto; width:auto; margin:9px 26px; }
+  .ww-app[data-scene-theme=tree] .ww-scene-controls { width:100%; margin:9px 0; }
+  .ww-app .ww-weather-controls,
+  .ww-app .ww-lighting-controls { flex-wrap:wrap; }
+  .ww-app .ww-control-row { flex-wrap:wrap; justify-content:center; }
+  .ww-app .ww-month-items { flex-wrap:wrap; justify-content:center; }
+  .ww-app .ww-season-story { display:flex; flex-wrap:wrap; gap:7px 14px; }
+  .ww-app .ww-season-hint { margin-top:4px; }
+}
+@media(max-width:700px) {
+  .ww-app .ww-theme-control { left:105px; top:12px; }
+  .ww-app .ww-theme-switch button { min-width:76px; min-height:28px; font-size:10px; padding:3px 8px; }
+  .ww-app .ww-theme-switch img { width:22px; height:22px; }
+  .ww-app .ww-scene-controls { margin:6px 17px 0; }
+  .ww-app[data-scene-theme=tree] .ww-scene-controls { margin:6px 0 0; }
+  .ww-app .ww-weather-controls,
+  .ww-app .ww-lighting-controls { justify-content:center; gap:4px; padding-bottom:3px; }
+  .ww-app .ww-control-label { display:block; font-size:9px; }
+  .ww-app .ww-control-row { gap:4px; flex-shrink:1; }
+  .ww-app .ww-control-row button { min-height:28px; padding:4px 7px; font-size:9px; }
+  .ww-app .ww-control-row svg { width:13px; height:13px; }
+  .ww-app .ww-time-tuning { flex-shrink:0; margin-left:3px; }
+  .ww-app .ww-time-tuning input { width:66px; }
+  .ww-app .ww-months { justify-content:space-between; margin-top:3px; gap:3px; }
+  .ww-app .ww-month-items { flex:1; gap:0; }
+  .ww-app .ww-month-items button { min-width:30px; padding:4px; font-size:9px; }
+  .ww-app .ww-month-step { width:23px; height:23px; font-size:19px; }
+  .ww-app .ww-season-story { justify-content:center; gap:4px 12px; }
+  .ww-app .ww-season-story button { flex:0 0 calc(50% - 12px); max-width:170px; justify-content:center; }
+  .ww-app .ww-season-hint { font-size:9px; }
+  .ww-app .ww-precipitation-strip { justify-content:center; min-height:53px; gap:7px 10px; font-size:9px; }
+  .ww-app .ww-precipitation-strip input[type=range] { width:78px; }
+  .ww-app .ww-precipitation-strip .ww-wind-tuning input { width:62px; }
+}
+@media(max-width:365px) {
+  .ww-app .ww-theme-control { left:95px; }
+  .ww-app .ww-theme-switch button { min-width:72px; }
+  .ww-app .ww-time-tuning input { width:60px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ww-app .ww-time-play { opacity:.5; }
+}
 
-.ww-app[data-scene-theme=tree] .ww-center{justify-content:flex-start}.ww-app[data-scene-theme=tree] .ww-scene-controls{margin-top:0}.ww-app[data-scene-theme=tree] .ww-art-caption{display:none}
+/* Keep every mobile control reachable without a popover or a clipped row. */
+@media(max-width:700px) {
+ .ww-app .ww-scene-controls .ww-control-label { display:none; }
+ .ww-app .ww-lighting-controls { flex-wrap:nowrap; gap:3px; }
+ .ww-app .ww-lighting-controls .ww-control-row { flex-wrap:nowrap; gap:3px; }
+ .ww-app .ww-lighting-controls .ww-control-row button { font-size:10px; padding:4px 6px; }
+ .ww-app .ww-lighting-controls .ww-control-row svg { display:none; }
+ .ww-app .ww-time-tuning { margin-left:0; gap:3px; }
+ .ww-app .ww-time-tuning input { width:55px; }
+ .ww-app .ww-month-items button { min-width:25px; padding:3px 2px; font-size:8.5px; }
+ .ww-app .ww-season-story { gap:3px; }
+ .ww-app .ww-season-story button { flex:1 1 20%; max-width:none; gap:2px; }
+ .ww-app .ww-season-story img { width:23px; height:29px; }
+ .ww-app .ww-season-story span { font-size:8px; }
+ .ww-app .ww-season-story small { font-size:7px; }
+ .ww-app .ww-scene-adjustments { gap:4px 10px; padding-top:8px; }
+ .ww-app .ww-scene-adjustments .ww-precipitation-strip { min-height:28px; }
+}
