@@ -162,7 +162,16 @@ with sync_playwright() as pw:
     page.locator('#sp-clear-history').click();page.locator('#search-query').fill('')
     page.reload();page.wait_for_selector('#search-query')
     page.wait_for_function('Array.from(document.querySelectorAll(".sp-art img")).every(e=>e.complete)')
-    check('local artwork loaded',page.locator('.sp-art img').evaluate_all('(els)=>els.length>0&&els.every(e=>e.complete&&e.naturalWidth>0)'))
+    check('local atlas artwork loaded',page.locator('.sp-art img').evaluate_all('(els)=>els.length>0&&els.every(e=>e.complete&&e.naturalWidth>0)'))
+    check('the thought atlas replaces the old magnifier',page.locator('.sp-art img').get_attribute('src')=='assets/search/thought-atlas.svg')
+    check('provider controls have a tab rather than a card style',page.locator('[data-provider="Google"]').evaluate("""e=>{
+      const s=getComputedStyle(e);
+      return s.borderTopWidth==='0px' && s.backgroundColor==='rgba(0, 0, 0, 0)'
+        && getComputedStyle(e,'::after').height==='3px';
+    }"""))
+    check('selected provider uses a visible underline',page.locator('[data-provider="Bing"]').evaluate("""e=>{
+      return e.classList.contains('is-active') && getComputedStyle(e,'::after').opacity==='1';
+    }"""))
     settle(page)
     if OUT:page.screenshot(path=str(OUT/'desktop-1672.png'),full_page=True)
     navigate(page,'home');home=portal_skin(page)
@@ -189,6 +198,10 @@ with sync_playwright() as pw:
         problems=reachable_controls(page)
         check('controls reachable without overlap '+str(width),not problems,problems)
         check('no horizontal page scroll after controls '+str(width),page.evaluate('scrollX===0&&document.documentElement.scrollWidth<=innerWidth+1'))
+        check('decorative art does not intercept clicks '+str(width),
+              page.locator('.sp-art').evaluate("e=>getComputedStyle(e).pointerEvents==='none'"))
+        check('art positioning follows breakpoint '+str(width),
+              page.locator('.sp-art').evaluate("e=>getComputedStyle(e).position=== (innerWidth>720?'fixed':'absolute')"))
         if width>=1440:
             layout=page.evaluate('({height:innerHeight,documentHeight:document.documentElement.scrollHeight})')
             check('desktop fits one screen '+str(width),layout['documentHeight']<=layout['height']+1,layout)
@@ -196,6 +209,16 @@ with sync_playwright() as pw:
             check('4K keeps the portal composition bounded',page.locator('.shore-page').evaluate('e=>e.getBoundingClientRect().width<=1841'))
         if OUT and width in [390,1440,1920,3840]:
             page.screenshot(path=str(OUT/f'{"mobile" if width==390 else "desktop"}-{width}.png'),full_page=True)
+    # Desktop illustration is pinned to the viewport even when the page is long.
+    page.set_viewport_size({'width':1440,'height':900})
+    page.evaluate("document.body.style.minHeight='1800px'")
+    settle(page)
+    before=page.locator('.sp-art').evaluate("e=>e.getBoundingClientRect().top")
+    page.evaluate('window.scrollTo(0,400)')
+    page.wait_for_function('window.scrollY>200')
+    after=page.locator('.sp-art').evaluate("e=>e.getBoundingClientRect().top")
+    check('atlas stays fixed while scrolling',abs(before-after)<1,(before,after))
+    page.evaluate("document.body.style.minHeight='';window.scrollTo(0,0)")
     page.evaluate('document.documentElement.dataset.theme="dark"')
     check('search keeps shared paper and ink in dark portal',portal_skin(page)['page']==home['page'] and portal_skin(page)['palette']==home['palette'])
     page.locator('.shore-footer [data-action="about"]').click()
@@ -205,7 +228,7 @@ with sync_playwright() as pw:
     check('no external requests',not external)
     check('no JavaScript errors',not errors)
     # Artwork failure must leave the working UI available.
-    page.route('**/assets/search/*.webp',lambda r:r.fulfill(status=404,body='Unavailable'))
+    page.route('**/assets/search/thought-atlas.svg',lambda r:r.fulfill(status=404,body='Unavailable'))
     page.reload();page.wait_for_selector('#search-query')
     page.locator('#search-query').fill('without artwork');page.locator('#search-query').press('Enter')
     check('search works without artwork',page.evaluate('__opened.length')==1)
