@@ -6,8 +6,8 @@
 
 .sp-main {position:relative;flex:1;display:grid;grid-template-columns:minmax(210px,29%) minmax(0,1fr);gap:clamp(18px,2.5vw,46px);align-items:start;padding:clamp(16px,2.6vh,30px) var(--shore-gutter) 22px}
 /* A static full-height illustration: independent of document scrolling. */
-.sp-art {position:fixed;z-index:1;top:0;bottom:0;left:max(0px,calc((100vw - 1840px)/2));width:min(39vw,650px);height:100svh;overflow:clip;pointer-events:none;mask-image:linear-gradient(to right,#000 0%,#000 78%,transparent 100%)}
-.sp-art-atlas {display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%;opacity:.91;filter:saturate(.89) contrast(.98)}
+.sp-art {position:fixed;z-index:1;top:88px;bottom:0;left:max(0px,calc((100vw - 1840px)/2));width:min(27vw,500px);height:calc(100svh - 88px);overflow:clip;pointer-events:none;mask-image:linear-gradient(to right,#000 0%,#000 74%,transparent 100%)}
+.sp-art-atlas {display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%;opacity:.8;filter:saturate(.72) contrast(.98)}
 .sp-content {grid-column:2;position:relative;z-index:2;width:100%;max-width:1000px;min-width:0;padding:clamp(2px,1vh,12px) 0 10px}
 .sp-intro h1 {margin:0;font:400 32px/1.25 Georgia,"Times New Roman",serif;letter-spacing:-.6px;color:var(--ink)}
 .sp-lead {margin:5px 0 0;color:#687b79;font-size:13px;line-height:1.6}
@@ -66,14 +66,14 @@
 
 @media (max-width:1190px) {
   .sp-main {grid-template-columns:minmax(155px,25%) minmax(0,1fr);gap:24px;padding-top:19px}
-  .sp-art {width:min(35vw,470px)}
+  .sp-art {width:min(28vw,400px)}
   .sp-modes {gap:4px 17px}
   .sp-providers {gap:3px 18px}
   .sp-content-grid {gap:22px}
 }
 @media (max-width:900px) and (min-width:721px) {
   .sp-main {grid-template-columns:minmax(105px,19%) minmax(0,1fr);gap:22px;padding-inline:26px}
-  .sp-art {width:min(32vw,320px);opacity:.86}
+  .sp-art {width:min(23vw,245px);opacity:.82}
   .sp-providers {gap:3px 15px}
   .sp-provider {font-size:11px;gap:5px}
   .sp-provider-icon {font-size:13px;width:17px;flex-basis:17px}
@@ -83,7 +83,7 @@
 @media (max-width:720px) {
   .sp-main {display:block;padding:8px var(--shore-gutter) 24px}
   .sp-content {max-width:none;padding:0}
-  .sp-art {position:absolute;left:5px;top:0;bottom:auto;display:block;width:106px;height:118px;opacity:.58;mask-image:linear-gradient(to right,#000 60%,transparent 100%);overflow:hidden}
+  .sp-art {position:absolute;left:5px;top:0;bottom:auto;display:block;width:106px;height:118px;opacity:.54;mask-image:linear-gradient(to right,#000 60%,transparent 100%);overflow:hidden}
   .sp-art-atlas {width:100%;height:100%;object-fit:cover;object-position:50% 7%}
   .sp-intro {display:flex;flex-direction:column;justify-content:center;min-height:106px;padding-left:101px}
   .sp-intro h1 {font-size:28px}
