@@ -21,22 +21,44 @@ scene=scene.replace('this.onTick=onTick;','')
 scene=scene.replace("host.querySelector('#'+id)","host.querySelector('[data-layer=\"'+id+'\"]')")
 scene=scene.replace("document.querySelector('.page')","this.layout")
 scene=scene.replace("document.querySelector('.center-spacer')","this.layout.querySelector('.ww-center')").replace("document.querySelector('.scene-controls')","this.layout.querySelector('.ww-scene-controls')").replace("document.querySelector('.hourly')","this.layout.querySelector('.ww-hourly')")
-scene=scene.replace('document.documentElement.clientWidth','this.layout.clientWidth')
+# The canvas belongs to the app, not the document. Translate every anchor to
+# its local origin once so embedding/scrolling cannot shift the artwork.
+scene=scene.replace("const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y+scrollY,w:r.width,h:r.height,bottom:r.bottom+scrollY};};", "const origin=this.host.getBoundingClientRect();\n  const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.left-origin.left,y:r.top-origin.top,w:r.width,h:r.height,bottom:r.bottom-origin.top};};")
+scene=scene.replace('document.documentElement.clientWidth','this.host.clientWidth')
 scene=scene.replace('document.body.dataset.motion','this.layout.dataset.treeMotion')
 scene=scene.replace("root.AYYY_PROTOTYPE_ASSETS?.[name]||'assets/'+name","new URL(name,this.assetBase).href")
 scene=scene.replace('this.artwork=prepareTreeArtwork(this.assets,createCanvas);','this.artwork=preparedArtwork||(preparedArtwork=prepareTreeArtwork(this.assets,createCanvas));')
 scene=scene.replace('const rgba=', 'let preparedArtwork=null;\nconst rgba=')
 scene=scene.replace("document.querySelectorAll('img[data-tree-preview]')","this.layout.querySelectorAll('img[data-tree-preview]')")
-scene=scene.replace('else ctx.drawImage(a.snow,0,0);','else if(this.params.snowCover)ctx.drawImage(a.snow,0,0);')
+# Preview winter is the canonical seasonal illustration. The live scene still
+# takes its snow coverage from weather data; generating a preview never mutates it.
+scene=scene.replace('composeTree(month){','composeTree(month,snowCover=this.params.snowCover){')
+scene=scene.replace('else ctx.drawImage(a.snow,0,0);','else if(snowCover)ctx.drawImage(a.snow,0,0);')
+preview_start=scene.index(' renderTreePreviews(){')
+preview_end=scene.index(' prepareSeason(){',preview_start)
+scene=scene[:preview_start]+''' preview(season){
+  if(!this.ready)return null;
+  const months={spring:3,summer:6,autumn:9,winter:0};
+  if(!Object.prototype.hasOwnProperty.call(months,season))return null;
+  this.previews??=Object.create(null);
+  if(!this.previews[season]){
+   const canvas=createCanvas(256,194);
+   canvas.getContext('2d').drawImage(this.composeTree(months[season],season==='winter'),0,0,256,194);
+   this.previews[season]=canvas.toDataURL('image/png');
+  }
+  return this.previews[season];
+ }
+ renderTreePreviews(){
+  this.layout.querySelectorAll('img[data-tree-preview]').forEach(img=>{
+   const source=this.preview(img.dataset.treePreview);if(source)img.src=source;
+  });
+ }
+'''+scene[preview_end:]
 scene=scene.replace("if(s.asset==='winter'){","if(s.asset==='winter'&&this.params.snowCover){")
 scene=scene.replace('if(this.params.month!==this.month)this.prepareSeason();','if(this.params.month!==this.month||prev.snowCover!==this.params.snowCover)this.prepareSeason();')
 scene=scene.replace('this.params.weather].join', 'this.params.weather,this.params.snowCover].join')
-scene=scene.replace('const w=this.layout.clientWidth,small=w<=1100;', 'const w=this.layout.clientWidth,small=w<=1100;')
-scene=scene.replace('const top=small?spacer.y+4:Math.max(controls.bottom+12,spacer.y+30);','const top=small?spacer.y+45:Math.max(controls.bottom+12,spacer.y+50);')
-scene=scene.replace('this.onTick?.(dt);','this.onTick?.(dt);')
 scene=scene.replace('this.drawWorld();this.sync();', 'this.drawWorld();if(prev.paused!==this.params.paused)this.sync();else if(this.still)this.draw(0);')
 scene=scene.replace('if(!this.still)this.raf=requestAnimationFrame(this.tick);}', 'if(!this.still&&!this.raf)this.raf=requestAnimationFrame(this.tick);}')
 scene=scene.replace('root.AYYYAtmosphere=Scene;','root.AYYYTreeScene=Scene;')
-scene=scene.replace("host.replaceChildren();", "host.replaceChildren();")
 (ROOT/'weather/tree-scene.js').write_text(scene,encoding='utf-8',newline='\n')
 print('Extracted',len(assets),'approved PNGs and renderer')

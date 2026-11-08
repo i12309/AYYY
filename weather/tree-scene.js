@@ -261,10 +261,11 @@ class Scene{
  rand(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
  get still(){return !this.alive||this.params.paused||this.motion.matches||document.hidden;}
  geometry(){
-  const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y+scrollY,w:r.width,h:r.height,bottom:r.bottom+scrollY};};
+  const origin=this.host.getBoundingClientRect();
+  const bounds=e=>{const r=e.getBoundingClientRect();return {x:r.left-origin.left,y:r.top-origin.top,w:r.width,h:r.height,bottom:r.bottom-origin.top};};
   const spacer=bounds(this.layout.querySelector('.ww-center')),controls=bounds(this.layout.querySelector('.ww-scene-controls')),hourly=bounds(this.layout.querySelector('.ww-hourly'));
-  const w=this.layout.clientWidth,small=w<=1100;
-  const top=small?spacer.y+45:Math.max(controls.bottom+12,spacer.y+50);
+  const w=this.host.clientWidth,small=w<=1100;
+  const top=small?spacer.y+4:Math.max(controls.bottom+12,spacer.y+30);
   const baseY=small?spacer.bottom-70:hourly.y-81;
   const scale=Math.max(.38,Math.min((baseY-top)/368,(small?w-30:spacer.w+92)/500,1.28));
   return {w,h:Math.max(window.innerHeight,hourly.bottom+90),rootX:small?w*.5:spacer.x+spacer.w*.48,baseY,scale,artBottom:small?baseY+100*scale:Math.min(hourly.y+40,baseY+145*(w/1672)),skyBottom:baseY+50,small};
@@ -274,7 +275,7 @@ class Scene{
   this.canvases.forEach((canvas,i)=>{canvas.width=Math.round(g.w*d);canvas.height=Math.round(g.h*d);this.ctx[i]?.setTransform(d,0,0,d,0,0);});
   this.key='';this.drawWorld();this.draw(0);
  }
- composeTree(month){
+ composeTree(month,snowCover=this.params.snowCover){
   const s=S.season(month),a=this.artwork,c=createCanvas(1000,760),ctx=c.getContext('2d');
   ctx.drawImage(a.wood,0,0);
   if(s.asset==='spring'){
@@ -285,15 +286,25 @@ class Scene{
   else if(s.asset==='autumn'){
    if(s.stage==='gold'){ctx.drawImage(a.leaves.summer,0,0);ctx.globalAlpha=.72;ctx.drawImage(a.leaves.autumn,0,0);}
    else ctx.drawImage(s.stage==='sparse'?a.leaves.sparse:a.leaves.autumn,0,0);
-  }else if(this.params.snowCover)ctx.drawImage(a.snow,0,0);
+  }else if(snowCover)ctx.drawImage(a.snow,0,0);
   ctx.globalAlpha=1;return c;
  }
- renderTreePreviews(){
-  const months={spring:3,summer:6,autumn:9,winter:0},sources={};
-  for(const [season,month] of Object.entries(months)){
-   const c=createCanvas(256,194);c.getContext('2d').drawImage(this.composeTree(month),0,0,256,194);sources[season]=c.toDataURL('image/png');
+ preview(season){
+  if(!this.ready)return null;
+  const months={spring:3,summer:6,autumn:9,winter:0};
+  if(!Object.prototype.hasOwnProperty.call(months,season))return null;
+  this.previews??=Object.create(null);
+  if(!this.previews[season]){
+   const canvas=createCanvas(256,194);
+   canvas.getContext('2d').drawImage(this.composeTree(months[season],season==='winter'),0,0,256,194);
+   this.previews[season]=canvas.toDataURL('image/png');
   }
-  this.layout.querySelectorAll('img[data-tree-preview]').forEach(img=>{img.src=sources[img.dataset.treePreview];});
+  return this.previews[season];
+ }
+ renderTreePreviews(){
+  this.layout.querySelectorAll('img[data-tree-preview]').forEach(img=>{
+   const source=this.preview(img.dataset.treePreview);if(source)img.src=source;
+  });
  }
  prepareSeason(){
   if(!this.ready)return;const m=this.params.month,s=S.season(m);this.month=m;
