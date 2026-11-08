@@ -1,5 +1,6 @@
-/* Fit the complete tree composition, including its visible controls and footer.
-   Only the UI frame is zoomed. Canvas coordinates stay in viewport CSS pixels. */
+/* Fit the complete weather composition, including its visible controls and footer.
+   Tree canvases keep viewport CSS coordinates; the existing lighthouse DOM
+   shares the UI scale and its renderer measures the final visible dimensions. */
 (function(root){
  'use strict';
  class ViewportFit{
@@ -19,7 +20,7 @@
    if(!this.alive||!this.app.isConnected)return;
    const width=this.app.clientWidth,height=root.innerHeight;
    // Below these dimensions keep a readable, naturally scrolling mobile page.
-   const fitted=this.app.dataset.sceneTheme==='tree'&&width>=960&&height>=540;
+   const fitted=width>=960&&height>=540;
    const mode=fitted?'fit':'scroll';
    if(this.app.dataset.viewportFit!==mode)this.app.dataset.viewportFit=mode;
    if(!fitted){this.setScale(1);this.onResize();return;}

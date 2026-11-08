@@ -23,7 +23,7 @@
   function ensure(){
     if(loading)return loading;
     loading=(async()=>{
-      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('scene-controls.css',true),resource('tree.css',true)]);
+      await Promise.all([resource('style.css',true),resource('seamless.css',true),resource('landscape.css',true),resource('scene-controls.css',true),resource('tree.css',true),resource('viewport-fit.css',true)]);
       if(!window.AYYYWeatherModel)await resource('model.js');
       if(!window.AYYYTreePalette)await resource('tree-palette.js');
       if(!window.AYYYSceneState)await resource('scene-state.js');

@@ -92,7 +92,7 @@
     // The atmosphere belongs to the whole page, not to the center column.
     app.prepend($('#ww-scene'));
     const scene=new root.AYYYSceneController($('#ww-scene'),{assetURL:options.assetURL||'assets/lighthouse.avif',treeURL:options.treeURL||new URL('tree-scene.js?v=themes-v5-3',document.currentScript?.src||document.baseURI).href,treeAssetURL:options.treeAssetURL||new URL('assets/tree/',document.baseURI).href});
-    const viewport=new root.AYYYWeatherViewport(app,()=>{if(scene.theme==='tree')scene.renderer?.resize();});
+    const viewport=new root.AYYYWeatherViewport(app,()=>scene.renderer?.resize());
     let sceneParameters=null;
     async function selectTheme(theme){
       if(!['tree','lighthouse'].includes(theme))return;

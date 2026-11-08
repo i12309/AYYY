@@ -1,0 +1,43 @@
+/* A single proportional UI scale for both themes. On small screens the
+   unscaled responsive layout remains fully scrollable. Raster assets are reused. */
+.ww-app[data-viewport-fit=fit] .ww-viewport { zoom:var(--ww-ui-scale,1); }
+.ww-app[data-viewport-fit=fit] .ww-page { min-height:0; max-width:none; }
+.ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-header,
+.ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-shell { max-width:none; }
+.ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-main { min-height:0; }
+.ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) > #ww-scene {
+ zoom:var(--ww-ui-scale,1); width:auto; height:calc(100svh / var(--ww-ui-scale,1)); min-height:0;
+}
+@media (min-width:960px) and (max-width:1100px) {
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-main { grid-template-columns:minmax(240px,1fr) minmax(245px,1.2fr) minmax(350px,1.35fr); gap:20px; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-current,
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-center,
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-period { grid-column:auto; grid-row:auto; min-height:0; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-days { display:flex; flex-direction:column; gap:5px; max-height:345px; padding:2px 5px 2px 1px; overflow-x:hidden; overflow-y:auto; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-day { display:grid; grid-template-columns:64px 30px minmax(74px,1fr) 45px 41px; gap:8px; height:43px; min-height:43px; padding:3px 8px!important; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-day-label { text-align:left; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-day-temperatures { gap:7px; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-day-temperatures small { order:0; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-temperature-track { display:block; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-day-wind { display:block; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-forecast-labels { display:grid; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-period-detail { display:block; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-period-caption { max-width:none; margin-top:9px!important; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-tower-wrap { left:50%; top:0; height:84%; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-sun { left:calc(50% + 12px); top:2%; }
+ .ww-app[data-viewport-fit=fit]:not([data-scene-theme=tree]) .ww-moon { left:calc(50% + 110px); top:8%; }
+}
+.ww-app .ww-footer button { display:flex; align-items:center; gap:6px; }
+.ww-app .ww-footer svg { width:12px; height:12px; }
+
+/* Keep the theme buttons usable when the unscaled mobile header wraps. */
+@container ww-viewport (max-width:700px) {
+ .ww-app:not([data-scene-theme=tree]) .ww-header {
+  height:auto; min-height:94px; flex-wrap:wrap; align-content:center;
+  gap:10px; padding-top:12px; padding-bottom:10px;
+ }
+ .ww-app:not([data-scene-theme=tree]) .ww-brand { min-height:36px; margin-right:auto; }
+ .ww-app:not([data-scene-theme=tree]) .ww-nav {
+  flex:0 0 100%; margin-left:0; justify-content:flex-end; gap:18px;
+ }
+}

@@ -46,14 +46,15 @@ localStorage.setItem('ayyy:v1:weather.scene.paused','true');
 window.fetch=async()=>new Response(JSON.stringify(FIXTURE));
 for(const name of ['AYYYTreeScene','AYYYAtmosphere'])Object.defineProperty(window,name,{configurable:true,set(C){Object.defineProperty(window,name,{configurable:true,writable:true,value:new Proxy(C,{construct(T,args){const obj=Reflect.construct(T,args);window.__tree=obj;return obj;}})});}});
 '''.replace('CLOCK',str(clock*1000)).replace('CITY',json.dumps(city)).replace('FIXTURE',json.dumps(fixture))
-def attach(p,root):
+def attach(p,root,theme='tree'):
  def serve(r):
   name=unquote(urlsplit(r.request.url).path).removeprefix('/AYYY/') or 'index.html'
   f=REF if name=='reference.html' else (root/name).resolve()
   if f.is_dir():f=f/'index.html'
   if (root in f.parents or f==REF) and f.is_file():r.fulfill(body=f.read_bytes(),content_type=mimetypes.guess_type(f)[0] or 'text/plain')
   else:r.fulfill(status=404,body='missing')
- p.route(BASE+'**',serve);p.add_init_script(init)
+ p.route(BASE+'**',serve)
+ p.add_init_script(init+"\nlocalStorage.setItem('ayyy:v1:weather.scene.theme',"+json.dumps(json.dumps(theme))+');')
 def capture(p,kind,width,height,scale=1):
  errors=[];p.on('pageerror',lambda e:errors.append(str(e)))
  p.goto(BASE+('reference.html' if kind=='reference' else '#weather'))

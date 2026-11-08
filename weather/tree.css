@@ -34,13 +34,6 @@
 .ww-app[data-scene-theme=tree] .ww-period::before,
 .ww-app[data-scene-theme=tree] .ww-hourly::before,
 .ww-app[data-scene-theme=tree] .ww-period-detail::before { display:none; }
-.ww-app[data-scene-theme=tree][data-viewport-fit=fit] .ww-viewport {
-  zoom:var(--ww-ui-scale,1);
-}
-.ww-app[data-scene-theme=tree][data-viewport-fit=fit] .ww-page {
-  min-height:0;
-  max-width:none;
-}
 .ww-app[data-scene-theme=tree] .ww-page {
   position:relative;
   z-index:3;

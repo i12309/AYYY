@@ -1,4 +1,4 @@
-"""The tree weather composition fits the viewport without clipping controls.
+"""Both weather compositions fit the viewport without clipping controls.
 
 The fixture and local routes are shared with the artwork parity test. These are
 layout tests, not screenshot goldens: hiding overflow cannot make out-of-bounds
@@ -7,6 +7,7 @@ scroll internally, as before. Small screens must retain usable document scroll.
 Set CHROMIUM_PATH for a custom browser and AYYY_VISUAL_OUTPUT for screenshots.
 """
 import json
+from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 from weather_v5_visual_browser import BASE, CHROME, OUT, ROOT, attach
 
@@ -85,13 +86,19 @@ def inspect(page):
           }
         }
       }
-      const root = document.documentElement;
-      const canvas = [...document.querySelectorAll('.ww-tree-scene canvas')].map(c => ({
+      const root = document.documentElement, theme = app.dataset.sceneTheme || 'lighthouse';
+      const scene = app.querySelector(theme === 'tree' ? '.ww-tree-scene' : '#ww-scene');
+      const tower = scene?.querySelector('.ww-tower');
+      const canvas = [...(scene?.querySelectorAll('canvas') || [])].map(c => ({
         width:c.width, height:c.height, rect:rect(c)
       }));
       return {viewport:[innerWidth, innerHeight], dpr:devicePixelRatio,
         document:[root.scrollWidth, root.scrollHeight], scroll:[scrollX, scrollY],
-        problems, bounds, canvas, geometry:window.__tree?.inspect().treeGeometry};
+        theme, fitMode:app.dataset.viewportFit, uiScale:Number(app.style.getPropertyValue('--ww-ui-scale')) || 1,
+        scene:scene && rect(scene), sceneVisible:!!scene && visible(scene),
+        tower:tower && {rect:rect(tower), visible:visible(tower), naturalWidth:tower.naturalWidth, source:tower.currentSrc},
+        treeLayers:app.querySelectorAll('.ww-tree-scene').length,
+        problems, bounds, canvas, geometry:theme === 'tree' ? window.__tree?.inspect().treeGeometry : null};
     }""")
 
 
@@ -105,7 +112,18 @@ def check_fit(page, label):
     assert result['document'][0] <= width + 1, (label, 'horizontal document overflow', result)
     assert result['document'][1] <= height + 1, (label, 'vertical document overflow', result)
     assert not result['problems'], (label, result['problems'])
-    assert len(result['canvas']) == 3, (label, 'missing scene layers')
+    assert result['fitMode'] == 'fit', (label, 'desktop fitting did not activate')
+    assert result['sceneVisible'], (label, 'active scene is hidden')
+    scene = result['scene']
+    assert scene['x'] <= 0 and scene['right'] >= width - 1 and scene['y'] <= 0 and scene['bottom'] >= height - 1, (label, 'scene leaves viewport uncovered', scene)
+    assert len(result['canvas']) == (3 if result['theme'] == 'tree' else 1), (label, 'missing scene layers')
+    if result['theme'] == 'lighthouse':
+        tower = result['tower']
+        assert result['treeLayers'] == 0, (label, 'tree scene remains after switching to lighthouse')
+        assert tower and tower['visible'] and tower['naturalWidth'] > 0, (label, 'lighthouse image is missing or undecoded')
+        assert urlsplit(tower['source']).path.endswith('/assets/lighthouse.avif'), (label, 'original lighthouse image replaced', tower['source'])
+        r = tower['rect']
+        assert r['x'] >= -1 and r['y'] >= -1 and r['right'] <= width + 1 and r['bottom'] <= height + 1, (label, 'lighthouse is cropped outside viewport', r)
     for canvas in result['canvas']:
         r = canvas['rect']
         assert r['x'] <= 0 and r['right'] >= width - 1, (label, 'canvas leaves a side uncovered', canvas)
@@ -117,16 +135,74 @@ def check_fit(page, label):
     # A real attempt to scroll also catches a stale document height after zoom.
     page.evaluate('scrollTo(0, innerHeight)')
     assert page.evaluate('scrollY') == 0, (label, 'desktop still scrolls')
-    print('PASS viewport', label, result['viewport'], 'canvas', result['canvas'][0]['width'], flush=True)
+    print('PASS viewport', label, result['theme'], result['viewport'], 'canvas', result['canvas'][0]['width'], flush=True)
     return result
 
 
-def open_weather(page, standalone=False):
-    attach(page, ROOT)
+def wait_theme(page, theme):
+    page.wait_for_function("""theme => {
+      const button = document.querySelector('.ww-theme-switch [data-theme="' + theme + '"]');
+      const tower = document.querySelector('#ww-scene .ww-tower');
+      return button?.getAttribute('aria-pressed') === 'true'
+        && document.querySelector('#ww-source-status')?.dataset.status === 'live'
+        && (theme === 'tree' ? window.__tree?.ready : tower?.complete && tower.naturalWidth > 0);
+    }""", arg=theme)
+
+
+def open_weather(page, standalone=False, theme='tree'):
+    attach(page, ROOT, theme=theme)
     page.goto(BASE + ('weather/' if standalone else '#weather'))
-    page.wait_for_function('document.querySelector(".ww-app")?.dataset.sceneTheme === "tree"'
-                          ' && document.querySelector("#ww-source-status")?.dataset.status === "live"'
-                          ' && window.__tree?.ready')
+    wait_theme(page, theme)
+
+
+def switch_theme(page, theme):
+    page.locator('.ww-theme-switch [data-theme="' + theme + '"]').click()
+    wait_theme(page, theme)
+
+
+def check_small_scroll(page, label):
+    settle(page)
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), (label, 'small-screen horizontal overflow')
+    assert page.evaluate('document.documentElement.scrollHeight > innerHeight'), (label, 'small-screen content was clipped instead of scrollable')
+    assert page.locator('.ww-app').get_attribute('data-viewport-fit') == 'scroll', (label, 'desktop fit remained active')
+    assert page.locator('.ww-app').evaluate("e => (Number(e.style.getPropertyValue('--ww-ui-scale')) || 1) === 1"), (label, 'small screen retained desktop scale')
+    for selector in ['.ww-theme-switch [data-theme="lighthouse"]', '.ww-theme-switch [data-theme="tree"]',
+                     '#ww-scene-minute', '[data-scene-month="11"]', '#ww-scene-wind', '#ww-now-button',
+                     '#ww-pause-button', '.ww-footer [data-action="about"]']:
+        page.locator(selector).scroll_into_view_if_needed()
+        assert page.locator(selector).is_visible(), (label, 'control missing', selector)
+        assert page.locator(selector).evaluate('''e => {
+          const r=e.getBoundingClientRect(), target=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+          return r.top >= -1 && r.bottom <= innerHeight + 1 && !!target && (e===target || e.contains(target));
+        }'''), (label, 'control unreachable or occluded', selector)
+    print('PASS small-screen scrolling and lower controls', label, flush=True)
+
+
+def check_lighthouse_viewports(browser, errors):
+    cases = [('desktop', 1920, 940, 1), ('compact', 1024, 768, 1),
+             ('4k', 3840, 2160, 1), ('hidpi', 1920, 1080, 2)]
+    for label, width, height, dpr in cases:
+        context = browser.new_context(viewport={'width':width, 'height':height}, device_scale_factor=dpr, reduced_motion='reduce')
+        page = context.new_page()
+        page.set_default_timeout(30000)
+        page.on('pageerror', lambda error: errors.append(str(error)))
+        open_weather(page, standalone=label == 'compact', theme='lighthouse')
+        check_fit(page, 'lighthouse-' + label)
+        if label == 'desktop':
+            switch_theme(page, 'tree')
+            check_fit(page, 'lighthouse-to-tree')
+            switch_theme(page, 'lighthouse')
+            check_fit(page, 'tree-to-lighthouse')
+            for width, height in [(959, 768), (960, 539), (390, 844)]:
+                page.set_viewport_size({'width':width, 'height':height})
+                check_small_scroll(page, f'lighthouse-{width}x{height}')
+            switch_theme(page, 'tree')
+            check_small_scroll(page, 'lighthouse-to-tree-mobile')
+            page.set_viewport_size({'width':1920, 'height':940})
+            check_fit(page, 'mobile-to-desktop-tree')
+            switch_theme(page, 'lighthouse')
+            check_fit(page, 'mobile-to-desktop-lighthouse')
+        context.close()
 
 
 def check_cloud_continuity(page, label):
@@ -240,6 +316,8 @@ if __name__ == '__main__':
                         check_panorama_continuity(page, '4k')
             context.close()
 
+        check_lighthouse_viewports(browser, errors)
+
         # On genuinely small screens nothing is cropped to force a one-screen
         # dashboard. The bottom settings and footer remain reachable by scroll.
         context = browser.new_context(viewport={'width':390, 'height':844}, reduced_motion='reduce')
@@ -247,14 +325,7 @@ if __name__ == '__main__':
         page.set_default_timeout(30000)
         page.on('pageerror', lambda error: errors.append(str(error)))
         open_weather(page)
-        settle(page)
-        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'mobile horizontal overflow'
-        assert page.evaluate('document.documentElement.scrollHeight > innerHeight'), 'small-screen content was clipped instead of scrollable'
-        for selector in ['#ww-scene-minute', '[data-scene-month="11"]', '#ww-scene-wind', '#ww-now-button', '#ww-pause-button', '.ww-footer [data-action="about"]']:
-            page.locator(selector).scroll_into_view_if_needed()
-            assert page.locator(selector).is_visible(), ('mobile control missing', selector)
-            assert page.locator(selector).evaluate('e => { const r=e.getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1; }'), ('mobile control unreachable', selector)
-        print('PASS mobile scrolling keeps all lower controls reachable', flush=True)
+        check_small_scroll(page, 'tree-mobile')
         context.close()
         browser.close()
     assert not errors, errors
