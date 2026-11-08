@@ -34,7 +34,7 @@ python src/build.py dist/index.html --inline
 На телефоне все типы поиска видны сразу, без горизонтальной прокрутки.
 
 Проверка: `python tests/search_browser.py` (`CHROMIUM_PATH` — путь к Chromium).
-Подробности и текущие снимки — [SEARCH_REDESIGN_RESULT.md](docs/SEARCH_REDESIGN_RESULT.md).
+Актуальная компоновка — [SEARCH_ART_AND_LAYOUT_RESULT.md](docs/SEARCH_ART_AND_LAYOUT_RESULT.md).
 
 ## Финансы и инженерия
 
