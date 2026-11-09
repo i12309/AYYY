@@ -1,4 +1,5 @@
 import {readFile, readFiles, readTree} from './browserStore';
+import {exportGedcom} from './gedcomExport';
 
 const utf8 = new TextEncoder();
 function bytes(value: string): Uint8Array {return utf8.encode(value);}
@@ -61,6 +62,15 @@ export async function makeArchive(treeId: string): Promise<Blob> {
   const files = await readFiles(treeId);
   const entries: Array<{name:string;data:Uint8Array}> = [];
   entries.push({name:'tree.json',data:bytes(JSON.stringify(doc,null,2)+'\n')});
+  let gedcomWarning='';
+  try {
+    entries.push({name:'tree.ged',data:exportGedcom(doc.persons,doc.families,doc.metadata)});
+  }catch(cause) {
+    gedcomWarning=cause instanceof Error?cause.message:'Неизвестная ошибка GEDCOM.';
+    entries.push({name:'GEDCOM_EXPORT_WARNING.txt',data:bytes(gedcomWarning)});
+  }
+  const original=files.get('original.ged');
+  if(original)entries.push({name:'original.ged',data:new Uint8Array(await original.arrayBuffer())});
   const required = new Set<string>();
   for (const p of doc.persons) {
     if (p._photo?.filename) required.add(p._photo.filename);
@@ -74,7 +84,10 @@ export async function makeArchive(treeId: string): Promise<Blob> {
   }
   let instructions = 'GEN · браузерная резервная копия\n\n';
   instructions += 'tree.json — основной документ. media/ — сохранённые в этом браузере файлы.\n';
-  instructions += 'Текущий браузерный этап не генерирует актуальный tree.ged.\n';
+  instructions += original
+    ? 'original.ged — неизменённые байты исходного импорта.\n'
+    : 'original.ged отсутствует: дерево создано вручную или импортировано из JSON.\n';
+  if (gedcomWarning) instructions += 'GEDCOM не удалось создать: '+gedcomWarning+'\n';
   if (missing.length) instructions += '\nОтсутствующие медиафайлы (не были импортированы с JSON):\n'+missing.join('\n')+'\n';
   entries.push({name:'README.txt',data:bytes(instructions)});
   return zip(entries);
@@ -94,8 +107,17 @@ export async function downloadApi(path: string) {
     save(name+'.zip',await makeArchive(treeId));
     return;
   }
-  if (parts[3]==='export.ged' || parts[3]==='original.ged') {
-    throw new Error('Полный GEDCOM-экспорт ещё переносится из Python. Для резервной копии используйте ZIP или JSON.');
+  if (parts[3]==='export.ged') {
+    const data=exportGedcom(doc.persons,doc.families,doc.metadata);
+    save(name+'.ged',new Blob([data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength) as ArrayBuffer],
+      {type:'text/plain;charset=utf-8'}));
+    return;
+  }
+  if (parts[3]==='original.ged') {
+    const original=await readFile(treeId,'original.ged');
+    if (!original) throw new Error('Исходного GEDCOM у этого дерева нет.');
+    save(name+'-original.ged',original);
+    return;
   }
   if (parts[3]==='persons' && parts[5]==='media' && parts[7]==='file') {
     const person=doc.persons.find(p=>p.id===parts[4]);
