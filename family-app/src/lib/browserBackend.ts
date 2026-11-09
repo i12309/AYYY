@@ -3,8 +3,11 @@ import {
   summary, uid, updateFamily, updatePerson, validate, type Document
 } from './browserModel';
 import {
-  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree
+  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot
 } from './browserStore';
+
+import {parseGedcom} from './gedcomParse';
+import {exportGedcom} from './gedcomExport';
 
 export class BackendError extends Error {
   constructor(message: string, public status = 400) {super(message);}
@@ -59,10 +62,24 @@ function sampleTree(document: Document) {
 async function importDocument(body: FormData) {
   const file = body.get('file');
   if (!(file instanceof File) || file.size > 25*1024*1024 || !file.size) {
-    throw new BackendError('Выберите JSON-файл GEN размером до 25 МБ.',422);
+    throw new BackendError('Выберите JSON или GEDCOM размером до 25 МБ.',422);
   }
-  if (!file.name.toLowerCase().endsWith('.json')) {
-    throw new BackendError('На этом этапе поддерживается импорт tree.json GEN. GEDCOM добавим после переноса парсера.',422);
+  if (/\.(ged|gedcom)$/i.test(file.name)) {
+    const original=new Uint8Array(await file.arrayBuffer());
+    const encoding=String(body.get('encoding')||'').trim() || undefined;
+    const parsed=parseGedcom(original,encoding);
+    const name=String(body.get('name')||file.name.replace(/\.(ged|gedcom)$/i,'')).trim();
+    const document=newTree(name.slice(0,150)||'Импорт GEDCOM');
+    document.persons=parsed.persons;
+    document.families=parsed.families;
+    document.metadata=parsed.metadata;
+    validate(document);
+    // The untouched GEDCOM is kept in the same transaction as its parsed tree.
+    await installTreeSnapshot(document,[{filename:'original.ged',blob:file}]);
+    return {tree:summary(document),warnings:parsed.warnings};
+  }
+  if (!/\.json$/i.test(file.name)) {
+    throw new BackendError('Выберите tree.json из GEN или GEDCOM (.ged, .gedcom).',422);
   }
   let archive: Document;
   try {archive = JSON.parse(await file.text()) as Document;}
@@ -131,13 +148,15 @@ export async function browserRequest(path: string, options: RequestInit = {}): P
     const sync = await getSync(treeId);
     return {
       local_saved_at: doc.tree.updated_at, slug: doc.tree.slug,
-      gedcom: {state:'error',message:'GEDCOM-экспорт переносится из Python.',generated_at:null},
+      gedcom: {state:'ready',message:'GEDCOM формируется в браузере при скачивании.',generated_at:null},
       github: {state:sync?'pending':'disabled',message:sync?'Подключён личный репозиторий':'GitHub не подключён',
         pending:Boolean(sync),last_sync:sync?.lastSync || null,last_commit:sync?.lastCommit || null,conflicts:[]}
     };
   }
   if (parts[2] === 'gedcom-status' && method === 'GET') {
-    return {state:'error',message:'GEDCOM ещё не подключён.',generated_at:null};
+    const document=await readTree(treeId);
+    exportGedcom(document.persons,document.families,document.metadata);
+    return {state:'ready',message:'Экспорт из JSON доступен.',generated_at:null};
   }
   if (parts[2] === 'rename-directory' && method === 'POST') {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(body.slug) || body.slug.length>100) {
@@ -150,8 +169,10 @@ export async function browserRequest(path: string, options: RequestInit = {}): P
       return summary(doc);
     });
   }
-  if (parts[2] === 'regenerate-gedcom') {
-    throw new BackendError('GEDCOM ещё не подключён в браузерной версии.',501);
+  if (parts[2] === 'regenerate-gedcom' && method==='POST') {
+    const document=await readTree(treeId);
+    exportGedcom(document.persons,document.families,document.metadata);
+    return {state:'ready',message:'Экспорт GEDCOM проверен.',generated_at:now()};
   }
   if (parts[2] === 'persons') {
     if (parts.length === 3 && method === 'POST') {
