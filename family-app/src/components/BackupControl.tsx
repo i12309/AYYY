@@ -78,7 +78,15 @@ export function BackupControl({
               <Download size={15}/> ZIP с фотографиями
             </a>
           </div>
-          <p className="field-hint">Экспорт GEDCOM переносится в браузерную версию и пока недоступен.</p>
+          <div className="actions">
+            <a className="button secondary" download href={appUrl('/api/trees/'+tree.id+'/export.ged')}>
+              <Download size={15}/> GEDCOM
+            </a>
+            <a className="button secondary" download href={appUrl('/api/trees/'+tree.id+'/original.ged')}>
+              <Download size={15}/> Оригинал GEDCOM (если импортировался)
+            </a>
+          </div>
+          <p className="field-hint">GEDCOM создаётся в браузере; original.ged содержит исходные байты без изменений.</p>
         </section>
         <section>
           <h3><Cloud size={18}/> Личный GitHub</h3>

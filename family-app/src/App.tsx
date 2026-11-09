@@ -524,10 +524,10 @@ export default function App() {
                   <ChevronDown size={14} />
                 </summary>
                 <div>
-                  <button type="button" disabled title="GEDCOM-экспорт переносится из Python">
+                  <a href={appUrl(`/api/trees/${treeId}/export.ged`)} download>
                     <FileText size={17} />
-                    <span>GEDCOM (.ged)<small>Будет добавлен на следующем этапе</small></span>
-                  </button>
+                    <span>GEDCOM (.ged)<small>Экспорт в исходной версии GEDCOM</small></span>
+                  </a>
                   <a href={appUrl(`/api/trees/${treeId}/tree.json`)} download>
                     <FileJson size={17} />
                     <span>
@@ -1029,7 +1029,7 @@ export default function App() {
         <Dialog title="Дерево импортировано" onClose={() => setModal(null)}>
           <div className="dialog-form">
             <p className="form-description">
-              При чтении файла обнаружены особенности. Дополнительные структуры исходного GEN сохранены, но для фотографий может потребоваться полный архив.
+              При импорте обнаружены особенности или предупреждения. Исходные GEDCOM-структуры сохранены; фотографии нужно переносить отдельно.
             </p>
             <ul className="import-warnings">
               {modal.warnings.map((warning, index) => (

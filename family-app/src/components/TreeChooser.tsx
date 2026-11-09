@@ -65,7 +65,7 @@ export function TreeChooser({
           <div className="actions">
             <button className="button secondary" onClick={onImport}>
               <FileUp size={18} />
-              Импорт JSON
+              Импорт GEDCOM / JSON
             </button>
             <button className="button secondary" onClick={onGitHub}>
               <CloudDownload size={18} />
@@ -147,7 +147,7 @@ export function TreeChooser({
                 <FolderHeart size={44} strokeWidth={1.4} />
               </span>
               <h2>Ваше первое семейное дерево</h2>
-              <p>Начните с себя, загрузите tree.json из GEN или откройте семейный архив из своего GitHub.</p>
+              <p>Начните с себя, загрузите GEDCOM/JSON или откройте семейный архив из своего GitHub.</p>
               <div className="actions">
                 <button className="button primary" onClick={onCreate}>
                   <Plus size={18} />
@@ -155,7 +155,7 @@ export function TreeChooser({
                 </button>
                 <button className="button secondary" onClick={onImport}>
                   <FileUp size={18} />
-                  Загрузить JSON
+                  Загрузить GEDCOM / JSON
                 </button>
                 <button className="button secondary" onClick={onGitHub}>
                   <CloudDownload size={18}/>
