@@ -95,7 +95,7 @@
     const $=s=>app.querySelector(s),$$=s=>[...app.querySelectorAll(s)];
     // The atmosphere belongs to the whole page, not to the center column.
     app.prepend($('#ww-scene'));
-    const scene=new root.AYYYSceneController($('#ww-scene'),{assetURL:options.assetURL||'assets/lighthouse.avif',treeURL:options.treeURL||new URL('tree-scene.js?v=themes-v5-4',document.currentScript?.src||document.baseURI).href,treeAssetURL:options.treeAssetURL||new URL('assets/tree/',document.baseURI).href});
+    const scene=new root.AYYYSceneController($('#ww-scene'),{assetURL:options.assetURL||'assets/lighthouse.avif',treeURL:options.treeURL||new URL('tree-scene.js?v=themes-mobile-2',document.currentScript?.src||document.baseURI).href,treeAssetURL:options.treeAssetURL||new URL('assets/tree/',document.baseURI).href});
     const viewport=new root.AYYYWeatherViewport(app,()=>{scene.renderer?.resize();positionSceneSettings();});
     let sceneParameters=null;
     // The disclosure is independent of the illustration anchor and page flow.

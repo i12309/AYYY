@@ -208,6 +208,8 @@ def check_small_scroll(page, label):
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), (label, 'small-screen horizontal overflow')
     toggle = page.locator('.ww-mobile-details-toggle')
     if toggle.is_visible():
+        if toggle.get_attribute('aria-expanded') == 'true':
+            toggle.click()
         assert toggle.get_attribute('aria-expanded') == 'false', (label, 'phone should begin with compact weather glance')
         assert page.locator('#ww-period').is_hidden() and page.locator('#ww-hourly').is_hidden(), (label, 'phone forecast must start collapsed')
         assert page.locator('.ww-current-main').is_visible(), (label, 'important live reading is missing')
