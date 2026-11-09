@@ -98,7 +98,7 @@ python tests/corporate_browser.py
 расширенное сравнение с Python GEN остаётся этапом приёмки. Персональные семейные данные в публичном AYYY не хранятся. Есть две темы:
 Classic GEN и AYYY.
 
-[Устройство, возможности, ограничения и проверки](docs/FAMILY_PORTAL.md).
+[Устройство, возможности, ограничения и проверки](docs/FAMILY_PORTAL.md). Нагрузочные испытания 1000–30000 человек: [FAMILY_PERFORMANCE.md](docs/FAMILY_PERFORMANCE.md).
 
 ### Остров игр
 
