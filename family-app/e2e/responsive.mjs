@@ -38,8 +38,10 @@ try{
     assert.ok(await frame.getByRole('heading',{name:'Семейный архив принадлежит вам'}).isVisible());
     const header=await geometry(frame,'.library-top');
     assert.ok(header.height<=65,'Library top must remain compact at '+width);
-    const pageOverflow=await frame.locator('html').evaluate(el=>el.scrollWidth-el.clientWidth);
-    assert.ok(pageOverflow<=12,'Library horizontal overflow '+pageOverflow+' at '+width);
+    // A desktop Chromium scroll bar can make clientWidth 17-18px smaller
+    // than the viewport; only scrollWidth beyond innerWidth is real overflow.
+    const pageOverflow=await frame.locator('html').evaluate(el=>el.scrollWidth-innerWidth);
+    assert.ok(pageOverflow<=4,'Library horizontal overflow '+pageOverflow+' at '+width);
     await frame.getByRole('button',{name:'Открыть пример'}).click();
     await frame.getByRole('button',{name:'Таблица',exact:true}).waitFor();
     const editor=await geometry(frame,'.app-header');
