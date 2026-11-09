@@ -26,6 +26,16 @@ try {
   const frame=page.frameLocator('iframe#ayyy-family-frame');
   await frame.getByRole('heading',{name:'Семейные деревья'}).waitFor({timeout:15000});
   console.log('PASS: Family route opens inside AYYY.');
+  await frame.getByRole('link',{name:'AYYY, главная портала'}).waitFor();
+  assert.equal(await frame.locator('#back-ayyy').count(),0);
+  const helpLink=frame.getByRole('link',{name:'Как это работает'}).first();
+  await helpLink.click();
+  await frame.getByRole('heading',{name:'Ваш архив. Ваши правила.'}).waitFor({timeout:15000});
+  await frame.getByRole('link',{name:'Как создать репозиторий'}).click();
+  await frame.locator('#github').waitFor();
+  await frame.getByRole('link',{name:'Вернуться к деревьям'}).first().click();
+  await frame.getByRole('heading',{name:'Семейные деревья'}).waitFor();
+  console.log('PASS: Help page and GitHub instructions navigate within the portal.');
 
   await frame.getByRole('button',{name:'Открыть пример'}).click();
   await frame.getByRole('button',{name:'Таблица',exact:true}).waitFor({timeout:15000});

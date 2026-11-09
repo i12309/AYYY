@@ -46,7 +46,8 @@ import { PeopleTable } from './components/PeopleTable';
 import { GlobalPersonSearch } from './components/GlobalPersonSearch';
 import { Dialog } from './components/Dialog';
 import { BackupControl } from './components/BackupControl';
-import { ThemeSwitch } from './components/ThemeSwitch';
+import { PortalBrand } from './components/PortalBrand';
+import { CircleHelp } from 'lucide-react';
 import { GitHubImportDialog } from './components/GitHubImportDialog';
 
 const FamilyGraph = lazy(() =>
@@ -106,16 +107,11 @@ function initialCardFields(): CardFields {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<'classic' | 'ayyy'>(() => {
-    try {return localStorage.getItem('gen:theme')==='ayyy'?'ayyy':'classic';}
-    catch{return 'classic';}
-  });
+  // Classic GEN is the only visual style. Old theme preference is obsolete.
   useEffect(() => {
-    document.documentElement.dataset.genTheme=theme;
-    try {localStorage.setItem('gen:theme',theme);}
-    catch {/* Theme preferences are optional. */}
-  },[theme]);
-  const toggleTheme = useCallback(() => setTheme(current=>current==='classic'?'ayyy':'classic'),[]);
+    document.documentElement.removeAttribute('data-gen-theme');
+    try {localStorage.removeItem('gen:theme');} catch {/* Optional preference cleanup. */}
+  }, []);
   const [treeId, setTreeId] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('tree'),
   );
@@ -491,8 +487,6 @@ export default function App() {
     <>
       {!treeId ? (
         <TreeChooser
-          theme={theme}
-          onToggleTheme={toggleTheme}
           trees={trees}
           loading={treesLoading}
           error={treesError}
@@ -510,13 +504,8 @@ export default function App() {
         <div className="app-shell">
           <header className="app-header">
             <div className="header-left">
-              <button
-                className="brand-mark"
-                onClick={() => openTree(null)}
-                aria-label="К списку деревьев"
-              >
-                <GitFork size={25} />
-              </button>
+              <PortalBrand />
+              <span className="family-brand-divider" aria-hidden="true" />
               <div className="header-tree">
                 <button className="breadcrumb" onClick={() => openTree(null)}>
                   <ChevronLeft size={13} />
@@ -538,7 +527,10 @@ export default function App() {
               onQuery={handleSearchQuery}
             />
             <div className="header-actions">
-              <ThemeSwitch theme={theme} onToggle={toggleTheme}/>
+              <a className="header-help-link" href="help/" title="Как устроен семейный архив">
+                <CircleHelp size={16} />
+                <span>Справка</span>
+              </a>
               {data && (
                 <BackupControl
                   tree={data.tree}

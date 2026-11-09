@@ -68,18 +68,12 @@ try{
   assert.ok(zip.includes(Buffer.from(ged,'utf8')),'Original GED bytes not preserved in ZIP.');
   console.log('PASS: ZIP includes generated GEDCOM and identical original input.');
 
-  await frame.getByRole('button',{name:/Тема оформления: Classic GEN/}).click();
-  assert.equal(await frame.locator('html').getAttribute('data-gen-theme'),'ayyy');
   await page.reload();
-  await frame.getByRole('button',{name:/Тема оформления: AYYY/}).waitFor();
-  assert.equal(await frame.locator('html').getAttribute('data-gen-theme'),'ayyy');
-  const switchGeometry=await frame.locator('.gen-theme-switch').evaluate(element=>{
-    const rect=element.getBoundingClientRect();
-    return {left:rect.left,right:rect.right,width:document.documentElement.clientWidth};
-  });
-  assert.ok(switchGeometry.left>=0 && switchGeometry.right<=switchGeometry.width,
-    'Theme switch must be completely visible inside the GEN window.');
-  console.log('PASS: Classic GEN / AYYY theme preference survives a reload and switch is visible.');
+  await frame.getByRole('button',{name:'Таблица',exact:true}).waitFor({timeout:15000});
+  assert.equal(await frame.locator('.gen-theme-switch').count(),0);
+  assert.equal(await frame.locator('#back-ayyy').count(),0);
+  assert.equal(await frame.locator('html').getAttribute('data-gen-theme'),null);
+  console.log('PASS: single Classic GEN theme, no floating AYYY button.');
 
   assert.deepEqual(errors,[],'Unexpected JS errors');
   await context.close();

@@ -5,6 +5,9 @@ import {
   CloudDownload,
   FolderHeart,
   GitFork,
+  CircleHelp,
+  ShieldCheck,
+  ArrowUpRight,
   Pencil,
   Plus,
   Trash2,
@@ -12,11 +15,9 @@ import {
 } from 'lucide-react';
 import type { TreeSummary } from '../types';
 import { personWord } from '../lib/format';
-import { ThemeSwitch, type GenTheme } from './ThemeSwitch';
+import { PortalBrand } from './PortalBrand';
 
 interface Props {
-  theme: GenTheme;
-  onToggleTheme: () => void;
   trees: TreeSummary[];
   loading: boolean;
   error: string;
@@ -32,8 +33,6 @@ interface Props {
 }
 
 export function TreeChooser({
-  theme,
-  onToggleTheme,
   trees,
   loading,
   error,
@@ -50,17 +49,16 @@ export function TreeChooser({
   return (
     <div className="library-page">
       <header className="library-top">
-        <div className="brand">
-          <span className="brand-mark">
-            <GitFork size={25} />
-          </span>
-          <span>
-            Родословная<small>GEN</small>
-          </span>
+        <div className="family-brand">
+          <PortalBrand />
+          <span className="family-brand-divider" aria-hidden="true" />
+          <span className="family-brand-label">Родословная <small>GEN</small></span>
         </div>
         <div className="library-top-tools">
           <span className="quiet">Семейный архив</span>
-          <ThemeSwitch theme={theme} onToggle={onToggleTheme}/>
+          <a className="header-help-link" href="help/">
+            <CircleHelp size={16} /> Как это работает
+          </a>
         </div>
       </header>
       <main className="library-content">
@@ -185,8 +183,24 @@ export function TreeChooser({
             {busy ? 'Создаём…' : 'Открыть пример'}
           </button>
         </section>
+        <section className="ownership-card" aria-labelledby="ownership-title">
+          <span className="ownership-icon"><ShieldCheck size={23} aria-hidden="true" /></span>
+          <div className="ownership-text">
+            <span className="ownership-eyebrow">ВАШИ ДАННЫЕ — ПОД ВАШИМ КОНТРОЛЕМ</span>
+            <h2 id="ownership-title">Семейный архив принадлежит вам</h2>
+            <p>GEN работает в браузере и не загружает дерево на сервер AYYY.
+              Оно сохраняется на вашем устройстве, а при желании — в собственном
+              приватном репозитории GitHub. Вы выбираете, когда синхронизировать данные.</p>
+          </div>
+          <div className="ownership-actions">
+            <a className="button secondary" href="help/">Как это работает</a>
+            <a className="ownership-github-link" href="help/#github">
+              Настроить GitHub <ArrowUpRight size={15} aria-hidden="true"/>
+            </a>
+          </div>
+        </section>
         <footer className="library-footer">
-          Деревья хранятся в этом браузере. Для резервной копии доступны JSON, ZIP и подключение приватного GitHub.
+          Локальные данные зависят от этого браузера. Регулярно сохраняйте резервную копию JSON или ZIP.
         </footer>
       </main>
     </div>
