@@ -52,11 +52,21 @@ try{
   assert.match(await page.locator('.pv-list-scroll').innerText(),/Анализ требований/);
   const success=await page.locator('[data-pv-status]').innerText();
   assert.match(success,/прочитан локально/);
+  if(process.env.MPP_FIXTURES_DIR){
+    const mpp=path.join(process.env.MPP_FIXTURES_DIR,'mpp14resource.mpp');
+    await page.locator('#pv-file-input').setInputFiles(mpp);
+    await page.waitForFunction(()=>document.querySelector('.pv-file-meta')?.textContent.includes('mpp14resource.mpp'));
+    assert.ok(await page.locator('.pv-list-row').count()>0,'binary MPP has visible tasks');
+    assert.ok(await page.locator('.pv-task-bar').count()>0,'binary MPP has Gantt bars');
+    await page.locator('[data-pv-tab="resources"]').click();
+    assert.ok(await page.locator('.pv-resource-table tbody tr').count()>0,'binary MPP has resources');
+    await page.locator('[data-pv-tab="gantt"]').click();
+  }
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.locator('.pv-task-bar').count()>0);
   assert.equal(await page.locator('.pv-private-dot').count(),1);
   assert.deepEqual(errors,[],'browser must not emit uncaught errors');
-  console.log('MPP browser smoke: PASS (demo, hierarchy, search, resources, CSV, XML, mobile)');
+  console.log('MPP browser smoke: PASS (demo, hierarchy, search, resources, CSV, XML, real binary MPP, mobile)');
 }finally{
   await browser.close();
 }
