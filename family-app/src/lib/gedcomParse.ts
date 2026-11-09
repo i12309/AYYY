@@ -46,10 +46,21 @@ function repairSplitUtf8Conc(data:Uint8Array):{data:Uint8Array;count:number} {
       const width=lead>=0xf0&&lead<=0xf4?4:lead>=0xe0&&lead<=0xef?3:lead>=0xc2&&lead<=0xdf?2:0;
       if(!width||width<=n)continue;
       if(![...suffix.slice(1)].every(b=>b>=0x80&&b<=0xbf))continue;
-      const remainder=nextValue.slice(0,width-n);
-      if(remainder.length!==width-n || ![...remainder].every(b=>b>=0x80&&b<=0xbf))continue;
-      try{new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array([...suffix,...remainder]));}
-      catch{continue;}
+      // A broken character can span several successive CONC lines, with
+      // only one continuation byte per line. Move the valid incomplete prefix
+      // forward one line at a time instead of requiring the entire character.
+      const nextByte=nextValue[0];
+      if(nextByte<0x80||nextByte>0xbf)continue;
+      const candidate=new Uint8Array([...suffix,nextByte]);
+      const second=candidate[1];
+      if(lead===0xe0&&second<0xa0)continue;
+      if(lead===0xed&&second>=0xa0)continue;
+      if(lead===0xf0&&second<0x90)continue;
+      if(lead===0xf4&&second>=0x90)continue;
+      if(candidate.length===width){
+        try{new TextDecoder('utf-8',{fatal:true}).decode(candidate);}
+        catch{continue;}
+      }
       lines[i-1]=prev.slice(0,-n);
       lines[i]=new Uint8Array([...next.slice(0,current.size),...suffix,...nextValue]);
       count++;break;
