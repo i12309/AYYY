@@ -18,22 +18,24 @@ export function PeopleTable({ persons, selectedId, onSelect, onOpen, onContext }
   const [sort, setSort] = useState<SortKey>('name');
   const [ascending, setAscending] = useState(true);
   const [page, setPage] = useState(0);
-  const sorted = useMemo(
-    () =>
-      [...persons].sort((a, b) => {
-        const value = (p: Person) =>
-          sort === 'name'
-            ? `${p.surname} ${p.given_name} ${p.patronymic}`
-            : sort === 'birth_place'
-              ? p.birth_place
-              : yearOf(p[sort]).replace('ок. ', '');
-        const left = value(a),
-          right = value(b);
-        if (!left || !right) return !left && !right ? 0 : !left ? 1 : -1;
-        return left.localeCompare(right, 'ru', { numeric: true }) * (ascending ? 1 : -1);
-      }),
-    [persons, sort, ascending],
-  );
+  const collator = useMemo(() => new Intl.Collator('ru', { numeric: true }), []);
+  const sorted = useMemo(() => {
+    // With 30k records, compute each name once, not in every sort comparison.
+    const keys = new Map(persons.map((person) => [
+      person.id,
+      sort === 'name'
+        ? `${person.surname} ${person.given_name} ${person.patronymic}`
+        : sort === 'birth_place'
+          ? person.birth_place
+          : yearOf(person[sort]).replace('ок. ', ''),
+    ]));
+    return [...persons].sort((a, b) => {
+      const left = keys.get(a.id) || '';
+      const right = keys.get(b.id) || '';
+      if (!left || !right) return !left && !right ? 0 : !left ? 1 : -1;
+      return collator.compare(left, right) * (ascending ? 1 : -1);
+    });
+  }, [persons, sort, ascending, collator]);
   const pages = Math.max(1, Math.ceil(sorted.length / 50));
   const current = Math.min(page, pages - 1);
   const heading = (key: SortKey, label: string) => (

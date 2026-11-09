@@ -2167,3 +2167,16 @@ p {
   box-shadow:inset 3px 0 var(--family-color),0 0 0 2px #cc703e33,0 5px 16px #c56d3a14;
 }
 
+
+/* The full archive is always available in the table; large graph layouts
+   initially display nearby relatives to keep navigation responsive. */
+.large-tree-note {
+  color: var(--accent-dark);
+  font-size: 11px;
+  max-width: 250px;
+  line-height: 1.25;
+  text-align: right;
+}
+@media(max-width:1150px) {
+  .large-tree-note { display:none; }
+}
