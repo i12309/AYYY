@@ -103,5 +103,22 @@
     const keydown=event=>{if(/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)||event.ctrlKey||event.metaKey||event.altKey||event.repeat)return;if(['1','2','3','4'].includes(event.key)&&!answered&&!$('#math-question-area',root).hidden){event.preventDefault();respond(question.options[Number(event.key)-1]);}};document.addEventListener('keydown',keydown);restart();return()=>document.removeEventListener('keydown',keydown);
   }
 
+  // The full-screen games portal reuses these two AYYY games without changing
+  // their saved-state keys, rules, or teardown of document-level input handlers.
+  // The old registration remains a fallback until the lazy portal route loads.
+  const legacyViews = {
+    '2048': {render:tileRender,mount:tileMount},
+    math: {render:mathRender,mount:mathMount}
+  };
+  A.legacyGames = Object.freeze({
+    render(id) {
+      if (!Object.prototype.hasOwnProperty.call(legacyViews,id)) return '';
+      return `<div class="games-stage gp-legacy-stage">${legacyViews[id].render()}</div>`;
+    },
+    mount(id,host) {
+      if (!host || !Object.prototype.hasOwnProperty.call(legacyViews,id)) return () => {};
+      return legacyViews[id].mount(host);
+    }
+  });
   A.register('games',{title:'Игры',render:gamesRender,mount:gamesMount});
 })();

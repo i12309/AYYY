@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Мои работы · Остров игр AYYY</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="shared/workshop.css">
+  <link rel="stylesheet" href="shared/ayyy-theme.css">
+  <script src="shared/ayyy-bridge.js"></script>
+</head>
+<body class="workshop-page">
+  <div class="site-shell">
+    <header class="site-header play-header"><a class="brand" href="index.html">игроланд<span class="brand-dot">.</span></a><a class="back-link" href="index.html">← Все игры</a></header>
+    <main>
+      <div class="ws-heading"><div class="ws-kicker">ТВОЯ ЛИЧНАЯ ПОЛКА</div><h1>Мои работы</h1><p>Картинки из фигур и шариковые трассы. Открывай, меняй и придумывай новое.</p></div>
+      <div class="ws-actions"><a class="ws-button" href="games/shape-studio/index.html?level=free">К мастерской фигур</a><a class="ws-button" href="games/marble-lab/index.html?level=free">К шариковым трассам</a><button class="ws-button" id="importWork" type="button">Открыть файл работы</button><input id="workFile" type="file" accept="application/json,.json" hidden></div>
+      <p class="ws-caption">До 24 работ в этом браузере. При очистке данных сайта полка исчезнет. Для переноса и резервной копии сохраняй работы в JSON-файлы.</p>
+      <div class="ws-message" id="shelfMessage" role="status" aria-live="polite"></div>
+      <div class="ws-shelf" id="workShelf"></div>
+      <noscript>Включите JavaScript, чтобы увидеть работы, сохранённые в этом браузере.</noscript>
+    </main>
+  </div>
+  <script src="shared/platform.js"></script><script src="shared/workshop.js"></script>
+  <script src="games/shape-studio/rules.js"></script><script src="games/marble-lab/rules.js"></script>
+  <script src="assets/work-shelf.js"></script>
+</body>
+</html>

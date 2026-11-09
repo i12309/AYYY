@@ -1,0 +1,19 @@
+/* Additional modules, composed before learning-home.js. Original registries remain immutable. */
+(function (root, factory) {
+  const games = factory();
+  if (typeof module === 'object' && module.exports) module.exports = games;
+  if (root) {
+    const add = (old, entries) => Object.freeze([...(old || []), ...entries.filter(g => !(old || []).some(o => o.id === g.id))]);
+    root.IGROLAND_GAME_REGISTRY = add(root.IGROLAND_GAME_REGISTRY, games.filter(g => !g.educational));
+    root.IGROLAND_LEARNING_REGISTRY = add(root.IGROLAND_LEARNING_REGISTRY, games.filter(g => g.educational));
+  }
+})(typeof window !== 'undefined' ? window : null, function () {
+  'use strict';
+  const rows = [
+    { id: 'forest-shop', title: 'Магазин лесных друзей', short: 'Счёт нужен для настоящего дела', description: 'Собирай заказы лесных соседей, складывай стоимость товаров и раскладывай монетки. Учись понимать бюджет и сдачу без спешки.', educational: true, category: 'Арифметика в игре', icon: '🧺', visual: ['🍎', '🧺', '1', '🍐'], color: '#b17b35', tint: '#fff5df', topics: [['count','Собери заказ','Количество до 5','easy','🧺'],['pay','Один товар','Цена и монетки','easy','🍎'],['total','Две покупки','Сложение до 8','medium','+'],['budget','Хватит ли монет?','Сравниваем количества','medium','≠'],['change','Верни сдачу','Вычитание до 10','hard','−']] },
+    { id: 'story-post', title: 'Почта сказочного города', short: 'Прочитай — и найди адрес', description: 'Доставляй письма по коротким запискам. Ищи дом по двум признакам и понимай, куда переехал получатель. Можно перечитать и послушать текст.', educational: true, category: 'Чтение и смысл', icon: '✉️', visual: ['✉️', '🏠', '📦', '🦊'], color: '#8761b8', tint: '#f3edff', topics: [['address','Найди дом','Короткая записка','easy','✉️'],['clues','Две подсказки','Крыша и дверь','medium','🏠'],['stories','Почтовые истории','Читаем ради действия','hard','📦']] },
+    { id: 'shape-studio', title: 'Мастерская фигур', short: 'Из простых форм — целый мир', description: 'Собирай силуэты, поворачивай детали и достраивай зеркальные картинки. Создавай собственные работы и сохраняй их на личную полку.', educational: true, category: 'Формы и пространство', icon: '▲', visual: ['▲', '■', '●', '◆'], color: '#319987', tint: '#e9f8f3', topics: [['house','Солнечный дом','Собери силуэт','easy','🏠'],['boat','Парусник','Собери силуэт','easy','⛵'],['fish','Рыбка','Собери силуэт','easy','🐟'],['rocket','Ракета','Поверни детали','medium','🚀'],['tree','Ёлка','Поверни детали','medium','🌲'],['windmill','Мельница','Повороты фигур','medium','✦'],['butterfly','Бабочка','Зеркальное отражение','hard','🦋'],['robot','Робот','Зеркальное отражение','hard','🤖'],['garden','Сад','Зеркальное отражение','hard','🌳'],['free','Свободная мастерская','Придумай картинку','easy','🎨']] },
+    { id: 'marble-lab', title: 'Шариковая мастерская', short: 'Построй свою трассу', description: 'Соединяй жёлобы, воронки и пружины. Запускай шарики, проверяй маршрут и сохраняй удачные трассы. Шесть задач и свободный конструктор.', educational: false, category: 'Конструктор', icon: '🎢', visual: ['🔵', '↘', '🟣', '🏁'], color: '#518eb9', tint: '#eaf5ff', topics: [['bridge','Недостающий жёлоб','Первый эксперимент','easy','🔵'],['slope','Длинная горка','Продолжи трассу','easy','↘'],['left','Другой берег','Движение влево','medium','↙'],['funnel','Воронка','Собери шарик','medium','▽'],['spring','Пружинный прыжок','Проверь отскок','hard','✦'],['engineer','Построй сам','От старта до финиша','hard','🏁'],['free','Свободная мастерская','Любая трасса','easy','🎢']] }
+  ];
+  return Object.freeze(rows.map(({ topics, ...g }) => Object.freeze({ ...g, difficulty: '5–7 лет', link: `games/${g.id}/index.html?level=${topics[0][0]}`, levels: Object.freeze(topics.map(([id,title,detail,difficulty,icon]) => ({title,detail,difficulty,icon,link:`games/${g.id}/index.html?level=${id}`}))) })));
+});

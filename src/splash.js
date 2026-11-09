@@ -39,7 +39,8 @@
   }
 
   function shortcut(service) {
-    const destination = service.url ? `href="${e(service.url)}" target="_blank" rel="noopener noreferrer"` : `href="#${e(service.route)}${service.param?'/'+encodeURIComponent(service.param):''}"`;
+    const param = service.id === 'memory' ? '' : service.param;
+    const destination = service.url ? `href="${e(service.url)}" target="_blank" rel="noopener noreferrer"` : `href="#${e(service.route)}${param?'/'+encodeURIComponent(param):''}"`;
     return `<a class="shore-shortcut" ${destination}>${serviceIcon(service)}<span class="shore-shortcut-name">${e(shortNames[service.id]||service.name)}</span><small>${e(shortDescriptions[service.id]||service.desc)}</small></a>`;
   }
 

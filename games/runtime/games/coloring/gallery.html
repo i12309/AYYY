@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f8fafd"><meta name="description" content="48 раскрасок по номерам: животные, сказки, техника и большие сцены до 80×80 клеток. Выбирай сложность и продолжай свои рисунки.">
+  <title>Все раскраски · Остров игр AYYY</title>
+  <link rel="stylesheet" href="../../assets/styles.css"><link rel="stylesheet" href="library.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head>
+<body class="coloring-library"><div class="site-shell">
+  <header class="site-header"><a class="brand" href="../../index.html" aria-label="Игроланд, главная"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a><a class="back-link" href="../../index.html">← Все игры</a></header>
+  <main>
+    <section class="library-intro"><div><span class="section-kicker">ТВОЯ КОЛЛЕКЦИЯ РАСКРАСОК</span><h1>Какую историю раскрасим?</h1><p>40 новых картинок и 8 любимых. От первых клеточек до больших миров с тысячами деталей.</p></div><a class="primary-link" href="index.html">Загрузить свою картинку →</a></section>
+    <form class="library-filters" id="libraryFilters" role="search" aria-label="Поиск раскрасок">
+      <label>Найти рисунок<input id="artSearch" type="search" placeholder="Лисёнок, море, замок…" maxlength="80" autocomplete="off"></label>
+      <label>Сложность<select id="artDifficulty"><option value="all">Все уровни</option><option value="easy">Легко</option><option value="medium">Средне</option><option value="hard">Сложно</option><option value="expert">Очень сложно</option><option value="master">Эксперт</option></select></label>
+      <label>Тема<select id="artTheme"><option value="all">Все темы</option></select></label>
+      <label>Мои рисунки<select id="artProgress"><option value="all">Все рисунки</option><option value="started">Начатые</option><option value="done">Готовые</option><option value="new">Ещё не начинали</option></select></label>
+    </form>
+    <div class="library-results"><span id="artCount" role="status" aria-live="polite"></span><button type="button" class="back-link" id="clearFilters">Сбросить фильтры</button></div>
+    <div class="library-grid" id="artGallery" aria-label="Рисунки"></div>
+    <p id="artEmpty" class="library-empty" hidden>Таких рисунков пока нет. Попробуй другую тему или сбрось фильтры.</p>
+    <p class="library-footnote">В больших картинах нажми «Крупно», чтобы увидеть номера. Двумя пальцами меняй масштаб и перемещай поле. Прогресс сохраняется в этом браузере.</p>
+    <noscript><p>Для выбора и раскрашивания нужен JavaScript. <a href="index.html">Открыть раскраску</a>.</p></noscript>
+  </main><footer class="site-footer">AYYY · Цвет за цветом, в своём темпе</footer>
+</div>
+  <script src="art-data.js"></script>
+  <script src="pixel-art.js"></script>
+  <script src="packs/01-garden.js"></script>
+  <script src="packs/02-wonders.js"></script>
+  <script src="packs/03-friends.js"></script>
+  <script src="packs/04-wildlife.js"></script>
+  <script src="packs/05-journeys.js"></script>
+  <script src="packs/06-fairytales.js"></script>
+  <script src="packs/07-worlds.js"></script>
+  <script src="packs/08-grand-scenes.js"></script>
+  <script src="gallery.js"></script>
+</body>
+</html>

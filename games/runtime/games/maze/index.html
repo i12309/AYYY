@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fffefc">
+  <meta name="description" content="Детские лабиринты для планшета: помоги медвежонку добраться до мёда.">
+  <title>Лабиринты · Остров игр AYYY</title>
+  <link rel="stylesheet" href="../../assets/styles.css">
+  <link rel="stylesheet" href="../../shared/game-base.css">
+  <link rel="stylesheet" href="maze.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head>
+<body class="play-page">
+  <div class="site-shell">
+    <header class="site-header play-header">
+      <a class="brand" href="../../index.html" aria-label="Игроланд, каталог игр"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a>
+      <a class="back-link" href="../../index.html">← <span>Все игры</span></a>
+    </header>
+    <main class="ig-main">
+      <aside class="ig-side" aria-label="Сложность лабиринтов">
+        <div class="ig-side-head"><div><div class="ig-kicker">ВЫБЕРИ СЛОЖНОСТЬ</div><h2>Выбирай дорожку</h2></div></div>
+        <p>От маленького лабиринта до большого приключения. Все маршруты имеют выход!</p>
+        <div class="ig-levels" role="group" aria-label="Уровни сложности">
+          <button type="button" class="ig-level" data-difficulty="easy" aria-pressed="true"><span class="ig-level-icon">🌱</span><span><strong>Легко</strong><small>7 × 7 клеток</small></span></button>
+          <button type="button" class="ig-level" data-difficulty="normal" aria-pressed="false"><span class="ig-level-icon">🌼</span><span><strong>Средне</strong><small>11 × 11 клеток</small></span></button>
+          <button type="button" class="ig-level" data-difficulty="hard" aria-pressed="false"><span class="ig-level-icon">⭐</span><span><strong>Сложно</strong><small>15 × 15 клеток</small></span></button>
+        </div>
+        <div class="ig-tip"><strong>🐻 Задача</strong><p>Медвежонок ищет мёд! Проведи его пальцем по белым дорожкам. Фиолетовые стены обходи стороной.</p></div>
+        <div class="ig-side-note">Можно играть без подключения к интернету</div>
+      </aside>
+      <section class="ig-panel maze-panel" aria-labelledby="gameTitle">
+        <div class="ig-heading">
+          <div><div class="ig-kicker">ПРОЙДИ ЛАБИРИНТ</div><h1 id="gameTitle">Дорога к мёду</h1><p>Помоги медвежонку 🐻 найти баночку 🍯</p></div>
+          <div class="ig-stats"><div class="ig-stat"><strong id="stepsValue">0</strong><span>шагов</span></div><div class="ig-stat"><strong id="timeValue">00:00</strong><span>время</span></div></div>
+        </div>
+        <div class="ig-toolbar">
+          <div class="ig-toolbar-group"><button type="button" class="ig-button primary" id="newMaze">↻ Новый</button><button type="button" class="ig-button" id="hintButton">💡 Подсказка</button></div>
+          <div class="ig-toolbar-group"><button type="button" class="ig-button ig-zoom" id="zoomOut" aria-label="Уменьшить">−</button><span class="maze-zoom-label" id="zoomLabel">100%</span><button type="button" class="ig-button ig-zoom" id="zoomIn" aria-label="Увеличить">+</button><button type="button" class="ig-button" id="zoomFit">Вместить</button><button type="button" class="ig-button" id="soundButton" aria-pressed="false" title="Включить или выключить звуки">🔇</button></div>
+        </div>
+        <div class="maze-stage" id="mazeStage">
+          <canvas id="mazeCanvas" aria-label="Лабиринт. Управляй героем с помощью стрелок под полем или клавиатуры." tabindex="0"></canvas>
+          <div class="maze-legend"><span>🐻 Ты здесь</span><span>🍯 Цель</span></div>
+          <div class="ig-success" id="successDialog" hidden role="status"><div class="ig-success-emoji">🍯</div><h2>Мёд найден!</h2><p id="successText">Ты молодец!</p><button type="button" class="ig-button primary" id="againButton">Ещё лабиринт →</button></div>
+        </div>
+        <div class="maze-controls">
+          <div class="maze-instructions"><strong>Как двигаться?</strong><span>Веди медвежонка пальцем по дорожке, нажимай на соседние клетки или используй стрелки. Два пальца — масштаб и движение.</span></div>
+          <div class="maze-dpad" role="group" aria-label="Стрелки для движения"><button type="button" data-direction="up" class="up" aria-label="Вверх">↑</button><button type="button" data-direction="left" class="left" aria-label="Влево">←</button><button type="button" data-direction="down" class="down" aria-label="Вниз">↓</button><button type="button" data-direction="right" class="right" aria-label="Вправо">→</button></div>
+        </div>
+        <div class="ig-live" id="gameMessage" aria-live="polite">Проведи медвежонка к мёду!</div>
+        <p class="ig-footer-hint">Лучший результат без подсказок: <strong id="bestScore">—</strong>. Колёсико мыши увеличивает, правая кнопка передвигает картинку.</p>
+      </section>
+    </main>
+  </div>
+  <script src="../../shared/platform.js"></script>
+  <script src="maze.js"></script>
+</body>
+</html>

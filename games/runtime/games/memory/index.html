@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fffefc">
+  <meta name="description" content="Детская игра Найди пару с тремя уровнями сложности. Работает на планшете без интернета.">
+  <title>Найди пару · Остров игр AYYY</title>
+  <link rel="stylesheet" href="../../assets/styles.css">
+  <link rel="stylesheet" href="../../shared/game-base.css">
+  <link rel="stylesheet" href="memory.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head>
+<body class="play-page">
+  <div class="site-shell">
+    <header class="site-header play-header">
+      <a class="brand" href="../../index.html" aria-label="Игроланд, каталог игр"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a>
+      <a class="back-link" href="../../index.html">← <span>Все игры</span></a>
+    </header>
+    <main class="ig-main">
+      <aside class="ig-side" aria-label="Сложность">
+        <div class="ig-side-head"><div><div class="ig-kicker">ВЫБЕРИ СЛОЖНОСТЬ</div><h2>Сколько карточек?</h2></div></div>
+        <p>Начни с простого. Когда научишься — попробуй следующий уровень!</p>
+        <div class="ig-levels" role="group" aria-label="Уровни сложности">
+          <button type="button" class="ig-level" data-difficulty="easy" aria-pressed="true"><span class="ig-level-icon">🌱</span><span><strong>Легко</strong><small>3 пары</small></span></button>
+          <button type="button" class="ig-level" data-difficulty="normal" aria-pressed="false"><span class="ig-level-icon">🌼</span><span><strong>Средне</strong><small>6 пар</small></span></button>
+          <button type="button" class="ig-level" data-difficulty="hard" aria-pressed="false"><span class="ig-level-icon">⭐</span><span><strong>Сложно</strong><small>10 пар</small></span></button>
+        </div>
+        <div class="ig-tip"><strong>💡 Как играть</strong><p>Открой две карточки. Если картинки одинаковые, пара останется открытой. Найди все пары!</p></div>
+        <div class="ig-side-note">Результаты сохраняются на этом устройстве</div>
+      </aside>
+      <section class="ig-panel memory-panel" aria-labelledby="gameTitle">
+        <div class="ig-heading">
+          <div><div class="ig-kicker">ИГРА НА ПАМЯТЬ</div><h1 id="gameTitle">Найди пару</h1><p>Запомни, где спрятались одинаковые картинки.</p></div>
+          <div class="ig-stats"><div class="ig-stat"><strong id="pairCount">0/3</strong><span>пар найдено</span></div><div class="ig-stat"><strong id="moveCount">0</strong><span>ходов</span></div></div>
+        </div>
+        <div class="ig-toolbar">
+          <div class="ig-toolbar-group"><button type="button" class="ig-button primary" id="newGame"><span class="ig-button-icon">↻</span> Новая игра</button><button type="button" class="ig-button" id="hintButton"><span class="ig-button-icon">💡</span> Подсказка</button></div>
+          <div class="ig-toolbar-group"><span class="memory-clock" id="clockValue" aria-label="Время игры">00:00</span><button type="button" class="ig-button" id="soundButton" aria-pressed="false" title="Включить или выключить звуки">🔇 <span>Звук</span></button></div>
+        </div>
+        <div class="memory-play-area">
+          <div class="memory-board" id="memoryBoard" role="group" aria-label="Игровые карточки"></div>
+          <div class="ig-success" id="successDialog" hidden role="status">
+            <div class="ig-success-emoji">🏆</div><h2>Все пары найдены!</h2><p id="successText">У тебя получилось!</p>
+            <button type="button" class="ig-button primary" id="againButton">Сыграть ещё →</button>
+          </div>
+        </div>
+        <div id="gameMessage" class="ig-live" aria-live="polite">Нажми на любую карточку, чтобы начать.</div>
+        <p class="ig-footer-hint">Лучший результат без подсказок: <strong id="bestScore">—</strong>. Можно просто нажимать на карточки пальцем или мышью.</p>
+      </section>
+    </main>
+  </div>
+  <script src="../../shared/platform.js"></script>
+  <script src="memory.js"></script>
+</body>
+</html>

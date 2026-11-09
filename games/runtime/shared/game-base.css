@@ -1,0 +1,26 @@
+/* Shared UI for independent Игроланд games. No framework or remote resources. */
+.ig-main{display:grid;grid-template-columns:minmax(220px,260px) minmax(0,1fr);gap:20px;align-items:start;padding-bottom:44px}
+.ig-side,.ig-panel{min-width:0;border:1px solid var(--line);background:#fff;border-radius:22px;box-shadow:var(--shadow)}
+.ig-side{padding:23px 19px;position:sticky;top:14px}.ig-panel{padding:clamp(16px,2.4vw,27px)}
+.ig-kicker{font-size:11px;letter-spacing:1.6px;font-weight:850;color:#7658d8;margin:0 0 9px}
+.ig-side h2{font-size:21px;letter-spacing:-.5px;margin:0 0 12px}.ig-side p{font-size:13px;line-height:1.65;color:#77869d;margin:0 0 19px}
+.ig-levels{display:grid;gap:9px}.ig-level{border:1.5px solid #e6eaf5;background:#fff;border-radius:14px;text-align:left;min-height:65px;padding:11px 13px;display:flex;gap:12px;align-items:center;color:#35415a;transition:border .15s,background .15s}
+.ig-level:hover{background:#f9f8ff;border-color:#c8baf7}.ig-level[aria-pressed="true"]{background:#f4f0ff;border-color:#9c87ea;box-shadow:0 0 0 2px #f1ebff}
+.ig-level-icon{display:flex;align-items:center;justify-content:center;width:41px;height:41px;flex-shrink:0;border-radius:12px;background:#f2edff;font-size:25px}
+.ig-level strong,.ig-level small{display:block}.ig-level strong{font-size:13px;margin-bottom:4px}.ig-level small{font-size:11px;color:#91a0b1}
+.ig-tip{margin-top:20px;border-radius:16px;background:#f7faff;padding:16px;border:1px solid #eef1f7}.ig-tip strong{font-size:13px}.ig-tip p{font-size:12px;line-height:1.55;margin:9px 0 0}
+.ig-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}.ig-heading h1{font-size:clamp(24px,2.6vw,34px);letter-spacing:-1px;line-height:1.12;margin:0 0 7px}.ig-heading p{margin:0;color:#8794a8;font-size:13px;line-height:1.55}
+.ig-stats{display:flex;gap:8px;flex-shrink:0}.ig-stat{min-width:84px;border-radius:15px;background:#f5f3ff;padding:10px 14px;text-align:center}.ig-stat strong{font-size:22px;display:block;color:#765ad5}.ig-stat span{font-size:10px;font-weight:700;color:#8a80b5}
+.ig-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:17px}.ig-toolbar-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ig-button{display:inline-flex;align-items:center;justify-content:center;min-height:43px;gap:8px;padding:9px 14px;color:#56647a;background:#fff;border-radius:12px;border:1.5px solid #e3e9f1;font-size:12px;font-weight:780;transition:background .13s,border .13s}
+.ig-button:hover{background:#f6f5ff;border-color:#c6b5f4}.ig-button:active{transform:scale(.985)}
+.ig-button.primary{color:white;background:#7656df;border-color:#7656df}.ig-button.primary:hover{background:#6142cf}
+.ig-button[aria-pressed="true"]{background:#f0eaff;border-color:#ad9be6;color:#6f51d0}
+.ig-button-icon{font-size:17px;line-height:1}
+.ig-footer-hint{font-size:12px;line-height:1.6;color:#8793a6;margin:15px 0 0}
+.ig-success{position:absolute;z-index:10;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.98);border:1.5px solid #e9e4f6;border-radius:25px;padding:28px;text-align:center;box-shadow:0 23px 72px rgba(56,67,103,.2);width:min(360px,calc(100% - 30px))}
+.ig-success[hidden]{display:none}.ig-success-emoji{font-size:65px;line-height:1.15;margin-bottom:12px}.ig-success h2{font-size:25px;margin:0 0 9px}.ig-success p{font-size:13px;color:#8190a5;line-height:1.6}.ig-success .ig-button{margin-top:5px}
+.ig-live{min-height:22px;color:#64718b;font-size:12px;font-weight:650;text-align:center;margin-top:12px}
+.ig-side-note{margin-top:24px;text-align:center;font-size:11px;color:#9ba6b4}
+@media(max-width:900px){.ig-main{grid-template-columns:1fr;gap:14px}.ig-side{position:static;padding:16px}.ig-side-head{display:flex;gap:15px;justify-content:space-between;align-items:center}.ig-side h2{margin:0}.ig-side p{display:none}.ig-levels{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px}.ig-tip{display:none}.ig-side-note{display:none}}
+@media(max-width:550px){.ig-main{gap:10px}.ig-panel{padding:13px;border-radius:17px}.ig-side{padding:13px;border-radius:17px}.ig-levels{gap:6px;margin-top:12px}.ig-level{min-height:72px;gap:6px;justify-content:center;flex-direction:column;text-align:center;padding:8px 3px;border-radius:12px}.ig-level-icon{width:34px;height:34px;font-size:21px}.ig-level strong{font-size:11px;margin:0}.ig-level small{font-size:9px}.ig-heading{align-items:flex-start;margin-bottom:12px}.ig-heading h1{font-size:25px}.ig-heading p{font-size:11px}.ig-stats{gap:5px}.ig-stat{min-width:58px;padding:8px 5px;border-radius:11px}.ig-stat strong{font-size:18px}.ig-stat span{font-size:9px}.ig-toolbar{gap:7px;margin-bottom:10px}.ig-button{font-size:11px;min-height:42px;padding:9px 11px;border-radius:10px}.ig-footer-hint{font-size:11px}}

@@ -1,0 +1,363 @@
+{
+  "repository": "https://github.com/i12309/Games",
+  "commit": "591c541f58e2e9f24450349db3623635d4b4b920",
+  "importedFiles": [
+    {
+      "path": "assets/adventures-registry.js",
+      "upstreamSha256": "f1c4a96ef7371ea294311c01e3801f2d87954bfc3b68dc25b151480d6da4e424"
+    },
+    {
+      "path": "assets/catalog.js",
+      "upstreamSha256": "86c7715328c38a47f2f651c2ae10dcfa1bc447c14564eb7065b55d26723f2aa1"
+    },
+    {
+      "path": "assets/game-registry.js",
+      "upstreamSha256": "bb64971a6e6f7ee8a248c7d1c56494677425c314fdd90895e44b83cf17f71d0e"
+    },
+    {
+      "path": "assets/home.css",
+      "upstreamSha256": "3e009b353edc59c0159aea48016a9784948bc0f65da2c2f9189af2fd3ad18453"
+    },
+    {
+      "path": "assets/learning-home.css",
+      "upstreamSha256": "a63947f0f12ba8fc0c80a02ba84eb348b88efced1bbabc77dcc64bc2d5e9a653"
+    },
+    {
+      "path": "assets/learning-home.js",
+      "upstreamSha256": "f40446d90f7e5bbf0780e262b0a42a519576bbdb54a94858e037f26f9881fa9c"
+    },
+    {
+      "path": "assets/learning-registry.js",
+      "upstreamSha256": "9cf605ec3b4fecce2ae8ad454fa8383fc6ffcd3209dbb1ccc06e249333235aa4"
+    },
+    {
+      "path": "assets/styles.css",
+      "upstreamSha256": "a57156aeeeb1504d965459b361f460f31d6f9c576ac74d9bed84c11b743604a4"
+    },
+    {
+      "path": "assets/work-shelf.js",
+      "upstreamSha256": "2702569808b300d8f63f5888ef15ae10235ca606ff70fa7ffaaf1c3c4fd21dc1"
+    },
+    {
+      "path": "shared/game-base.css",
+      "upstreamSha256": "25033fd984986974d589b961978e55a7c6e381da3a6fdabcf2e97f5795944ccf"
+    },
+    {
+      "path": "shared/learning-core.js",
+      "upstreamSha256": "913a4e686f418dca73c34354dcb1570074e49011e02eb0952e7fc2009e085cab"
+    },
+    {
+      "path": "shared/learning.css",
+      "upstreamSha256": "5083af1816cc4015604ef3cb648f824d77d60a579a358e6552709a83c7e8e600"
+    },
+    {
+      "path": "shared/learning.js",
+      "upstreamSha256": "e26d3d8b7b3cbe0d2912bbab88956906b4889882c1531ac24ad3938b4e59fd52"
+    },
+    {
+      "path": "shared/platform.js",
+      "upstreamSha256": "3e3e12578adafbf898c640404e0bda0d5d5fcdb473831d0d14c6aac3ae2cb983"
+    },
+    {
+      "path": "shared/workshop.css",
+      "upstreamSha256": "87a821a570f293bc68b7ed5a93a684f49ae93eedf2d4909b2be56a91cb7174b6"
+    },
+    {
+      "path": "shared/workshop.js",
+      "upstreamSha256": "5eeb7d72b0c9ba3b9b0a490af081f20e2ce1a5e79213e083e57112ad6a975cd9"
+    },
+    {
+      "path": "games/arrows/arrows.css",
+      "upstreamSha256": "6d1c67f8fcdd0ba9c8dbd43ded08ddce8c4d9947f62846a3f49d567cbdc18e5e"
+    },
+    {
+      "path": "games/arrows/arrows.js",
+      "upstreamSha256": "6e110dcc518411b12794eb56baae9360947c701818e2fa31f4e44cea57350f76"
+    },
+    {
+      "path": "games/arrows/index.html",
+      "upstreamSha256": "9027dfd2ab51257773f0289110b05b13ee5c593676df207dd3b8b369998bae49"
+    },
+    {
+      "path": "games/arrows/rules.js",
+      "upstreamSha256": "ec896c4fca0ec7876e40c31d85b5a7f467b69cb432d3f5bbb93dfc73a719b635"
+    },
+    {
+      "path": "games/coloring/art-data.js",
+      "upstreamSha256": "71686494eed71c0321193349ec8bc36c3d9c6098260501ef8e0ca9067d756f19"
+    },
+    {
+      "path": "games/coloring/coloring.js",
+      "upstreamSha256": "d3725a595a9a922c7ab6b6f6c555b59d930e5d11df687b686bd21831ea48b2ae"
+    },
+    {
+      "path": "games/coloring/gallery.html",
+      "upstreamSha256": "11cb89a2cf8cb7b18ea330e4794be0c404847029567f43e3de042b9d8a2038ff"
+    },
+    {
+      "path": "games/coloring/gallery.js",
+      "upstreamSha256": "748748f1f0242d332f4408065f52fa5c289785694bd4d8729cbc77a1afb8c2e8"
+    },
+    {
+      "path": "games/coloring/index.html",
+      "upstreamSha256": "65ac3d43fdcaaa8eed5e8e6f33cc2fb0ea4f879969ca37f433dd6d0d6c82c632"
+    },
+    {
+      "path": "games/coloring/library.css",
+      "upstreamSha256": "d2e979c8dfe88c3950ca8e98b41c6db718e3c91f44b1293b6294cd6e9a53a663"
+    },
+    {
+      "path": "games/coloring/packs/01-garden.js",
+      "upstreamSha256": "8f6fa6dd9446fee63024e9d470024e8f3a2e95cf97dce6d5866076fceb23d728"
+    },
+    {
+      "path": "games/coloring/packs/02-wonders.js",
+      "upstreamSha256": "df6675999bc20d10916dcb86bde8e83e9f55fd334cc04fc937c65d28f9f4837c"
+    },
+    {
+      "path": "games/coloring/packs/03-friends.js",
+      "upstreamSha256": "bf27779f4d144011cd89cff3bebbc66583331bedf86721a014a46b6dcc74e60e"
+    },
+    {
+      "path": "games/coloring/packs/04-wildlife.js",
+      "upstreamSha256": "d5ad032094565fad76b9ca2e6aabd6f5424c4fdee407a76ebb8c271957a65325"
+    },
+    {
+      "path": "games/coloring/packs/05-journeys.js",
+      "upstreamSha256": "407345fd44cb5d393ecf8fee8ebc05115df7e1ea88b417de022ad40bf0be1097"
+    },
+    {
+      "path": "games/coloring/packs/06-fairytales.js",
+      "upstreamSha256": "9279243a8fa2cebb4da2594a4c3776db2e7beab02ba058f45b4fbf545dc19940"
+    },
+    {
+      "path": "games/coloring/packs/07-worlds.js",
+      "upstreamSha256": "79f684becb22f41b8dd9d43455c1b32fab8f51b35fa9c4b98f66f78fb6c34725"
+    },
+    {
+      "path": "games/coloring/packs/08-grand-scenes.js",
+      "upstreamSha256": "c61d8cb5bfc9d24ae068e7852bf01e38c70e49109a778e4c8d8bb56a4a81b089"
+    },
+    {
+      "path": "games/coloring/pixel-art.js",
+      "upstreamSha256": "e6b2bed729b5b4bef50a996dda4bed0b7c88c2c1deb96d06067ac7c3ed2431ce"
+    },
+    {
+      "path": "games/forest-shop/game.js",
+      "upstreamSha256": "134220131c7070bd01ec09a7938f383a78a3761533d9dd6ca1d308d02f67e400"
+    },
+    {
+      "path": "games/forest-shop/index.html",
+      "upstreamSha256": "6ea751e04feba53c5738ffe6d3878e587ae1cb583840aa3bce76d5361559d1ae"
+    },
+    {
+      "path": "games/forest-shop/rules.js",
+      "upstreamSha256": "90d062cdc150c7bef11f89a49f8c74789a29fc8f23371e35659d49683bda0239"
+    },
+    {
+      "path": "games/hexmerge/hexmerge.css",
+      "upstreamSha256": "8bede6639b31746337007d3f423658f9b17b55be54ac57291a98ece19021edce"
+    },
+    {
+      "path": "games/hexmerge/hexmerge.js",
+      "upstreamSha256": "c15ae001fb626bdc5a2d945125e279d0147c9ccdbf8ee1403986d2b1d3a0fb78"
+    },
+    {
+      "path": "games/hexmerge/index.html",
+      "upstreamSha256": "80e6832b5c63e89c4694f4ea3ba7e1dcc3b767ec15e080df8f04dbaaa8c3b980"
+    },
+    {
+      "path": "games/hexmerge/rules.js",
+      "upstreamSha256": "2e095b060807b919dee40ad47384c5da86453e8a5e8e68a552bb9e043e7d78bf"
+    },
+    {
+      "path": "games/logic-lab/game.js",
+      "upstreamSha256": "182b3dc731d97df98fc00e41e650de05156499ad050dec71f12ae7be36e8ed76"
+    },
+    {
+      "path": "games/logic-lab/index.html",
+      "upstreamSha256": "e550ac80112fb02affd7c40a3918286b39acf217156ae54d76d49acab80c91e9"
+    },
+    {
+      "path": "games/logic-lab/rules.js",
+      "upstreamSha256": "1acfe06dccb017e2d42040a6e03245b9d02dec08a9445eb72ae2d2d51593f4df"
+    },
+    {
+      "path": "games/mahjong/index.html",
+      "upstreamSha256": "c8b91f2db287c257db9b9ef3edec27822d9e2bf17fa2ddd64e9bd04b6209b5a5"
+    },
+    {
+      "path": "games/mahjong/mahjong.css",
+      "upstreamSha256": "a88fb40e641b0c104bcf003cbccb902463a0109f377505d87bdfb4cc9aaca9bf"
+    },
+    {
+      "path": "games/mahjong/mahjong.js",
+      "upstreamSha256": "923ada3735593b60e7d07fa2e329d70a74715f160fe597826c0968c0e5423700"
+    },
+    {
+      "path": "games/mahjong/rules.js",
+      "upstreamSha256": "586d7506f502e9d214de2b182a146c3d24cee27f74b7a6bbad35cbfb05918e7e"
+    },
+    {
+      "path": "games/marble-lab/game.js",
+      "upstreamSha256": "b385ff6dce4851c35cec6b63bec2952a3d92ee5de5d2939b890dcc8e23b455f6"
+    },
+    {
+      "path": "games/marble-lab/index.html",
+      "upstreamSha256": "0f7a74d1b64defdf2b274240d3b9669da97eedb3b3565d309ede45c7e5d355c7"
+    },
+    {
+      "path": "games/marble-lab/rules.js",
+      "upstreamSha256": "861e82355501727a9ea9cb98010e76b53c31249aa135c8d7542ddafa07d187fb"
+    },
+    {
+      "path": "games/marble-shooter/engine.js",
+      "upstreamSha256": "190185047455264ec19817111b82af36b0748de8a406b31bdae1ecc7378bb55c"
+    },
+    {
+      "path": "games/marble-shooter/game.js",
+      "upstreamSha256": "db90269cf296be698d785f2cf21e5738eb860db71d1feb163e07511c166681b0"
+    },
+    {
+      "path": "games/marble-shooter/index.html",
+      "upstreamSha256": "2e1ebdd531b08d95eb75ef2302cadb328cb40488282d6d4344378f52fbfe6553"
+    },
+    {
+      "path": "games/marble-shooter/levels.js",
+      "upstreamSha256": "44d75120838073d280604bcb178f368cee8d707265810544f0d46943a60f4e5c"
+    },
+    {
+      "path": "games/marble-shooter/renderer.js",
+      "upstreamSha256": "14ccdcfd8dd9ff5c9a5f19dae6a5dccda666008a1e2315350b15340c15c23a89"
+    },
+    {
+      "path": "games/marble-shooter/style.css",
+      "upstreamSha256": "9452d9e209bfd7d348ccdcba62246d90db92affa3f22dff48a16e546c3ce1dbf"
+    },
+    {
+      "path": "games/maze/index.html",
+      "upstreamSha256": "dfdfa95afdac33b2d527c1b07a7842760e03a9fe6ff7e73f5ca73f7eef9fe41f"
+    },
+    {
+      "path": "games/maze/maze.css",
+      "upstreamSha256": "e5553aaad3cad7d479a3ea17e2638abd5bce4c28f6ec5ce46a5d7e505d9dc6a6"
+    },
+    {
+      "path": "games/maze/maze.js",
+      "upstreamSha256": "79f77d2244986a023bccc42adf58404574c28735b094a62728fa65a35b53b57f"
+    },
+    {
+      "path": "games/memory/index.html",
+      "upstreamSha256": "f2f88d574083c6bb226b8e7e51fec77568aee7b0cb76ed9b910113879069f34b"
+    },
+    {
+      "path": "games/memory/memory.css",
+      "upstreamSha256": "2d6a31027f4ee00cfb7bf6678f58ddcd0f6680a3bd571226a4a09ee488377b28"
+    },
+    {
+      "path": "games/memory/memory.js",
+      "upstreamSha256": "9c17a1ea501a449d5f29feae7fc7e7b478a62d38dfdd274a8bfad6176f4cf6fe"
+    },
+    {
+      "path": "games/number-garden/game.js",
+      "upstreamSha256": "11697be58c8f1a12c00c8a9699e9665cf1a9a200e94d1c26d5baab52719eeeb9"
+    },
+    {
+      "path": "games/number-garden/index.html",
+      "upstreamSha256": "a565678bb45f87cfaecde4ac3780022625fbba1caa6f543edf2952ee8de31631"
+    },
+    {
+      "path": "games/number-garden/rules.js",
+      "upstreamSha256": "c4df17ed4f5bdd65ba1260c1398d5477733e46be5de18f44950a014d24ece03a"
+    },
+    {
+      "path": "games/nuts/index.html",
+      "upstreamSha256": "622b823b9c8a59151a14de4e04dcce798b22b5e69f9e29a10244cdf175c03d16"
+    },
+    {
+      "path": "games/nuts/logic.js",
+      "upstreamSha256": "9b626a778caeaffbed9cc8c5aeb17c7bf4530b86b3fb6aa0bc306b7c2c2d4597"
+    },
+    {
+      "path": "games/nuts/nuts.css",
+      "upstreamSha256": "fd8e71328c44b499b6ddd18cde3a8ad7bbb7103e6a51dc79281cdce4202e7add"
+    },
+    {
+      "path": "games/nuts/nuts.js",
+      "upstreamSha256": "f681a6e910ffa9792c74bda8e1b7959cadf114e0f68e51147d6089bc78c2a6bd"
+    },
+    {
+      "path": "games/nuts/puzzles.js",
+      "upstreamSha256": "bb457a61aac4d4c0a9dbc735b0366b8f68355acea294b77e3521c6cccf0cd913"
+    },
+    {
+      "path": "games/nuts/solver-worker.js",
+      "upstreamSha256": "f20a9df552bc2137e8b2c4f2d04fa1adddf7e97c15b64f58e51bea556a27cf2d"
+    },
+    {
+      "path": "games/reading-stories/game.js",
+      "upstreamSha256": "d9e868c95e2a5fd8ca347d25f248dc6f520c918646200c077d10739a5161b1d2"
+    },
+    {
+      "path": "games/reading-stories/index.html",
+      "upstreamSha256": "fcdd70bd8a7026fffebc3a43da3cb173117ae62ddc5e5709f459da38a3cd489c"
+    },
+    {
+      "path": "games/reading-stories/rules.js",
+      "upstreamSha256": "1f04870b8cee50d123bd4c17edceb20d55b17d72d4d52bf4888724d4a2454d35"
+    },
+    {
+      "path": "games/robot-route/game.js",
+      "upstreamSha256": "4a627101d7d379d73b88b1b8da10e951f6ac9d18772ef4b1c545e26a1c8e223a"
+    },
+    {
+      "path": "games/robot-route/index.html",
+      "upstreamSha256": "5e2d7273bd3f22e72abe065d251e901ae3576cfbf739c5fd8bb5be4eac2bda1f"
+    },
+    {
+      "path": "games/robot-route/rules.js",
+      "upstreamSha256": "5689648ec6ef0c0c164899c6e2da7f489367bc112bbe336555e559aaa2db5312"
+    },
+    {
+      "path": "games/shape-studio/game.js",
+      "upstreamSha256": "7a89abf9923bc66d08ca9fb0c88ad34fa2f8f7c92f66fb0f6af1615754499004"
+    },
+    {
+      "path": "games/shape-studio/index.html",
+      "upstreamSha256": "6ef9cafe52e180f9c0c823f52bd7dc756a37407eb30e077a8e251797d7ea0bde"
+    },
+    {
+      "path": "games/shape-studio/rules.js",
+      "upstreamSha256": "6a060344c6eb10d15112cf946431bd85354cc2281c6ba6b4ffab32fe73d512ac"
+    },
+    {
+      "path": "games/story-post/game.js",
+      "upstreamSha256": "a52e4339fe6c75732c9cb578639e9bae6d42dd8f0c92fcb2221bc21d3366a1f9"
+    },
+    {
+      "path": "games/story-post/index.html",
+      "upstreamSha256": "95ab8959193319d60fabe1578510495758b2e670439ef86ef37a078a17940bc8"
+    },
+    {
+      "path": "games/story-post/rules.js",
+      "upstreamSha256": "8fe5fa67e512bab6fcd069ff419494f421b937cec490f686afbb6fcaaffad219"
+    },
+    {
+      "path": "works.html",
+      "upstreamSha256": "b3515aa07d6193ef5637b50250dfc1b9e67118f83f6a2fcda231a629f03cf13d"
+    }
+  ],
+  "modifications": {
+    "html": "Add AYYY theme+same-origin bridge links; update title and theme-color. Original game markup and IDs retained.",
+    "games/marble-shooter/renderer.js": "Decorative Canvas color palette only; ball color identities, coordinates and drawing sizes unchanged.",
+    "games/maze/maze.js": "Draw palette only; maze rules, coordinates and input unchanged."
+  },
+  "addedFiles": [
+    "shared/ayyy-theme.css",
+    "shared/ayyy-bridge.js",
+    "index.html",
+    ".nojekyll",
+    "SOURCE.json",
+    "README.md"
+  ]
+}

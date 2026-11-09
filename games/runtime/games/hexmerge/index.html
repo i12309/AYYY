@@ -1,0 +1,17 @@
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fffefc">
+<title>Числовые соты · Остров игр AYYY</title><link rel="stylesheet" href="../../assets/styles.css"><link rel="stylesheet" href="../../shared/game-base.css"><link rel="stylesheet" href="hexmerge.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head><body class="play-page"><div class="site-shell"><header class="site-header play-header">
+<a class="brand" href="../../index.html" aria-label="Игроланд, каталог"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a><a class="back-link" href="../../index.html">← Все игры</a></header>
+<main class="ig-main"><aside class="ig-side"><div class="ig-kicker">СОЕДИНЯЙ ЧИСЛА</div><h2>Числовые соты</h2><p>Найди рядом два одинаковых числа. Нажми на одно из них — и они объединятся в число побольше!</p>
+<div class="ig-levels" role="group" aria-label="Сложность игры"><button type="button" class="ig-level" data-difficulty="easy" aria-pressed="true"><span class="ig-level-icon">🌱</span><span><strong>Легко</strong><small>Цель 64</small></span></button><button type="button" class="ig-level" data-difficulty="normal" aria-pressed="false"><span class="ig-level-icon">🌼</span><span><strong>Средне</strong><small>Цель 128</small></span></button><button type="button" class="ig-level" data-difficulty="hard" aria-pressed="false"><span class="ig-level-icon">⭐</span><span><strong>Сложно</strong><small>Цель 256</small></span></button></div>
+<div class="ig-tip"><strong>Как играть?</strong><p>Соседние одинаковые числа соединяются. Два блока «2» становятся одним «4». Новые блоки падают сверху, а цепочки приносят больше очков!</p></div></aside>
+<section class="ig-panel hex-panel"><div class="ig-heading"><div><div class="ig-kicker">ГОЛОВОЛОМКА С СОТАМИ</div><h1>Числовые соты</h1><p>Собери число <strong id="targetNumber">64</strong> и стань чемпионом!</p></div><div class="ig-stats"><div class="ig-stat"><strong id="scoreValue">0</strong><span>очков</span></div><div class="ig-stat"><strong id="bestTile">8</strong><span>максимум</span></div></div></div>
+<div class="ig-toolbar"><div class="ig-toolbar-group"><button type="button" class="ig-button primary" id="newGame">↻ Новая игра</button><button type="button" class="ig-button" id="undoButton">↶ Отмена</button><button type="button" class="ig-button" id="hintButton">💡 Подсказка</button></div><button type="button" class="ig-button" id="soundButton" aria-pressed="false">♪ Звук</button></div>
+<div class="hex-stage" id="hexStage"><svg id="hexBoard" class="hex-board" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Игровое поле из шестиугольников"></svg>
+<div class="ig-success" id="successDialog" hidden><div class="ig-success-emoji">🌟</div><h2>Ты собрал число!</h2><p id="successText">Победа!</p><button type="button" class="ig-button primary" id="againButton">Ещё раз →</button></div></div>
+<div class="ig-live" id="gameMessage" aria-live="polite">Коснись числа, рядом с которым есть такое же.</div>
+<p class="ig-footer-hint">Лучший счёт: <strong id="recordValue">0</strong>. Прогресс сохраняется автоматически. Играть можно и на планшете.</p>
+</section></main></div><script src="../../shared/platform.js"></script><script src="rules.js"></script><script src="hexmerge.js"></script></body></html>

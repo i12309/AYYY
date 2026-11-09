@@ -1,0 +1,27 @@
+/* Soft catalog shell around an original arcade-style Canvas scene. */
+.marble-layout{grid-template-columns:minmax(224px,250px) minmax(0,1fr)}
+.marble-side h2{font-size:21px}.marble-side>p{line-height:1.65}
+.marble-mode-row{display:grid;gap:7px;margin:0 0 18px}.marble-mode-row label{font-weight:800;font-size:12px;color:#647189}
+.marble-mode-row select{width:100%;min-height:42px;padding:9px;border:1px solid #dce4ef;border-radius:11px;background:#fff;color:#36435a;font-size:13px;font-weight:700}
+.marble-levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.marble-level{border:1.5px solid #e8eaf4;background:#fff;color:#3d4661;display:flex;align-items:center;gap:7px;min-width:0;padding:9px;border-radius:13px;text-align:left;min-height:56px}
+.marble-level:hover{border-color:#b9abeb;background:#faf8ff}.marble-level[aria-pressed="true"]{border-color:#9275e2;background:#f3edff}
+.marble-level .num{width:26px;height:26px;border-radius:9px;background:#f0eaff;color:#7b60d9;display:grid;place-items:center;font-size:13px;font-weight:900;flex-shrink:0}
+.marble-level .details{min-width:0;display:grid;gap:2px}.marble-level .details strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.marble-level .details small{color:#8fa0b3;font-size:10px}
+.marble-heading{margin-bottom:14px}.marble-panel{padding:clamp(12px,2vw,21px)}
+.marble-toolbar{margin-bottom:12px;gap:9px}.marble-toolbar .ig-button{font-size:12px;min-height:41px}
+.marble-board-wrap{border:1px solid #e1e7f3;background:#fff;border-radius:20px;overflow:hidden}
+.marble-board-header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(90deg,#f0f6ff,#fefaff)}
+.marble-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #e6eaf4;background:#fff;border-radius:99px;min-height:28px;padding:4px 10px;color:#4e5e78;font-size:11px;font-weight:780}
+.marble-chip-dot{width:18px;height:18px;border-radius:50%;background:#fd547e;border:2px solid #ffffff9c;box-shadow:inset -4px -4px 4px #22283b40,0 2px 4px #263c3c26}
+.marble-canvas-wrap{position:relative;background:linear-gradient(145deg,#192e47,#263654);overflow:hidden;isolation:isolate}
+.marble-canvas-wrap canvas{width:100%;aspect-ratio:960/680;display:block;touch-action:none;user-select:none;cursor:crosshair;outline-offset:-4px}
+.marble-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;background:rgba(15,26,46,.81);backdrop-filter:blur(4px);color:white;text-align:center;z-index:3}
+.marble-overlay[hidden]{display:none}.marble-overlay-icon{font-size:58px;line-height:1}.marble-overlay h2{font-size:27px;color:white;margin:4px 0 0}.marble-overlay p{font-size:13px;line-height:1.6;color:#d9e5fa;max-width:360px;margin:0 0 6px}.marble-overlay .ig-button{min-width:175px;border-radius:13px}
+.marble-underboard{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 12px}
+.marble-powerups,.marble-zoom{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.marble-powerups .ig-button{min-height:40px;font-size:11px;background:#f8fbff;padding:9px 10px}.marble-powerups .ig-button b{display:grid;place-items:center;min-width:18px;min-height:18px;border-radius:99px;background:#e8e8fb;color:#5f4da1}
+.marble-powerups .ig-button[aria-pressed="true"]{background:#fff2db;border-color:#f2b847}.marble-zoom .ig-button{min-height:38px;font-size:12px;padding:7px 11px}
+.marble-live{margin:11px 0 0}.marble-page .ig-footer-hint{margin:8px 0 0}
+@media(max-width:1100px){.marble-layout{grid-template-columns:1fr}.marble-side{position:static}.marble-side>p,.marble-side .ig-tip,.marble-side .ig-side-note{display:none}.marble-mode-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}.marble-mode-row select{max-width:230px}.marble-levels{grid-template-columns:repeat(10,minmax(74px,1fr));overflow-x:auto;padding-bottom:4px}.marble-level{min-width:74px;justify-content:center;flex-direction:column;text-align:center;padding:7px}.marble-level .details strong{font-size:10px}.marble-level .details small{display:none}}
+@media(max-width:720px){.marble-side{padding:13px}.marble-side h2{font-size:18px}.marble-levels{grid-template-columns:repeat(10,76px)}.marble-heading{gap:8px}.marble-heading h1{font-size:24px}.marble-toolbar .ig-button{font-size:11px;padding:9px 10px}.marble-canvas-wrap canvas{aspect-ratio:600/820}.marble-board-header{padding:8px}.marble-chip{font-size:10px}.marble-powerups{width:100%;justify-content:center}.marble-zoom{width:100%;justify-content:center}.marble-underboard{padding:8px}.marble-live{font-size:11px}.marble-page .ig-footer-hint{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.marble-overlay{backdrop-filter:none}}

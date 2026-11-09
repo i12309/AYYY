@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fffefc"><title>Сортировка гаек · Остров игр AYYY</title>
+<link rel="stylesheet" href="../../assets/styles.css"><link rel="stylesheet" href="../../shared/game-base.css"><link rel="stylesheet" href="nuts.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head><body class="play-page">
+<div class="site-shell"><header class="site-header play-header">
+<a class="brand" href="../../index.html" aria-label="Игроланд, каталог"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a>
+<a class="back-link" href="../../index.html">← Все игры</a></header>
+<main class="ig-main">
+<aside class="ig-side">
+<div class="ig-kicker">СОБЕРИ ЦВЕТА</div><h2>Сортировка гаек</h2>
+<p>Перекладывай верхние гайки между болтами. На каждом болте должны остаться гайки одного цвета!</p>
+<div class="nuts-level-picker"><button id="previousLevel" class="ig-button" aria-label="Предыдущий уровень">‹</button><div><span>Уровень</span><strong id="levelNumber">1</strong></div><button id="nextLevel" class="ig-button" aria-label="Следующий уровень">›</button></div>
+<div class="nuts-progress"><span>Пройдено уровней</span><strong id="completedCount">0</strong></div>
+<div class="ig-tip"><strong>Как играть?</strong><p>Нажми на болт с гайками, потом на свободный болт или на болт с такой же верхней гайкой. На одном болте помещаются четыре гайки.</p></div>
+</aside>
+<section class="ig-panel nuts-panel" aria-labelledby="gameTitle">
+<div class="ig-heading"><div><div class="ig-kicker">ЛОГИЧЕСКАЯ ИГРА</div><h1 id="gameTitle">Разложи по цветам</h1><p>Выбери гайку и место, куда её переложить.</p></div><div class="ig-stats"><div class="ig-stat"><strong id="moveCount">0</strong><span>ходов</span></div><div class="ig-stat"><strong id="sortedCount">0</strong><span>собрано</span></div></div></div>
+<div class="ig-toolbar"><div class="ig-toolbar-group"><button id="undoButton" class="ig-button" type="button">↶ Отменить</button><button id="hintButton" class="ig-button" type="button">💡 Подсказка</button><button id="restartButton" class="ig-button" type="button">↻ Заново</button></div><button id="soundButton" class="ig-button" type="button" aria-pressed="false">♪ Звук</button></div>
+<div class="nuts-stage" id="nutsStage"><div class="nuts-board" id="nutsBoard" role="group" aria-label="Болты с гайками"></div>
+<div class="ig-success" id="successDialog" hidden><div class="ig-success-emoji">🏆</div><h2>Все гайки на месте!</h2><p id="successText">Молодец!</p><button type="button" class="ig-button primary" id="againButton">Следующий уровень →</button></div></div>
+<div class="ig-live" id="gameMessage" aria-live="polite">Нажми на гайку, затем на другой болт.</div>
+<p class="ig-footer-hint">Уровень и ходы сохраняются на этом устройстве. Игра работает без интернета.</p>
+</section></main></div>
+<script src="../../shared/platform.js"></script><script src="puzzles.js"></script><script src="logic.js"></script><script src="nuts.js"></script>
+</body></html>

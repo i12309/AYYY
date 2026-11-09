@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fffefc">
+<title>Распутай стрелки · Остров игр AYYY</title><link rel="stylesheet" href="../../assets/styles.css"><link rel="stylesheet" href="../../shared/game-base.css"><link rel="stylesheet" href="arrows.css">  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head>
+<body class="play-page"><div class="site-shell"><header class="site-header play-header">
+<a class="brand" href="../../index.html" aria-label="Игроланд, каталог"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a><a class="back-link" href="../../index.html">← Все игры</a></header>
+<main class="ig-main"><aside class="ig-side"><div class="ig-kicker">ОСВОБОДИ ДОРОГУ</div><h2>Распутай стрелки</h2><p>Нажимай на стрелки, которым ничего не мешает уехать с поля в направлении острия.</p>
+<div class="nuts-level-picker arrow-level-picker"><button id="previousLevel" class="ig-button" type="button" aria-label="Предыдущий уровень">‹</button><div><span>Уровень</span><strong id="levelNumber">1</strong></div><button id="nextLevel" class="ig-button" type="button" aria-label="Следующий уровень">›</button></div>
+<div class="ig-tip"><strong>Как играть?</strong><p>Стрелка улетит, если впереди на всём её пути нет других стрелок. Освобождай их по очереди. Три сердечка — три попытки!</p></div>
+<div class="ig-side-note">Поле можно двигать и увеличивать двумя пальцами.</div></aside>
+<section class="ig-panel arrow-panel"><div class="ig-heading"><div><div class="ig-kicker">ИГРА НА ВНИМАНИЕ</div><h1>Распутай стрелки</h1><p>Найди свободную стрелку и отпусти её.</p></div><div class="ig-stats"><div class="ig-stat"><strong id="remainingCount">0</strong><span>осталось</span></div><div class="ig-stat"><strong id="heartsCount">♥ ♥ ♥</strong><span>попытки</span></div></div></div>
+<div class="ig-toolbar"><div class="ig-toolbar-group"><button class="ig-button primary" type="button" id="newGame">↻ Заново</button><button class="ig-button" type="button" id="undoButton">↶ Отмена</button><button class="ig-button" type="button" id="hintButton">💡 Подсказка</button></div><div class="ig-toolbar-group"><button class="ig-button" type="button" id="zoomOut" aria-label="Уменьшить">−</button><span id="zoomLabel" class="zoom-label">100%</span><button class="ig-button" type="button" id="zoomIn" aria-label="Увеличить">+</button><button class="ig-button" type="button" id="zoomFit">По размеру</button></div></div>
+<div class="arrow-stage" id="arrowStage"><canvas id="arrowCanvas" aria-label="Цветные стрелки на игровом поле, коснитесь свободной стрелки" tabindex="0"></canvas>
+<div class="ig-success" id="successDialog" hidden><div class="ig-success-emoji" id="resultEmoji">✨</div><h2 id="resultTitle">Все стрелки свободны!</h2><p id="successText">Молодец!</p><button class="ig-button primary" type="button" id="againButton">Следующий уровень →</button></div></div>
+<div class="ig-live" id="gameMessage" aria-live="polite">Выбери свободную стрелку.</div>
+<div class="arrow-status"><span id="movesValue">0 ходов</span><span id="recordValue">0 уровней пройдено</span><button id="soundButton" class="ig-button" type="button" aria-pressed="false">♪ Звук</button></div>
+<p class="ig-footer-hint">Для планшета: одним пальцем выбирай стрелки, двумя — увеличивай и двигай поле. На компьютере можно использовать колёсико и перетаскивание мышью.</p>
+</section></main></div><script src="../../shared/platform.js"></script><script src="rules.js"></script><script src="arrows.js"></script></body></html>

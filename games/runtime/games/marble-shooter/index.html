@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fffefc">
+  <meta name="description" content="Шариковый лабиринт — детская игра: стреляй цветными шариками, собирай по три и освобождай дорожку. 10 уровней, для планшета.">
+  <title>Шариковый лабиринт · Остров игр AYYY</title>
+  <link rel="stylesheet" href="../../assets/styles.css">
+  <link rel="stylesheet" href="../../shared/game-base.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../shared/ayyy-theme.css">
+  <script src="../../shared/ayyy-bridge.js"></script>
+</head>
+<body class="play-page marble-page">
+  <div class="site-shell">
+    <header class="site-header play-header">
+      <a class="brand" href="../../index.html" aria-label="Игроланд, каталог"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>игроланд<span class="brand-dot">.</span></span></a>
+      <a class="back-link" href="../../index.html">← Все игры</a>
+    </header>
+    <main class="ig-main marble-layout">
+      <aside class="ig-side marble-side">
+        <div class="ig-kicker">ШАРИКИ И ЦЕПОЧКИ</div><h2>Шариковый лабиринт</h2>
+        <p>Стреляй шариками и собирай три или больше одного цвета. Не дай цепочке добраться до звёздочки!</p>
+        <div class="marble-mode-row"><label for="modeSelect">Режим игры</label>
+          <select id="modeSelect" aria-label="Сложность игры">
+            <option value="kid">Малыш · медленно</option><option value="normal">Обычный</option><option value="expert">Эксперт · быстро</option>
+          </select>
+        </div>
+        <div class="marble-levels" id="marbleLevels" aria-label="Десять уровней игры"></div>
+        <div class="ig-tip"><strong>Как играть?</strong><p>Нажми на дорожку, чтобы выстрелить. Три одинаковых шарика исчезают. Кнопка ⇄ меняет текущий и следующий шар. Помощь и отмена всегда под рукой.</p></div>
+        <div class="ig-side-note">Все достижения сохраняются на этом устройстве.</div>
+      </aside>
+      <section class="ig-panel marble-panel" aria-labelledby="marbleTitle">
+        <div class="ig-heading marble-heading">
+          <div><div class="ig-kicker">ПОПАДИ В ЦВЕТ · СОБЕРИ ТРИ</div><h1 id="marbleTitle">Первые шарики</h1><p id="marbleSubtitle">Нажимай пальчиком, чтобы стрелять.</p></div>
+          <div class="ig-stats"><div class="ig-stat"><strong id="scoreValue">0</strong><span>очки</span></div><div class="ig-stat"><strong id="ballValue">18</strong><span>шариков</span></div></div>
+        </div>
+        <div class="ig-toolbar marble-toolbar">
+          <div class="ig-toolbar-group"><button class="ig-button" id="swapButton" type="button">⇄ Поменять шар</button><button class="ig-button" id="hintButton" type="button">💡 Подсказка</button><button class="ig-button" id="undoButton" type="button">↶ Отмена</button></div>
+          <div class="ig-toolbar-group"><button class="ig-button" id="pauseButton" type="button">Ⅱ Пауза</button><button class="ig-button" id="retryButton" type="button">↻ Заново</button><button class="ig-button" id="soundButton" aria-pressed="false" type="button">♪ Звук</button></div>
+        </div>
+        <div class="marble-board-wrap">
+          <div class="marble-board-header"><span class="marble-chip"><span id="marbleNow" class="marble-chip-dot"></span> Сейчас</span><span class="marble-chip"><span id="marbleNext" class="marble-chip-dot"></span> Следующий</span><span class="marble-chip">⏱ <strong id="timeValue">00:00</strong></span></div>
+          <div class="marble-canvas-wrap" id="marbleCanvasWrap">
+            <canvas id="marbleCanvas" tabindex="0" aria-label="Игровое поле. Нажмите на точку, в которую хотите выстрелить; стрелки вращают пушку, пробел стреляет." role="img"></canvas>
+            <div class="marble-overlay" id="marbleOverlay" hidden role="dialog" aria-labelledby="overlayTitle" aria-modal="false">
+              <div class="marble-overlay-icon" id="overlayIcon">🏆</div><h2 id="overlayTitle">Получилось!</h2><p id="overlayText">Все шарики собраны!</p>
+              <button class="ig-button primary" id="overlayAction" type="button">Следующий уровень →</button>
+              <button class="ig-button" id="overlaySecondary" type="button">Заново</button>
+            </div>
+          </div>
+          <div class="marble-underboard">
+            <div class="marble-powerups" aria-label="Бонусы"><button class="ig-button marble-power" id="freezeButton" disabled type="button">❄️ Заморозка <b id="freezeCount">0</b></button><button class="ig-button marble-power" id="bombButton" disabled type="button">💥 Взрыв <b id="bombCount">0</b></button><button class="ig-button marble-power" id="reverseButton" disabled type="button">↶ Назад <b id="reverseCount">0</b></button></div>
+            <div class="marble-zoom"><button class="ig-button" id="zoomOut" type="button" aria-label="Уменьшить масштаб">−</button><button class="ig-button" id="fitButton" type="button">Весь путь</button><button class="ig-button" id="zoomIn" type="button" aria-label="Увеличить масштаб">+</button></div>
+          </div>
+        </div>
+        <div class="ig-live marble-live" id="marbleMessage" aria-live="polite" role="status">Собери три шарика одного цвета.</div>
+        <p class="ig-footer-hint">На планшете: нажми для выстрела, двумя пальцами — увеличить или сдвинуть поле. На компьютере: мышь, колёсико — масштаб, S — смена цвета, P — пауза, пробел — выстрел.</p>
+      </section>
+    </main>
+  </div>
+  <script src="../../shared/platform.js"></script>
+  <script src="levels.js"></script>
+  <script src="engine.js"></script>
+  <script src="renderer.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
