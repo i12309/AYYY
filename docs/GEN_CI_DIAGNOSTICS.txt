@@ -1,8 +1,8 @@
-GEDCOM diagnostics for 783fc591b8773878bd6df6f9978c1005b6350b71
+GEDCOM diagnostics for b6252fdc87963ae6d8ec1725ac03158104d31af6
 setup=0 compile=0 tests=1
 === npm ci ===
 
-added 157 packages, and audited 158 packages in 4s
+added 157 packages, and audited 158 packages in 3s
 
 81 packages are looking for funding
   run `npm fund` for details
@@ -40,13 +40,13 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 424ms[39m
+[32m✓ built in 394ms[39m
 === GEDCOM parity unit tests ===
 node:internal/modules/cjs/loader:1568
   throw err;
   ^
 
-Error: Cannot find module '../family-app/node_modules/esbuild'
+Error: Cannot find module '../family-app/node_modules/typescript'
 Require stack:
 - /home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs
     at Module._resolveFilename (node:internal/modules/cjs/loader:1564:15)
@@ -57,14 +57,14 @@ Require stack:
     at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
     at Module.require (node:internal/modules/cjs/loader:1674:12)
     at require (node:internal/modules/helpers:157:16)
-    at Object.<anonymous> (/home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs:5:19)
+    at Object.<anonymous> (/home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs:6:10)
     at Module._compile (node:internal/modules/cjs/loader:1929:14) {
   code: 'MODULE_NOT_FOUND',
   requireStack: [ '/home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs' ]
 }
 
 Node.js v24.22.2
-✖ tests/family-gedcom.test.cjs (33.226982ms)
+✖ tests/family-gedcom.test.cjs (32.855866ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 0
@@ -72,10 +72,10 @@ Node.js v24.22.2
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 39.586991
+ℹ duration_ms 40.755426
 
 ✖ failing tests:
 
 test at tests/family-gedcom.test.cjs:1:1
-✖ tests/family-gedcom.test.cjs (33.226982ms)
+✖ tests/family-gedcom.test.cjs (32.855866ms)
   'test failed'
