@@ -3,6 +3,7 @@
  * The token exists in memory only and is never persisted or logged.
  */
 import {type Document,validate,now} from './browserModel';
+import {exportGedcom} from './gedcomExport';
 import {
   getSync,setSync,listTrees,readTree,readFiles,installTreeSnapshot,type SyncRecord
 } from './browserStore';
@@ -126,6 +127,15 @@ export async function restoreFromGitHub(repo:RemoteRepo,slug:string):Promise<Doc
     }));
     files.push(...group);
   }
+  // Preserve the exact original GEDCOM bytes when this tree was imported.
+  const originalPath=path.replace(/tree\.json$/,'original.ged');
+  const originalRemote=await treeFile(repo,originalPath,head);
+  if(originalRemote?.sha) {
+    const bytes=await readBlob(repo,originalRemote.sha);
+    files.push({filename:'original.ged',blob:new Blob(
+      [bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer],
+      {type:'text/plain;charset=utf-8'})});
+  }
   await installTreeSnapshot(document,files);
   await setSync({treeId:document.tree.id,...repo,path,blobSha:file.sha,lastCommit:head,
     lastSync:now(),lastLocalSavedAt:document.tree.updated_at});
@@ -150,6 +160,9 @@ export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
   }
   if(!remote && link?.blobSha)throw new Error('Удалённое дерево исчезло. Синхронизация остановлена.');
   const media=await readFiles(treeId);
+  // Derived GEDCOM and immutable original are part of the same Git commit.
+  const gedcom=exportGedcom(document.persons,document.families,document.metadata);
+  const original=media.get('original.ged');
   const names=[...usedMedia(document).keys()];
   for(const name of names){
     if(!media.has(name))throw new Error('Не найден локальный медиафайл '+name+'. Синхронизация остановлена.');
@@ -158,9 +171,17 @@ export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
   const parentTree=commit.tree.sha;
   const data=new TextEncoder().encode(JSON.stringify(document,null,2)+'\n');
   const jsonBlob=await api(root(repo)+'/git/blobs','POST',{content:b64(data),encoding:'base64'});
+  const gedBlob=await api(root(repo)+'/git/blobs','POST',{content:b64(gedcom),encoding:'base64'});
   const entries:Array<{path:string;mode:string;type:string;sha:string}>=[
-    {path,mode:'100644',type:'blob',sha:jsonBlob.sha}
+    {path,mode:'100644',type:'blob',sha:jsonBlob.sha},
+    {path:path.replace(/tree\.json$/,'tree.ged'),mode:'100644',type:'blob',sha:gedBlob.sha}
   ];
+  if(original){
+    const bytes=new Uint8Array(await original.arrayBuffer());
+    const blob=await api(root(repo)+'/git/blobs','POST',{content:b64(bytes),encoding:'base64'});
+    entries.push({path:path.replace(/tree\.json$/,'original.ged'),
+      mode:'100644',type:'blob',sha:blob.sha});
+  }
   for(let i=0;i<names.length;i+=4) {
     const group=await Promise.all(names.slice(i,i+4).map(async name=>{
       const file=media.get(name)!;

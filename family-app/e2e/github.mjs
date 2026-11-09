@@ -36,15 +36,19 @@ async function mock(route) {
     return reply(remoteSlug?[{name:remoteSlug,type:'dir'}]:[],200);
   }
   if(path.startsWith('/repos/tester/family-archive/contents/family-data/trees/') && method==='GET'){
-    if(!payload)return reply({message:'not found'},404);
+    if(!payload || !path.endsWith('/tree.json'))return reply({message:'not found'},404);
     return reply({sha:'json-blob',name:'tree.json',type:'file'});
   }
   if(path==='/repos/tester/family-archive/git/blobs' && method==='POST'){
     writes++;
-    payload=body.content;
-    const document=JSON.parse(Buffer.from(payload,'base64').toString('utf8'));
-    remoteSlug=document.tree.slug;
-    return reply({sha:'json-blob'});
+    let document=null;
+    try { document=JSON.parse(Buffer.from(body.content,'base64').toString('utf8')); } catch {}
+    if(document?.tree?.id){
+      payload=body.content;
+      remoteSlug=document.tree.slug;
+      return reply({sha:'json-blob'});
+    }
+    return reply({sha:'gedcom-blob'});
   }
   if(path==='/repos/tester/family-archive/git/blobs/json-blob' && method==='GET'){
     return reply({encoding:'base64',content:payload});
@@ -55,6 +59,7 @@ async function mock(route) {
   if(path==='/repos/tester/family-archive/git/trees' && method==='POST'){
     writes++;
     assert.ok(body.tree.some(t=>t.path.endsWith('/tree.json')));
+    assert.ok(body.tree.some(t=>t.path.endsWith('/tree.ged')));
     return reply({sha:'tree-new'});
   }
   if(path==='/repos/tester/family-archive/git/commits' && method==='POST'){
