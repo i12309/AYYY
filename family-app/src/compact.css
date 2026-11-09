@@ -155,7 +155,7 @@ input,select,textarea{padding:8px 10px}
   .library-content{width:calc(100% - 28px);padding-top:24px}
   .library-top{padding-inline:14px}
   .ownership-card{flex-wrap:wrap}
-  .ownership-actions{width:100%;justify-content:flex-start;margin-left:53px}
+  .ownership-actions{width:calc(100% - 53px);justify-content:flex-start;margin-left:53px}
 }
 @media(max-width:610px){
   .family-brand{gap:8px}
@@ -166,7 +166,7 @@ input,select,textarea{padding:8px 10px}
   .tree-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))}
   .section-heading{flex-wrap:wrap;align-items:flex-start}
   .section-heading .actions{flex-wrap:wrap}
-  .ownership-actions{margin-left:0;flex-wrap:wrap}
+  .ownership-actions{width:100%;margin-left:0;flex-wrap:wrap}
   .header-tree{max-width:130px}
   .tree-name-button{max-width:128px;font-size:12px}
   .view-tabs{gap:0}
