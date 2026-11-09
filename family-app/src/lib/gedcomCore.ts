@@ -40,11 +40,12 @@ export function first(node: GedNode | null | undefined, tag: string): GedNode | 
 export function isXref(value: string): boolean { return /^@[^@\s]+@$/.test(value); }
 export function isTag(value: string): boolean { return /^[A-Z_][A-Z_0-9]*$/.test(value); }
 export function unescapeGed(value: string, version: string) {
-  return version.startsWith('7.') ? value.startsWith('@@') ? value.slice(1) : value
+  return version.startsWith('7.') ? (value.startsWith('@@') ? value.slice(1) : value)
     : value.replace(/@@/g,'@');
 }
 export function escapeGed(value: string, version: string) {
-  return version.startsWith('7.') ? value.startsWith('@') ? '@'+value : value.replace(/@/g,'@@');
+  return version.startsWith('7.') ? (value.startsWith('@') ? '@'+value : value)
+    : value.replace(/@/g,'@@');
 }
 export function gedText(node: GedNode | null | undefined, version: string): string {
   if(!node) return '';
