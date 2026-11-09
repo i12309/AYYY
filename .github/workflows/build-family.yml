@@ -46,9 +46,13 @@ jobs:
         run: node family-app/e2e/gedcom.mjs
       - name: Commit generated static files
         run: |
+          # A concurrent commit can require a rebase before publishing assets.
+          # Configure identity for both 'git commit' and 'git rebase'.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add family/ index.html
           if ! git diff --cached --quiet; then
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "build(portal): refresh index and GEN assets [skip ci]"
+            git commit -m "build(portal): refresh index and GEN assets [skip ci]"
             for attempt in 1 2 3; do
               git fetch origin "$GITHUB_REF_NAME"
               # Keep all concurrent edits; never force push, abort on conflicting paths.
