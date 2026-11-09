@@ -27,8 +27,8 @@ jobs:
         run: python3 src/build.py
       - name: Run portal and family unit checks
         run: |
-          # weather_proxy.test.cjs has a missing forecast.fixture.json already absent from main.
-          find tests -maxdepth 1 -name '*.test.cjs' ! -name 'weather_proxy.test.cjs' -print0 | xargs -0 node --test
+          node tests/model.test.cjs --fixture
+          find tests -maxdepth 1 -name '*.test.cjs' -print0 | xargs -0 node --test
       - name: Install Chromium for browser smoke
         run: |
           cd family-app
