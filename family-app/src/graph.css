@@ -1,0 +1,399 @@
+.family-graph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  background: var(--canvas);
+  --xy-edge-stroke-default: #bfcac6;
+  --xy-controls-box-shadow-default: 0 4px 18px #243a360a;
+  --xy-controls-button-background-color-default: #fff;
+  --xy-controls-button-background-color-hover-default: #f1f8f6;
+  --xy-controls-button-border-color-default: #eef2f0;
+  --xy-controls-button-color-default: #5d6f68;
+}
+
+.graph-connections {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  font-size: 12px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.family-graph .react-flow__node-person {
+  border: 0;
+  border-radius: 12px;
+}
+.family-graph .react-flow__node-person:focus-visible {
+  outline: 3px solid #4b9b85;
+  outline-offset: 4px;
+}
+.family-graph .react-flow__node-family {
+  z-index: 0 !important;
+}
+.family-graph .react-flow__edge-path {
+  transition: stroke 150ms;
+}
+.family-graph .react-flow__handle {
+  width: 4px;
+  min-width: 4px;
+  height: 4px;
+  min-height: 4px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.person-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 16px 15px 12px;
+  background: linear-gradient(135deg, var(--family-tint), #fffdfb 85%);
+  border: 1px solid var(--family-border);
+  border-radius: 12px;
+  color: #323d39;
+  box-shadow:
+    inset 3px 0 var(--family-color),
+    0 3px 9px #313b3705,
+    0 1px 2px #313b3703;
+  cursor: grab;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+.person-card:hover {
+  border-color: #568f80;
+  box-shadow: 0 5px 18px #426e6214;
+}
+.person-card:active {
+  cursor: grabbing;
+}
+.person-card.is-selected {
+  border-color: #236c63;
+  box-shadow:
+    inset 3px 0 var(--family-color),
+    0 0 0 2px #236c6322,
+    0 5px 18px #426e620a;
+}
+.person-card.is-central {
+  border-color: #60978b;
+}
+.person-central-badge {
+  position: absolute;
+  top: -11px;
+  left: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #236c63;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+}
+.person-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+}
+.person-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border: 1px solid #e4e8e7;
+  border-radius: 50%;
+  color: #557b91;
+  background: #e6eef2;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.person-card--f .person-portrait {
+  color: #a57462;
+  background: #f6e8df;
+  border-color: #ebd4c6;
+}
+.person-card--u .person-portrait,
+.person-card--x .person-portrait {
+  color: #687e78;
+  background: #eef4f2;
+  border-color: #e1ebe8;
+}
+.person-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.person-card-name {
+  flex: 1;
+  min-width: 0;
+  padding-right: 5px;
+}
+.person-card-name strong {
+  display: block;
+  margin-bottom: 2px;
+  overflow: hidden;
+  color: #313b37;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.person-card-name > span {
+  display: block;
+  min-height: 18px;
+  overflow: hidden;
+  color: #5f6e68;
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.person-card-menu {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 23px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: #9aa5a1;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+}
+.person-card:hover .person-card-menu,
+.person-card.is-selected .person-card-menu,
+.person-card-menu:focus-visible {
+  opacity: 1;
+}
+.person-card-menu:hover {
+  color: #236c63;
+  background: #eef7f5;
+}
+.person-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+.person-dates {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.person-detail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.person-detail svg {
+  flex: 0 0 12px;
+  opacity: 0.8;
+}
+.person-detail > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.family-junction {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.4px solid #c1cdc8;
+  border-radius: 50%;
+  color: #62847b;
+  background: #f3f5ef;
+}
+.family-junction.is-divorced {
+  color: #aeb6b3;
+  border-color: #cbd3d0;
+}
+.family-junction > span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #bfcac6;
+}
+
+.graph-count {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 20px !important;
+  color: #909c98;
+  font-size: 12px;
+  line-height: 24px;
+}
+.graph-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #afbdb8;
+}
+.graph-tools {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 17px 18px !important;
+  padding: 3px;
+  background: #fff;
+  border: 1px solid #e7ecea;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px #303a3604;
+}
+.graph-tools button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  color: #798782;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.graph-tools button:hover {
+  color: #4b9b85;
+  background: #f2f9f7;
+}
+.graph-tools button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.graph-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 19px 21px !important;
+  padding: 4px 7px;
+  color: #9faaa6;
+  background: #f3f5efe6;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 18px;
+}
+.graph-hint i {
+  font-style: normal;
+}
+.family-graph .react-flow__controls {
+  display: flex;
+  margin: 18px;
+  overflow: hidden;
+  border: 1px solid #e7ecea;
+  border-radius: 8px;
+}
+.family-graph .react-flow__controls-button {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  box-sizing: border-box;
+  border-bottom: 0;
+  border-right: 1px solid #eef2f0;
+}
+.family-graph .react-flow__controls-button:last-child {
+  border: 0;
+}
+.family-graph .react-flow__controls-button svg {
+  max-width: 14px;
+  max-height: 14px;
+}
+.graph-notice {
+  max-width: min(560px, calc(100% - 32px));
+  margin-bottom: 60px !important;
+  padding: 10px 14px;
+  border: 1px solid #edd9ae;
+  border-radius: 8px;
+  color: #92651c;
+  background: #fff9ed;
+  font-size: 13px;
+  box-shadow: 0 4px 12px #443c1510;
+}
+.graph-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  padding: 24px;
+  color: #5e877c;
+  background: #f3f5ef;
+  text-align: center;
+}
+.graph-empty h3 {
+  margin: 18px 0 8px;
+  color: #495a54;
+  font-size: 20px;
+  font-weight: 600;
+}
+.graph-empty p {
+  max-width: 340px;
+  margin: 0;
+  color: #9ba8a3;
+  font-size: 14px;
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .graph-tools {
+    margin: 12px !important;
+  }
+  .graph-tools button > span {
+    display: none;
+  }
+  .graph-count {
+    margin: 15px !important;
+  }
+  .graph-hint {
+    display: none;
+  }
+  .person-card-menu {
+    opacity: 1;
+  }
+}
+.person-card-compact {
+  padding: 12px 11px 8px;
+}
+.person-card-compact .person-card-identity {
+  min-height: 34px;
+  gap: 8px;
+}
+.person-card-compact .person-portrait {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+.person-card-compact .person-card-details {
+  margin-top: 6px;
+}

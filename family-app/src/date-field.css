@@ -1,0 +1,107 @@
+.date-field {
+  min-width: 0;
+}
+.date-input-row {
+  position: relative;
+  display: flex;
+}
+.date-field .date-input-row > input {
+  width: 100%;
+  padding-right: 44px;
+}
+.date-calendar-trigger {
+  position: absolute;
+  inset: 3px 3px 3px auto;
+  width: 36px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+}
+.date-calendar-trigger:hover,
+.date-calendar-trigger[aria-expanded='true'] {
+  background: var(--accent-soft);
+}
+.date-calendar {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 350px;
+  padding: 12px;
+  border: 1px solid #c6dacf;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px #243a3610;
+  font-weight: 400;
+}
+.date-calendar > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.date-calendar-navigation {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 70px 24px;
+  gap: 4px;
+  align-items: center;
+}
+.date-calendar-navigation .icon-button {
+  width: 24px;
+}
+.date-field .date-calendar-navigation select,
+.date-field .date-calendar-navigation input {
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.date-calendar-week,
+.date-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.date-calendar-week {
+  margin: 12px 0 6px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+.date-calendar-days button {
+  border: 0;
+  padding: 6px 0;
+  min-height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink);
+}
+.date-calendar-days button:hover {
+  background: var(--accent-soft);
+}
+.date-calendar-days button.is-selected {
+  background: var(--accent);
+  color: white;
+}
+.date-calendar > footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.date-calendar .text-button {
+  font-size: 11px;
+}
+.date-calendar-hint {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
