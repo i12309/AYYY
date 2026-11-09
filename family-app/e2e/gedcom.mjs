@@ -73,7 +73,13 @@ try{
   await page.reload();
   await frame.getByRole('button',{name:/Тема оформления: AYYY/}).waitFor();
   assert.equal(await frame.locator('html').getAttribute('data-gen-theme'),'ayyy');
-  console.log('PASS: Classic GEN / AYYY theme preference survives a reload.');
+  const switchGeometry=await frame.locator('.gen-theme-switch').evaluate(element=>{
+    const rect=element.getBoundingClientRect();
+    return {left:rect.left,right:rect.right,width:document.documentElement.clientWidth};
+  });
+  assert.ok(switchGeometry.left>=0 && switchGeometry.right<=switchGeometry.width,
+    'Theme switch must be completely visible inside the GEN window.');
+  console.log('PASS: Classic GEN / AYYY theme preference survives a reload and switch is visible.');
 
   assert.deepEqual(errors,[],'Unexpected JS errors');
   await context.close();

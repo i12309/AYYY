@@ -12,8 +12,11 @@ import {
 } from 'lucide-react';
 import type { TreeSummary } from '../types';
 import { personWord } from '../lib/format';
+import { ThemeSwitch, type GenTheme } from './ThemeSwitch';
 
 interface Props {
+  theme: GenTheme;
+  onToggleTheme: () => void;
   trees: TreeSummary[];
   loading: boolean;
   error: string;
@@ -29,6 +32,8 @@ interface Props {
 }
 
 export function TreeChooser({
+  theme,
+  onToggleTheme,
   trees,
   loading,
   error,
@@ -53,7 +58,10 @@ export function TreeChooser({
             Родословная<small>GEN</small>
           </span>
         </div>
-        <span className="quiet">Семейный архив</span>
+        <div className="library-top-tools">
+          <span className="quiet">Семейный архив</span>
+          <ThemeSwitch theme={theme} onToggle={onToggleTheme}/>
+        </div>
       </header>
       <main className="library-content">
         <div className="section-heading">

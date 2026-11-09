@@ -5,7 +5,6 @@ import {
   ArrowUp,
   EyeOff,
   Layers,
-  Palette,
   ChevronDown,
   ChevronLeft,
   Crosshair,
@@ -47,6 +46,7 @@ import { PeopleTable } from './components/PeopleTable';
 import { GlobalPersonSearch } from './components/GlobalPersonSearch';
 import { Dialog } from './components/Dialog';
 import { BackupControl } from './components/BackupControl';
+import { ThemeSwitch } from './components/ThemeSwitch';
 import { GitHubImportDialog } from './components/GitHubImportDialog';
 
 const FamilyGraph = lazy(() =>
@@ -114,6 +114,7 @@ export default function App() {
     try {localStorage.setItem('gen:theme',theme);}
     catch {/* Theme preferences are optional. */}
   },[theme]);
+  const toggleTheme = useCallback(() => setTheme(current=>current==='classic'?'ayyy':'classic'),[]);
   const [treeId, setTreeId] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('tree'),
   );
@@ -473,18 +474,10 @@ export default function App() {
 
   return (
     <>
-      <button
-        className="gen-theme-toggle"
-        type="button"
-        title="Переключить тему оформления семейного дерева"
-        aria-label={`Тема оформления: ${theme==='classic'?'Classic GEN':'AYYY'}. Переключить`}
-        onClick={() => setTheme(current=>current==='classic'?'ayyy':'classic')}
-      >
-        <Palette size={16} />
-        <span>{theme==='classic'?'Classic GEN':'AYYY'}</span>
-      </button>
       {!treeId ? (
         <TreeChooser
+          theme={theme}
+          onToggleTheme={toggleTheme}
           trees={trees}
           loading={treesLoading}
           error={treesError}
@@ -530,6 +523,7 @@ export default function App() {
               onQuery={handleSearchQuery}
             />
             <div className="header-actions">
+              <ThemeSwitch theme={theme} onToggle={toggleTheme}/>
               {data && (
                 <BackupControl
                   tree={data.tree}
