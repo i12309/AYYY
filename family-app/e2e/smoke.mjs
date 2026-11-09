@@ -26,6 +26,9 @@ try {
   const frame=page.frameLocator('iframe#ayyy-family-frame');
   await frame.getByRole('heading',{name:'Семейные деревья'}).waitFor({timeout:15000});
   console.log('PASS: Family route opens inside AYYY.');
+  const headerHeight=await frame.locator('.library-top').evaluate(element=>element.getBoundingClientRect().height);
+  assert.ok(headerHeight<=66,'Library header should be compact (actual: '+headerHeight+'px)');
+  await frame.getByRole('heading',{name:'Семейный архив принадлежит вам'}).waitFor();
   await frame.getByRole('link',{name:'AYYY, главная портала'}).waitFor();
   assert.equal(await frame.locator('#back-ayyy').count(),0);
   const helpLink=frame.getByRole('link',{name:'Как это работает'}).first();
@@ -39,6 +42,13 @@ try {
 
   await frame.getByRole('button',{name:'Открыть пример'}).click();
   await frame.getByRole('button',{name:'Таблица',exact:true}).waitFor({timeout:15000});
+  const editorHeader=await frame.locator('.app-header').evaluate(element=>element.getBoundingClientRect().height);
+  assert.ok(editorHeader<=64,'Editor header should be compact (actual: '+editorHeader+'px)');
+  const card=frame.locator('.react-flow__node-person').first();
+  await card.waitFor({timeout:15000});
+  const cardWidth=await card.evaluate(element=>parseFloat(getComputedStyle(element).width));
+  assert.ok(cardWidth<=205,'React Flow card must use compact width (actual: '+cardWidth+'px)');
+  console.log('PASS: Compact library, editor and genealogy card geometry.');
   await frame.getByRole('button',{name:'Таблица',exact:true}).click();
   await frame.locator('.people-table tbody tr').first().waitFor();
   assert.equal(await frame.locator('.people-table tbody tr').count(),6);
