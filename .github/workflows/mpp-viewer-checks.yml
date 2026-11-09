@@ -1,0 +1,47 @@
+name: AYYY Project Viewer checks
+
+on:
+  push:
+    branches: [main, feat/mpp-project-viewer]
+    paths:
+      - 'mpp/**'
+      - 'src/mpp-route.js'
+      - 'src/core.js'
+      - 'src/build.py'
+      - 'src/template.html'
+      - 'index.html'
+      - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_build_test.py'
+      - 'tests/fixtures/ayyy-project-sample.xml'
+      - '.github/workflows/mpp-viewer-checks.yml'
+  pull_request:
+    paths:
+      - 'mpp/**'
+      - 'src/mpp-route.js'
+      - 'src/core.js'
+      - 'src/build.py'
+      - 'src/template.html'
+      - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_build_test.py'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check module syntax
+        run: |
+          node --check mpp/model.mjs
+          node --check mpp/viewer.mjs
+          node --check src/mpp-route.js
+      - name: Test model and browser reader
+        run: node --test tests/mpp_model.test.mjs
+      - name: Test static GitHub Pages bundle
+        run: python tests/mpp_build_test.py
