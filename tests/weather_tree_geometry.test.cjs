@@ -57,14 +57,27 @@ const fixtures = [
 ];
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('tree geometry matches v5 at each breakpoint, including embedded and scrolled apps', () => {
-  for (const fixture of fixtures) {
+test('tablet and desktop tree geometry matches v5, including embedded and scrolled apps', () => {
+  for (const fixture of fixtures.filter(({ width }) => width > 700)) {
     const expected = plain(makeScene(scripts[2], fixture).scene.geometry());
     for (const offset of [{ x: 0, y: 0, scroll: 0 }, { x: 80, y: 140, scroll: 245 }]) {
       const { uiScale, ...actual } = plain(makeScene(renderer, fixture, offset).scene.geometry());
       assert.equal(uiScale, 1, 'unscaled geometry metadata');
       assert.deepEqual(actual, expected, `${fixture.width}px, offset ${JSON.stringify(offset)}`);
     }
+  }
+});
+
+test('compact phone tree keeps the full crown and roots inside the scene', () => {
+  for (const fixture of [
+    { width: 320, height: 568, anchors: { '.center-spacer': [13, 265, 294, 236], '.scene-controls': [13, 50, 294, 100], '.hourly': [13, 1000, 294, 150] } },
+    { width: 390, height: 844, anchors: { '.center-spacer': [17, 275, 356, 499], '.scene-controls': [17, 50, 356, 100], '.hourly': [17, 1200, 356, 150] } }
+  ]) {
+    const g = makeScene(renderer, fixture).scene.geometry(), stage = fixture.anchors['.center-spacer'];
+    assert.ok(g.rootX - 226*g.scale >= 10, 'left crown is clipped');
+    assert.ok(g.rootX + 274*g.scale <= fixture.width - 10, 'right crown is clipped');
+    assert.ok(g.baseY - 368*g.scale >= stage[1] - 1, 'top is outside stage');
+    assert.ok(g.baseY + 12*g.scale <= stage[1] + stage[3] + 1, 'roots are outside stage');
   }
 });
 

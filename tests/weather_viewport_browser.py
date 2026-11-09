@@ -206,7 +206,23 @@ def check_small_scroll(page, label):
     set_scene_settings(page, False)
     settle(page)
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), (label, 'small-screen horizontal overflow')
-    assert page.evaluate('document.documentElement.scrollHeight > innerHeight'), (label, 'small-screen content was clipped instead of scrollable')
+    toggle = page.locator('.ww-mobile-details-toggle')
+    if toggle.is_visible():
+        assert toggle.get_attribute('aria-expanded') == 'false', (label, 'phone should begin with compact weather glance')
+        assert page.locator('#ww-period').is_hidden() and page.locator('#ww-hourly').is_hidden(), (label, 'phone forecast must start collapsed')
+        assert page.locator('.ww-current-main').is_visible(), (label, 'important live reading is missing')
+        if page.locator('.ww-app').get_attribute('data-scene-theme') == 'tree':
+            geometry = page.evaluate("""() => {
+              const g = window.__tree?.g, stage = document.querySelector('.ww-center')?.getBoundingClientRect();
+              return g && stage && {top:g.baseY-368*g.scale, bottom:g.baseY+12*g.scale,
+                left:g.rootX-226*g.scale, right:g.rootX+274*g.scale, stageTop:stage.top, stageBottom:stage.bottom};
+            }""")
+            assert geometry and geometry['top'] >= geometry['stageTop']-1 and geometry['bottom'] <= geometry['stageBottom']+1, (label, 'tree clipped vertically', geometry)
+            assert geometry['left'] >= -1 and geometry['right'] <= page.viewport_size['width']+1, (label, 'tree clipped horizontally', geometry)
+        toggle.click()
+        assert toggle.get_attribute('aria-expanded') == 'true', (label, 'details did not expand')
+        assert page.locator('#ww-period').is_visible() and page.locator('#ww-hourly').is_visible(), (label, 'detailed forecast missing')
+    assert page.evaluate('document.documentElement.scrollHeight > innerHeight'), (label, 'expanded phone content was clipped instead of scrollable')
     assert page.locator('.ww-app').get_attribute('data-viewport-fit') == 'scroll', (label, 'desktop fit remained active')
     assert page.locator('.ww-app').evaluate("e => (Number(e.style.getPropertyValue('--ww-ui-scale')) || 1) === 1"), (label, 'small screen retained desktop scale')
 

@@ -319,11 +319,18 @@ class Scene{
   const spacer=bounds(this.layout.querySelector('.ww-center')),controls=bounds(this.layout.querySelector('.ww-scene-anchor')),hourly=bounds(this.layout.querySelector('.ww-hourly'));
   const frame=this.layout.querySelector('.ww-viewport'),page=bounds(this.layout.querySelector('.ww-page'));
   const uiScale=parseFloat(this.layout.style.getPropertyValue('--ww-ui-scale'))||1;
-  const w=this.host.clientWidth,small=(frame?.clientWidth||w/uiScale)<=1100;
-  const top=small?spacer.y+4*uiScale:Math.max(controls.bottom+12*uiScale,spacer.y+30*uiScale);
-  const baseY=small?spacer.bottom-70*uiScale:hourly.y-81*uiScale;
-  const scale=Math.max(.38*uiScale,Math.min((baseY-top)/368,(small?w-30*uiScale:spacer.w+92*uiScale)/500,1.28*uiScale));
-  return {w,h:Math.max(window.innerHeight,page.bottom),rootX:small?w*.5:spacer.x+spacer.w*.48,baseY,scale,artBottom:small?baseY+100*scale:Math.min(hourly.y+40*uiScale,baseY+145*(w/1672)),skyBottom:baseY+50*uiScale,small,uiScale};
+  const w=this.host.clientWidth,frameWidth=frame?.clientWidth||w/uiScale,small=frameWidth<=1100;
+  const compact=frameWidth<=700;
+  const top=small?spacer.y+(compact?6:4)*uiScale:Math.max(controls.bottom+12*uiScale,spacer.y+30*uiScale);
+  const lower=small?spacer.bottom-(compact?18:70)*uiScale:hourly.y-81*uiScale;
+  // A compact stage uses the actual asymmetrical tree bounds, not the
+  // hourly forecast (which is collapsed below the fold on phones).
+  const horizontal=compact?(w*.5-12*uiScale)/274:(small?w-30*uiScale:spacer.w+92*uiScale)/500;
+  const scale=Math.max((compact?.20:.38)*uiScale,Math.min((lower-top)/368,horizontal,1.28*uiScale));
+  const baseY=compact?spacer.y+(spacer.h+368*scale)/2:lower;
+  const artBottom=compact?Math.min(spacer.bottom-4*uiScale,baseY+100*scale)
+    :small?baseY+100*scale:Math.min(hourly.y+40*uiScale,baseY+145*(w/1672));
+  return {w,h:Math.max(window.innerHeight,page.bottom),rootX:small?w*.5:spacer.x+spacer.w*.48,baseY,scale,artBottom,skyBottom:baseY+50*uiScale,small,uiScale};
  }
  resize(){
   if(!this.alive)return;const g=this.geometry();this.g=g;this.w=g.w;this.h=g.h;this.host.style.height=g.h+'px';const d=Math.min(devicePixelRatio||1,2,Math.sqrt((3840*2160)/(g.w*g.h)));this.dpr=d;
