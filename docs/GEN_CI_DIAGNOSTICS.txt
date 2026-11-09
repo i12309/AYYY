@@ -1,5 +1,5 @@
-GEDCOM diagnostics for b6252fdc87963ae6d8ec1725ac03158104d31af6
-setup=0 compile=0 tests=1
+GEDCOM diagnostics for 928ed7db9300fef8f2e088a4c542ed9d0c1c8215
+setup=0 compile=0 tests=0
 === npm ci ===
 
 added 157 packages, and audited 158 packages in 3s
@@ -40,42 +40,31 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 394ms[39m
+[32m✓ built in 235ms[39m
 === GEDCOM parity unit tests ===
-node:internal/modules/cjs/loader:1568
-  throw err;
-  ^
-
-Error: Cannot find module '../family-app/node_modules/typescript'
-Require stack:
-- /home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs
-    at Module._resolveFilename (node:internal/modules/cjs/loader:1564:15)
-    at wrapResolveFilename (node:internal/modules/cjs/loader:1118:27)
-    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1142:10)
-    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1169:12)
-    at Module._load (node:internal/modules/cjs/loader:1341:5)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
-    at Module.require (node:internal/modules/cjs/loader:1674:12)
-    at require (node:internal/modules/helpers:157:16)
-    at Object.<anonymous> (/home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs:6:10)
-    at Module._compile (node:internal/modules/cjs/loader:1929:14) {
-  code: 'MODULE_NOT_FOUND',
-  requireStack: [ '/home/runner/work/AYYY/AYYY/tests/family-gedcom.test.cjs' ]
-}
-
-Node.js v24.22.2
-✖ tests/family-gedcom.test.cjs (32.855866ms)
-ℹ tests 1
+✔ 551: spouses, children, pedigree, unknown records survive round-trip (7.124551ms)
+✔ editing primary NAME retains alternate names, citations, unmodeled properties (1.216379ms)
+✔ Cyrillic notes, literal at-signs, CONT/CONC and long wrapping (7.117001ms)
+✔ shared NOTE remains unchanged when one person edits biography (0.686059ms)
+✔ GEDCOM 7: SNOTE, sex X and application extension (0.460988ms)
+✔ 551 encodes extended sex X using SEX U and _GEN_SEX (0.428785ms)
+✔ reciprocal links are repaired but unresolved person is not invented (0.424909ms)
+✔ UTF-16LE BOM and explicit Windows-1251 import (0.733753ms)
+✔ malformed hierarchy, duplicate xref and unsupported version rejected (0.2842ms)
+✔ GED media object reference retained; binary is not fabricated (0.371738ms)
+✔ edit name and maiden name preserves NPFX, SPFX, NSFX and custom nodes (0.879278ms)
+✔ multiple marriages and adoptive families stay separate (0.999979ms)
+✔ removing an adopted child removes both family pointers but retains unrelated records (0.566569ms)
+✔ GEDCOM 7 leading @ escaping is preserved and no CONC is introduced (0.737597ms)
+✔ qualified dates remain verbatim across GEDCOM round-trips (1.901376ms)
+✔ legacy UTF-8 split over successive CONC lines is repaired, raw nodes retained (1.804296ms)
+✔ ANSEL and malformed data are rejected without silent replacement (0.2836ms)
+✔ generated media references use portable paths, not temporary blob URLs (0.523471ms)
+ℹ tests 18
 ℹ suites 0
-ℹ pass 0
-ℹ fail 1
+ℹ pass 18
+ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 40.755426
-
-✖ failing tests:
-
-test at tests/family-gedcom.test.cjs:1:1
-✖ tests/family-gedcom.test.cjs (32.855866ms)
-  'test failed'
+ℹ duration_ms 113.503074
