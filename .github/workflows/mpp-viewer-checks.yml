@@ -11,6 +11,7 @@ on:
       - 'src/template.html'
       - 'index.html'
       - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_binary_compat.test.mjs'
       - 'tests/mpp_browser_smoke.mjs'
       - 'tests/mpp_build_test.py'
       - 'tests/fixtures/ayyy-project-sample.xml'
@@ -23,6 +24,7 @@ on:
       - 'src/build.py'
       - 'src/template.html'
       - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_binary_compat.test.mjs'
       - 'tests/mpp_browser_smoke.mjs'
       - 'tests/mpp_build_test.py'
 
@@ -45,6 +47,13 @@ jobs:
           node --check src/mpp-route.js
       - name: Test model and browser reader
         run: node --test tests/mpp_model.test.mjs
+      - name: Test binary MPP8 / MPP9 / MPP14 files
+        run: |
+          mkdir -p /tmp/ayyy-mpp-samples
+          for file in mpp8recurring.mpp mpp9relations.mpp mpp14resource.mpp; do
+            curl --fail --location --silent --show-error "https://raw.githubusercontent.com/mja1337/ms-project-viewer/1153939f746578ef990721c64229bdc6bf782452/test-files/mpxj/$file" -o "/tmp/ayyy-mpp-samples/$file"
+          done
+          MPP_FIXTURES_DIR=/tmp/ayyy-mpp-samples node --test tests/mpp_binary_compat.test.mjs
       - name: Test static GitHub Pages bundle
         run: python tests/mpp_build_test.py
       - name: Test viewer in Chrome
