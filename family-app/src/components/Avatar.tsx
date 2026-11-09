@@ -8,7 +8,7 @@ export function Avatar({ person, large = false }: { person: Person; large?: bool
       {initials(person)}
       {person.photo_url && (
         <img
-          src={`${appUrl(person.photo_url)}${person.photo_url.includes('?') ? '&' : '?'}v=${person.revision}`}
+          src={person.photo_url.startsWith('blob:') ? person.photo_url : `${appUrl(person.photo_url)}${person.photo_url.includes('?') ? '&' : '?'}v=${person.revision}`}
           alt=""
           loading="lazy"
           onError={(event) => {

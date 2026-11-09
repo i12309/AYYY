@@ -77,6 +77,7 @@ function editable(person: Person): PersonWrite {
 }
 
 function photoSource(url: string, revision: number): string {
+  if (url.startsWith('blob:')) return url;
   return `${appUrl(url)}${url.includes('?') ? '&' : '?'}v=${revision}`;
 }
 

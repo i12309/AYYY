@@ -521,12 +521,10 @@ export default function App() {
                   <ChevronDown size={14} />
                 </summary>
                 <div>
-                  <a href={appUrl(`/api/trees/${treeId}/export.ged`)} download>
+                  <button type="button" disabled title="GEDCOM-экспорт переносится из Python">
                     <FileText size={17} />
-                    <span>
-                      GEDCOM (.ged)<small>Для генеалогических программ</small>
-                    </span>
-                  </a>
+                    <span>GEDCOM (.ged)<small>Будет добавлен на следующем этапе</small></span>
+                  </button>
                   <a href={appUrl(`/api/trees/${treeId}/tree.json`)} download>
                     <FileJson size={17} />
                     <span>

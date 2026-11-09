@@ -224,7 +224,7 @@ export async function browserRequest(path: string, options: RequestInit = {}): P
           files.put({key:treeId+'/'+filename,blob:file});
           p._gallery ||= [];
           p._gallery.push({id:mediaId,filename,mime_type:file.type,
-            caption:String(options.body!.get('caption')||''),date:'',place:'',description:''});
+            caption:String((options.body as FormData).get('caption')||''),date:'',place:'',description:''});
           p.revision++;p.updated_at=now();
         });
         return publicPerson(treeId,personId);

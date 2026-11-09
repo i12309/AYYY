@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 
+// The AYYY parent is static: the React app is built to /family/.
 export default defineConfig({
-  plugins: [react()],
-  server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
-  build: { target: 'es2022' },
+  base:'./',
+  plugins:[react()],
+  build:{target:'es2022',outDir:'../family',emptyOutDir:true}
 });

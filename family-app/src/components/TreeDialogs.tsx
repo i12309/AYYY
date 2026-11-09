@@ -107,13 +107,12 @@ export function ImportDialog({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
-  const [encoding, setEncoding] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!file) {
-      setError('Выберите файл GEDCOM');
+      setError('Выберите документ GEN в формате JSON');
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
@@ -123,7 +122,6 @@ export function ImportDialog({
     const body = new FormData();
     body.append('file', file);
     if (name.trim()) body.append('name', name.trim());
-    if (encoding) body.append('encoding', encoding);
     setBusy(true);
     setError('');
     try {
@@ -139,27 +137,27 @@ export function ImportDialog({
     }
   }
   const close = useUnsavedGuard(
-    Boolean(file || name || encoding),
+    Boolean(file || name),
     busy,
     onClose,
     onNavigationGuard,
   );
   return (
-    <Dialog title="Импорт GEDCOM" onClose={close}>
+    <Dialog title="Импорт JSON из GEN" onClose={close}>
       <form className="dialog-form" onSubmit={submit}>
         <p className="form-description">
-          Загрузите .ged из MyHeritage или другой программы. Для него будет создано отдельное
-          дерево.
+          Загрузите tree.json из GEN. Данные людей, семей и неизвестные поля GEDCOM
+          сохраняются без преобразования. Импорт исходных .ged будет добавлен позднее.
         </p>
         <label className={`file-drop ${file ? 'has-file' : ''}`}>
           <FileUp size={30} />
-          <strong>{file ? file.name : 'Выбрать файл .ged'}</strong>
+          <strong>{file ? file.name : 'Выбрать tree.json'}</strong>
           <span>
-            {file ? `${(file.size / 1024).toFixed(0)} КБ` : 'GEDCOM 5.5.1 или 7 · до 25 МБ'}
+            {file ? `${(file.size / 1024).toFixed(0)} КБ` : 'JSON GEN · до 25 МБ'}
           </span>
           <input
             type="file"
-            accept=".ged,.gedcom,text/plain"
+            accept=".json,application/json"
             onChange={(event) => setFile(event.target.files?.[0] || null)}
             disabled={busy}
             aria-label="Файл GEDCOM"
@@ -173,16 +171,9 @@ export function ImportDialog({
             placeholder={file?.name.replace(/\.[^.]+$/, '') || 'Название файла по умолчанию'}
           />
         </label>
-        <label className="field">
-          Кодировка
-          <select value={encoding} onChange={(event) => setEncoding(event.target.value)}>
-            <option value="">Определить по файлу</option>
-            <option value="utf-8">UTF-8</option>
-            <option value="cp1251">Windows-1251 — старые русскоязычные файлы</option>
-          </select>
-        </label>
+
         <p className="field-hint">
-          Файл .ged содержит ссылки на фотографии. Сами фотографии можно добавить в карточках людей.
+          При импорте одного JSON фотографии не входят в документ. Для полной копии используйте ZIP или личный GitHub.
         </p>
         {error && (
           <div className="error-banner" role="alert">
