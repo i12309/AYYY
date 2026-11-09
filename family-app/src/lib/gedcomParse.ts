@@ -1,7 +1,7 @@
 /** Import GEDCOM 5.5.1 / 7.x in the browser without dropping unmodeled records. */
 import {
   GedcomError, type GedNode, type GedParseResult, EVENT_TAGS, PERSON_FIELDS, PEDIGREES,
-  gedNode, children, first, gedText, gedValue, warning, noteText, nameParts, cloneGed, isXref
+  gedNode, children, first, gedText, gedValue, warning, noteText, nameParts, cloneGed
 } from './gedcomCore';
 
 const LINE=/^(0|[1-9]\d*) (?:(@[^@\s]+@) )?([A-Za-z_][A-Za-z_0-9]*)(?: (.*))?$/;
@@ -240,7 +240,7 @@ function parseFamilies(records:GedNode[],persons:Record<string,any>[],version:st
     for(const link of children(record,'CHIL')){
       const child=personId(link);
       if(child&&!new Set([f.partner1_id,f.partner2_id]).has(child)&&!f.children.some((c:any)=>c.person_id===child)){
-        f.children.push({person_id:child,pedigree:pedigree(people.get(link.value)._raw.node,record.xref||'',version)});
+        f.children.push({person_id:child,pedigree:pedigree(people.get(link.value)!._raw.node,record.xref||'',version)});
       }else if(child)warning(warnings,'DUPLICATE_MEMBER','Повторное членство сохранено в исходной структуре.',link);
     }
     const bindings:Record<string,number>={};
