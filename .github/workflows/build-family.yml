@@ -23,8 +23,10 @@ jobs:
         run: |
           npm ci --prefix family-app
           npm run build --prefix family-app
-      - name: Run family unit checks
-        run: node --test tests/family-*.test.cjs
+      - name: Rebuild AYYY portal index
+        run: python3 src/build.py
+      - name: Run portal and family unit checks
+        run: node --test tests/*.test.cjs
       - name: Install Chromium for browser smoke
         run: |
           cd family-app
@@ -35,8 +37,8 @@ jobs:
         run: node family-app/e2e/github.mjs
       - name: Commit generated static files
         run: |
-          git add family/
+          git add family/ index.html
           if ! git diff --cached --quiet; then
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "build(family): publish static GEN assets [skip ci]"
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "build(portal): refresh index and GEN assets [skip ci]"
             git push
           fi
