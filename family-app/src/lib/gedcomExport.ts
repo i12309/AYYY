@@ -277,15 +277,15 @@ function emit(n:GedNode,level:number,version:string,lines:string[],continuation=
         if(!part)throw new GedcomError('Недостаточно места в строке GEDCOM 5.5.1.');
         // Do not split escaped @@ in half: two @ encode one literal @.
         if(part.endsWith('@')&&char==='@'&&part.length>1){
-          part=part.slice(0,-1);i--; // The remaining @ will be retried after moving the pair.
-          // Emit prefix up to pair, then restart with the pair on CONC.
+          // Carry the leading @ of an escaped @@ pair to the next segment.
+          lines.push(segmentPrefix+part.slice(0,-1));
+          segmentPrefix=(continuation?level:level+1)+' CONC ';
+          part='@';
+        }else{
           lines.push(segmentPrefix+part);
           segmentPrefix=(continuation?level:level+1)+' CONC ';
-          part='';continue;
+          part='';
         }
-        lines.push(segmentPrefix+part);
-        segmentPrefix=(continuation?level:level+1)+' CONC ';
-        part='';
       }
       part+=char;
     }
