@@ -25,6 +25,12 @@ jobs:
           npm run build --prefix family-app
       - name: Run family unit checks
         run: node --test tests/family-*.test.cjs
+      - name: Install Chromium for browser smoke
+        run: |
+          cd family-app
+          npx playwright install --with-deps chromium
+      - name: Verify GEN in AYYY browser
+        run: node family-app/e2e/smoke.mjs
       - name: Commit generated static files
         run: |
           git add family/
