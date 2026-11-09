@@ -28,7 +28,7 @@ jobs:
       - name: Run portal and family unit checks
         run: |
           node tests/model.test.cjs --fixture
-          find tests -maxdepth 1 -name '*.test.cjs' -print0 | xargs -0 node --test
+          find tests -maxdepth 1 -name '*.test.cjs' -print0 | xargs -0 node --experimental-strip-types --test
       - name: Install Chromium for browser smoke
         run: |
           cd family-app

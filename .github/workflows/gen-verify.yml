@@ -32,7 +32,7 @@ jobs:
             echo "Setup failed" > /tmp/gen-compile.log
           fi
           if [ "$compile_code" = 0 ]; then
-            node --test tests/family-gedcom.test.cjs > /tmp/gen-tests.log 2>&1
+            node --experimental-strip-types --test tests/family-gedcom.test.cjs > /tmp/gen-tests.log 2>&1
             tests_code=$?
           else
             tests_code=100

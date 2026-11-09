@@ -3,7 +3,7 @@ import {
   GedcomError, type GedNode, gedNode, first, children, gedText, gedValue,
   nameParts, cloneGed, baselineChanged, namedBindings, setGedText, setGedChild,
   EVENT_TAGS, PEDIGREES, isTag, isXref
-} from './gedcomCore';
+} from './gedcomCore.ts';
 
 function removeChild(parent:GedNode,node:GedNode|undefined) {
   if(!node)return;

@@ -2,7 +2,7 @@
 import {
   GedcomError, type GedNode, type GedParseResult, EVENT_TAGS, PERSON_FIELDS, PEDIGREES,
   gedNode, children, first, gedText, gedValue, warning, noteText, nameParts, cloneGed
-} from './gedcomCore';
+} from './gedcomCore.ts';
 
 const LINE=/^(0|[1-9]\d*) (?:(@[^@\s]+@) )?([A-Za-z_][A-Za-z_0-9]*)(?: (.*))?$/;
 const ascii=new TextDecoder('iso-8859-1');

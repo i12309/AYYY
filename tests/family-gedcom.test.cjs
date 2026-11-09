@@ -2,31 +2,10 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const path=require('node:path');
-const fs=require('node:fs');
-const ts=require('../family-app/node_modules/typescript');
-// Vite 8 no longer pulls in esbuild. Use the project's own TypeScript
-// compiler and a small local CommonJS resolver for the test modules.
-const loaded=new Map();
-function compile(filename){
-  const full=path.resolve(__dirname,'../family-app/src/lib',filename);
-  if(loaded.has(full))return loaded.get(full);
-  const source=fs.readFileSync(full,'utf8');
-  const output=ts.transpileModule(source,{fileName:full,compilerOptions:{
-    module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
-    esModuleInterop:true
-  }}).outputText;
-  const mod={exports:{}};
-  loaded.set(full,mod.exports);
-  const localRequire=(name)=>{
-    if(!name.startsWith('.'))return require(name);
-    return compile(path.resolve(path.dirname(full),name+(path.extname(name)?'':'.ts')));
-  };
-  new Function('require','module','exports',output)(localRequire,mod,mod.exports);
-  loaded.set(full,mod.exports);
-  return mod.exports;
-}
-const {parseGedcom}=compile('gedcomParse.ts');
-const {exportGedcom}=compile('gedcomExport.ts');
+// Node 24 supports native type stripping. Tests import the exact TS modules
+// used in the browser without depending on esbuild or a test-only transpiler.
+const {parseGedcom}=require('../family-app/src/lib/gedcomParse.ts');
+const {exportGedcom}=require('../family-app/src/lib/gedcomExport.ts');
 const encoder=new TextEncoder(),decoder=new TextDecoder();
 function input(body,version='5.5.1'){
   const head=['0 HEAD','1 SOUR GEN-TEST','1 GEDC','2 VERS '+version,
