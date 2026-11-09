@@ -61,4 +61,4 @@ jobs:
           npm install --no-save --no-package-lock playwright-core@1.56.1
           python -m http.server 8765 --bind 127.0.0.1 > /tmp/ayyy-mpp-http.log 2>&1 &
           sleep 2
-          CHROME_PATH="$(command -v google-chrome)" node tests/mpp_browser_smoke.mjs
+          CHROME_PATH="$(command -v google-chrome)" MPP_FIXTURES_DIR=/tmp/ayyy-mpp-samples node tests/mpp_browser_smoke.mjs
