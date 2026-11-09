@@ -37,6 +37,8 @@ jobs:
         run: node family-app/e2e/smoke.mjs
       - name: Verify private GitHub sync and cross-device restore
         run: node family-app/e2e/github.mjs
+      - name: Verify GEDCOM 5.5.1/7 and two browser themes
+        run: node family-app/e2e/gedcom.mjs
       - name: Commit generated static files
         run: |
           git add family/ index.html
