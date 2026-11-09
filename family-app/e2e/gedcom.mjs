@@ -69,7 +69,8 @@ try{
   console.log('PASS: ZIP includes generated GEDCOM and identical original input.');
 
   await page.reload();
-  await frame.getByRole('button',{name:'Таблица',exact:true}).waitFor({timeout:15000});
+  // The AYYY shell reloads the iframe at its default library URL.
+  await frame.getByRole('heading',{name:'Семейные деревья'}).waitFor({timeout:15000});
   assert.equal(await frame.locator('.gen-theme-switch').count(),0);
   assert.equal(await frame.locator('#back-ayyy').count(),0);
   assert.equal(await frame.locator('html').getAttribute('data-gen-theme'),null);
