@@ -1,0 +1,56 @@
+name: GEN independent diagnostics
+on:
+  push:
+    branches: [feat/gen-browser-portal]
+    paths:
+      - 'family-app/src/lib/gedcom*.ts'
+      - 'tests/family-gedcom.test.cjs'
+      - '.github/workflows/gen-verify.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile and test GEDCOM
+        shell: bash
+        run: |
+          set +e
+          npm ci --prefix family-app > /tmp/gen-setup.log 2>&1
+          setup_code=$?
+          if [ "$setup_code" = 0 ]; then
+            npm run build --prefix family-app > /tmp/gen-compile.log 2>&1
+            compile_code=$?
+          else
+            compile_code=100
+            echo "Setup failed" > /tmp/gen-compile.log
+          fi
+          if [ "$compile_code" = 0 ]; then
+            node --test tests/family-gedcom.test.cjs > /tmp/gen-tests.log 2>&1
+            tests_code=$?
+          else
+            tests_code=100
+            echo "Compilation failed; tests not run" > /tmp/gen-tests.log
+          fi
+          {
+            echo "GEDCOM diagnostics for $GITHUB_SHA"
+            echo "setup=$setup_code compile=$compile_code tests=$tests_code"
+            echo "=== npm ci ==="
+            tail -25 /tmp/gen-setup.log
+            echo "=== TypeScript and Vite build ==="
+            cat /tmp/gen-compile.log
+            echo "=== GEDCOM parity unit tests ==="
+            cat /tmp/gen-tests.log
+          } > docs/GEN_CI_DIAGNOSTICS.txt
+          git add docs/GEN_CI_DIAGNOSTICS.txt
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'ci(gen): capture independent TypeScript and GEDCOM diagnostics [skip ci]'
+            git push
+          fi
+          test "$setup_code" = 0 && test "$compile_code" = 0 && test "$tests_code" = 0
