@@ -9,25 +9,25 @@
  .ww-app[data-mobile-forecast] .ww-brand {gap:0;min-width:0;}
  .ww-app[data-mobile-forecast] .ww-brand small,.ww-app[data-mobile-forecast] .ww-nav {display:none;}
  .ww-app[data-mobile-forecast] .ww-theme-control {position:static;margin-left:auto;gap:5px;flex-shrink:0;}
- .ww-app[data-mobile-forecast] .ww-theme-switch button {min-width:64px;min-height:32px;padding:4px 5px;gap:4px;}
+ .ww-app[data-mobile-forecast] .ww-theme-switch button {min-width:64px;min-height:36px;padding:4px 5px;gap:4px;}
  .ww-app[data-mobile-forecast] .ww-theme-switch img,.ww-app[data-mobile-forecast] .ww-theme-switch svg {width:17px;height:17px;}
- .ww-app[data-mobile-forecast] .ww-scene-settings-toggle {width:32px;min-height:32px;padding:0;}
+ .ww-app[data-mobile-forecast] .ww-scene-settings-toggle {width:36px;min-height:36px;padding:0;}
  .ww-app[data-mobile-forecast] .ww-scene-settings-toggle>span {display:none;}
 
  .ww-app[data-mobile-forecast] .ww-topline {min-height:43px;padding:0;gap:6px;align-items:center;}
  .ww-app[data-mobile-forecast] .ww-topline .ww-title h1 {font-size:25px!important;line-height:1.15;}
  .ww-app[data-mobile-forecast] .ww-topline .ww-title>span {display:none;}
  .ww-app[data-mobile-forecast] .ww-location-tools {gap:7px;}
- .ww-app[data-mobile-forecast] .ww-city-search {width:35px;min-width:35px;height:35px;padding:0!important;justify-content:center;border-radius:50%;}
+ .ww-app[data-mobile-forecast] .ww-city-search {width:40px;min-width:40px;height:40px;padding:0!important;justify-content:center;border-radius:50%;}
  .ww-app[data-mobile-forecast] .ww-city-search>svg {width:17px;height:17px;}
  .ww-app[data-mobile-forecast] .ww-city-search>span,.ww-app[data-mobile-forecast] .ww-city-search kbd {display:none;}
- .ww-app[data-mobile-forecast] .ww-units button {width:30px;height:30px;padding:0;font-size:11px;}
+ .ww-app[data-mobile-forecast] .ww-units button {width:32px;height:32px;padding:0;font-size:11px;}
  .ww-app[data-mobile-forecast] .ww-sourcebar {position:relative;top:auto;left:auto;right:auto;order:3;min-height:25px;padding:2px 0;gap:4px;flex-wrap:nowrap;align-items:center;font-size:9px;}
  .ww-app[data-mobile-forecast] .ww-data-status {min-width:0;flex:1;max-width:none;overflow:hidden;}
  .ww-app[data-mobile-forecast] #ww-source-text {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
  .ww-app[data-mobile-forecast] .ww-source-actions {flex-shrink:0;gap:8px;margin-left:auto;}
  .ww-app[data-mobile-forecast] .ww-source-label {display:inline;font-size:8px;}
- .ww-app[data-mobile-forecast] .ww-source-actions .ww-link {display:grid;place-items:center;width:27px;height:27px;padding:0!important;}
+ .ww-app[data-mobile-forecast] .ww-source-actions .ww-link {display:grid;place-items:center;width:30px;height:30px;padding:0!important;}
  .ww-app[data-mobile-forecast] .ww-source-actions .ww-link svg {width:15px;height:15px;}
  .ww-app[data-mobile-forecast] #ww-refresh-text {display:none;}
  .ww-app[data-mobile-forecast] #ww-theme-status:not(:empty) {position:absolute;top:100%;right:0;max-width:100%;background:var(--ww-paper);padding:3px 6px;z-index:10;}
@@ -54,7 +54,7 @@
  .ww-app[data-mobile-forecast] .ww-metric:nth-child(3),.ww-app[data-mobile-forecast] .ww-metric:nth-child(4),.ww-app[data-mobile-forecast] .ww-metric:nth-child(6) {display:none;}
 
  .ww-app[data-mobile-forecast] .ww-center {order:1;display:block;width:100%;height:clamp(236px,calc(100svh - 345px),660px);min-height:0;flex-shrink:0;margin:0;padding:0;pointer-events:none;}
- .ww-app[data-mobile-forecast] .ww-mobile-details-toggle {order:2;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:41px;padding:7px 4px;border-top:1px solid var(--ww-line);color:var(--ww-ink);font-size:11px;font-weight:600;text-align:left;pointer-events:auto;}
+ .ww-app[data-mobile-forecast] .ww-mobile-details-toggle {order:2;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:7px 4px;border-top:1px solid var(--ww-line);color:var(--ww-ink);font-size:11px;font-weight:600;text-align:left;pointer-events:auto;}
  .ww-app[data-mobile-forecast] .ww-mobile-details-toggle svg {width:16px;height:16px;flex-shrink:0;transition:transform .2s ease;}
  .ww-app[data-mobile-forecast=open] .ww-mobile-details-toggle svg {transform:rotate(180deg);}
 
