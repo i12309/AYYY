@@ -9,6 +9,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: family-build-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,5 +47,14 @@ jobs:
           git add family/ index.html
           if ! git diff --cached --quiet; then
             git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "build(portal): refresh index and GEN assets [skip ci]"
-            git push
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              # Keep all concurrent edits; never force push, abort on conflicting paths.
+              git rebase FETCH_HEAD
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+            done
+            echo "Branch advanced repeatedly; publishing generated files was not safe." >&2
+            exit 1
           fi
