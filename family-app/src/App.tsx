@@ -270,8 +270,13 @@ export default function App() {
     [data, filterRootId, effectiveMode, depth, unlimitedDepth, familyIndex, branches, component],
   );
   const tablePeople = useMemo(
-    () => (largeTree && view === 'table' ? data?.persons ?? [] : visible.persons).filter(matches),
-    [largeTree, view, data, visible, matches],
+    () => (
+      largeTree && view === 'table' && mode === 'all' && !explicitWholeTree &&
+      !branches.hidden.length && !component
+        ? data?.persons ?? []
+        : visible.persons
+    ).filter(matches),
+    [largeTree, view, mode, explicitWholeTree, branches.hidden, component, data, visible, matches],
   );
   const handleSearchQuery = useCallback(
     (text: string) => {
@@ -614,7 +619,7 @@ export default function App() {
             <div className="toolbar-info">
               <span>
                 {data
-                  ? `${visible.persons.length} из ${data.persons.length} ${personWord(data.persons.length)}`
+                  ? `${view === 'table' ? tablePeople.length : visible.persons.length} из ${data.persons.length} ${personWord(data.persons.length)}`
                   : ''}
               </span>
               {largeTree && !explicitWholeTree && (
