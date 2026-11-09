@@ -72,6 +72,7 @@ type Modal =
   | { kind: 'family'; family: Family }
   | { kind: 'warnings'; warnings: string[] }
   | null;
+const LARGE_TREE_FOCUS_THRESHOLD = 2500;
 const modeOptions: { value: GraphMode; label: string; icon: typeof Users }[] = [
   { value: 'all', label: 'Всё дерево', icon: GitFork },
   { value: 'relatives', label: 'Близкие родственники', icon: Users },
@@ -126,6 +127,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rootId, setRootId] = useState<string | null>(null);
   const [mode, setMode] = useState<GraphMode>('all');
+  const [explicitWholeTree, setExplicitWholeTree] = useState(false);
   const [depth, setDepth] = useState(3);
   const [unlimitedDepth, setUnlimitedDepth] = useState(false);
   const [cardFields, setCardFields] = useState<CardFields>(initialCardFields);
@@ -243,7 +245,11 @@ export default function App() {
         .includes(query),
     [query],
   );
-  const filterRootId = mode === 'all' ? null : rootId;
+  const largeTree = Boolean(data && data.persons.length > LARGE_TREE_FOCUS_THRESHOLD);
+  // Avoid an eager layout of tens of thousands of ReactFlow nodes.
+  const effectiveMode: GraphMode =
+    largeTree && mode === 'all' && !explicitWholeTree ? 'relatives' : mode;
+  const filterRootId = effectiveMode === 'all' ? null : rootId || data?.persons[0]?.id || null;
   const visible = useMemo(
     () =>
       data
@@ -252,7 +258,7 @@ export default function App() {
               data.persons,
               data.families,
               filterRootId,
-              mode,
+              effectiveMode,
               unlimitedDepth ? data.persons.length : depth,
               familyIndex,
             ),
@@ -261,9 +267,12 @@ export default function App() {
             component,
           )
         : { persons: [], families: [] },
-    [data, filterRootId, mode, depth, unlimitedDepth, familyIndex, branches, component],
+    [data, filterRootId, effectiveMode, depth, unlimitedDepth, familyIndex, branches, component],
   );
-  const tablePeople = useMemo(() => visible.persons.filter(matches), [visible, matches]);
+  const tablePeople = useMemo(
+    () => (largeTree && view === 'table' ? data?.persons ?? [] : visible.persons).filter(matches),
+    [largeTree, view, data, visible, matches],
+  );
   const handleSearchQuery = useCallback(
     (text: string) => {
       searchText.current = text;
@@ -351,6 +360,7 @@ export default function App() {
     setRootId(null);
     setSearch('');
     setMode('all');
+    setExplicitWholeTree(false);
     setModal(null);
     setContext(null);
     setPreviewOpen(window.innerWidth >= 1180);
@@ -607,6 +617,11 @@ export default function App() {
                   ? `${visible.persons.length} из ${data.persons.length} ${personWord(data.persons.length)}`
                   : ''}
               </span>
+              {largeTree && !explicitWholeTree && (
+                <span className="large-tree-note" title="Таблица показывает всех людей, граф ограничен ближайшими родственниками.">
+                  Большое дерево: ближайшие родственники
+                </span>
+              )}
               {data && (
                 <span
                   className="save-info"
@@ -636,8 +651,14 @@ export default function App() {
                       {modeOptions.map((option) => (
                         <button
                           key={option.value}
-                          className={mode === option.value ? 'active' : ''}
+                          className={effectiveMode === option.value ? 'active' : ''}
                           onClick={() => {
+                            if (option.value === 'all' && largeTree && !explicitWholeTree) {
+                              if (!window.confirm(
+                                `Полный граф содержит ${data?.persons.length} человек и может загружаться долго. Рекомендуем сначала ближайших родственников, а весь список открыть в таблице. Всё равно построить полный граф?`,
+                              )) return;
+                              setExplicitWholeTree(true);
+                            }
                             setMode(option.value);
                             if (option.value === 'all') saveBranches([], null);
                           }}
@@ -667,10 +688,10 @@ export default function App() {
                         ))}
                       </select>
                     </label>
-                    <div className={`depth-setting ${mode === 'all' ? 'disabled' : ''}`}>
+                    <div className={`depth-setting ${effectiveMode === 'all' ? 'disabled' : ''}`}>
                       <label htmlFor="depth-range">
-                        {mode === 'relatives' ? 'Глубина родства' : 'Поколений от центра'}
-                        <strong>{mode === 'all' || unlimitedDepth ? 'Все' : depth}</strong>
+                        {effectiveMode === 'relatives' ? 'Глубина родства' : 'Поколений от центра'}
+                        <strong>{effectiveMode === 'all' || unlimitedDepth ? 'Все' : depth}</strong>
                       </label>
                       <input
                         id="depth-range"
@@ -679,7 +700,7 @@ export default function App() {
                         max="8"
                         value={depth}
                         onChange={(event) => setDepth(Number(event.target.value))}
-                        disabled={mode === 'all' || unlimitedDepth}
+                        disabled={effectiveMode === 'all' || unlimitedDepth}
                       />
                       <div className="range-labels">
                         <span>1</span>
@@ -690,7 +711,7 @@ export default function App() {
                           type="checkbox"
                           checked={unlimitedDepth}
                           onChange={(event) => setUnlimitedDepth(event.target.checked)}
-                          disabled={mode === 'all'}
+                          disabled={effectiveMode === 'all'}
                         />
                         Все поколения ветки
                       </label>
@@ -861,7 +882,7 @@ export default function App() {
                       totalCount={data.persons.length}
                       rootId={rootId}
                       selectedId={selectedId}
-                      mode={mode}
+                      mode={effectiveMode}
                       depth={unlimitedDepth ? data.persons.length : depth}
                       cardFields={cardFields}
                       compact={appearance.compact}
