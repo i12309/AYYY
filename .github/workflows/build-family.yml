@@ -38,6 +38,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify GEN in AYYY browser
         run: node family-app/e2e/smoke.mjs
+      - name: Check compact Classic GEN at desktop, tablet and phone widths
+        run: node family-app/e2e/responsive.mjs
       - name: Verify private GitHub sync and cross-device restore
         run: node family-app/e2e/github.mjs
       - name: Verify GEDCOM 5.5.1/7 and two browser themes
