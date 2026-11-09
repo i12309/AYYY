@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>AYYY Sample</Name>
+  <Title>Тестовый проект AYYY</Title>
+  <MinutesPerDay>480</MinutesPerDay>
+  <MinutesPerWeek>2400</MinutesPerWeek>
+  <DaysPerMonth>20</DaysPerMonth>
+  <StartDate>2026-11-10T09:00:00</StartDate>
+  <FinishDate>2026-12-04T18:00:00</FinishDate>
+  <Tasks>
+    <Task>
+      <UID>0</UID><ID>0</ID><Name>Project Summary</Name><OutlineLevel>0</OutlineLevel><Summary>1</Summary>
+    </Task>
+    <Task>
+      <UID>1</UID><ID>1</ID><Name>Подготовка</Name><WBS>1</WBS><OutlineLevel>1</OutlineLevel>
+      <Start>2026-11-10T09:00:00</Start><Finish>2026-11-18T18:00:00</Finish>
+      <Summary>1</Summary><PercentComplete>50</PercentComplete>
+      <Duration>PT64H0M0S</Duration><DurationFormat>7</DurationFormat>
+    </Task>
+    <Task>
+      <UID>2</UID><ID>2</ID><Name>Анализ требований</Name><WBS>1.1</WBS><OutlineLevel>2</OutlineLevel>
+      <Start>2026-11-10T09:00:00</Start><Finish>2026-11-13T18:00:00</Finish>
+      <Duration>PT32H0M0S</Duration><DurationFormat>7</DurationFormat>
+      <PercentComplete>100</PercentComplete><Notes>Фиктивные данные для проверки</Notes>
+    </Task>
+    <Task>
+      <UID>3</UID><ID>3</ID><Name>Проектирование</Name><WBS>1.2</WBS><OutlineLevel>2</OutlineLevel>
+      <Start>2026-11-16T09:00:00</Start><Finish>2026-11-18T18:00:00</Finish>
+      <Duration>PT24H0M0S</Duration><DurationFormat>7</DurationFormat>
+      <PercentComplete>0</PercentComplete>
+      <PredecessorLink><PredecessorUID>2</PredecessorUID><Type>1</Type></PredecessorLink>
+    </Task>
+  </Tasks>
+  <Resources>
+    <Resource><UID>1</UID><ID>1</ID><Name>Аналитик</Name><Initials>АН</Initials><Type>1</Type><MaxUnits>1</MaxUnits></Resource>
+  </Resources>
+  <Assignments>
+    <Assignment><UID>1</UID><TaskUID>2</TaskUID><ResourceUID>1</ResourceUID><Units>1</Units></Assignment>
+  </Assignments>
+</Project>
