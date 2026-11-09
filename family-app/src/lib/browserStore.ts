@@ -6,7 +6,7 @@ type TreeRecord = {id: string; document: Document};
 type MediaRecord = {key: string; blob: Blob};
 type SyncRecord = {
   treeId: string; owner: string; repo: string; branch: string; path: string;
-  blobSha?: string; lastCommit?: string; lastSync?: string;
+  blobSha?: string; lastCommit?: string; lastSync?: string; lastLocalSavedAt?: string;
 };
 let opening: Promise<IDBDatabase> | null = null;
 const urls = new Map<string, {blob: Blob; url: string}>();
@@ -184,3 +184,21 @@ export async function setSync(record: SyncRecord) {
 }
 
 export type {SyncRecord};
+
+
+/** Install a validated GitHub snapshot and its media in one IDB transaction. */
+export async function installTreeSnapshot(
+  document: Document, files: Array<{filename:string;blob:Blob}>
+): Promise<void> {
+  validate(document);
+  const db = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(['trees','files'],'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error || new Error('Не удалось восстановить дерево.'));
+    for (const file of files) {
+      tx.objectStore('files').put({key:document.tree.id+'/'+file.filename,blob:file.blob});
+    }
+    tx.objectStore('trees').put({id:document.tree.id,document});
+  });
+}
