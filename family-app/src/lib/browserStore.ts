@@ -141,9 +141,10 @@ export async function storeFiles(treeId: string, entries: Array<{filename:string
 }
 
 function objectURL(key: string, blob: Blob) {
+  // Media filenames are immutable. IndexedDB returns a new Blob wrapper on
+  // each read, so comparing object identity would revoke URLs still in the UI.
   const previous = urls.get(key);
-  if (previous?.blob === blob) return previous.url;
-  if (previous) URL.revokeObjectURL(previous.url);
+  if (previous) return previous.url;
   const url = URL.createObjectURL(blob);
   urls.set(key, {blob,url});
   return url;
