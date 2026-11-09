@@ -34,7 +34,7 @@ function validUpload(file: FormDataEntryValue | null, types: string[], size = 10
 }
 async function publicPerson(id: string, personId: string) {
   const doc = await publicTree(id);
-  const item = doc.persons.find(p => p.id === personId);
+  const item = doc.persons.find(p => (p as Record<string,any>).id === personId);
   if (!item) throw new BackendError('Человек не найден.',404);
   return item;
 }

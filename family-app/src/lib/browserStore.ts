@@ -14,7 +14,7 @@ const urls = new Map<string, {blob: Blob; url: string}>();
 export function openDatabase(): Promise<IDBDatabase> {
   if (!('indexedDB' in window)) return Promise.reject(new Error('Браузер не поддерживает IndexedDB.'));
   if (opening) return opening;
-  opening = new Promise((resolve, reject) => {
+  opening = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE, VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -30,7 +30,7 @@ export function openDatabase(): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error || new Error('Не удалось открыть IndexedDB.'));
     request.onblocked = () => reject(new Error('Закройте другие вкладки GEN для обновления хранилища.'));
   }).catch(error => {opening = null; throw error;});
-  return opening;
+  return opening!;
 }
 
 function requestValue<T>(request: IDBRequest<T>): Promise<T> {
