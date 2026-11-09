@@ -64,7 +64,7 @@ type FamilyFlowNode = Node<{ family: Family }, 'family'>;
 type GraphNode = PersonFlowNode | FamilyFlowNode;
 type GraphEdge = Edge & { pathOptions: { borderRadius: number; offset: number } };
 type StoredPositions = Record<string, Point>;
-const CARD_WIDTH = 224;
+const CARD_WIDTH = 200;
 const personNodeId = (id: string) => `person:${id}`;
 const familyNodeId = (id: string) => `family:${id}`;
 
@@ -263,13 +263,13 @@ export const FamilyGraph = memo(function FamilyGraph({
         : cardFields,
     [compact, cardFields],
   );
-  const cardWidth = compact ? 200 : CARD_WIDTH;
+  const cardWidth = compact ? 180 : CARD_WIDTH;
   const cardHeight = compact
-    ? 92
-    : 88 +
-      Number(cardFields.dates) * 22 +
-      Number(cardFields.places) * 21 +
-      Number(cardFields.occupation) * 21;
+    ? 80
+    : 76 +
+      Number(cardFields.dates) * 18 +
+      Number(cardFields.places) * 17 +
+      Number(cardFields.occupation) * 17;
   const topology = useMemo(() => structuralSignature(persons, families), [persons, families]);
   // Text, photo and selection changes do not affect card geometry or family topology.
   const tones = useMemo(() => familyTones(persons, families), [topology]);

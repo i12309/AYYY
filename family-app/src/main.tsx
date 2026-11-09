@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { installDownloads } from './lib/api';
 import './styles.css';
+import './compact.css';
 
 installDownloads();
 
