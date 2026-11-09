@@ -77,10 +77,15 @@
 .view-tabs button{font-size:12px;padding:0 11px;gap:6px}
 .view-tabs button svg{width:15px;height:15px}
 .toolbar-info{gap:12px;font-size:11px}
-@media(min-width:801px){
+@media(min-width:1181px){
   .workspace{grid-template-columns:206px minmax(0,1fr)}
   .workspace.has-preview{grid-template-columns:206px minmax(0,1fr) 262px}
   .workspace.settings-hidden.has-preview{grid-template-columns:minmax(0,1fr) 262px}
+}
+@media(min-width:801px) and (max-width:1180px){
+  .workspace,.workspace.has-preview{grid-template-columns:206px minmax(0,1fr)}
+  .workspace.settings-hidden.has-preview{grid-template-columns:minmax(0,1fr)}
+  .person-preview{width:262px}
 }
 .settings-scroll{padding:15px 13px 0}
 .settings-scroll>section{padding-bottom:14px;margin-bottom:14px}
@@ -142,9 +147,10 @@ input,select,textarea{padding:8px 10px}
   .header-actions .header-help-link{padding:8px}
 }
 @media(max-width:800px){
-  .app-header{padding:0 10px;gap:9px}
-  .global-search{min-width:105px;width:min(225px,100%)}
-  .workspace-toolbar{padding:0 10px}
+  .app-header{height:auto;min-height:0;padding:9px 10px;gap:8px}
+  .global-search{min-width:105px;width:100%}
+  .workspace-toolbar{height:auto;min-height:47px;padding:0 10px}
+  .view-tabs{height:42px}
   .view-tabs button{padding-inline:7px}
   .library-content{width:calc(100% - 28px);padding-top:24px}
   .library-top{padding-inline:14px}
