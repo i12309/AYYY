@@ -5,6 +5,7 @@ import {
   ArrowUp,
   EyeOff,
   Layers,
+  Palette,
   ChevronDown,
   ChevronLeft,
   Crosshair,
@@ -104,6 +105,15 @@ function initialCardFields(): CardFields {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<'classic' | 'ayyy'>(() => {
+    try {return localStorage.getItem('gen:theme')==='ayyy'?'ayyy':'classic';}
+    catch{return 'classic';}
+  });
+  useEffect(() => {
+    document.documentElement.dataset.genTheme=theme;
+    try {localStorage.setItem('gen:theme',theme);}
+    catch {/* Theme preferences are optional. */}
+  },[theme]);
   const [treeId, setTreeId] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('tree'),
   );
@@ -463,6 +473,16 @@ export default function App() {
 
   return (
     <>
+      <button
+        className="gen-theme-toggle"
+        type="button"
+        title="Переключить тему оформления семейного дерева"
+        aria-label={`Тема оформления: ${theme==='classic'?'Classic GEN':'AYYY'}. Переключить`}
+        onClick={() => setTheme(current=>current==='classic'?'ayyy':'classic')}
+      >
+        <Palette size={16} />
+        <span>{theme==='classic'?'Classic GEN':'AYYY'}</span>
+      </button>
       {!treeId ? (
         <TreeChooser
           trees={trees}

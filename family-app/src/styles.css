@@ -2063,3 +2063,96 @@ p {
     display: none;
   }
 }
+
+
+/* Two independent visual systems. Classic is the unmodified default.
+   AYYY uses the portal's warm paper, deep ink, teal and copper accents. */
+.gen-theme-toggle {
+  position: fixed;
+  z-index: 35;
+  bottom: max(15px,env(safe-area-inset-bottom));
+  left: max(16px,env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 10px 15px;
+  font: 650 12px/1.2 "Segoe UI", sans-serif;
+  box-shadow: 0 5px 22px #2036401b;
+  cursor: pointer;
+}
+.gen-theme-toggle:hover { border-color: var(--accent); color: var(--accent-dark); }
+.gen-theme-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+:root[data-gen-theme="ayyy"] {
+  --ink:#203640;
+  --muted:#697d7d;
+  --line:#e5e4db;
+  --accent:#cc703e;
+  --accent-dark:#a8542d;
+  --accent-soft:#fff1e4;
+  --surface:#fffefb;
+  --canvas:#f7f5ee;
+  --family-color:#699d9b;
+  --family-tint:#f5f9f6;
+  --family-border:#c7dcd8;
+  color:#203640;
+  background:#f9f6f0;
+}
+:root[data-gen-theme="ayyy"] .library-page { background:#fbf8f1; }
+:root[data-gen-theme="ayyy"] .library-top,
+:root[data-gen-theme="ayyy"] .app-header,
+:root[data-gen-theme="ayyy"] .app-shell,
+:root[data-gen-theme="ayyy"] .generation-map-toolbar,
+:root[data-gen-theme="ayyy"] .workspace-toolbar {
+  background:#fffefb;
+  border-color:#e5e4db;
+}
+:root[data-gen-theme="ayyy"] .tree-tile,
+:root[data-gen-theme="ayyy"] .panel,
+:root[data-gen-theme="ayyy"] .dialog,
+:root[data-gen-theme="ayyy"] .button.secondary {
+  background:#fffefa;
+  border-color:#e4e4dc;
+}
+:root[data-gen-theme="ayyy"] .tree-tile:hover {
+  border-color:#d6ad88;
+  box-shadow:0 8px 24px #a8785216;
+}
+:root[data-gen-theme="ayyy"] .tree-emblem {
+  background:#e2f1ee;
+  color:#397b83;
+}
+:root[data-gen-theme="ayyy"] .emblem-1 {
+  background:#fff0dc;
+  color:#be703f;
+}
+:root[data-gen-theme="ayyy"] .emblem-2 {
+  background:#e9eff8;
+  color:#588ab0;
+}
+:root[data-gen-theme="ayyy"] .working-area,
+:root[data-gen-theme="ayyy"] .generation-map,
+:root[data-gen-theme="ayyy"] .family-graph {
+  background:#f7f5ee;
+}
+:root[data-gen-theme="ayyy"] .button.primary {
+  background:#ca6e3c;
+  color:#fff;
+  box-shadow:0 3px 10px #d47e3d1a;
+}
+:root[data-gen-theme="ayyy"] .button.primary:hover {background:#af582d;}
+:root[data-gen-theme="ayyy"] .button.secondary:hover {background:#fff6eb;border-color:#d6ad88;}
+:root[data-gen-theme="ayyy"] .person-card {
+  border-radius:11px;
+  box-shadow:inset 3px 0 var(--family-color),0 3px 12px #6c59440a;
+}
+:root[data-gen-theme="ayyy"] .person-card.is-selected {
+  border-color:#cc703e;
+  box-shadow:inset 3px 0 var(--family-color),0 0 0 2px #cc703e33,0 5px 16px #c56d3a14;
+}
+@media(max-width:600px){
+  .gen-theme-toggle { padding:9px 12px;font-size:11px; }
+}
