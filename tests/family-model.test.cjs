@@ -11,7 +11,7 @@ test.before(async () => {
 test('new GEN document uses version 1 and unique folder', () => {
   const doc = model.newTree('Семья Ивановых');
   assert.equal(doc.schema_version,1);
-  assert.match(doc.tree.slug,/^semya-ivanovykh-[a-f0-9]{6}$/);
+  assert.match(doc.tree.slug,/^semya-ivanovyh-[a-f0-9]{6}$/);
   assert.equal(doc.persons.length,0);
   assert.doesNotThrow(()=>model.validate(doc));
 });
