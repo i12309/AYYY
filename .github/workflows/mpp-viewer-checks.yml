@@ -11,6 +11,7 @@ on:
       - 'src/template.html'
       - 'index.html'
       - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_browser_smoke.mjs'
       - 'tests/mpp_build_test.py'
       - 'tests/fixtures/ayyy-project-sample.xml'
       - '.github/workflows/mpp-viewer-checks.yml'
@@ -22,6 +23,7 @@ on:
       - 'src/build.py'
       - 'src/template.html'
       - 'tests/mpp_model.test.mjs'
+      - 'tests/mpp_browser_smoke.mjs'
       - 'tests/mpp_build_test.py'
 
 permissions:
@@ -29,7 +31,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -45,3 +47,9 @@ jobs:
         run: node --test tests/mpp_model.test.mjs
       - name: Test static GitHub Pages bundle
         run: python tests/mpp_build_test.py
+      - name: Test viewer in Chrome
+        run: |
+          npm install --no-save --no-package-lock playwright-core@1.56.1
+          python -m http.server 8765 --bind 127.0.0.1 > /tmp/ayyy-mpp-http.log 2>&1 &
+          sleep 2
+          CHROME_PATH="$(command -v google-chrome)" node tests/mpp_browser_smoke.mjs
