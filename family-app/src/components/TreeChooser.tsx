@@ -2,6 +2,7 @@ import {
   BookOpen,
   CalendarDays,
   FileUp,
+  CloudDownload,
   FolderHeart,
   GitFork,
   Pencil,
@@ -20,6 +21,7 @@ interface Props {
   onOpen: (id: string) => void;
   onCreate: () => void;
   onImport: () => void;
+  onGitHub: () => void;
   onDemo: () => void;
   onEdit: (tree: TreeSummary) => void;
   onDelete: (tree: TreeSummary) => void;
@@ -34,6 +36,7 @@ export function TreeChooser({
   onOpen,
   onCreate,
   onImport,
+  onGitHub,
   onDemo,
   onEdit,
   onDelete,
@@ -62,7 +65,11 @@ export function TreeChooser({
           <div className="actions">
             <button className="button secondary" onClick={onImport}>
               <FileUp size={18} />
-              Импорт GEDCOM
+              Импорт JSON
+            </button>
+            <button className="button secondary" onClick={onGitHub}>
+              <CloudDownload size={18} />
+              Открыть из GitHub
             </button>
             <button className="button primary" onClick={onCreate}>
               <Plus size={18} />
@@ -140,7 +147,7 @@ export function TreeChooser({
                 <FolderHeart size={44} strokeWidth={1.4} />
               </span>
               <h2>Ваше первое семейное дерево</h2>
-              <p>Начните с себя или загрузите файл .ged из другого генеалогического сервиса.</p>
+              <p>Начните с себя, загрузите tree.json из GEN или откройте семейный архив из своего GitHub.</p>
               <div className="actions">
                 <button className="button primary" onClick={onCreate}>
                   <Plus size={18} />
@@ -148,7 +155,11 @@ export function TreeChooser({
                 </button>
                 <button className="button secondary" onClick={onImport}>
                   <FileUp size={18} />
-                  Загрузить .ged
+                  Загрузить JSON
+                </button>
+                <button className="button secondary" onClick={onGitHub}>
+                  <CloudDownload size={18}/>
+                  Из GitHub
                 </button>
               </div>
             </div>
@@ -160,15 +171,14 @@ export function TreeChooser({
           </span>
           <div>
             <h3>Сначала познакомиться с редактором</h3>
-            <p>Учебное дерево с вымышленной семьёй, биографиями и четырьмя поколениями.</p>
+            <p>Учебное дерево с вымышленной семьёй и несколькими поколениями.</p>
           </div>
           <button className="button secondary" disabled={busy} onClick={onDemo}>
             {busy ? 'Создаём…' : 'Открыть пример'}
           </button>
         </section>
         <footer className="library-footer">
-          Деревья хранятся на вашем сервере. Для переноса доступны GEDCOM, JSON и архив с
-          фотографиями.
+          Деревья хранятся в этом браузере. Для резервной копии доступны JSON, ZIP и подключение приватного GitHub.
         </footer>
       </main>
     </div>

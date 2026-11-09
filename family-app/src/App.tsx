@@ -46,6 +46,7 @@ import { PeopleTable } from './components/PeopleTable';
 import { GlobalPersonSearch } from './components/GlobalPersonSearch';
 import { Dialog } from './components/Dialog';
 import { BackupControl } from './components/BackupControl';
+import { GitHubImportDialog } from './components/GitHubImportDialog';
 
 const FamilyGraph = lazy(() =>
   import('./components/FamilyGraph').then((module) => ({ default: module.FamilyGraph })),
@@ -64,6 +65,7 @@ const loadingView = (
 type Modal =
   | { kind: 'tree'; tree?: TreeSummary }
   | { kind: 'import' }
+  | { kind: 'github' }
   | { kind: 'person'; id: string }
   | { kind: 'create'; baseId?: string; relation?: Relation }
   | { kind: 'family'; family: Family }
@@ -470,6 +472,7 @@ export default function App() {
           onOpen={openTree}
           onCreate={() => setModal({ kind: 'tree' })}
           onImport={() => setModal({ kind: 'import' })}
+          onGitHub={() => setModal({ kind: 'github' })}
           onDemo={() => void createDemo()}
           onEdit={(tree) => setModal({ kind: 'tree', tree })}
           onDelete={(tree) => void deleteTree(tree)}
@@ -974,6 +977,16 @@ export default function App() {
           }}
         />
       )}
+      {modal?.kind === 'github' && (
+        <GitHubImportDialog
+          onClose={() => setModal(null)}
+          onImported={async tree => {
+            await loadTrees();
+            openTree(tree.id);
+            setNotice({text:'Дерево успешно загружено из приватного GitHub.'});
+          }}
+        />
+      )}
       {modal?.kind === 'create' && data && (
         <PersonCreateDialog
           onNavigationGuard={registerNavigationGuard}
@@ -1016,7 +1029,7 @@ export default function App() {
         <Dialog title="Дерево импортировано" onClose={() => setModal(null)}>
           <div className="dialog-form">
             <p className="form-description">
-              При чтении файла обнаружены особенности. Исходный GEDCOM сохранён в полном архиве.
+              При чтении файла обнаружены особенности. Дополнительные структуры исходного GEN сохранены, но для фотографий может потребоваться полный архив.
             </p>
             <ul className="import-warnings">
               {modal.warnings.map((warning, index) => (
