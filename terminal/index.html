@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AYYY — Нейронный терминал</title>
+  <style>
+    :root {
+      --void: #050907;
+      --page: #0a100d;
+      --nav: #0e1511;
+      --line: #26372d;
+      --line-soft: #1b3023;
+      --mint: #a9ffbd;
+      --phosphor: #78ff9b;
+      --phosphor-bright: #bcffbe;
+      --phosphor-dim: #5ca474;
+      --muted: #7c9885;
+      --terminal: #07180c;
+      --amber: #e1bd7a;
+    }
+    * { box-sizing: border-box; }
+    html { height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--page);
+      color: #dcece0;
+      font: 13px/1.55 "Consolas", "Lucida Console", "Courier New", monospace;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, textarea:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 4px; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 209px minmax(0,1fr); }
+    .sidebar {
+      background: linear-gradient(180deg, #101813, #0a100d 70%);
+      border-right: 1px solid #223329;
+      padding: 31px 16px 23px;
+      display: flex;
+      flex-direction: column;
+      gap: 27px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 5px 12px; }
+    .brand svg { width: 29px; height: 42px; stroke: var(--phosphor); stroke-width: 1.65; fill: none; filter: drop-shadow(0 0 8px #63ff7955); }
+    .brand-word { font: 800 30px/0.95 Arial, sans-serif; letter-spacing: -2.3px; color: #e9f9eb; }
+    .brand-word span { color: var(--phosphor); }
+    .brand-sub { color: #638571; letter-spacing: 1.05px; font: 700 7.5px/2 Arial, sans-serif; margin-top: 4px; }
+    .nav-heading { color: #55745e; font-size: 9px; font-weight: bold; letter-spacing: 1.7px; padding: 0 12px; margin-bottom: 6px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 11px;
+      color: #789483; padding: 10px 11px; margin: 3px 0;
+      border: 1px solid transparent; border-radius: 7px;
+      font-family: Arial, sans-serif; font-size: 12px; letter-spacing: .1px;
+    }
+    .nav-symbol { color: #648772; width: 16px; font: 17px/1 monospace; text-align: center; }
+    .nav-item.current {
+      color: #a8ffb9; background: #143022; border-color: #265238;
+      box-shadow: inset 3px 0 0 var(--phosphor), 0 0 26px #64ff9820;
+      font-weight: bold;
+    }
+    .nav-item.current .nav-symbol { color: var(--phosphor); }
+    .sidebar-bottom { margin-top: auto; padding: 15px 9px 0; border-top: 1px solid var(--line); color: #73907c; font-size: 10px; }
+    .tiny-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #70ff90; box-shadow: 0 0 11px #72ff98; margin-right: 7px; }
+    .sidebar-bottom small { display: block; color: #4a6954; margin: 7px 0 0 13px; font-size: 9px; }
+    .workspace { min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      min-height: 61px; padding: 0 36px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #23352b; color: #6c8976; background: #0c130f;
+      gap: 12px; font-size: 10px; letter-spacing: .8px;
+    }
+    .crumb strong { color: #b0d4b6; font-weight: 500; }
+    .crumb i { font-style: normal; color: #476950; padding: 0 13px; }
+    .top-right { display: flex; align-items: center; gap: 19px; white-space: nowrap; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #355b3e; padding: 6px 10px; color: #8dfba1; border-radius: 2px; background: #102217; }
+    .pill::before { content: ''; width: 5px; height: 5px; background: #83ff96; border-radius: 100%; box-shadow: 0 0 9px #83ff96; }
+    .topclock { color: #d4e7d5; font-variant-numeric: tabular-nums; }
+    .content { width: 100%; max-width: 1760px; margin: 0 auto; padding: 27px 37px 20px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 20px; }
+    .eyebrow { color: #77c98d; font-size: 10px; letter-spacing: 2.4px; margin-bottom: 5px; }
+    h1 { margin: 0; color: #e9f5eb; font: 700 clamp(24px,2.6vw,34px)/1.15 Arial, sans-serif; letter-spacing: -.85px; }
+    h1 .cursor { color: #70ffa0; font-family: monospace; font-weight: 400; animation: blink 1.05s steps(1) infinite; margin-left: 4px; }
+    .subtitle { margin: 8px 0 0; color: #829c88; font: 12px/1.4 Arial, sans-serif; }
+    .heading-note { font: 10px/1.65 monospace; color: #759782; text-align: right; padding-bottom: 2px; white-space: nowrap; }
+    .heading-note b { font-weight: 400; color: #b4d2b9; }
+    .machine {
+      position: relative; flex: 1; min-height: 590px; max-height: 810px;
+      display: flex; flex-direction: column;
+      border: 1px solid #4c5c50; border-radius: 32px;
+      padding: 16px 19px 0;
+      background:
+        linear-gradient(105deg, transparent 0%, #ffffff05 12%, transparent 14%, transparent 77%, #f0ffea08 100%),
+        linear-gradient(160deg, #27362b 0%, #111d15 12%, #0c130e 45%, #1a281d 80%, #304337 100%);
+      box-shadow: 0 25px 68px #000b, inset 0 1px 0 #6a85724b, inset 0 -3px 0 #060e08;
+    }
+    .machine::before { content: ''; position: absolute; inset: 7px; border-radius: 27px; border: 1px solid #ffffff0b; pointer-events: none; }
+    .machine-top { display: flex; align-items: center; justify-content: space-between; height: 26px; padding: 0 18px 13px; color: #86a18b; font-size: 9px; letter-spacing: 1.55px; font-weight: bold; }
+    .machine-top span:last-child { color: #5f816b; font-size: 9px; letter-spacing: 1px; }
+    .screen {
+      isolation: isolate; position: relative; flex: 1; overflow: hidden;
+      border-radius: 36px / 41px;
+      border: 3px solid #040e07;
+      background: radial-gradient(ellipse at 48% 39%, #0a2b16 0%, #071b10 42%, #041007 77%, #010603 100%);
+      box-shadow: 0 0 0 4px #18291d, 0 0 0 7px #020904, 0 0 26px #56ff6927, inset 0 0 80px #000d, inset 0 0 16px #000e;
+      color: var(--phosphor);
+    }
+    .screen::before {
+      content: ''; z-index: 10; pointer-events: none; position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, #0004 0 1px, #0000 1px 4px);
+      opacity: .7;
+    }
+    .screen::after {
+      content: ''; z-index: 11; pointer-events: none; position: absolute; inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 86px 16px #000b, inset 0 0 20px 8px #000b;
+      background: linear-gradient(110deg, #c2ffcb05 0%, transparent 24%, transparent 72%, #8bff9e06 100%);
+    }
+    .screen-inner { position: absolute; inset: 0; z-index: 1; padding: 26px 34px 21px; display: flex; flex-direction: column; min-width: 0; }
+    .terminal-header { border-bottom: 1px dashed #3b754a; padding-bottom: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 13px; }
+    .terminal-kicker { letter-spacing: 2.5px; color: var(--phosphor-bright); font-weight: bold; text-shadow: 0 0 12px #5ffa7b88; white-space: nowrap; font-size: 13px; }
+    .terminal-sub { margin-top: 3px; color: #79bb8a; font-size: 10px; letter-spacing: 1px; }
+    .terminal-right { color: #9ee9a8; font-size: 10px; text-align: right; white-space: nowrap; }
+    .terminal-right .warn { color: var(--amber); }
+    .terminal-content { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 24px; padding-top: 18px; }
+    .terminal-log { overflow-y: auto; min-width: 0; padding: 0 12px 12px 1px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #2a6842 transparent; }
+    .terminal-log::-webkit-scrollbar { width: 6px; }
+    .terminal-log::-webkit-scrollbar-thumb { background: #285d3b; border-radius: 0; }
+    .message { margin-bottom: 21px; max-width: 850px; }
+    .message-meta { margin-bottom: 7px; color: #9deeb1; font-weight: bold; font-size: 11px; letter-spacing: .2px; }
+    .message-meta time { color: #638b6c; font-weight: 400; margin-right: 6px; }
+    .message-user .message-meta { color: #eeffc7; }
+    .message-user .message-body { color: #d6ffd0; }
+    .message-system .message-meta { color: #649e74; }
+    .message-system .message-body { color: #72af83; }
+    .message-body { color: #91f9a4; font-size: 12px; line-height: 1.67; white-space: pre-wrap; overflow-wrap: anywhere; text-shadow: 0 0 9px #42fd6733; }
+    .message-boot .message-body { color: #7ad991; }
+    .boot-art { margin: 0 0 11px; color: #94ffaf; font-size: 12px; line-height: 1.15; white-space: pre; overflow-x: auto; text-shadow: 0 0 16px #32ff6688; }
+    .boot-head { margin-top: 11px; margin-bottom: 6px; color: #9cffa9; font-size: 11px; letter-spacing: .7px; }
+    .boot-note { color: #78ab83; }
+    .telemetry { border-left: 1px dashed #346243; padding-left: 19px; overflow: auto; scrollbar-width: none; }
+    .telemetry::-webkit-scrollbar { display: none; }
+    .tele-label { color: #649e74; letter-spacing: 1.65px; font-size: 10px; margin-bottom: 10px; }
+    .tele-card { border-top: 1px solid #376946; border-bottom: 1px solid #376946; padding: 12px 0; font-size: 11px; line-height: 2; }
+    .tele-row { display: flex; gap: 8px; justify-content: space-between; white-space: nowrap; }
+    .tele-row span:first-child { color: #668c70; }
+    .tele-row b { font-weight: 400; color: #a7ffad; }
+    .tele-row b.amber { color: var(--amber); }
+    .tele-art { font-size: 11px; line-height: 1.27; white-space: pre; color: #66d885; text-shadow: 0 0 9px #3dff6355; padding-top: 15px; text-align: center; }
+    .tele-caption { color: #628a6d; margin-top: 8px; font-size: 10px; text-align: center; }
+    .meter { display: flex; align-items: center; gap: 5px; margin-top: 18px; height: 26px; }
+    .meter span { display: block; width: 5px; height: 5px; background: #4cbd72; opacity: .72; box-shadow: 0 0 6px #55ff7a44; animation: meter 1.4s ease-in-out infinite alternate; }
+    .meter span:nth-child(2n) { animation-delay: -.35s; }
+    .meter span:nth-child(3n) { animation-delay: -.8s; }
+    .meter span:nth-child(5n) { animation-delay: -1.2s; }
+    .wave-caption { color: #517f5f; font-size: 9px; letter-spacing: 1px; }
+    .screen-input-area { padding-top: 13px; margin-top: 9px; border-top: 1px dashed #3a7648; }
+    .input-label { display: flex; justify-content: space-between; color: #638c6d; font-size: 10px; margin-bottom: 8px; }
+    .input-row { min-height: 45px; display: flex; align-items: center; gap: 12px; }
+    .prompt-symbol { color: #aeffb6; font-size: 13px; text-shadow: 0 0 11px #2eff6066; white-space: nowrap; font-weight: bold; }
+    textarea {
+      width: 100%; flex: 1; min-width: 0; border: 0; outline: none; resize: none; height: 31px; max-height: 90px;
+      overflow-y: auto; padding: 6px 0; background: transparent; color: #dbffda;
+      caret-color: #b2ffb5; font-size: 13px; line-height: 1.45;
+    }
+    textarea::placeholder { color: #4b805b; opacity: 1; }
+    textarea:focus-visible { outline: none; }
+    .send-btn { border: 1px solid #43865a; color: #a4ffb4; background: #10381e; padding: 9px 14px; min-width: 89px; border-radius: 2px; white-space: nowrap; letter-spacing: 1px; font-weight: bold; }
+    .send-btn:hover { background: #1c5130; box-shadow: 0 0 19px #3fff5b2a; }
+    .send-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .terminal-footer { color: #60946f; margin-top: 7px; font-size: 9px; letter-spacing: .1px; }
+    .terminal-footer b { color: #90b999; font-weight: 400; }
+    .machine-bottom { min-height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 11px 14px 8px; gap: 18px; }
+    .hardware-left, .hardware-right { display: flex; align-items: center; gap: 19px; }
+    .hardware-label { display: flex; align-items: center; gap: 10px; color: #a1b9a7; font: bold 10px Arial, sans-serif; letter-spacing: 1px; }
+    .hardware-label .dot { width: 8px; height: 8px; border-radius: 100%; background: #8ff9a0; box-shadow: 0 0 10px #65ff70; border: 1px solid #b1ffd0; }
+    .hardware-label .dot.busy { background: #ebbc6b; border-color: #ebbc6b; box-shadow: 0 0 10px #ffbd55; }
+    .hardware-sub { font-size: 9px; color: #688474; letter-spacing: 1px; }
+    .hw-btn { border: 1px solid #42594b; border-radius: 4px; background: #1a281e; color: #b3cbb9; font-size: 10px; padding: 6px 11px; letter-spacing: .3px; }
+    .hw-btn:hover, .hw-btn.active { color: #a5ffb6; border-color: #51895c; background: #213b29; }
+    .hw-btn strong { font-weight: normal; color: #7cee99; }
+    .under { display: flex; gap: 24px; justify-content: space-between; padding: 14px 3px 0; color: #648470; font: 10px/1.4 Arial,sans-serif; }
+    .under b { color: #9acba5; font-weight: 400; }
+    .screen.no-lines::before { display: none; }
+    .screen.no-glow .message-body, .screen.no-glow .boot-art, .screen.no-glow .terminal-kicker, .screen.no-glow .tele-art, .screen.no-glow .prompt-symbol { text-shadow: none; }
+    .screen.no-glow { box-shadow: 0 0 0 4px #18291d, 0 0 0 7px #020904, inset 0 0 80px #000d; }
+    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes meter { 0% { height: 5px; opacity: .4; } 100% { height: 24px; opacity: 1; } }
+    @media(max-width: 1340px) {
+      .app { grid-template-columns: 178px minmax(0,1fr); }
+      .sidebar { padding-left: 11px; padding-right: 11px; }
+      .content { padding-left: 23px; padding-right: 23px; }
+      .topbar { padding-left: 23px; padding-right: 23px; }
+      .terminal-content { grid-template-columns: minmax(0,1fr) 200px; gap: 17px; }
+      .telemetry { padding-left: 13px; }
+      .screen-inner { padding: 25px 25px 18px; }
+    }
+    @media(max-width: 1050px) {
+      .app { grid-template-columns: 65px minmax(0, 1fr); }
+      .sidebar { padding: 24px 9px; gap: 14px; align-items: center; }
+      .brand { padding: 0; }
+      .brand svg { width: 27px; }
+      .brand-word, .brand-sub, .nav-heading, .nav-item .item-text, .sidebar-bottom { display: none; }
+      .nav-item { padding: 10px; }
+      .nav-symbol { width: 18px; }
+      .heading-note { display: none; }
+      .machine { min-height: 570px; }
+    }
+    @media(max-width: 790px) {
+      .content { padding: 18px 14px 17px; }
+      .topbar { padding: 0 16px; }
+      .top-right .topclock { display: none; }
+      .heading { margin-bottom: 14px; }
+      .machine { min-height: 650px; border-radius: 19px; padding: 11px 12px 0; }
+      .machine-top { padding: 0 9px 9px; font-size: 8px; }
+      .screen-inner { padding: 20px 23px 16px; }
+      .terminal-content { display: flex; flex-direction: column; }
+      .terminal-log { flex: 1; min-height: 0; }
+      .telemetry { display: none; }
+      .machine-bottom { padding: 9px 5px; }
+      .hardware-right { gap: 8px; }
+      .hardware-sub { display: none; }
+      .terminal-kicker { font-size: 11px; }
+    }
+    @media(max-width: 550px) {
+      .app { display: block; }
+      .sidebar { display: none; }
+      .topbar { min-height: 50px; font-size: 9px; }
+      .crumb i { padding: 0 6px; }
+      .pill { padding: 4px 7px; }
+      .eyebrow { font-size: 9px; letter-spacing: 1.1px; }
+      h1 { font-size: 25px; }
+      .subtitle { font-size: 11px; }
+      .content { padding: 17px 9px 12px; }
+      .machine { border-radius: 16px; min-height: calc(100dvh - 230px); padding: 10px 8px 0; }
+      .machine-top { height: 20px; font-size: 7px; letter-spacing: .6px; }
+      .machine-top span:last-child { display: none; }
+      .screen { border-radius: 19px / 24px; }
+      .screen-inner { padding: 20px 14px 12px; }
+      .terminal-kicker { letter-spacing: 1px; font-size: 10px; }
+      .terminal-sub { font-size: 9px; }
+      .terminal-right { font-size: 8px; }
+      .terminal-header { padding-bottom: 11px; }
+      .terminal-content { padding-top: 12px; }
+      .boot-art { font-size: 9px; }
+      .boot-head { font-size: 9px; line-height: 1.45; letter-spacing: 0; }
+      .message-body { font-size: 11px; }
+      .prompt-symbol { font-size: 10px; }
+      .input-row { gap: 5px; }
+      .send-btn { min-width: 53px; font-size: 9px; padding: 8px; }
+      textarea { font-size: 12px; }
+      .terminal-footer { font-size: 8px; }
+      .machine-bottom { min-height: 49px; }
+      .hardware-label { font-size: 9px; }
+      .hw-btn { padding: 6px; font-size: 9px; }
+      .under { font-size: 9px; padding-left: 8px; }
+      .under span:last-child { display: none; }
+    }
+    @media(prefers-reduced-motion: reduce) { .cursor, .meter span { animation: none; } }
+  </style>
+  <style>
+    /* Full-page terminal: no inherited portal navigation or top panel. */
+    html,body { min-height:100%; }
+    .app { display:block; min-height:100dvh; }
+    .workspace { min-height:100dvh; }
+    .content { min-height:100dvh; max-width:none; padding:20px clamp(12px,2vw,35px) 16px; }
+    .heading { align-items:center; justify-content:flex-start; gap:19px; margin-bottom:17px; }
+    .heading-copy { flex:1; min-width:0; }
+    .terminal-brand { color:#92ffad; text-decoration:none; display:inline-flex; flex:none; align-items:center; gap:10px; border-right:1px solid #264333; padding-right:19px; }
+    .terminal-brand:hover { color:#c3ffcd; }
+    .terminal-brand:focus-visible { outline:2px solid #78ff9b; outline-offset:5px; }
+    .terminal-brand-mark { width:35px; height:43px; filter:drop-shadow(0 0 8px #70ff9860); }
+    .terminal-brand-copy strong { display:block; color:#f2fff1; font:800 31px/.93 Arial,sans-serif; letter-spacing:-2.6px; }
+    .terminal-brand-copy strong span { color:#70ffa0; }
+    .terminal-brand-copy small { display:block; font:700 7px/1.5 Arial,sans-serif; letter-spacing:1.1px; margin-top:6px; color:#77a889; white-space:nowrap; }
+    .machine { min-height:580px; }
+    @media(max-width:790px) {
+      .terminal-brand { padding-right:13px; gap:6px; }
+      .terminal-brand-copy strong { font-size:25px; }
+      .terminal-brand-mark { width:28px; height:35px; }
+      .heading { gap:12px; }
+    }
+    @media(max-width:550px) {
+      .content { padding:13px 8px 12px; }
+      .heading { gap:9px; margin-bottom:11px; }
+      .terminal-brand { padding-right:8px; }
+      .terminal-brand-copy small { display:none; }
+      .terminal-brand-copy strong { font-size:22px; letter-spacing:-1.8px; }
+      .terminal-brand-mark { width:22px; height:30px; }
+      .heading h1 { font-size:clamp(17px,4.9vw,25px); }
+      .heading .eyebrow { letter-spacing:.6px; font-size:7px; }
+      .heading .subtitle { font-size:10px; }
+      .machine { min-height:calc(100dvh - 164px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="workspace">
+      <main class="content">
+        <div class="heading">
+          <a class="terminal-brand" href="../#home" target="_top" aria-label="AYYY — на главную">
+            <svg class="terminal-brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 9h4l3 13H7L10 9Z M8 6l4-4 4 4 M9 6h6v3H9V6Z M4 7 1 5 M20 7l3-2 M9 15h6 M6 22h12"/></svg>
+            <span class="terminal-brand-copy"><strong>ayyy<span>.</span></strong><small>ВАШ МАЯК В ИНТЕРНЕТЕ</small></span>
+          </a>
+          <div class="heading-copy">
+            <div class="eyebrow">AYYY LABS // INTERFACE EXPERIMENT № 01</div>
+            <h1>Нейронный терминал<span class="cursor">_</span></h1>
+            <p class="subtitle">Один экран. Один поток. Зелёный свет старого ЭЛТ-монитора.</p>
+          </div>
+          <div class="heading-note">ИНТЕРФЕЙС: <b>CRT / GREEN PHOSPHOR</b><br>СЕССИЯ: <b>БЕЗ СОХРАНЕНИЯ</b></div>
+        </div>
+        <section class="machine" aria-label="Демонстрационный терминал">
+          <div class="machine-top"><span>AYYY DATA SYSTEMS <span style="opacity:.4">/</span> MODEL T-07 <span style="opacity:.4">/</span> MONOCHROME DISPLAY</span><span>SERIAL NO. 1984 - 026</span></div>
+          <div class="screen" id="screen">
+            <div class="screen-inner">
+              <div class="terminal-header">
+                <div>
+                  <div class="terminal-kicker">AYYY / NEURAL CONSOLE v0.1</div>
+                  <div class="terminal-sub">PERSONAL TERMINAL INTERFACE // CHANNEL 01</div>
+                </div>
+                <div class="terminal-right">[ <span class="warn">SIMULATION</span> ]<br><span id="screenClock">--:--:--</span> <span style="opacity:.4">/</span> <span id="dateText">10 NOV 2026</span></div>
+              </div>
+              <div class="terminal-content">
+                <div id="chatLog" class="terminal-log" role="log" aria-live="polite" aria-relevant="additions text"></div>
+                <aside class="telemetry" aria-label="Системная панель терминала">
+                  <div class="tele-label">// SYSTEM TELEMETRY</div>
+                  <div class="tele-card">
+                    <div class="tele-row"><span>TERMINAL</span><b>ACTIVE</b></div>
+                    <div class="tele-row"><span>INFERENCE</span><b class="amber">DISABLED</b></div>
+                    <div class="tele-row"><span>MEMORY</span><b>VOLATILE</b></div>
+                    <div class="tele-row"><span>CHANNEL</span><b>LOCAL / 01</b></div>
+                    <div class="tele-row"><span>MESSAGES</span><b id="msgCount">000</b></div>
+                  </div>
+                  <div class="tele-art" aria-hidden="true">        /\
+       /==\
+      /____\
+     ___||___
+       |[]|
+       |  |
+      /|  |\
+    _/_|__|_\_
+   /__________\
+      / /  \ \
+     /_/    \_\</div>
+                  <div class="tele-caption">AYYY / LIGHTHOUSE NODE</div>
+                  <div class="meter" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                  <div class="wave-caption">CRT SIGNAL / VISUAL SIMULATION</div>
+                </aside>
+              </div>
+              <form id="chatForm" class="screen-input-area" autocomplete="off">
+                <div class="input-label"><span>┌─ COMMAND LINE ─────────────────</span><span>UTF-8 / RU</span></div>
+                <div class="input-row">
+                  <label class="prompt-symbol" for="promptInput">operator@ayyy:~$</label>
+                  <textarea id="promptInput" rows="1" maxlength="1800" placeholder="Введите сообщение или /help..." aria-label="Сообщение терминалу"></textarea>
+                  <button type="submit" class="send-btn" id="sendBtn">SEND ↵</button>
+                </div>
+                <div class="terminal-footer">ENTER — отправить <b>·</b> SHIFT+ENTER — новая строка <b>·</b> <span id="statusText">ОЖИДАНИЕ ВВОДА_</span></div>
+              </form>
+            </div>
+          </div>
+          <div class="machine-bottom">
+            <div class="hardware-left"><div class="hardware-label"><span class="dot" id="activityLed"></span><span>POWER / ON</span></div><div class="hardware-sub">P31 GREEN PHOSPHOR</div></div>
+            <div class="hardware-right">
+              <button type="button" class="hw-btn active" id="scanlineBtn" aria-pressed="true">SCANLINES <strong id="scanlineValue">ON</strong></button>
+              <button type="button" class="hw-btn active" id="glowBtn" aria-pressed="true">GLOW <strong id="glowValue">ON</strong></button>
+              <button type="button" class="hw-btn" id="resetBtn" title="Удалить сообщения из этой вкладки">↻ RESET</button>
+            </div>
+          </div>
+        </section>
+        <footer class="under"><span><b>AYYY / CONCEPT ONLY.</b> Ответы зашиты в JavaScript. Никакого сервера, модели или хранения сообщений.</span><span>DESIGNED FOR THE OLD FUTURE / 1984 → 2026</span></footer>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+      const log = document.querySelector('#chatLog');
+      const form = document.querySelector('#chatForm');
+      const input = document.querySelector('#promptInput');
+      const send = document.querySelector('#sendBtn');
+      const status = document.querySelector('#statusText');
+      const count = document.querySelector('#msgCount');
+      const led = document.querySelector('#activityLed');
+      const screen = document.querySelector('#screen');
+      let total = 0;
+      let working = false;
+      let pendingTimeout = null;
+      let typingTimer = null;
+      let responseIndex = 0;
+      let generation = 0;
+      const stamp = () => new Date().toLocaleTimeString('ru-RU', { hour12: false });
+      const date = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+      const updateClock = () => { document.querySelector('#screenClock').textContent = stamp(); document.querySelector('#dateText').textContent = date(); };
+      updateClock();
+      setInterval(updateClock, 1000);
+      const scrollBottom = () => { log.scrollTop = log.scrollHeight; };
+      function addMessage(kind, author, body, type = '') {
+        const article = document.createElement('article');
+        article.className = `message message-${kind}` + (type ? ` message-${type}` : '');
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
+        const time = document.createElement('time');
+        time.textContent = `[${stamp()}]`;
+        const sender = document.createElement('span');
+        sender.textContent = ` ${author}`;
+        meta.append(time, sender);
+        const text = document.createElement('div');
+        text.className = 'message-body';
+        text.textContent = body;
+        article.append(meta, text);
+        log.append(article);
+        count.textContent = String(++total).padStart(3, '0');
+        scrollBottom();
+        return text;
+      }
+      function boot() {
+        log.replaceChildren();
+        total = 0;
+        addMessage('system', 'BOOT / SYSTEM', 'INITIALIZING DISPLAY ................. OK\nLOADING LOCAL INTERFACE ............. OK\nINFERENCE ENGINE .................... NOT CONNECTED', 'boot');
+        const article = document.createElement('article');
+        article.className = 'message message-boot';
+        const art = document.createElement('pre');
+        art.className = 'boot-art';
+        art.textContent = [
+          '      /\\       ___  _   _  _   _  _   _',
+          '     /==\\     / _ \\| | | || | | || | | |',
+          '    /____\\    |  _  | |_| || |_| || |_| |',
+          '      ||      |_| |_|\\___/  \\___/  \\___/ ',
+          '   ___||___',
+          '    |_|__|    INTELLIGENCE / TERMINAL',
+        ].join('\n');
+        const header = document.createElement('div');
+        header.className = 'boot-head';
+        header.textContent = '╔══════════════════════════════════════════╗\n║  WELCOME, OPERATOR. CONNECTION ESTABLISHED ║\n╚══════════════════════════════════════════╝';
+        header.style.whiteSpace = 'pre';
+        const note = document.createElement('div');
+        note.className = 'message-body boot-note';
+        note.textContent = 'Это прототип интерфейса AYYY. ИИ пока не подключён.\nПопробуйте написать сообщение или введите /help для команд.';
+        article.append(art, header, note);
+        log.append(article);
+        addMessage('assistant', 'AYYY / TERMINAL', 'Слушаю вас, оператор. С чего начнём?');
+        status.textContent = 'ОЖИДАНИЕ ВВОДА_';
+        scrollBottom();
+      }
+      function getReply(message) {
+        const lower = message.trim().toLowerCase();
+        if (/^(\/help|help|помощь|команды|\?)$/.test(lower)) return [
+          'ДОСТУПНЫЕ КОМАНДЫ',
+          '┌────────────────────────────────────────────┐',
+          '│ /help    справка по демо                  │',
+          '│ /status  состояние терминала              │',
+          '│ /ascii   псевдографика                    │',
+          '│ /clear   очистить экран                   │',
+          '└────────────────────────────────────────────┘',
+          'Можно также написать обычное сообщение. Ответы демонстрационные.'
+        ].join('\n');
+        if (/^(\/status|status|статус)$/.test(lower)) return [
+          '┌─ SYSTEM STATUS ────────────────────────────┐',
+          '│ TERMINAL       AYYY / T-07               │',
+          '│ DISPLAY        GREEN PHOSPHOR / CRT      │',
+          '│ INFERENCE      [ NOT CONNECTED ]        │',
+          '│ CHAT STORAGE   [ DISABLED      ]        │',
+          '│ NETWORK        [ NOT REQUIRED  ]        │',
+          '│ SIMULATION     [ ACTIVE        ]        │',
+          '└───────────────────────────────────────────┘',
+          'Всё работает прямо в этой HTML-странице.'
+        ].join('\n');
+        if (/^(\/ascii|ascii|арт|псевдографика)$/.test(lower)) return [
+          '      .      *        .            +',
+          '            ___---___',
+          '      .  .--  /  |  \\  --.     .',
+          '        /    /___|___\\    \\',
+          '       |    |  .---.  |    |',
+          '       |    | /  A  \\ |    |    *',
+          '        \\    \\ `---\u0027 /    /',
+          '      .  `--__\\___/ __--\u0027',
+          '               | |            .',
+          '           .  _| |_   +',
+          '          ---/_____/---',
+          '',
+          'SIGNAL RECEIVED // RETRO-FUTURE CHANNEL 01'
+        ].join('\n');
+        if (/^(\/clear|clear|очистить|сброс)$/.test(lower)) return '__CLEAR__';
+        if (/привет|здравствуй|hello|hi\b/i.test(lower)) return 'ПРИВЕТСТВУЮ, ОПЕРАТОР.\n\nЭто всего лишь локальная демонстрация будущего ИИ-чата AYYY. Здесь нет модели, но уже есть характер: монохромный экран, псевдографика и единый поток переписки.';
+        if (/врем[яе]|сколько времени|час/i.test(lower)) return `СИСТЕМНЫЕ ЧАСЫ: ${stamp()}\nВремя берётся с вашего устройства. История сообщений хранится только до обновления страницы.`;
+        if (/код|javascript|python|программ|разработ/i.test(lower)) return '>> ПОЛУЧЕН ЗАПРОС О РАЗРАБОТКЕ.\n\nconst terminal = {\n  screen: "P31_GREEN_PHOSPHOR",\n  mode: "LOCAL_DEMONSTRATION",\n  memory: false,\n  inference: null\n};\n\nКогда появится реальная модель, её поток ответов можно выводить сюда без изменения интерфейса.';
+        if (/кто ты|что ты|о себе|как тебя зовут/i.test(lower)) return 'Я — демонстрационный образ ИИ-помощника AYYY, терминал T-07.\n\nПОКА У МЕНЯ НЕТ МОДЕЛИ, ПАМЯТИ И СЕТЕВОГО ПОДКЛЮЧЕНИЯ. Я показываю, как может выглядеть разговор с машиной в атмосфере старого киберпанка.';
+        if (/цвет|экран|монитор|дизайн|стиль/i.test(lower)) return 'ВИДЕОПОДСИСТЕМА: P31 GREEN PHOSPHOR\n\nЭффект старого монитора создают тёмное стекло, мягкое свечение символов, сканирующие строки и виньетка по краям. SCANLINES и GLOW можно отключать кнопками на корпусе.';
+        const options = [
+          'СИГНАЛ ПРИНЯТ.\n\nВ рабочей версии здесь появится ответ настоящей модели. Пока это локальная имитация диалога, чтобы проверить визуальный ритм, читаемость и поведение интерфейса.',
+          'ПАКЕТ ДАННЫХ ПОЛУЧЕН.\n\n> message.accepted = true\n> simulation.mode = active\n> inference.connected = false\n\nЭтот экран не отправляет сообщения на сервер и не сохраняет их после обновления.',
+          'КОМАНДА ЗАРЕГИСТРИРОВАНА.\n\nПредставьте, что настоящий ответ ИИ появляется здесь посимвольно, прямо в строках терминала — без карточек, пузырей и отвлекающих элементов.',
+          'ACK / 200 — ЛОКАЛЬНЫЙ КАНАЛ.\n\nМожно продолжать переписку сколько угодно: в рамках открытой вкладки сообщения останутся на экране. После перезагрузки терминал начнёт с чистого листа.'
+        ];
+        return options[(responseIndex++) % options.length];
+      }
+      function setWorking(value) {
+        working = value;
+        send.disabled = value;
+        led.classList.toggle('busy', value);
+        status.textContent = value ? 'ПРИЁМ / ВЫВОД СИМВОЛОВ...' : 'ОЖИДАНИЕ ВВОДА_';
+      }
+      function typeReply(text, token) {
+        const el = addMessage('assistant', 'AYYY / TERMINAL', '');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reducedMotion) { el.textContent = text; setWorking(false); return; }
+        let index = 0;
+        typingTimer = setInterval(() => {
+          if (token !== generation) { clearInterval(typingTimer); return; }
+          const step = Math.max(2, Math.ceil(text.length / 100));
+          index = Math.min(index + step, text.length);
+          el.textContent = text.slice(0, index) + (index < text.length ? ' ▌' : '');
+          scrollBottom();
+          if (index >= text.length) { clearInterval(typingTimer); typingTimer = null; setWorking(false); }
+        }, 16);
+      }
+      function stopGeneration() {
+        generation++;
+        if (pendingTimeout) { clearTimeout(pendingTimeout); pendingTimeout = null; }
+        if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
+        setWorking(false);
+      }
+      function submitMessage() {
+        const message = input.value.trim();
+        if (!message || working) return;
+        input.value = '';
+        input.style.height = '31px';
+        if (/^(\/clear|clear|очистить|сброс)$/i.test(message)) { stopGeneration(); boot(); input.focus(); return; }
+        addMessage('user', 'OPERATOR >', message);
+        setWorking(true);
+        const token = generation;
+        const reply = getReply(message);
+        pendingTimeout = setTimeout(() => { pendingTimeout = null; if (token === generation) typeReply(reply, token); }, 340);
+        scrollBottom();
+      }
+      form.addEventListener('submit', (event) => { event.preventDefault(); submitMessage(); });
+      input.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); submitMessage(); } });
+      input.addEventListener('input', () => { input.style.height = '31px'; input.style.height = Math.min(input.scrollHeight, 90) + 'px'; });
+      document.querySelector('#scanlineBtn').addEventListener('click', function() {
+        const enabled = !screen.classList.toggle('no-lines');
+        this.classList.toggle('active', enabled);
+        this.setAttribute('aria-pressed', String(enabled));
+        document.querySelector('#scanlineValue').textContent = enabled ? 'ON' : 'OFF';
+      });
+      document.querySelector('#glowBtn').addEventListener('click', function() {
+        const enabled = !screen.classList.toggle('no-glow');
+        this.classList.toggle('active', enabled);
+        this.setAttribute('aria-pressed', String(enabled));
+        document.querySelector('#glowValue').textContent = enabled ? 'ON' : 'OFF';
+      });
+      document.querySelector('#resetBtn').addEventListener('click', () => { stopGeneration(); boot(); input.focus(); });
+      boot();
+      const initialPrompt = new URLSearchParams(window.location.search).get('prompt');
+      if (initialPrompt) { input.value = initialPrompt.slice(0, 500); input.dispatchEvent(new Event('input')); }
+    })();
+  </script>
+</body>
+</html>
