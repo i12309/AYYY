@@ -112,7 +112,7 @@ export function mount(root, options={}) {
   if(!root) throw new Error('Project Viewer root not found');
   const app=options.app;
   const events=new AbortController();
-  const state={model:null, demo:false, filename:'', query:'', zoom:'week', tab:'gantt', collapsed:new Set(), selectedUid:null, destroyed:false, pending:0};
+  const state={model:null, demo:false, filename:'', query:'', zoom:'week', scrollZoom:'week', scrollTop:0, scrollLeft:0, showLinks:true, showBaseline:true, tab:'gantt', collapsed:new Set(), selectedUid:null, destroyed:false, pending:0, cancelParse:null};
   const sendStatus=(message='', kind='')=>{
     const el=root.querySelector('[data-pv-status]');
     if (el) {el.textContent=message;el.dataset.kind=kind;}
@@ -125,6 +125,7 @@ export function mount(root, options={}) {
     const fields = [
       ['ID / WBS',String(t.id)+' / '+(t.wbs||'—')],
       ['Сроки',dateText(t.start)+' — '+dateText(t.finish)],
+      ['Базовый план',t.baselineStart!==null && t.baselineFinish!==null?dateText(t.baselineStart)+' — '+dateText(t.baselineFinish):'—'],
       ['Длительность',t.duration],
       ['Выполнение',numberLabel(t.percent)+'%'],
       ['Ресурсы',t.resourceNames||'—'],
@@ -136,36 +137,63 @@ export function mount(root, options={}) {
   };
   function render() {
     if(state.destroyed) return;
+    const oldList=root.querySelector('#pv-list-scroll'), oldChart=root.querySelector('#pv-chart-scroll');
+    if(oldList && oldChart){
+      state.scrollTop=oldList.scrollTop;
+      state.scrollLeft=oldChart.scrollLeft;
+    }
     const loaded=!!state.model;
     const model=state.model;
     const visible=loaded?visibleTasks(model,state.query,state.collapsed):[];
     const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button></div></div>'+
-      '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label></div></div>'+
+      '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label><button type="button" class="pv-toggle" data-pv-action="toggle-links" aria-pressed="'+state.showLinks+'">Связи</button><button type="button" class="pv-toggle" data-pv-action="toggle-baseline" aria-pressed="'+state.showBaseline+'">Базовый план</button></div></div>'+
       '<div class="pv-body">'+(state.tab==='resources'?resourceMarkup(model,state.query):
       '<div class="pv-workspace"><div class="pv-list-scroll" tabindex="0" aria-label="Таблица задач" id="pv-list-scroll"></div><div class="pv-chart-scroll" tabindex="0" aria-label="Диаграмма Ганта" id="pv-chart-scroll"></div></div>')+
       (model.warnings.length?'<p class="pv-warning">Предупреждения при чтении файла: '+escapeHtml(model.warnings.slice(0,5).join('; '))+'</p>':'')+
       '<div class="pv-bottom"><span>Только чтение · Оригинальный файл не изменяется</span><span>'+visible.length+' из '+model.tasks.length+' задач</span></div></div>' : empty();
     root.innerHTML='<div class="pv-root">'+header()+'<main class="pv-main">'+viewState+'<div class="pv-message" data-pv-status role="status" aria-live="polite"></div></main>'+fileInput()+'</div>';
     if(loaded && state.tab==='gantt'){
-      const chart=ganttMarkup(visible,model,state.zoom,state.selectedUid);
       const list=root.querySelector('#pv-list-scroll');
       const timeline=root.querySelector('#pv-chart-scroll');
-      list.innerHTML=chart.left; timeline.innerHTML=chart.right;
-      const headerCount=56;
-      // The two panes scroll independently horizontally, but always share one row position.
+      const desiredTop=state.scrollTop;
+      const desiredLeft=Math.round(state.scrollLeft*(zoomWidths[state.zoom]/zoomWidths[state.scrollZoom]));
+      let lastStart=-1,lastEnd=-1,queued=false;
+      const paint=(top=list.scrollTop)=>{
+        if(state.destroyed || !list.isConnected || !timeline.isConnected)return;
+        const viewport=rowWindow(visible.length,top,Math.max(100,list.clientHeight-56),rowHeight);
+        if(viewport.start===lastStart && viewport.end===lastEnd)return;
+        lastStart=viewport.start;lastEnd=viewport.end;
+        const chart=ganttMarkup(visible,model,state.zoom,state.selectedUid,viewport,state.showLinks,state.showBaseline);
+        list.innerHTML=chart.left;
+        timeline.innerHTML=chart.right;
+        for(const node of list.querySelectorAll('[data-fold-icon]'))node.textContent=state.collapsed.has(node.dataset.foldIcon)?'▸':'▾';
+      };
+      paint(desiredTop);
+      list.scrollTop=desiredTop;
+      timeline.scrollTop=desiredTop;
+      timeline.scrollLeft=desiredLeft;
+      state.scrollTop=list.scrollTop;
+      state.scrollLeft=timeline.scrollLeft;
+      state.scrollZoom=state.zoom;
+      // Both panes share the same row offset, but horizontal scrolling is independent.
       let syncing=false;
       const sync=(from,to)=>{
-        if(syncing)return;syncing=true;
+        if(syncing)return;
+        syncing=true;
         to.scrollTop=from.scrollTop;
         syncing=false;
+        state.scrollTop=from.scrollTop;
+        state.scrollLeft=timeline.scrollLeft;
+        if(!queued){
+          queued=true;
+          requestAnimationFrame(()=>{
+            queued=false;
+            if(list.isConnected)paint(list.scrollTop);
+          });
+        }
       };
       list.addEventListener('scroll',()=>sync(list,timeline),{signal:events.signal});
       timeline.addEventListener('scroll',()=>sync(timeline,list),{signal:events.signal});
-      // Keep both headers in the same scroll coordinate frame.
-      timeline.style.setProperty('--pv-header-height',headerCount+'px');
-      const previewHeight=visible.length*rowHeight;
-      timeline.querySelector('.pv-chart-rows').style.minHeight=Math.max(96,previewHeight)+'px';
-      for(const node of root.querySelectorAll('[data-fold-icon]'))node.textContent=state.collapsed.has(node.dataset.foldIcon)?'▸':'▾';
     }
     const controls=root.querySelector('.pv-chart-controls');
     if(controls)controls.hidden=state.tab!=='gantt';
@@ -216,7 +244,7 @@ export function mount(root, options={}) {
   function renderDemo() {
     ++state.pending;
     state.model=demoProject();state.filename='Пример (вымышленный)';state.demo=true;
-    state.query='';state.zoom='week';state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render();
+    state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render();
   }
   function exportCsv() {
     if(!state.model || !app?.download)return;
@@ -232,7 +260,9 @@ export function mount(root, options={}) {
     if(action==='open'){root.querySelector('#pv-file-input')?.click();return;}
     if(action==='demo'){renderDemo();return;}
     if(action==='export'){exportCsv();return;}
-    if(action==='close-details'){state.selectedUid=null;root.querySelector('#pv-details')?.remove();root.querySelectorAll('.is-selected').forEach(el=>el.classList.remove('is-selected'));return;}
+    if(action==='toggle-links'){state.showLinks=!state.showLinks;render();return;}
+    if(action==='toggle-baseline'){state.showBaseline=!state.showBaseline;render();return;}
+    if(action==='close-details'){state.selectedUid=null;root.querySelector('#pv-details')?.remove();root.querySelectorAll('.is-selected').forEach(el=>{el.classList.remove('is-selected');el.setAttribute('aria-selected','false');});return;}
     if(action==='expand'){state.collapsed.clear();render();return;}
     if(action==='collapse'){state.collapsed=new Set(state.model?.tasks.filter(t=>t.children).map(t=>t.uid)||[]);render();return;}
     if(control.dataset.pvTab){state.tab=control.dataset.pvTab;state.selectedUid=null;render();return;}
