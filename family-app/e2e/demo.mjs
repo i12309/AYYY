@@ -80,6 +80,7 @@ try{
   assert.equal(await page.locator('.tree-demo-badge').count(),1);
   await page.getByText('Учебный пример уже есть').waitFor();
   await page.getByRole('button',{name:'Открыть пример'}).click();
+  await page.locator('.tree-name-button').waitFor({timeout:15000});
   assert.equal(await treeId(page),firstId,'Button should open same ID');
   assert.equal((await stored(page)).length,1);
   console.log('PASS: Reopening tutorial never creates a new tree.');
@@ -93,6 +94,7 @@ try{
   assert.equal(await page.locator('.tree-demo-badge').count(),3);
   await page.getByText('Учебных деревьев в браузере: 3').waitFor();
   await page.getByRole('button',{name:'Открыть пример'}).click();
+  await page.locator('.tree-name-button').waitFor({timeout:15000});
   assert.equal((await stored(page)).length,3,'Existing duplicates must never be deleted or multiplied');
   const chosenId=await treeId(page);
   const after=await stored(page);
@@ -107,6 +109,7 @@ try{
   await page.locator('.tree-name-button').getByText('Мой изменённый учебный пример').waitFor();
   await openLibrary(page);
   await page.getByRole('button',{name:'Открыть пример'}).click();
+  await page.locator('.tree-name-button').waitFor({timeout:15000});
   assert.equal(await treeId(page),chosenId);
   assert.equal((await stored(page)).length,3);
   console.log('PASS: Tutorial marker survives rename, and no duplicate is created.');
