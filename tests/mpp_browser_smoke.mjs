@@ -41,6 +41,20 @@ try{
   assert.equal(await page.locator('.pv-list-row').count(),9);
   assert.ok(await page.locator('.pv-task-bar').count()>4);
   assert.ok(await page.locator('.pv-task-diamond').count()>0);
+  assert.equal(await page.locator('.pv-today-line').count(),1,'today marker should be visible on a current demo');
+  assert.ok((await page.locator('.pv-analysis-note').innerText()).includes('цепочка'),'show source/estimated critical annotation');
+  const criticalCount=await page.locator('.pv-list-row').count();
+  await page.locator('[data-pv-action="critical-only"]').click();
+  assert.ok(await page.locator('.pv-list-row').count()<criticalCount,'critical-only filter reduces rows');
+  await page.locator('[data-pv-action="critical-only"]').click();
+  assert.equal(await page.locator('.pv-list-row').count(),9);
+  await page.locator('#pv-sort').selectOption('percent');
+  assert.match(await page.locator('.pv-list-row').first().innerText(),/Тестирование/,'sorting must reorder top-level tasks');
+  await page.locator('#pv-sort').selectOption('id');
+  await page.locator('[data-pv-action="today"]').click();
+  assert.match(await page.locator('[data-pv-status]').innerText(),/Диаграмма перемещена/);
+  const prefs=await page.evaluate(()=>JSON.parse(localStorage.getItem('ayyy:mpp:view')||'{}'));
+  assert.equal(prefs.sort,'id','view preferences are saved without user project content');
   const headerHeight=await page.locator('.pv-chart-head').evaluate(el=>el.getBoundingClientRect().height);
   assert.equal(headerHeight,44,'Gantt header should be compact');
   const ticks=await page.locator('.pv-tick').evaluateAll(nodes=>nodes.slice(0,2).map(n=>parseFloat(n.style.left)));
@@ -109,6 +123,12 @@ try{
     page.locator('[data-pv-action="export"]').click()
   ]);
   assert.match(download.suggestedFilename(),/\.csv$/);
+  const [svgDownload]=await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('[data-pv-action="export-svg"]').click()
+  ]);
+  assert.match(svgDownload.suggestedFilename(),/-gantt\.svg$/,'SVG export must be downloadable');
+  assert.match(await page.locator('[data-pv-status]').innerText(),/SVG-диаграмма/);
   const fixture=path.join(root,'tests/fixtures/ayyy-project-sample.xml');
   await page.locator('#pv-file-input').setInputFiles(fixture);
   await page.waitForFunction(()=>document.querySelector('.pv-file-banner h1')?.textContent.includes('Тестовый проект AYYY'),{timeout:20000});
@@ -116,6 +136,12 @@ try{
   assert.match(await page.locator('.pv-list-scroll').innerText(),/Анализ требований/);
   const success=await page.locator('[data-pv-status]').innerText();
   assert.match(success,/прочитан локально/);
+  assert.ok(await page.locator('.pv-nonwork').count()>0,'holidays and weekends should shade imported calendar days');
+  await page.locator('[data-pv-tab="calendars"]').click();
+  assert.match(await page.locator('.pv-calendar-view').innerText(),/Стандартный/);
+  assert.match(await page.locator('.pv-calendar-view').innerText(),/Тестовый праздник/);
+  assert.match(await page.locator('.pv-calendar-view').innerText(),/09:00–13:00/);
+  await page.locator('[data-pv-tab="gantt"]').click();
   assert.ok(await page.evaluate(()=>window.__mppWorkers>=1),'local XML must parse inside Web Worker');
   if(process.env.MPP_FIXTURES_DIR){
     const mpp=path.join(process.env.MPP_FIXTURES_DIR,'mpp14resource.mpp');
@@ -148,7 +174,7 @@ try{
   assert.ok(await page.locator('.pv-list-row').count()<100);
   assert.ok(await page.locator('.pv-task-bar').count()<100);
   assert.deepEqual(errors,[],'browser must not emit uncaught errors');
-  console.log('MPP browser smoke: PASS (wordmark, docked task pane, resize drag/keyboard, compact timeline, responsive, demo, dependencies, baseline, CSV, worker XML, real MPP, virtual rows)');
+  console.log('MPP browser smoke: PASS (wordmark, docked task pane, resizing, calendar holidays, timeline navigation, critical chain, sorting, CSV/SVG, XML and real MPP, virtualization)');
 }finally{
   await browser.close();
 }
