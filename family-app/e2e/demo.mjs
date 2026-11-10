@@ -76,6 +76,7 @@ try{
   assert.ok(firstId);
   assert.equal((await stored(page)).length,1);
   await openLibrary(page);
+  await page.locator('.tree-demo-badge').first().waitFor({timeout:15000});
   assert.equal(await page.locator('.tree-demo-badge').count(),1);
   await page.getByText('Учебный пример уже есть').waitFor();
   await page.getByRole('button',{name:'Открыть пример'}).click();
@@ -88,6 +89,7 @@ try{
   await insertLegacyCopies(page,firstId);
   await page.reload();
   await openLibrary(page);
+  await page.locator('.tree-demo-badge').nth(2).waitFor({timeout:15000});
   assert.equal(await page.locator('.tree-demo-badge').count(),3);
   await page.getByText('Учебных деревьев в браузере: 3').waitFor();
   await page.getByRole('button',{name:'Открыть пример'}).click();
