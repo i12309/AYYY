@@ -46,7 +46,8 @@ export function normalizeProject(project, fileName = '') {
   }));
   const resourceMap = new Map(resources.map(r => [r.uid, r]));
   const assignments = (Array.isArray(project.assignments) ? project.assignments : []).filter(x => x && x.task !== null && x.resource !== null).map(x => ({
-    task:String(x.task), resource:String(x.resource), units:x.units, work:x.work, cost:x.cost
+    task:String(x.task), resource:String(x.resource), units:x.units??null,work:x.work??null,cost:x.cost??null,
+    start:dateValue(x.start),finish:dateValue(x.finish)
   }));
   const assignedResources = new Map();
   for (const assignment of assignments) {
