@@ -24,7 +24,7 @@
   if(kind==='meal'){
    const initial=item?H.localInput(item.eaten_at,tz):day+H.localInput(new Date(),tz).slice(10);
    fields.push(h('div',{class:'diary-form-grid'},f('Что съели','description',item?.description||'','text',null,true),f('Дата и время · '+tz,'at',initial,'datetime-local',null,true)));
-   
+
    fields.push(h('p',{class:'health-muted'},'Укажите значения для всей порции. Неизвестные поля оставьте пустыми.'),h('div',{class:'diary-nutrients'},Object.entries(mealLabels).map(([key,label])=>f(label,key,item?.[key]??''))),h('label',{class:'diary-check'},h('input',{name:'estimated',type:'checkbox',checked:item?.estimated||false}),'Это моя приблизительная оценка'),h('details',{},h('summary',{},'Заметка и дополнительные поля'),f('Заметка','notes',item?.notes||'','textarea'),f('Смещение UTC для неоднозначного времени','offset','')));
   }else fields.push(h('input',{type:'hidden',name:'date',value:item?.date||day}),h('div',{class:'diary-nutrients activity-fields'},Object.entries(activityLabels).map(([key,label])=>f(label,key,item?.[key]??''))),h('p',{class:'health-muted'},'Одна запись за день. Неизвестные значения оставьте пустыми. 7 ч 30 мин сна = 450 минут.'),h('div',{class:'diary-form-grid'},f('Вид упражнений','activity_type',item?.activity_type||''),f('Заметки о дне','notes',item?.notes||'','textarea')));
   const form=V.form('record',[...fields,h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],kind==='meal'?'Сохранить еду':'Сохранить день');form.dataset.kind=kind;if(item)form.dataset.id=item.id;
