@@ -186,6 +186,13 @@ export default function App() {
     window.addEventListener('gen:remote-updated',onRemoteUpdate);
     return ()=>window.removeEventListener('gen:remote-updated',onRemoteUpdate);
   },[treeId,refresh]);
+  useEffect(()=>{
+    const guard=(event:Event)=>{
+      if(modal!==null||navigationGuard.current)event.preventDefault();
+    };
+    window.addEventListener('gen:remote-refresh-request',guard);
+    return ()=>window.removeEventListener('gen:remote-refresh-request',guard);
+  },[modal]);
   const familyIndex = useMemo(
     () => buildFamilyIndex(data?.persons ?? [], data?.families ?? []),
     [data],
