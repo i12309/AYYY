@@ -156,7 +156,21 @@ export function mount(root, options={}) {
   if(!root) throw new Error('Project Viewer root not found');
   const app=options.app;
   const events=new AbortController();
-  const state={model:null, demo:false, filename:'', query:'', zoom:'week', scrollZoom:'week', scrollTop:0, scrollLeft:0, tableWidth:null, showLinks:true, showBaseline:true, tab:'gantt', collapsed:new Set(), selectedUid:null, destroyed:false, pending:0, cancelParse:null};
+  const prefs=(()=>{try{const x=JSON.parse(localStorage.getItem('ayyy:mpp:view')||'{}');return x&&typeof x==='object'?x:{};}catch{return {};}})();
+  const allowedZoom=['day','week','month'],allowedSort=['id','name','start','finish','percent','duration'];
+  const state={model:null,demo:false,filename:'',query:'',
+    zoom:allowedZoom.includes(prefs.zoom)?prefs.zoom:'week',scrollZoom:allowedZoom.includes(prefs.zoom)?prefs.zoom:'week',
+    sort:allowedSort.includes(prefs.sort)?prefs.sort:'id',scrollTop:0,scrollLeft:0,tableWidth:Number.isFinite(prefs.tableWidth)&&prefs.tableWidth>0?prefs.tableWidth:null,
+    showLinks:prefs.showLinks!==false,showBaseline:prefs.showBaseline!==false,
+    showCalendar:prefs.showCalendar!==false,showToday:prefs.showToday!==false,criticalOnly:false,
+    tab:'gantt',calendarId:null,jumpDate:'',analysis:null,collapsed:new Set(),selectedUid:null,
+    destroyed:false,pending:0,cancelParse:null};
+  const savePrefs=()=>{
+    try{localStorage.setItem('ayyy:mpp:view',JSON.stringify({
+      zoom:state.zoom,sort:state.sort,tableWidth:state.tableWidth,showLinks:state.showLinks,
+      showBaseline:state.showBaseline,showCalendar:state.showCalendar,showToday:state.showToday
+    }));}catch{}
+  };
   const sendStatus=(message='', kind='')=>{
     const el=root.querySelector('[data-pv-status]');
     if (el) {el.textContent=message;el.dataset.kind=kind;}
@@ -176,9 +190,14 @@ export function mount(root, options={}) {
       ['Ресурсы',t.resourceNames||'—'],
       ['Предшественники',t.predecessorText||'—'],
       ['Последователи',t.successors.map(l=>state.model.byUid.get(l.to)?.id).filter(Boolean).join(', ')||'—'],
-      ['Критическая задача',t.critical?'Да':'Нет']
+      ['Критическая задача',t.critical?'Да · из файла':state.analysis?.mode==='estimate'&&state.analysis.uids.has(t.uid)?'Приблизительная критическая цепочка':'Не подтверждена'],
+      ['Общий резерв',t.totalSlack??'—'],
+      ['Свободный резерв',t.freeSlack??'—'],
+      ['Ограничение',t.constraint||'—'],
+      ['Дата ограничения',dateText(t.constraintDate)],
+      ['Тип планирования',t.manual?'Ручное':'Автоматическое']
     ];
-    return '<aside class="pv-details" id="pv-details" aria-label="Сведения о задаче"><div class="pv-details-head"><strong>Сведения о задаче</strong><button type="button" data-pv-action="close-details" aria-label="Закрыть сведения">×</button></div><h2>'+escapeHtml(t.name)+'</h2><dl>'+fields.map(([k,v])=>'<div><dt>'+escapeHtml(k)+'</dt><dd>'+escapeHtml(v)+'</dd></div>').join('')+'</dl>'+(t.notes?'<div class="pv-notes"><strong>Примечание</strong><p>'+escapeHtml(t.notes.slice(0,6000))+'</p></div>':'')+'</aside>';
+    return '<aside class="pv-details" id="pv-details" aria-label="Сведения о задаче"><div class="pv-details-head"><strong>Сведения о задаче</strong><button type="button" data-pv-action="close-details" aria-label="Закрыть сведения">×</button></div><h2>'+escapeHtml(t.name)+'</h2><button class="pv-text-button pv-focus-task" type="button" data-pv-action="focus-task">Показать на диаграмме</button><dl>'+fields.map(([k,v])=>'<div><dt>'+escapeHtml(k)+'</dt><dd>'+escapeHtml(v)+'</dd></div>').join('')+'</dl>'+(t.notes?'<div class="pv-notes"><strong>Примечание</strong><p>'+escapeHtml(t.notes.slice(0,6000))+'</p></div>':'')+'</aside>';
   };
   // The task inspector occupies its own grid column; it never overlays Gantt bars.
   function refreshDetails() {
@@ -214,6 +233,7 @@ export function mount(root, options={}) {
     if(!bounds)return;
     state.tableWidth=Math.max(bounds.min,Math.min(bounds.max,Math.round(width)));
     workspace.style.setProperty('--pv-table-width',state.tableWidth+'px');
+    savePrefs();
     updateSplitterA11y(workspace);
   }
   function installSplitter() {
@@ -262,7 +282,18 @@ export function mount(root, options={}) {
     }
     const loaded=!!state.model;
     const model=state.model;
-    const visible=loaded?visibleTasks(model,state.query,state.collapsed):[];
+    const baseVisible=loaded?visibleTasks(model,state.query,state.collapsed,state.sort):[];
+    let visible=baseVisible;
+    if(loaded && state.criticalOnly && state.analysis?.uids.size){
+      const included=new Set(state.analysis.uids);
+      for(const uid of state.analysis.uids){
+        let parent=model.byUid.get(uid)?.parent,guard=0;
+        while(parent && guard++<60 && model.byUid.has(parent)){
+          included.add(parent);parent=model.byUid.get(parent).parent;
+        }
+      }
+      visible=baseVisible.filter(t=>included.has(t.uid));
+    }
     const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button></div></div>'+
       '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label><button type="button" class="pv-toggle" data-pv-action="toggle-links" aria-pressed="'+state.showLinks+'">Связи</button><button type="button" class="pv-toggle" data-pv-action="toggle-baseline" aria-pressed="'+state.showBaseline+'">Базовый план</button></div></div>'+
       '<div class="pv-body">'+(state.tab==='resources'?resourceMarkup(model,state.query):
@@ -388,7 +419,7 @@ export function mount(root, options={}) {
     try{
       const normalized=await parseLocalFile(file,ticket);
       if(state.destroyed||ticket!==state.pending)return;
-      state.model=normalized;state.demo=false;state.filename=file.name;state.query='';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();
+      state.model=normalized;state.analysis=criticalChain(normalized);state.calendarId=normalized.calendar;state.demo=false;state.filename=file.name;state.query='';state.scrollTop=0;state.scrollLeft=0;state.criticalOnly=false;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();
       render(true);
       sendStatus('Файл прочитан локально. Ничего не отправлено на сервер.','success');
     }catch(error){
@@ -414,7 +445,7 @@ export function mount(root, options={}) {
   function renderDemo() {
     ++state.pending;
     state.cancelParse?.();
-    state.model=demoProject();state.filename='Пример (вымышленный)';state.demo=true;
+    state.model=demoProject();state.analysis=criticalChain(state.model);state.calendarId=state.model.calendar;state.filename='Пример (вымышленный)';state.demo=true;
     state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render(true);
   }
   function exportCsv() {
