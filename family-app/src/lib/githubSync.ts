@@ -6,7 +6,7 @@ import {type Document,validate,now} from './browserModel';
 import {exportGedcom} from './gedcomExport';
 import {mergeDocuments,type MergeChoice,type MergeConflict} from './browserMerge';
 import {
-  getSync,setSync,listTrees,readTree,readFiles,installTreeSnapshot,installResolvedSnapshot,type SyncRecord
+  getSync,setSync,listTrees,readTree,readFiles,installTreeSnapshot,installResolvedSnapshot,installRemoteIfUnchanged,type SyncRecord
 } from './browserStore';
 
 let bearer = '';
@@ -380,4 +380,68 @@ export async function resolveGitHubConflict(
   const installed=await installResolvedSnapshot(preview.local,proposed.document,
     [...media].map(([filename,blob])=>({filename,blob})),record);
   return {sha:published.head,pending:!installed,autoChanges:proposed.autoChanges};
+}
+
+
+/** Check a linked tree when it is opened. A remote-only change is brought
+ * down automatically only when local JSON is still at the synced baseline.
+ * Conflicts never overwrite the local copy.
+ */
+export async function checkAndPullGitHub(treeId:string):Promise<
+  'up-to-date'|'updated'|'pending-local'|'conflict'|'missing'|'interrupted'
+> {
+  const link=await getSync(treeId);
+  if(!link?.autoSync)return 'up-to-date';
+  const repo:RemoteRepo={owner:link.owner,repo:link.repo,branch:link.branch};
+  await verifyPrivate(repo);
+  const local=await readTree(treeId);
+  if(link.path!==archivePath(local.tree.slug))return 'conflict';
+  const head=await branchHead(repo);
+  const entry=await treeFile(repo,link.path,head);
+  if(!entry?.sha)return 'missing';
+  if(entry.sha===link.blobSha)
+    return local.tree.updated_at!==link.lastLocalSavedAt?'pending-local':'up-to-date';
+  // Never silently overwrite user changes, including edits made before
+  // auto-sync was enabled on an older linked tree.
+  if(local.tree.updated_at!==link.lastLocalSavedAt)return 'conflict';
+  let remote:Document;
+  try{
+    remote=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBlob(repo,entry.sha)));
+    validate(remote);
+  }catch{
+    throw new Error('GitHub вернул повреждённый tree.json; локальная копия сохранена.');
+  }
+  if(remote.tree.id!==local.tree.id||remote.tree.slug!==local.tree.slug)
+    return 'conflict';
+  const stored=await readFiles(treeId);
+  const needed=usedMedia(remote);
+  const extra:Array<{filename:string;blob:Blob}>=[];
+  for(const [name,mime] of needed){
+    if(stored.has(name))continue;
+    const file=await treeFile(repo,mediaPath(link.path,name),head);
+    if(!file?.sha)throw new Error('В GitHub отсутствует файл '+name+'. Локальные данные не изменены.');
+    const bytes=await readBlob(repo,file.sha);
+    const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;
+    extra.push({filename:name,blob:new Blob([raw],{type:mime})});
+  }
+  const original=await treeFile(repo,link.path.replace(/tree\.json$/,'original.ged'),head);
+  if(original?.sha){
+    const bytes=await readBlob(repo,original.sha);
+    const saved=stored.get('original.ged');
+    if(saved&&!sameBytes(new Uint8Array(await saved.arrayBuffer()),bytes))
+      return 'conflict';
+    if(!saved){
+      const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;
+      extra.push({filename:'original.ged',blob:new Blob([raw],{type:'text/plain'})});
+    }
+  }
+  const currentLink=await getSync(treeId);
+  if(!currentLink?.autoSync||currentLink.blobSha!==link.blobSha)return 'interrupted';
+  const installed=await installRemoteIfUnchanged(local,remote,extra,{
+    ...currentLink,blobSha:entry.sha,lastCommit:head,lastSync:now(),
+    lastLocalSavedAt:remote.tree.updated_at,baseline:structuredClone(remote)
+  },currentLink);
+  if(!installed)return 'interrupted';
+  window.dispatchEvent(new CustomEvent('gen:remote-updated',{detail:{treeId}}));
+  return 'updated';
 }
