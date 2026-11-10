@@ -259,8 +259,9 @@ export async function previewGitHubConflict(treeId:string,repo:RemoteRepo):Promi
   let baseline:Document|null=link.baseline||null;
   if(!baseline&&link.blobSha) {
     try{
-      baseline=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBlob(repo,link.blobSha)));
-      validate(baseline);
+      const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBlob(repo,link.blobSha))) as Document;
+      validate(parsed);
+      baseline=parsed;
     }catch{
       baseline=null; // Never guess a baseline or silently merge unrelated data.
     }
