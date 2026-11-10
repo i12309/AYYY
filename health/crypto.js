@@ -34,7 +34,7 @@
     if(doc?.humanMigration)throw new Error('Архив переноса старого HUMAN не поддерживается. Создайте новый журнал и загрузите данные заново.');
     if (!doc || typeof doc!=='object' || Array.isArray(doc) || doc.schema!==1 ||
         typeof doc.id!=='string' || !doc.profile || typeof doc.profile!=='object' ||
-        ['observations','vitals','episodes','intakes','reminders','medical','medications','findings','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
+        ['observations','vitals','episodes','intakes','reminders','medical','medications','findings','diary','documents','revisions','timeline'].some(k=>!Array.isArray(doc[k])))
       throw new Error('Неизвестная структура медицинских данных.');
     return doc;
   }
@@ -80,17 +80,21 @@
     return {key,doc};
   }
   async function create(passphrase) {
+    requireCrypto();
+    const id=crypto.randomUUID();
+    const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'unknown',heightCm:null,notes:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'},
+      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],findings:[],diary:[],documents:[],revisions:[],timeline:[]};
+    return {doc,...await rekey(doc,passphrase)};
+  }
+  async function rekey(doc,passphrase) {
     if(typeof passphrase!=='string'||passphrase.length<12)
       throw new Error('Фраза доступа должна содержать не менее 12 символов.');
     requireCrypto();
-    const id=crypto.randomUUID();
-    const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'',notes:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'},
-      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],findings:[],diary:[],documents:[],revisions:[]};
     const salt=crypto.getRandomValues(new Uint8Array(16));
     const key=await derive(passphrase,salt);
-    const envelope=await seal(doc,key,{format:FORMAT,vaultId:id,kdf:'PBKDF2-SHA256',iterations:ITERATIONS,
+    const envelope=await seal(doc,key,{format:FORMAT,vaultId:doc.id,kdf:'PBKDF2-SHA256',iterations:ITERATIONS,
       salt:base64(salt),iv:base64(new Uint8Array(12)),ciphertext:base64(new Uint8Array(16))});
-    return {key,doc,envelope};
+    return {key,envelope};
   }
-  window.HumanCrypto={FORMAT,base64,unbase64,assertEnvelope,assertData,seal,unlock,openWithKey,create};
+  window.HumanCrypto={FORMAT,base64,unbase64,assertEnvelope,assertData,seal,unlock,openWithKey,create,rekey};
 })();

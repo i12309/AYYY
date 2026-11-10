@@ -71,8 +71,8 @@ try:
   assert 'Synthetic' not in json.dumps(envelope)
   print('PASS remote contains only encrypted envelope',flush=True)
   # Exercise the real controller as well as the transport API.
-  def open_ui(page):
-   form=page.locator('[data-form=download]');form.locator('[name=repo]').fill(REPO);form.locator('[name=branch]').fill(branch);form.locator('[name=token]').fill(credential);form.locator('[type=submit]').click();page.locator('[data-form=unlock]').wait_for();page.locator('[name=passphrase]').fill(params['passphrase']);page.locator('[data-form=unlock] [type=submit]').click();page.locator('.metric').first.wait_for()
+  def open_ui(page,phrase=None):
+   form=page.locator('[data-form=download]');form.locator('[name=repo]').fill(REPO);form.locator('[name=branch]').fill(branch);form.locator('[name=token]').fill(credential);form.locator('[type=submit]').click();page.locator('[data-form=unlock]').wait_for();page.locator('[name=passphrase]').fill(phrase or params['passphrase']);page.locator('[data-form=unlock] [type=submit]').click();page.locator('.metric').first.wait_for()
   def reminders(page):page.locator('.sidebar button[data-tab=care]').click();page.locator('[data-view=reminders]').click()
   def new_reminder(page,title):
    page.locator('[data-action=new-reminder]').click();page.locator('#health-dialog [name=title]').fill(title);page.locator('#health-dialog [name=date]').fill('2026-11-10');page.locator('#health-dialog [name=time]').fill('10:00');page.locator('#health-dialog [type=submit]').click();page.locator('#health-dialog').wait_for(state='hidden')
@@ -97,6 +97,17 @@ try:
   kept=pa.evaluate('''async p=>{const local=await HumanStore.get(await HumanStore.current()),opened=await HumanCrypto.unlock(local.envelope,p.passphrase),remote=await HumanGithub.read(p.repo),other=await HumanCrypto.unlock(remote.envelope,p.passphrase);return local.dirty&&opened.doc.reminders.length===2&&other.doc.reminders.length===1&&other.doc.reminders[0].title==='Synthetic second UI revision';}''',params)
   assert kept,'Controller conflict must retain both independent versions'
   print('PASS controller conflict preserves the local draft and remote revision',flush=True)
+  rotated='synthetic-rotated-roundtrip-phrase'
+  pb.locator('.sidebar button[data-tab=settings]').click();pb.locator('[data-action=change-passphrase]').click()
+  for field,value in [('current',params['passphrase']),('next',rotated),('repeat',rotated)]:pb.locator('#health-dialog [name='+field+']').fill(value)
+  pb.locator('#health-dialog [type=submit]').click();pb.locator('#health-dialog').wait_for(state='hidden');synced(pb)
+  rekeyed=pb.evaluate('''async p=>{const remote=await HumanGithub.read(p.repo),opened=await HumanCrypto.unlock(remote.envelope,p.rotated);let oldRejected=false;try{await HumanCrypto.unlock(remote.envelope,p.passphrase);}catch{oldRejected=true;}return oldRejected&&opened.doc.reminders[0].title==='Synthetic second UI revision'&&opened.doc.timeline.some(x=>x.kind==='security');}''',{**params,'rotated':rotated})
+  assert rekeyed,'Rekey must synchronize the new envelope with the expected remote SHA'
+  print('PASS controller synchronized changed passphrase and action history',flush=True)
+  c,pc=context();open_ui(pc,rotated);reminders(pc)
+  assert 'Synthetic second UI revision' in pc.locator('.care-list').inner_text()
+  pc.locator('.sidebar button[data-tab=timeline]').click();assert pc.locator('.timeline li').count()>=3
+  print('PASS another browser reopened the synchronized journal with the new phrase',flush=True)
   assert not runtime_errors,'Runtime error in GitHub UI roundtrip'
   browser.close()
 finally:

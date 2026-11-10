@@ -286,6 +286,14 @@ body{font-size:14px}
 .finding-history section{padding:12px 0;border-bottom:1px solid var(--border)}
 .finding-detail>.health-actions{margin-top:14px;flex-wrap:wrap;justify-content:flex-start}
 .finding-detail>.badge{justify-self:start;width:max-content;max-width:100%}
+.sidebar nav{min-height:0;overflow-y:auto;align-content:start}
+.sidebar>.workspace,.sidebar>.nav-caption,.sidebar>.sidebar-footer{flex-shrink:0}
+.profile-page .settings{margin-bottom:0}
+.timeline-open{border:0;background:transparent;padding:0;font:inherit;font-size:12px;font-weight:550;color:inherit;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.timeline-open:hover{color:var(--blue-ink);text-decoration:underline}
+.timeline-page .filters>*{min-width:0;max-width:100%}
+.timeline-page .filters input{flex:1;min-width:150px}
+@media(max-width:600px){.profile-page .metadata{grid-template-columns:105px minmax(0,1fr)}.timeline-page .timeline li{flex-wrap:wrap}.timeline-page .timeline time{margin-left:40px}.timeline-page .timeline-copy{flex-basis:calc(100% - 45px)}}
 @media(max-width:600px){.finding-detail .metadata{grid-template-columns:minmax(0,105px) minmax(0,1fr);gap:8px}}
 @media(max-width:700px){
  .diary-page .diary-editor,.diary-page .diary-list,.diary-page .diary-chart{padding:12px}

@@ -12,9 +12,9 @@
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
     genetic:'findings',diary:'diary',meal:'diary','activity-day':'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
-    ['medical','Медкарта'],['care','Приёмы и напоминания'],['nutrition','Питание'],['activity','Активность'],['diary','Дневник'],['genetics','Генетика'],['document','Документы'],['settings','Настройки']];
+    ['medical','Медкарта'],['care','Приёмы и напоминания'],['nutrition','Питание'],['activity','Активность'],['diary','Дневник'],['genetics','Генетика'],['document','Документы'],['timeline','История'],['profile','Мой профиль'],['settings','Настройки']];
   const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-  let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0;
+  let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0,keyChangeRun=0;
   const clientId=crypto.randomUUID();
   const recordsFor=(doc,kind)=>['meal','activity-day'].includes(kind)?window.HumanDiary.records(doc,kind):kind==='episode'?window.HumanHealth.episodes(doc):['intake','reminder'].includes(kind)?window.HumanCare.records(doc,kind):doc[kinds[kind]]||[];
   const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('ayyy-health-v1'):null;
@@ -28,9 +28,10 @@
   async function profileList(){state.profiles=await S.list();}
   const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.'],settings:['Settings','neutral','Профиль, безопасность и синхронизация.']};
   navMeta.nutrition=['Flame','yellow','Приёмы пищи и известные нутриенты.'];navMeta.activity=['Footprints','green','Шаги, сон и упражнения по дням.'];
+  navMeta.timeline=['History','yellow','Что и когда появилось в вашем журнале.'];navMeta.profile=['UserRound','neutral','Профиль и ваши данные.'];
   navMeta.genetics=['Dna','green','Ваши записи из генетических отчётов.'];
   navMeta.care=['Bell','blue','Фактические события и ваши расписания.'];
-  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
+  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
     if(state.local&&!state.picker){
@@ -101,6 +102,7 @@
   function status(){
     if(state.demo)return 'Демо · вымышленные данные';
     if(!state.doc)return 'Данные зашифрованы';
+    if(state.rekeyBusy)return 'Обновление защиты…';
     if(state.syncBusy)return 'Синхронизация…';
     if(state.conflict)return 'Конфликт версий';
     if(!state.local.repo)return 'На устройстве';
@@ -113,7 +115,7 @@
     sidebar.hidden=bottom.hidden=footer.hidden=!unlocked;
     if(!unlocked){document.body.classList.remove('health-menu-open');header.replaceChildren();return;}
     const profile=state.doc.profile.name||'Мой профиль';
-    sidebar.replaceChildren(V.brand('human'),V.h('button',{class:'workspace profile-entry','data-action':'edit-profile','aria-label':'Мой профиль'},V.h('span',{class:'avatar'},profile.slice(0,1).toUpperCase()),V.h('div',{},V.h('strong',{},profile),V.h('small',{},'Личное пространство'))),V.h('p',{class:'nav-caption'},'МОЙ ЖУРНАЛ'),nav(),V.h('div',{class:'sidebar-footer'},V.icon('ShieldCheck',16),V.h('span',{},state.demo?'Демонстрационный журнал':'Данные на вашем устройстве'),V.h('button',{'data-action':state.demo?'exit-demo':'lock','aria-label':state.demo?'Выйти из демо':'Закрыть доступ'},V.icon('LogOut',17))));
+    sidebar.replaceChildren(V.brand('human'),V.h('button',{class:'workspace profile-entry','data-tab':'profile','aria-label':'Мой профиль'},V.h('span',{class:'avatar'},profile.slice(0,1).toUpperCase()),V.h('div',{},V.h('strong',{},profile),V.h('small',{},'Личное пространство'))),V.h('p',{class:'nav-caption'},'МОЙ ЖУРНАЛ'),nav(),V.h('div',{class:'sidebar-footer'},V.icon('ShieldCheck',16),V.h('span',{},state.demo?'Демонстрационный журнал':'Данные на вашем устройстве'),V.h('button',{'data-action':state.demo?'exit-demo':'lock','aria-label':state.demo?'Выйти из демо':'Закрыть доступ'},V.icon('LogOut',17))));
     const label=tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
     const search=V.h('div',{class:'global-search'},V.icon('Search',15),V.h('input',{type:'search',id:'health-global-search','aria-label':'Поиск по всем данным',placeholder:'Найти в журнале',value:state.globalSearch||'','data-search':'global'}),V.h('kbd',{},'/'));
     const top=V.h('div',{class:'health-topbar-content'},V.brand('ayyy'),V.h('div',{class:'breadcrumb'},V.h('span',{},'Личное пространство'),V.icon('ChevronRight',13),V.h('strong',{},label)),search,V.h('span',{class:'health-status',role:'status','aria-label':status(),'data-state':state.conflict?'problem':'ok',title:status()},V.icon('ShieldCheck',15)),V.button('Добавить','quick-add',{class:'primary desktop-add'}));
@@ -173,7 +175,7 @@
     const localBox=V.card('Локальное хранение',[
       V.h('p',{},'AES-256-GCM · PBKDF2-SHA256 · 310 000 итераций'),
       V.h('p',{class:'health-note'},'В IndexedDB хранятся только зашифрованные записи.'),
-      V.button('Скачать архив','backup'),V.button('Другой профиль','picker')
+      V.button('Скачать архив','backup'),V.button('Изменить фразу доступа','change-passphrase'),V.button('Другой профиль','picker')
     ]);
     box.append(V.h('div',{class:'health-grid equal'},profile,localBox));
     const form=V.form('connect',[
@@ -191,14 +193,14 @@
     ]));
     box.append(V.card('Резервирование и удаление',[
       V.h('p',{class:'health-note'},'Держите отдельную зашифрованную резервную копию вне GitHub.'),
-      V.button('Экспортировать vault.json','backup'),
+      V.button('Экспортировать vault.json','backup'),V.button('Восстановить из файла','restore-file'),
       V.button('Удалить только локальную копию','delete-local',{class:'danger'})
     ]));
     return box;
   }
   let renderedVaultId=null;
   function render(){
-    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;state.syncBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
     const previousEditor=root.querySelector('.diary-editor');
@@ -211,6 +213,8 @@
     else if(state.tab==='genetics')view=window.HumanGeneticsView.page(state);
     else if(state.tab==='care')view=window.HumanCareView.page(state);
     else if(['nutrition','activity'].includes(state.tab))view=window.HumanDiaryView.page(state);
+    else if(state.tab==='profile')view=window.HumanJournalView.profilePage(state);
+    else if(state.tab==='timeline')view=window.HumanJournalView.timelinePage(state);
     else if(state.tab==='settings')view=settings();
     else view=V.listSection(state,state.tab);
     const nextEditor=view.querySelector('.diary-editor');if(nextEditor){if(previousEditor?.dataset.editorKey===nextEditor.dataset.editorKey)nextEditor.replaceWith(previousEditor);else{const form=nextEditor.querySelector('form'),id=form.dataset.id;if(id){const existing=recordsFor(state.doc,form.dataset.kind).find(r=>r.id===id);if(existing)formSnapshots.set(form,JSON.stringify(existing));}}}
@@ -228,6 +232,59 @@
   function chooseDiaryDay(day){window.HumanDiary.day(day);state.diaryDays??={};state.diaryDays[state.tab]=day;state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;state.diaryAll=false;state.diaryEditor=null;render();}
   function openFinding(id){const item=state.doc.findings.find(x=>x.id===id);if(!item)throw Error('Результат больше не существует.');careDialog(item.title,window.HumanGeneticsView.detail(state,item));}
   function careDialog(title,content){document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();}
+  async function openTimelineEvent(id){
+    const event=state.doc.timeline.find(e=>e.id===id);if(!event)throw Error('Событие не найдено.');const row=window.HumanJournal.findRecord(state.doc,event),kind=event.recordKind;
+    state.globalSearch='';
+    if(!row){careDialog('Событие журнала',V.h('div',{},V.h('p',{},event.title),V.h('p',{class:'health-note'},'Запись удалена. Событие сохранено в истории.'),V.h('p',{class:'health-note'},V.date(event.happenedAt))));return;}
+    if(kind==='profile'){state.tab='profile';render();return;}
+    if(kind==='lab'){state.tab='lab';state.search='';state.abnormalOnly=false;state.favoritesOnly=false;state.groupKey=M.groupKey(row);state.observationId=row.id;render();return;}
+    if(kind==='genetic'){openFinding(row.id);return;}
+    if(kind==='document'){await previewFile(row.id);return;}
+    if(kind==='meal'||kind==='activity-day'){openDiaryEditor(kind,row.id);return;}
+    if(kind==='medical'||kind==='medication'){state.tab='medical';state.filters.medical='';state.medicalSearch='';state.medicalStatus='';state.medicalId=row.id;state.medicalKind=kind;render();root.querySelector('.medical-detail')?.scrollIntoView({block:'start'});return;}
+    if(kind==='vital'||kind==='episode'){state.tab='vital';state.filters.vital=kind==='episode'?'illness':row.type;state.vitalUnit=kind==='vital'?row.unit:'';state.episodeFilter='all';state.vitalId=kind==='vital'?row.id:'';state.episodeId=kind==='episode'?row.id:'';render();root.querySelector('.health-details')?.scrollIntoView({block:'start'});return;}
+    if(kind==='intake'||kind==='reminder'){state.tab='care';state.careView=kind==='intake'?'intakes':'reminders';state.careFilter='all';render();}
+    modal(kind,row.id);
+  }
+  const restoreForms=new WeakMap();
+  async function startRestore(file){
+    const active=sessionFence();if(!file||file.size>45*1024*1024)throw Error('Выберите зашифрованный JSON до 45 МиБ.');
+    const envelope=JSON.parse(await file.text());if(!active())return;C.assertEnvelope(envelope);
+    const form=V.form('restore-unlock',[V.h('p',{},'Копия будет проверена перед восстановлением.'),V.field('Фраза доступа к копии','passphrase','','password',null,true),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],'Проверить копию');restoreForms.set(form,{envelope,active});careDialog('Восстановить журнал',form);
+  }
+  async function inspectRestore(form){
+    const context=restoreForms.get(form);if(!context?.active())throw Error('Открытый журнал сменился.');
+    const opened=await C.unlock(context.envelope,form.elements.passphrase.value);if(!context.active()||!form.isConnected)return;
+    const existing=await S.get(opened.doc.id);if(!context.active()||!form.isConnected)return;
+    const d=opened.doc,next=V.form('restore-confirm',[V.h('p',{},d.profile.name||'Журнал здоровья'),V.table(['Раздел','Записей'],[['Анализы',d.observations.length],['Показатели',d.vitals.length],['Эпизоды',d.episodes.length],['Медкарта',d.medical.length+d.medications.length],['Генетика',d.findings.length],['Питание и дневник',d.diary.length],['Приёмы',d.intakes.length],['Напоминания',d.reminders.length],['Документы',d.documents.length],['История действий',d.timeline.length]]),V.h('p',{class:'health-note'},existing?'Этот журнал уже есть на устройстве. Будет создана отдельная копия; существующий журнал сохранится.':'Будет восстановлен отдельный журнал на этом устройстве.'),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],existing?'Восстановить отдельную копию':'Восстановить журнал');restoreForms.set(next,{...context,opened,clone:!!existing});careDialog('Проверка резервной копии',next);
+  }
+  async function finishRestore(form){
+    const context=restoreForms.get(form);if(!context?.active())throw Error('Открытый журнал сменился.');
+    const doc=structuredClone(context.opened.doc);if(context.clone)doc.id=M.id();doc.timeline.push({id:M.id(),kind:'restore',recordKind:'profile',entityId:'profile',operation:'restore',title:context.clone?'Восстановлена отдельная копия журнала':'Восстановлена резервная копия',happenedAt:new Date().toISOString()});
+    const envelope=await C.seal(doc,context.opened.key,context.envelope);if(!context.active()||!form.isConnected)return;
+    const local=await S.createSelected({id:doc.id,envelope,dirty:true});if(!context.active())return;
+    G.disconnect();clearTimeout(syncTimer);state.local=local;state.doc=doc;state.key=context.opened.key;state.demo=false;state.picker=false;state.tab='profile';state.conflict=false;render();const active=sessionFence();await profileList();if(active()){render();toast('Резервная копия восстановлена.');}
+  }
+  function passphraseDialog(){
+    if(state.demo)throw Error('Демо не имеет фразы доступа.');
+    const form=V.form('change-passphrase',[V.h('p',{class:'health-note'},'Журнал будет заново зашифрован новой фразой. Скачанные ранее копии сохранят прежнюю фразу доступа.'),V.field('Текущая фраза','current','','password',null,true),V.field('Новая фраза (минимум 12 символов)','next','','password',null,true),V.field('Повторите новую фразу','repeat','','password',null,true),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],'Изменить фразу доступа');careDialog('Защита журнала',form);
+  }
+  async function changePassphrase(form){
+    if(state.demo||!state.key)throw Error('Откройте личный журнал.');if(state.syncBusy)throw Error('Дождитесь завершения синхронизации перед сменой фразы.');
+    if(state.rekeyBusy)throw Error('Смена фразы уже выполняется.');
+    const current=form.elements.current.value,next=form.elements.next.value;if(next.length<12||next!==form.elements.repeat.value)throw Error('Новые фразы не совпадают или короче 12 символов.');
+    const active=sessionFence(),id=state.doc.id,runId=++keyChangeRun;state.rekeyBusy=true;clearTimeout(syncTimer);renderHeader();
+    const run=writeQueue.then(async()=>{
+      if(!active())throw Error('Журнал закрыт.');const before=state.local,doc=structuredClone(state.doc);
+      await C.unlock(before.envelope,current);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      doc.timeline.push({id:M.id(),kind:'security',recordKind:'profile',entityId:'profile',operation:'rekey',title:'Фраза доступа изменена',happenedAt:new Date().toISOString()});
+      const encrypted=await C.rekey(doc,next);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      const fresh=await S.get(id);if(!active()||!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw Error('Журнал изменился во время смены фразы. Повторите действие.');
+      const saved=await S.save({...fresh,envelope:encrypted.envelope,dirty:true},fresh);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
+      state.local=saved;state.doc=doc;state.key=encrypted.key;sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;dialog.close();render();if(saved.repo&&G.hasToken())scheduleSync();toast('Журнал зашифрован новой фразой доступа.');
+    });writeQueue=run.catch(()=>{});
+    try{await run;}finally{if(runId===keyChangeRun&&state.local?.id===id){state.rekeyBusy=false;renderHeader();if(state.doc&&state.local.dirty&&state.local.repo&&G.hasToken())scheduleSync();}}
+  }
   function careSnooze(el){const form=V.form('care-action',[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),V.field('На сколько отложить','minutes','60','select',[['15','На 15 минут'],['60','На час'],['180','На 3 часа']])],'Подтвердить отсрочку');form.dataset.id=el.dataset.id;form.dataset.version=el.dataset.version;form.dataset.mode='snooze';careDialog('Отложить напоминание',form);}
   async function careAction(id,expected,action,minutes=0){
     await mutate(data=>{const C=window.HumanCare,old=C.records(data,'reminder').find(r=>r.id===id);if(!old)throw Error('Напоминание удалено.');if(old.version!==Number(expected))throw Error('Напоминание изменилось. Обновите список.');const next=action==='toggle'?C.checkReminder({...old,enabled:!old.enabled},old,data):C.act(old,action,{minutes});version(data,'reminder',old,action);const list=data.reminders??=[],index=list.findIndex(r=>r.id===id);if(index<0)list.push(next);else list[index]=next;});
@@ -283,14 +340,11 @@
       f('Файл PDF, JPEG, PNG, XLSX, CSV, TXT, JSON, VCF (до 2 МиБ)','file','','file'),
       f('Название','title',''),f('Дата','date',now,'date')
     ];
-    else if(kind==='profile')fields=[
-      f('Имя','name',x.name||''),r(f('Дата рождения','birthDate',x.birthDate||'','date'),
-        f('Пол','sex',x.sex||'','select',[['','Не указан'],['unknown','Неизвестен'],['male','Мужской'],['female','Женский'],['intersex','Интерсекс']])),
-      f('Часовой пояс (например Europe/Moscow)','timezone',x.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'),f('Дополнительно','notes',x.notes||'','textarea')
-    ];
+    else if(kind==='profile')fields=window.HumanJournalView.profileFields(x);
     const mode=kind==='profile'?'profile':'record';
     const form=V.form(mode,[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),...fields],'Сохранить');
     form.dataset.kind=kind;
+    if(kind==='profile'){formSnapshots.set(form,JSON.stringify(state.doc.profile));window.HumanJournalView.updateProfileForm(form);for(const name of ['birthDate','timezone'])form.elements.namedItem(name).addEventListener('input',()=>window.HumanJournalView.updateProfileForm(form));}
     if(kind==='genetic'){form.classList.add('genetics-form');window.HumanGeneticsView.updateForm(form);form.querySelector('[name=date_precision]').addEventListener('change',()=>window.HumanGeneticsView.updateForm(form,true));}
     if(kind==='intake'||kind==='reminder'){form.classList.add('care-form');window.HumanCareView.updateForm(form);form.querySelector(kind==='intake'?'[name=outcome]':'[name=frequency]')?.addEventListener('change',()=>window.HumanCareView.updateForm(form));}
     if(existing){form.dataset.id=existing.id;formSnapshots.set(form,JSON.stringify(existing));}
@@ -313,7 +367,7 @@
       if(state.demo){
         const copy=structuredClone(state.doc);
         await change(copy);
-        C.assertData(copy);
+        window.HumanJournal.appendChanges(state.doc,copy);C.assertData(copy);
         requireSession();state.doc=copy;render();
         toast('Демо: изменение действует только до выхода из примера.');
         return;
@@ -322,7 +376,7 @@
       const data=structuredClone(state.doc),before=state.local;
       await change(data);
       requireSession();
-      C.assertData(data);
+      window.HumanJournal.appendChanges(state.doc,data);C.assertData(data);
       const envelope=await C.seal(data,key,before.envelope);requireSession();
       const fresh=await S.get(id);requireSession();
       if(!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw new Error('Журнал изменился во время сохранения. Откройте его заново; новая версия не перезаписана.');
@@ -395,15 +449,14 @@
   }
   async function profileSubmit(form){
     const input=Object.fromEntries(new FormData(form).entries());
-    const timezone=String(input.timezone||'UTC').trim();try{new Intl.DateTimeFormat('en',{timeZone:timezone}).format();}catch{throw Error('Укажите действующий часовой пояс, например Europe/Moscow.');}
-    const next={...state.doc.profile,timezone,name:M.text(input.name,150),birthDate:input.birthDate?M.isoDate(input.birthDate):'',
-      sex:['male','female','intersex','unknown'].includes(input.sex)?input.sex:'',
-      notes:M.text(input.notes,3000)};
+    const expected=formSnapshots.get(form),oldZone=state.doc.profile.timezone;
     await mutate(data=>{
-      data.revisions.push({id:M.id(),kind:'profile',operation:'edit',
-        previous:structuredClone(data.profile),changedAt:new Date().toISOString()});
-      data.profile=next;
+      if(expected!==JSON.stringify(data.profile))throw Error('Профиль изменился. Откройте форму заново.');
+      const next=window.HumanJournal.checkProfile(input,data.profile);
+      data.revisions.push({id:M.id(),kind:'profile',operation:'edit',previous:structuredClone(data.profile),changedAt:new Date().toISOString()});data.profile=next;
     });
+    if(!form.isConnected)return;
+    if(oldZone!==state.doc?.profile.timezone){state.diaryDays={};render();}
     if(form.isConnected)dialog.close();
   }
   async function remove(kind,id){
@@ -470,7 +523,7 @@
   function sessionFence(){const revision=sessionRevision,id=state.doc?.id,localId=state.local?.id,key=state.key;return ()=>revision===sessionRevision&&id===state.doc?.id&&localId===state.local?.id&&key===state.key;}
   async function syncNow(){
     if(state.demo){toast('Демо никогда не отправляется в GitHub.');return;}
-    if(state.syncBusy||!state.local?.repo||!state.key){if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');return;}
+    if(state.syncBusy||state.rekeyBusy||!state.local?.repo||!state.key){if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');return;}
     if(!G.hasToken()){state.tab='settings';render();toast('Введите токен GitHub.');return;}
     const fence=sessionFence(),run=++syncRun,active=()=>fence()&&run===syncRun;
     state.syncBusy=true;renderHeader();
@@ -566,18 +619,10 @@
         if(!active())return;await profileList();if(!active())return;
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
         toast('Архив загружен. Введите вашу фразу доступа.');
-      }else if(mode==='import-vault'){
-        const active=sessionFence();
-        const file=form.elements.namedItem('file').files[0];
-        if(!file||file.size>45*1024*1024)throw new Error('Неверный размер файла.');
-        const envelope=JSON.parse(await file.text());if(!active())return;
-        C.assertEnvelope(envelope);
-        if(await S.get(envelope.vaultId))throw new Error('Такой профиль уже существует.');
-        if(!active())return;
-        const local=await S.createSelected({id:envelope.vaultId,envelope,dirty:true});
-        if(!active())return;await profileList();if(!active())return;
-        state.local=local;state.doc=null;state.key=null;state.picker=false;render();
-      }
+      }else if(mode==='import-vault')await startRestore(form.elements.namedItem('file').files[0]);
+      else if(mode==='restore-unlock')await inspectRestore(form);
+      else if(mode==='restore-confirm')await finishRestore(form);
+      else if(mode==='change-passphrase')await changePassphrase(form);
       else if(mode==='episode-answer'){
         const id=form.dataset.id,expected=Number(form.dataset.version),input=Object.fromEntries(new FormData(form).entries()),H=window.HumanHealth;
         await mutate(data=>{const old=H.episodes(data).find(x=>x.id===id);if(!old)throw Error('Эпизод больше не существует.');if((old.version||0)!==expected)throw Error('Эпизод изменился. Откройте уточнение заново.');const next=H.answerEpisode(old,form.dataset.action,{days:input.days?Number(input.days):0,endDate:input.endDate||'',zone:H.zoneName(data.profile.timezone)});version(data,'episode',old,'episode_'+form.dataset.action);const list=data.episodes??=[],index=list.findIndex(x=>x.id===id);if(index<0)list.push(next);else list[index]=next;});if(form.isConnected)dialog.close();
@@ -645,6 +690,9 @@
       else if(action==='diary-range'){state.diaryAll=el.dataset.all==='true';state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;render();}
       else if(action==='diary-page'){state.diaryOffsets??={};state.diaryOffsets[state.tab]=Number(el.dataset.offset);render();}
       else if(action==='diary-metric'){state.diaryMetric=el.dataset.metric;render();}
+      else if(action==='profile-growth'){state.tab='vital';state.filters.vital='Рост';state.globalSearch='';render();}
+      else if(action==='timeline-page'){state.timelineOffset=Number(el.dataset.offset);render();}
+      else if(action==='timeline-open')await openTimelineEvent(el.dataset.id);
       else if(action==='genetics-reset'){state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;render();}
       else if(action==='genetics-page'){state.geneticOffset=Number(el.dataset.offset);render();}
       else if(action==='open-finding')openFinding(el.dataset.id);
@@ -696,6 +744,8 @@
       else if(action==='open-medical'){state.medicalId=el.dataset.id;state.medicalKind=el.dataset.kind;render();const panel=root.querySelector('.medical-detail');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='close-medical'){state.medicalId='';render();}
       else if(action==='backup')backup();
+      else if(action==='change-passphrase')passphraseDialog();
+      else if(action==='restore-file'){const input=document.createElement('input');input.type='file';input.accept='.json';input.hidden=true;input.addEventListener('cancel',()=>input.remove(),{once:true});input.addEventListener('change',()=>{void startRestore(input.files[0]).catch(error).finally(()=>input.remove());});document.body.append(input);input.click();}
       else if(action==='delete-local')await deleteLocal();
       else if(action==='file-download')await fileDownload(el.dataset.id);
       else if(action==='file-preview')await previewFile(el.dataset.id,el.dataset.returnFinding||'');
@@ -713,7 +763,8 @@
   document.addEventListener('submit',event=>{void onSubmit(event);});
   document.addEventListener('click',event=>{void onClick(event);});
   document.addEventListener('input',event=>{
-    if(event.target?.dataset?.search==='genetics'){const value=event.target.value,position=event.target.selectionStart||0;state.geneticQuery=value;state.geneticOffset=0;render();const next=root.querySelector('[data-search=genetics]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
+    if(event.target?.dataset?.search==='timeline'){const value=event.target.value,position=event.target.selectionStart||0;state.timelineQuery=value;state.timelineOffset=0;render();const next=root.querySelector('[data-search=timeline]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
+    }else if(event.target?.dataset?.search==='genetics'){const value=event.target.value,position=event.target.selectionStart||0;state.geneticQuery=value;state.geneticOffset=0;render();const next=root.querySelector('[data-search=genetics]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='diary-native'){const value=event.target.value,position=event.target.selectionStart||0;state.diaryQueries??={};state.diaryQueries[state.tab]=value;state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;render();const next=root.querySelector('[data-search=diary-native]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='medical'){const value=event.target.value,position=event.target.selectionStart||0;state.medicalSearch=value;render();const next=root.querySelector('[data-search=medical]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='global'){const pos=event.target.selectionStart||0;state.globalSearch=event.target.value;render();const next=document.getElementById('health-global-search');next.focus();try{next.setSelectionRange(pos,pos);}catch{}
@@ -725,8 +776,9 @@
     }
   });
   document.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('circle[data-action],[role=button][data-action]')){event.preventDefault();void onClick(event);return;}if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
-  document.addEventListener('change',event=>{if(event.target?.dataset?.geneticCategory){state.geneticCategory=event.target.value;state.geneticOffset=0;render();}if(event.target?.dataset?.diaryDay&&event.target.value){try{chooseDiaryDay(event.target.value);}catch(e){error(e);}}if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
+  document.addEventListener('change',event=>{if(event.target?.dataset?.timelineKind){state.timelineKind=event.target.value;state.timelineOffset=0;render();}if(event.target?.dataset?.geneticCategory){state.geneticCategory=event.target.value;state.geneticOffset=0;render();}if(event.target?.dataset?.diaryDay&&event.target.value){try{chooseDiaryDay(event.target.value);}catch(e){error(e);}}if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
+  dialog.addEventListener('close',()=>{if(!dialog.open)document.getElementById('health-dialog-body').replaceChildren();});
   function refreshCare(){
     if(!state.doc)return;careDelivery();const count=window.HumanCare.records(state.doc,'reminder').filter(r=>window.HumanCare.due(r)).length,bell=document.getElementById('health-reminder-bell');if(bell){bell.setAttribute('aria-label','Центр напоминаний: '+count);bell.querySelector('span')?.remove();if(count)bell.append(V.h('span',{},count>99?'99+':count));}
     if(state.tab==='care'&&!dialog.open&&!document.activeElement?.matches('input,textarea,select'))render();

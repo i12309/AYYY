@@ -17,7 +17,7 @@ with sync_playwright() as pw:
   if ROOT in file.parents and file.is_file():route.fulfill(body=file.read_bytes(),content_type=mimetypes.guess_type(file)[0] or 'text/plain')
   else:route.fulfill(status=404,body='Missing')
  ctx.route('**/*',serve);p=ctx.new_page();p.on('pageerror',lambda e:errors.append(str(e)));p.on('dialog',lambda d:d.accept());p.clock.install(time=datetime(2026,11,10,12,tzinfo=timezone.utc));p.goto(BASE+'health/')
- p.locator('[data-form=create] [name=password]').fill('synthetic-diary-passphrase');p.locator('[name=repeat]').fill('synthetic-diary-passphrase');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for();p.locator('.sidebar [data-action=edit-profile]').click();p.locator('#health-dialog [name=timezone]').fill('Europe/Moscow');p.locator('#health-dialog [type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
+ p.locator('[data-form=create] [name=password]').fill('synthetic-diary-passphrase');p.locator('[name=repeat]').fill('synthetic-diary-passphrase');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for();p.locator('.sidebar .profile-entry').click();p.locator('.profile-page [data-action=edit-profile]').click();p.locator('#health-dialog [name=name]').fill('Synthetic diary profile');p.locator('#health-dialog [name=timezone]').fill('Europe/Moscow');p.locator('#health-dialog [type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
  def tab(name):p.locator('.sidebar button[data-tab='+name+']').click()
  def fill(name,value):p.locator('.diary-editor [name='+name+']').fill(value)
  def save():p.locator('.diary-editor [type=submit]').click();p.locator('.diary-editor').wait_for(state='hidden')
