@@ -36,8 +36,27 @@ try{
   assert.notEqual(brandStyle.transform,'none');
   assert.equal(brandStyle.accent,'rgb(231, 125, 54)');
   await page.locator('.pv-empty [data-pv-action="demo"]').click();
-  await page.waitForSelector('.pv-file-banner');
-  assert.match(await page.locator('.pv-file-banner h1').innerText(),/Пример проекта/);
+  await page.waitForSelector('.pv-project-title');
+  assert.match(await page.locator('.pv-project-title').innerText(),/Пример проекта/);
+  assert.equal(await page.locator('.pv-header .pv-project-title').count(),1,'project title belongs to the top header');
+  assert.equal(await page.locator('.pv-file-banner').count(),0,'no separate tall title banner');
+  assert.equal(await page.locator('.pv-header-actions [data-pv-action="demo"]').count(),0,'demo action is entry-only');
+  assert.equal(await page.locator('.pv-header-actions [data-pv-action="open"]').count(),1);
+  const initialFit=await page.evaluate(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),header=pane?.querySelector('.pv-chart-head'),
+      rows=pane?.querySelector('.pv-chart-rows'),workspace=document.querySelector('.pv-workspace');
+    return {width:pane?.clientWidth,headerWidth:header?.getBoundingClientRect().width,
+      rowsWidth:rows?.getBoundingClientRect().width,rowsHeight:rows?.getBoundingClientRect().height,
+      paneHeight:pane?.clientHeight,top:workspace?.getBoundingClientRect().top,bottom:workspace?.getBoundingClientRect().bottom};
+  });
+  assert.ok(initialFit.width>300,'Gantt has its own content pane');
+  assert.ok(initialFit.rowsWidth>=initialFit.width-2 && initialFit.headerWidth>=initialFit.width-2,
+    'the Gantt calendar and grid must fill all available horizontal space');
+  assert.ok(initialFit.rowsHeight>=initialFit.paneHeight-46,
+    'the Gantt grid should extend to the bottom of its viewport');
+  assert.ok(initialFit.top<220 && initialFit.bottom>750,
+    'dense header allows the table/Gantt workspace to use almost the full desktop height');
+
   assert.equal(await page.locator('.pv-list-row').count(),9);
   await page.locator('#pv-columns').selectOption('resources');
   assert.match(await page.locator('.pv-list-head').innerText(),/ресурсы/i);
@@ -83,6 +102,13 @@ try{
   await page.mouse.move(handle.x+handle.width/2+95,handle.y+handle.height/2,{steps:5});
   await page.mouse.up();
   const widthAfterDrag=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  await page.waitForFunction(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),header=pane?.querySelector('.pv-chart-head'),
+      rows=pane?.querySelector('.pv-chart-rows');
+    return !!pane && rows.getBoundingClientRect().width>=pane.clientWidth-1 &&
+      header.getBoundingClientRect().width>=pane.clientWidth-1;
+  });
+
   assert.ok(widthAfterDrag>=widthBefore+60,'drag must make the task table wider');
   await splitter.focus();
   await page.keyboard.press('ArrowLeft');
@@ -115,6 +141,12 @@ try{
   const inspector=await page.locator('#pv-details').boundingBox();
   const chart=await page.locator('#pv-chart-scroll').boundingBox();
   assert.ok(inspector.x>=chart.x+chart.width-2,'details pane must not cover the Gantt chart');
+  await page.waitForFunction(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),rows=pane?.querySelector('.pv-chart-rows');
+    return !!rows && rows.getBoundingClientRect().width>=pane.clientWidth-1;
+  });
+  assert.ok((await page.locator('.pv-workspace > #pv-details').count())===1,'inspector occupies a separate column');
+
   const splitWithDetails=(await page.locator('#pv-list-scroll').boundingBox()).width;
   assert.ok(splitWithDetails>=335,'table must remain usable while inspector is open');
   await page.locator('[data-pv-task="7"]').first().click();
@@ -126,6 +158,10 @@ try{
   await page.setViewportSize({width:1440,height:900});
   await page.locator('[data-pv-action="close-details"]').click();
   assert.equal(await page.locator('#pv-details').count(),0);
+  await page.waitForFunction(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),rows=pane?.querySelector('.pv-chart-rows');
+    return !!rows && rows.getBoundingClientRect().width>=pane.clientWidth-1;
+  });
   const restoredTable=(await page.locator('#pv-list-scroll').boundingBox()).width;
   assert.ok(restoredTable>=splitWithDetails-2,'table split survives inspector close');
   await page.locator('[data-pv-tab="resources"]').click();
@@ -151,7 +187,7 @@ try{
   assert.match(await page.locator('[data-pv-status]').innerText(),/SVG-диаграмма/);
   const fixture=path.join(root,'tests/fixtures/ayyy-project-sample.xml');
   await page.locator('#pv-file-input').setInputFiles(fixture);
-  await page.waitForFunction(()=>document.querySelector('.pv-file-banner h1')?.textContent.includes('Тестовый проект AYYY'),{timeout:20000});
+  await page.waitForFunction(()=>document.querySelector('.pv-project-title')?.textContent.includes('Тестовый проект AYYY'),{timeout:20000});
   assert.equal(await page.locator('.pv-list-row').count(),3);
   assert.match(await page.locator('.pv-list-scroll').innerText(),/Анализ требований/);
   const success=await page.locator('[data-pv-status]').innerText();
