@@ -3,9 +3,9 @@
 .skip{position:absolute;top:-50px;left:12px;background:white;padding:8px;z-index:20}.skip:focus{top:12px}
 .top{height:62px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:10}
 .top-inner{height:100%;max-width:1220px;padding:0 24px;margin:auto;display:flex;align-items:center;gap:13px}
-.brand{display:inline-flex;align-items:center;gap:9px;color:#233a35;text-decoration:none;font-size:19px;letter-spacing:-.7px}
-.mark{height:36px;width:36px;border-radius:10px;color:#fff;background:#ff7200;display:grid;place-items:center;box-shadow:0 3px 8px #ff720020}
-.dot{color:#ff7200}.divider{height:24px;width:1px;background:var(--line)}
+.brand{display:inline-flex;align-items:center;color:#203640;text-decoration:none;padding:3px 5px 5px 0}
+.brand strong{font:800 30px/1 "Trebuchet MS","Segoe UI",sans-serif;letter-spacing:-2.6px;transform:rotate(-3deg)}
+.dot{color:#e77d36}.divider{height:24px;width:1px;background:var(--line)}
 .section-title{font-size:14px}.section-title small{font-size:10px;color:#9aa9a1;letter-spacing:.1em;padding-left:6px}
 .back{margin-left:auto;display:inline-flex;gap:8px;align-items:center;text-decoration:none;font-weight:650;padding:8px 10px;border-radius:7px;color:#52776b}
 .back:hover{background:#e9f5ef}
@@ -39,5 +39,5 @@
 .faq details[open] summary::after{content:"−"}.faq details p{padding:0 0 14px;color:var(--muted)}
 .foot{border-top:1px solid var(--line);margin-top:35px;padding-top:22px;display:flex;align-items:center;justify-content:space-between;gap:20px;color:var(--muted);font-size:12px}
 @media(max-width:700px){.content{padding:20px 14px 35px}.top-inner{padding:0 14px}.hero{padding:24px 19px}.hero h1{font-size:29px}.hero p{font-size:14px}.tiles{grid-template-columns:1fr}.heading h2{font-size:20px}.block{margin-top:28px}}
-@media(max-width:480px){.top{height:58px}.brand{font-size:17px}.mark{width:32px;height:32px}.section-title{font-size:12px}.section-title small{display:none}.back{font-size:11px}.quick-nav{gap:5px}.quick-nav a{font-size:11px}.steps{padding:1px 12px}.step{gap:10px}.foot{flex-wrap:wrap}}
+@media(max-width:480px){.top{height:58px}.brand strong{font-size:27px;letter-spacing:-2.3px}.section-title{font-size:12px}.section-title small{display:none}.back{font-size:11px}.quick-nav{gap:5px}.quick-nav a{font-size:11px}.steps{padding:1px 12px}.step{gap:10px}.foot{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

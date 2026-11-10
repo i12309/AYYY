@@ -71,7 +71,7 @@ export function TreeChooser({
           <div className="actions">
             <button className="button secondary" onClick={onImport}>
               <FileUp size={18} />
-              Импорт GEDCOM / JSON
+              Импорт ZIP / GEDCOM / JSON
             </button>
             <button className="button secondary" onClick={onGitHub}>
               <CloudDownload size={18} />
