@@ -113,7 +113,7 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
   return {
     left:'<div class="pv-list-head"><span>Задача / WBS</span><span>Начало</span><span>Окончание</span><span>Длит.</span><span>Готово</span>'+(columnMode==='resources'?'<span>Ресурсы</span>':columnMode==='baseline'?'<span>База: начало</span><span>База: конец</span>':columnMode==='critical'?'<span>Крит.</span>':'')+'</div><div class="pv-list-rows">'+before+leftRows.join('')+after+'</div>',
     right:'<div class="pv-chart-head" style="width:'+width+'px"><div class="pv-months">'+months.join('')+'</div><div class="pv-ticks">'+ticks.join('')+'</div></div>'+
-      '<div class="pv-chart-rows" style="width:'+width+'px">'+before+rightRows.join('')+after+overlays+connectors+'</div>'
+      '<div class="pv-chart-rows" style="--pv-week-width:'+(7*pixel)+'px;width:'+width+'px">'+before+rightRows.join('')+after+overlays+connectors+'</div>'
   };
 }
 
@@ -263,7 +263,7 @@ export function mount(root, options={}) {
     const splitter=workspace?.querySelector('.pv-splitter');
     if(!splitter || getComputedStyle(splitter).display==='none')return null;
     // On smaller screens the inspector moves BELOW the chart.
-    const detailWidth=workspace.classList.contains('pv-with-details') && matchMedia('(min-width:1121px)').matches ? 300 : 0;
+    const detailWidth=workspace.classList.contains('pv-with-details') && matchMedia('(min-width:1121px)').matches ? 320 : 0;
     const available=Math.max(0,workspace.clientWidth-detailWidth-8);
     const min=Math.min(340,Math.max(0,available-240));
     const max=Math.max(min,available-240);
