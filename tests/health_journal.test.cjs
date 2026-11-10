@@ -1,6 +1,6 @@
 // Synthetic profile, action chronology and current-format encryption contracts.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
-function modules(){const window={},ctx=vm.createContext({window,crypto:webcrypto,isSecureContext:true,TextEncoder,TextDecoder,btoa,atob});for(const name of ['crypto','model','health-state','journal-state'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../health',name+'.js'),'utf8'),ctx);return window;}
+function modules(){const window={},ctx=vm.createContext({window,crypto:webcrypto,isSecureContext:true,TextEncoder,TextDecoder,Uint8Array,btoa,atob});for(const name of ['crypto','model','health-state','journal-state'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../health',name+'.js'),'utf8'),ctx);return window;}
 const fixture=()=>({profile:{name:'Synthetic profile',timezone:'Europe/Moscow'},observations:[],vitals:[],episodes:[],medical:[],medications:[],findings:[],diary:[],documents:[],intakes:[],reminders:[],revisions:[],timeline:[],recommendationIntakes:[],recommendationContexts:[],recommendationReports:[]});
 
 test('profile calendar age and height preserve unknowns and use the profile zone',()=>{
@@ -31,7 +31,44 @@ test('saving the profile logs an action even when all field values stay the same
 });
 
 test('rekey preserves current records and attachments and rejects the old phrase',async()=>{
- const C=modules().HumanCrypto,{doc,key,envelope}=await C.create('synthetic-original-phrase');doc.profile.name='Synthetic person';doc.documents.push({id:'synthetic-doc',name:'synthetic.txt',data:btoa('Synthetic attachment')});const saved=await C.seal(doc,key,envelope),rotated=await C.rekey(doc,'synthetic-new-passphrase');
- assert.equal(rotated.envelope.vaultId,doc.id);assert.notEqual(rotated.envelope.salt,saved.salt);assert.notEqual(rotated.envelope.iv,saved.iv);assert.equal(rotated.key.extractable,false);assert.equal(JSON.stringify((await C.unlock(rotated.envelope,'synthetic-new-passphrase')).doc),JSON.stringify(doc));await assert.rejects(C.unlock(rotated.envelope,'synthetic-original-phrase'));assert.equal((await C.unlock(saved,'synthetic-original-phrase')).doc.documents[0].data,doc.documents[0].data);await assert.rejects(C.rekey(doc,'short'));
+ const C=modules().HumanCrypto,{doc,key,envelope}=await C.create('synthetic-original-phrase');
+ const bytes=new TextEncoder().encode('Synthetic attachment');
+ const original=await C.sealFile(doc.id,'synthetic-doc',bytes,key);
+ doc.profile.name='Synthetic person';
+ const file={id:'synthetic-doc',name:'synthetic.txt',...original.reference};
+ doc.documents.push(file);
+ const saved=await C.seal(doc,key,envelope);
+ const rotated=await C.newKey('synthetic-new-passphrase');
+ const rotatedFile=await C.sealFile(doc.id,file.id,bytes,rotated.key);
+ Object.assign(file,rotatedFile.reference);
+ const next=await C.seal(doc,rotated.key,rotated);
+ assert.equal(next.vaultId,doc.id);
+ assert.notEqual(next.salt,saved.salt);
+ assert.notEqual(next.iv,saved.iv);
+ assert.notEqual(original.object.id,rotatedFile.object.id);
+ assert.equal(rotated.key.extractable,false);
+ assert.equal(JSON.stringify((await C.unlock(next,'synthetic-new-passphrase')).doc),JSON.stringify(doc));
+ assert.deepEqual(await C.openFile(doc.id,file,rotatedFile.object,rotated.key),bytes);
+ await assert.rejects(C.unlock(next,'synthetic-original-phrase'));
+ await assert.rejects(C.openFile(doc.id,file,rotatedFile.object,key));
+ await assert.rejects(C.newKey('short'));
  const incomplete=structuredClone(doc);delete incomplete.timeline;assert.throws(()=>C.assertData(incomplete));assert.equal(Object.hasOwn(incomplete,'timeline'),false);
+});
+
+test('attachment bytes, record identity and the manifest are authenticated independently',async()=>{
+ const C=modules().HumanCrypto,{doc,key,envelope}=await C.create('synthetic-original-phrase');
+ const bytes=new TextEncoder().encode('Synthetic attachment');
+ const {reference,object}=await C.sealFile(doc.id,'attachment-a',bytes,key);
+ const file={id:'attachment-a',...reference};
+ doc.documents.push(file);
+ const sealed=await C.seal(doc,key,envelope);
+ assert.deepEqual([...sealed.objectIds],[object.id]);
+ assert.deepEqual(await C.openFile(doc.id,file,object,key),bytes);
+ await assert.rejects(C.openFile(doc.id,{...file,id:'attachment-b'},object,key));
+ await assert.rejects(C.openFile(doc.id,{...file,sha256:'0'.repeat(64)},object,key));
+ const modified=object.bytes.slice();
+ modified[modified.length-1]^=1;
+ await assert.rejects(C.openFile(doc.id,file,{...object,bytes:modified},key));
+ await assert.rejects(C.openWithKey({...sealed,objectIds:[]},key));
+ await assert.rejects(C.seal({...doc,documents:[{...file,size:C.MAX_FILE+1}]},key,envelope));
 });

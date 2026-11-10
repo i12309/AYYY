@@ -84,7 +84,9 @@ test('CSV supports quoted columns and partial success with row errors',()=>{
 });
 test('private GitHub storage uses isolated health-data path and in-memory token',()=>{
   const github=script('health/github.js');
-  assert.match(github,/health-data\/v1\/vault\.json/);
+  const window={HumanCrypto:{MAX_METADATA:28*1024*1024,MAX_OBJECTS:1000}};
+  vm.runInNewContext(github,{window,TextEncoder,TextDecoder});
+  assert.equal(window.HumanGithub.PATH,'health-data/v2/vault.json');
   assert.match(github,/info\.private!==true/);
   assert.doesNotMatch(github,/localStorage|sessionStorage/);
   assert.match(github,/expectedSha/);
@@ -94,6 +96,50 @@ test('private GitHub storage uses isolated health-data path and in-memory token'
   const builder=script('src/build.py');
   assert.match(builder,/health-route\.js/);
   assert.match(builder,/'health'/);
+});
+
+test('GitHub rate limit blocks a second network request until the permitted time',async()=>{
+  const window={HumanCrypto:{MAX_METADATA:28*1024*1024,MAX_OBJECTS:1000}};
+  let requests=0;
+  const fetch=async()=>{
+    requests++;
+    return new Response('{"message":"secondary rate limit"}',{status:429,headers:{'retry-after':'30'}});
+  };
+  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch});
+  const github=window.HumanGithub;
+  github.token('synthetic-token');
+  const repo=github.parseRepo('test-owner/test-repo');
+  await assert.rejects(github.verify(repo),/Повторите после/);
+  await assert.rejects(github.verify(repo),/Повторите после/);
+  assert.equal(requests,1);
+});
+
+test('binary downloads use the immutable Git blob and verify its content identity',async()=>{
+  const {createHash}=require('node:crypto');
+  const bytes=Buffer.from(Array.from({length:48},(_,index)=>index*5));
+  const objectId=createHash('sha256').update(bytes).digest('hex');
+  const gitSha='f'.repeat(40);
+  const window={HumanCrypto:{
+    MAX_METADATA:28*1024*1024,MAX_OBJECTS:1000,MAX_FILE:32*1024*1024,FILE_OVERHEAD:28,
+    isHash:value=>/^[a-f0-9]{64}$/.test(value),
+    unbase64:value=>new Uint8Array(Buffer.from(value,'base64')),
+    async verifyObject(id,data){assert.equal(createHash('sha256').update(data).digest('hex'),id);},
+  }};
+  const calls=[];
+  const fetch=async url=>{
+    calls.push(url);
+    const content=url.includes('/contents/')
+      ? {type:'file',sha:gitSha,size:bytes.length,encoding:'base64',content:'AAAA'}
+      : {sha:gitSha,size:bytes.length,encoding:'base64',content:bytes.toString('base64')};
+    return new Response(JSON.stringify(content),{status:200});
+  };
+  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch});
+  const github=window.HumanGithub;
+  github.token('synthetic-token');
+  const result=await github.readObject(github.parseRepo('test-owner/test-repo'),objectId,'c'.repeat(40));
+  assert.deepEqual(Buffer.from(result.bytes),bytes);
+  assert.match(calls[0],/objects\/[a-f0-9]{64}\.bin\?ref=[a-f0-9]{40}$/);
+  assert.ok(calls[1].endsWith('/git/blobs/'+gitSha));
 });
 
 test('lab results are never silently truncated during import',()=>{

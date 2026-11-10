@@ -17,7 +17,7 @@
   let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0,keyChangeRun=0;
   const clientId=crypto.randomUUID();
   const recordsFor=(doc,kind)=>['meal','activity-day'].includes(kind)?window.HumanDiary.records(doc,kind):kind==='episode'?window.HumanHealth.episodes(doc):['intake','reminder'].includes(kind)?window.HumanCare.records(doc,kind):doc[kinds[kind]]||[];
-  const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('ayyy-health-v1'):null;
+  const channel=typeof BroadcastChannel==='function'?new BroadcastChannel(C.FORMAT):null;
   function toast(message){
     notice.textContent=String(message);
     notice.classList.add('show');
@@ -90,8 +90,8 @@
       V.card('Продолжить на другом устройстве',[V.h('p',{class:'health-note'},
         'Можно использовать репозиторий родословной — папки данных раздельные.'),download])));
     const restore=V.card('Восстановить зашифрованный файл',[
-      V.h('p',{class:'health-note'},'Восстановите резервную копию журнала в текущем зашифрованном формате vault.json.'),
-      V.form('import-vault',[V.field('Зашифрованный JSON','file','','file')],'Импортировать')
+      V.h('p',{class:'health-note'},'Восстановите журнал и вложения из зашифрованной копии HUMAN.'),
+      V.form('import-vault',[V.field('Резервная копия .human','file','','file')],'Импортировать')
     ]);
     restore.classList.add('health-restore-card');
     outer.append(restore);
@@ -179,7 +179,7 @@
     ],'Подключить и проверить');
     box.append(V.card('GitHub · персональное хранилище',[
       V.banner('Тот же репозиторий, что у родословной',
-        'Медицинские данные сохраняются по пути health-data/v1/vault.json. Семейное дерево находится в family-data/trees/. Публичные репозитории запрещены.'),
+        'Зашифрованный журнал и вложения сохраняются в health-data/v2/. Семейное дерево находится в family-data/trees/.'),
       V.h('p',{},repo?'Подключено: '+VRepo(repo):'Не подключён'),
       form,
       repo?V.button('Синхронизировать сейчас','sync',{class:'small'}):null,
@@ -189,7 +189,7 @@
     ]));
     box.append(V.card('Резервирование и удаление',[
       V.h('p',{class:'health-note'},'Держите отдельную зашифрованную резервную копию вне GitHub.'),
-      V.button('Экспортировать vault.json','backup'),V.button('Восстановить из файла','restore-file'),
+      V.button('Скачать копию .human','backup'),V.button('Восстановить из файла','restore-file'),
       V.button('Удалить только локальную копию','delete-local',{class:'danger'})
     ]));
     return box;
@@ -275,21 +275,38 @@
   }
   const restoreForms=new WeakMap();
   async function startRestore(file){
-    const active=sessionFence();if(!file||file.size>45*1024*1024)throw Error('Выберите зашифрованный JSON до 45 МиБ.');
-    const envelope=JSON.parse(await file.text());if(!active())return;C.assertEnvelope(envelope);
-    const form=V.form('restore-unlock',[V.h('p',{},'Копия будет проверена перед восстановлением.'),V.field('Фраза доступа к копии','passphrase','','password',null,true),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],'Проверить копию');restoreForms.set(form,{envelope,active});careDialog('Восстановить журнал',form);
+    const active=sessionFence(),archive=await HumanBackup.open(file);
+    if(!active())return;
+    const form=V.form('restore-unlock',[V.h('p',{},'Копия и вложения будут проверены перед восстановлением.'),V.field('Фраза доступа к копии','passphrase','','password',null,true),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],'Проверить копию');restoreForms.set(form,{...archive,active});careDialog('Восстановить журнал',form);
   }
   async function inspectRestore(form){
     const context=restoreForms.get(form);if(!context?.active())throw Error('Открытый журнал сменился.');
     const opened=await C.unlock(context.envelope,form.elements.passphrase.value);if(!context.active()||!form.isConnected)return;
+    for(const file of opened.doc.documents){
+      const object=await context.readObject(file.objectId);
+      await C.openFile(opened.doc.id,file,object,opened.key);
+      if(!context.active()||!form.isConnected)return;
+    }
     const existing=await S.get(opened.doc.id);if(!context.active()||!form.isConnected)return;
     const d=opened.doc,next=V.form('restore-confirm',[V.h('p',{},d.profile.name||'Журнал здоровья'),V.table(['Раздел','Записей'],[['Анализы',d.observations.length],['Показатели',d.vitals.length],['Эпизоды',d.episodes.length],['Медкарта',d.medical.length+d.medications.length],['Генетика',d.findings.length],['Питание и дневник',d.diary.length],['Приёмы',d.intakes.length],['Напоминания',d.reminders.length],['Документы',d.documents.length],['История действий',d.timeline.length],['Анкеты',d.recommendationIntakes.length],['Снимки для разбора',d.recommendationContexts.length],['Рецензии',d.recommendationReports.length]]),V.h('p',{class:'health-note'},existing?'Этот журнал уже есть на устройстве. Будет создана отдельная копия; существующий журнал сохранится.':'Будет восстановлен отдельный журнал на этом устройстве.'),V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'})],existing?'Восстановить отдельную копию':'Восстановить журнал');restoreForms.set(next,{...context,opened,clone:!!existing});careDialog('Проверка резервной копии',next);
   }
   async function finishRestore(form){
     const context=restoreForms.get(form);if(!context?.active())throw Error('Открытый журнал сменился.');
     const doc=structuredClone(context.opened.doc);if(context.clone)doc.id=M.id();doc.timeline.push({id:M.id(),kind:'restore',recordKind:'profile',entityId:'profile',operation:'restore',title:context.clone?'Восстановлена отдельная копия журнала':'Восстановлена резервная копия',happenedAt:new Date().toISOString()});
+    const objects=[];
+    for(const file of doc.documents){
+      let object=await context.readObject(file.objectId);
+      if(context.clone){
+        const bytes=await C.openFile(context.opened.doc.id,file,object,context.opened.key);
+        const sealed=await C.sealFile(doc.id,file.id,bytes,context.opened.key);
+        Object.assign(file,sealed.reference);
+        object=sealed.object;
+      }
+      if(!context.active()||!form.isConnected)return;
+      objects.push(object);
+    }
     const envelope=await C.seal(doc,context.opened.key,context.envelope);if(!context.active()||!form.isConnected)return;
-    const local=await S.createSelected({id:doc.id,envelope,dirty:true});if(!context.active())return;
+    const local=await S.createSelected({id:doc.id,envelope,dirty:true},objects);if(!context.active())return;
     G.disconnect();clearTimeout(syncTimer);state.local=local;state.doc=doc;state.key=context.opened.key;state.demo=false;state.picker=false;state.tab='profile';state.conflict=false;render();const active=sessionFence();await profileList();if(active()){render();toast('Резервная копия восстановлена.');}
   }
   function passphraseDialog(){
@@ -303,11 +320,20 @@
     const active=sessionFence(),id=state.doc.id,runId=++keyChangeRun;state.rekeyBusy=true;clearTimeout(syncTimer);renderHeader();
     const run=writeQueue.then(async()=>{
       if(!active())throw Error('Журнал закрыт.');const before=state.local,doc=structuredClone(state.doc);
-      await C.unlock(before.envelope,current);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      const {key:previousKey}=await C.unlock(before.envelope,current);
+      if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
       doc.timeline.push({id:M.id(),kind:'security',recordKind:'profile',entityId:'profile',operation:'rekey',title:'Фраза доступа изменена',happenedAt:new Date().toISOString()});
-      const encrypted=await C.rekey(doc,next);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      const encrypted=await C.newKey(next),objects=[];
+      if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      for(const file of doc.documents){
+        const bytes=await C.openFile(id,file,await S.getObject(id,file.objectId),previousKey);
+        const sealed=await C.sealFile(id,file.id,bytes,encrypted.key);
+        Object.assign(file,sealed.reference);objects.push(sealed.object);
+        if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      }
+      const envelope=await C.seal(doc,encrypted.key,encrypted);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
       const fresh=await S.get(id);if(!active()||!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw Error('Журнал изменился во время смены фразы. Повторите действие.');
-      const saved=await S.save({...fresh,envelope:encrypted.envelope,dirty:true},fresh);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
+      const saved=await S.save({...fresh,envelope,dirty:true},fresh,objects);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
       state.local=saved;state.doc=doc;state.key=encrypted.key;sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;dialog.close();render();if(saved.repo&&G.hasToken())scheduleSync();toast('Журнал зашифрован новой фразой доступа.');
     });writeQueue=run.catch(()=>{});
     try{await run;}finally{if(runId===keyChangeRun&&state.local?.id===id){state.rekeyBusy=false;renderHeader();if(state.doc&&state.local.dirty&&state.local.repo&&G.hasToken())scheduleSync();}}
@@ -364,7 +390,7 @@
       f('Описание','title',x.title||''),f('Подробности','notes',x.notes||'','textarea')
     ];
     else if(kind==='document')fields=[
-      f('Файл PDF, JPEG, PNG, XLSX, CSV, TXT, JSON, VCF (до 2 МиБ)','file','','file'),
+      f('Файл PDF, JPEG, PNG, XLSX, CSV, TXT, JSON, VCF (до 32 МиБ)','file','','file'),
       f('Название','title',''),f('Дата','date',now,'date')
     ];
     else if(kind==='profile')fields=window.HumanJournalView.profileFields(x);
@@ -391,9 +417,16 @@
     const run=writeQueue.then(async()=>{
       requireSession();
       if(!state.doc)throw new Error('Откройте журнал.');
+      const objects=[];
+      const stageDocument=async(file,bytes)=>{
+        if(demo)return {...file,size:bytes.length,data:C.base64(bytes)};
+        const {reference,object}=await C.sealFile(id,file.id,bytes,key);
+        objects.push(object);
+        return {...file,...reference};
+      };
       if(state.demo){
         const copy=structuredClone(state.doc);
-        await change(copy);
+        await change(copy,stageDocument);
         window.HumanJournal.appendChanges(state.doc,copy);C.assertData(copy);
         requireSession();state.doc=copy;render();
         toast('Демо: изменение действует только до выхода из примера.');
@@ -401,13 +434,13 @@
       }
       if(!state.key)throw new Error('Откройте зашифрованный журнал.');
       const data=structuredClone(state.doc),before=state.local;
-      await change(data);
+      await change(data,stageDocument);
       requireSession();
       window.HumanJournal.appendChanges(state.doc,data);C.assertData(data);
       const envelope=await C.seal(data,key,before.envelope);requireSession();
       const fresh=await S.get(id);requireSession();
       if(!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw new Error('Журнал изменился во время сохранения. Откройте его заново; новая версия не перезаписана.');
-      const saved=await S.save({...fresh,envelope,dirty:true},fresh);
+      const saved=await S.save({...fresh,envelope,dirty:true},fresh,objects);
       channel?.postMessage({client:clientId,vaultId:saved.id});
       if(!active())return;
       state.doc=data;state.local=saved;render();
@@ -442,28 +475,29 @@
     if(kind==='activity-day')record=window.HumanDiary.checkActivity(input,old||{},state.doc);
     if(kind==='intake'){const H=window.HumanHealth,zone=H.zoneName(state.doc.profile.timezone);input.occurred_at=old&&H.localInput(old.occurred_at,zone)===input.at&&!input.offset?old.occurred_at:H.timestamp(input.at,zone,input.offset||'');record=window.HumanCare.checkIntake({...input,dose:input.outcome==='skipped'?'':input.dose},old||{},state.doc);}
     if(kind==='reminder')record=window.HumanCare.checkReminder(input,old||{},state.doc);
+    let documentBytes;
     if(kind==='document'){
       const file=form.elements.namedItem('file').files[0];
-      if(!file||file.size>2*1024*1024)throw new Error('Размер файла ограничен 2 МиБ.');
+      if(!file||file.size>C.MAX_FILE)throw new Error('Размер файла ограничен 32 МиБ.');
       const ext=file.name.toLowerCase().split('.').pop();
       const mimes={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',
         png:'image/png',txt:'text/plain',csv:'text/csv',json:'application/json',vcf:'text/vcf',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
       if(!mimes[ext])throw new Error('Разрешены PDF, JPG, PNG, TXT, XLSX, CSV, JSON и VCF.');
-      const bytes=new Uint8Array(await file.arrayBuffer()),sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
-      record={id:M.id(),sha256,name:M.text(file.name,255),title:M.text(input.title,255)||file.name,
+      documentBytes=new Uint8Array(await file.arrayBuffer());
+      record={id:M.id(),name:M.text(file.name,255),title:M.text(input.title,255)||file.name,
         date:M.isoDate(input.date),mime:mimes[ext],size:file.size,
-        data:C.base64(bytes),
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     }
     if(kind==='medical'||kind==='medication'){const previous=M.clinical(old||{},kind);if(record.documentId&&!state.doc.documents.some(x=>x.id===record.documentId)&&record.documentId!==previous.documentId)throw Error('Документ не найден.');if(record.episodeId&&!window.HumanMedicalView.episodes(state.doc).some(x=>x.id===record.episodeId)&&record.episodeId!==previous.episodeId)throw Error('Эпизод не найден.');}
     if(!active()||!form.isConnected)return;
-    await mutate(data=>{
+    await mutate(async(data,stageDocument)=>{
       const list=data[collection]??=[];if(old){const current=recordsFor(data,kind).find(x=>x.id===old.id);if(!current||formSnapshots.has(form)&&formSnapshots.get(form)!==JSON.stringify(current))throw Error('Запись изменилась после открытия формы. Откройте редактор заново.');}
       if(kind==='genetic')record=window.HumanGenetics.checkFinding(input,old||{},data);
       if(kind==='meal')record=window.HumanDiary.checkMeal(input,old||{},data);
       if(kind==='activity-day'){record=window.HumanDiary.checkActivity(input,old||{},data);if(!old){const deleted=window.HumanDiary.deletedActivity(data,record.date);if(deleted)version(data,kind,deleted,'restore');}}
       if(kind==='intake')record=window.HumanCare.checkIntake({...input,dose:input.outcome==='skipped'?'':input.dose},old||{},data);
       if(kind==='reminder')record=window.HumanCare.checkReminder(input,old||{},data);
+      if(kind==='document')record=await stageDocument(record,documentBytes);
       if(old){
         const idx=list.findIndex(x=>x.id===old.id);
         if(idx<0)throw new Error('Запись больше не существует.');
@@ -506,24 +540,34 @@
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
   }
-  function backup(){
+  async function backup(){
     if(state.demo)throw new Error('Демо не экспортируется и не содержит личных данных.');
-    const bytes=new TextEncoder().encode(JSON.stringify(state.local.envelope,null,2)+'\n');
-    download('ayyy-health-'+today()+'.encrypted.json',bytes,'application/json');
+    const active=sessionFence(),snapshot=await S.snapshot(state.local.id);
+    const archive=await HumanBackup.pack(snapshot.envelope,snapshot.objects);
+    if(active())download('ayyy-health-'+today()+'.human',archive,'application/octet-stream');
+  }
+  async function documentBytes(file){
+    if(state.demo){
+      const bytes=C.unbase64(file.data);
+      if(bytes.length!==file.size)throw Error('Документ повреждён.');
+      return bytes;
+    }
+    const id=state.doc.id,key=state.key;
+    return C.openFile(id,file,await S.getObject(id,file.objectId),key);
   }
   async function fileDownload(id){
     const active=sessionFence();
     const file=state.doc.documents.find(d=>d.id===id);
     if(!file)throw new Error('Файл не найден.');
-    const bytes=C.unbase64(file.data);
-    if(bytes.length!==file.size)throw new Error('Документ повреждён.');
-    if(file.sha256){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');if(hash!==file.sha256)throw new Error('Не совпадает контрольная сумма документа.');}
+    const bytes=await documentBytes(file);
     if(active())download(file.name,bytes,file.mime);
   }
   let previewURL=null;
   async function previewFile(id,returnFinding=''){
+    const active=sessionFence();
     const file=state.doc.documents.find(x=>x.id===id);if(!file)return;
-    const bytes=C.unbase64(file.data);if(bytes.length!==file.size)throw new Error('Документ повреждён.');
+    const bytes=await documentBytes(file);
+    if(!active()||!state.doc.documents.includes(file))return;
     if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}
     const content=V.h('div',{class:'health-document-preview'});let renderFirst;
     if(file.mime==='application/pdf'){const pages=V.h('div',{class:'health-pdf-pages'}),note=V.h('p',{role:'status'},'Открываю PDF…'),prev=V.h('button',{type:'button',class:'button'},'← Назад'),next=V.h('button',{type:'button',class:'button'},'Вперёд →');let page=1,total=1,busy=false;
@@ -531,7 +575,10 @@
       prev.addEventListener('click',()=>{if(!busy&&page>1){page--;void render();}});next.addEventListener('click',()=>{if(!busy&&page<total){page++;void render();}});content.append(V.h('div',{class:'health-toolbar'},prev,note,next),pages);renderFirst=render;
     }
     else if(['image/png','image/jpeg'].includes(file.mime)){previewURL=URL.createObjectURL(new Blob([bytes],{type:file.mime}));content.append(V.h('img',{src:previewURL,alt:file.title||file.name}));}
-    else if(['text/plain','text/csv','application/json','text/vcf'].includes(file.mime))content.append(V.h('pre',{},new TextDecoder().decode(bytes)));
+    else if(['text/plain','text/csv','application/json','text/vcf'].includes(file.mime)){
+      content.append(V.h('pre',{},new TextDecoder().decode(bytes.subarray(0,256*1024))));
+      if(bytes.length>256*1024)content.append(V.h('p',{},'Здесь показано начало файла. Полный текст доступен для скачивания.'));
+    }
     else content.append(V.h('p',{},'Скачайте оригинал, чтобы открыть этот формат в программе просмотра.'));
     content.append(V.h('p',{class:'health-muted'},file.name+' · '+V.date(file.date)+' · '+new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'),V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'}));
     document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),returnFinding?V.button('К результату','open-finding',{'data-id':returnFinding,class:'small'}):null,V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();if(renderFirst)await renderFirst();
@@ -582,7 +629,7 @@
       function option(side,title,value){
         return V.h('div',{},V.h('label',{},V.h('input',{type:'radio',name:'choice-'+index,value:side,required:true}),' '+title),
           V.h('pre',{class:'health-sync-version'},summary(value)),
-          item.collection==='documents'&&value?.data
+          item.collection==='documents'&&value?.objectId
             ? V.button('Скачать оригинал','sync-conflict-file',{'data-index':index,'data-side':side,class:'small'})
             : null);
       }
@@ -651,9 +698,11 @@
       if(!doc)throw Error('Выберите версию для каждой конфликтующей записи.');
       doc.timeline.push({id:M.id(),kind:'sync',recordKind:'profile',entityId:'profile',
         operation:'merge',title:'Объединены версии журнала',happenedAt:new Date().toISOString()});
+      const objects=await fetchDocuments(review.snapshot.repo,review.remote,review.snapshot.envelope,doc,state.key,active);
+      if(!objects)return;
       const envelope=await C.seal(doc,state.key,review.snapshot.envelope);
       if(!active()||!form.isConnected||!G.hasToken())throw Error('Подключение или журнал изменились.');
-      const saved=await S.save({...review.snapshot,envelope,remoteSha:review.remote.sha,dirty:true},review.snapshot);
+      const saved=await S.save({...review.snapshot,envelope,remoteSha:review.remote.sha,dirty:true},review.snapshot,objects);
       channel?.postMessage({client:clientId,vaultId:saved.id});
       if(!active())return;
       state.doc=doc;
@@ -665,14 +714,33 @@
     try{await run;}finally{if(active()){state.syncBusy=false;renderHeader();}}
     if(active())await syncNow();
   }
-  function conflictFile(index,side){
-    const item=state.conflict?.review?.conflicts[index];
+  async function conflictFile(index,side){
+    const active=sessionFence(),review=state.conflict?.review;
+    const item=review?.conflicts[index];
     if(!item||item.collection!=='documents'||!['local','remote'].includes(side))return;
     const file=item[side];
     if(!file)return;
-    const bytes=C.unbase64(file.data);
-    if(bytes.length!==file.size)throw Error('Документ повреждён.');
-    download(file.name,bytes,'application/octet-stream');
+    const id=state.doc.id,key=state.key;
+    const object=side==='local'?await S.getObject(id,file.objectId)
+      :await G.readObject(review.snapshot.repo,file.objectId,review.remote.commit);
+    const bytes=await C.openFile(id,file,object,key);
+    if(active()&&state.conflict?.review===review)download(file.name,bytes,'application/octet-stream');
+  }
+  async function fetchDocuments(repo,remote,localEnvelope,doc,key,active){
+    const existing=new Set(localEnvelope?.objectIds||[]);
+    const files=new Map(doc?.documents.map(file=>[file.objectId,file])||[]);
+    const objects=[];
+    let size=0;
+    for(const id of doc?files.keys():remote.envelope.objectIds){
+      if(!active())return null;
+      if(existing.has(id))continue;
+      const object=await G.readObject(repo,id,remote.commit);
+      size+=object.bytes.length-C.FILE_OVERHEAD;
+      if(size>C.MAX_FILES)throw Error('Вложения превышают общий предел 128 МиБ.');
+      if(doc)await C.openFile(doc.id,files.get(id),object,key);
+      objects.push(object);
+    }
+    return active()?objects:null;
   }
   async function syncNow(){
     if(state.demo){toast('Демо никогда не отправляется в GitHub.');return;}
@@ -694,11 +762,13 @@
           return;
         }
         const decrypted=await C.openWithKey(remote.envelope,key);if(!active())return;
+        const objects=await fetchDocuments(snapshot.repo,remote,snapshot.envelope,decrypted,key,active);
+        if(!objects)return;
         await writeQueue;if(!active())return;
         const fresh=await S.get(snapshot.id);if(!active())return;
         if(!fresh)throw Error('Локальный журнал удалён.');
         if(state.local!==snapshot||!S.sameEnvelope(fresh.envelope,snapshot.envelope)){scheduleSync();return;}
-        const updated=await S.save({...fresh,envelope:remote.envelope,remoteSha:remote.sha,dirty:false,lastSyncAt:new Date().toISOString()},fresh);
+        const updated=await S.save({...fresh,envelope:remote.envelope,remoteSha:remote.sha,dirty:false,lastSyncAt:new Date().toISOString()},fresh,objects);
         channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
         state.doc=decrypted;state.local=updated;state.conflict=false;render();toast('Загружены изменения из GitHub.');return;
       }
@@ -706,7 +776,8 @@
       if(!snapshot.dirty){toast('Все изменения уже синхронизированы.');return;}
       let sha;
       try{
-        sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null);
+        sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null,
+          id=>S.getObject(snapshot.id,id),()=>active()&&G.hasToken());
       }catch(e){
         if(!active())return;
         if(![409,422].includes(e.status))throw e;
@@ -733,11 +804,14 @@
     if(!state.local?.repo||!G.hasToken()||!state.key)throw new Error('Сначала подключите токен GitHub и откройте журнал.');
     if(!confirm('Заменить локальную версию архивом из GitHub? Перед заменой будет скачана резервная копия.'))return;
     const active=sessionFence();await writeQueue;if(!active())return;
-    const snapshot=state.local;backup();
+    const snapshot=state.local;
+    await backup();if(!active())return;
     await G.verify(snapshot.repo);if(!active())return;
     const remote=await G.read(snapshot.repo);if(!active())return;
     if(!remote||remote.envelope.vaultId!==snapshot.id)throw new Error('Удалённый архив не найден либо принадлежит другому профилю.');
-    const updated=await S.save({...snapshot,envelope:remote.envelope,remoteSha:remote.sha,dirty:false},snapshot);
+    const objects=await fetchDocuments(snapshot.repo,remote,snapshot.envelope,null,null,active);
+    if(!objects)return;
+    const updated=await S.save({...snapshot,envelope:remote.envelope,remoteSha:remote.sha,dirty:false},snapshot,objects);
     channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
     state.local=updated;state.key=null;state.doc=null;state.conflict=false;G.disconnect();render();toast('Архив заменён; откройте его фразой доступа.');
   }
@@ -786,11 +860,13 @@
         const v=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(v.repo,v.branch);
         G.token(v.token);await G.verify(repo);if(!active())return;
         const data=await G.read(repo);if(!active())return;
-        if(!data)throw new Error('В репозитории нет health-data/v1/vault.json.');
+        if(!data)throw new Error('В репозитории нет текущего журнала HUMAN.');
         if(await S.get(data.envelope.vaultId))throw new Error('Этот профиль уже есть на устройстве.');
         if(!active())return;
+        const objects=await fetchDocuments(repo,data,null,null,null,active);
+        if(!objects)return;
         const local=await S.createSelected({id:data.envelope.vaultId,envelope:data.envelope,
-          repo,remoteSha:data.sha,dirty:false});
+          repo,remoteSha:data.sha,dirty:false},objects);
         if(!active())return;await profileList();if(!active())return;
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
         toast('Архив загружен. Введите вашу фразу доступа.');
@@ -815,12 +891,13 @@
   async function importCSV(file){
     if(!file)return;
     const generation=++importGeneration,tab=state.tab,active=sessionFence();
-    await HumanImport.open(file,{V,M,C,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
+    await HumanImport.open(file,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
   }
   async function deleteLocal(){
     if(state.demo)throw new Error('Демо удаляется при выходе.');
     if(!state.local)return;
-    backup();
+    const sameSession=sessionFence();
+    await backup();if(!sameSession())return;
     if(!confirm('Удалить локальную зашифрованную копию? GitHub останется без изменений.'))return;
     if(!confirm('Подтвердите окончательное удаление с устройства.'))return;
     const id=state.local.id;clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
@@ -921,7 +998,7 @@
         state.picker=false;state.conflict=false;render();
       }else if(action==='sync')await syncNow();
       else if(action==='disconnect-token'){G.disconnect();state.conflict=false;render();}
-      else if(action==='sync-conflict-file')conflictFile(Number(el.dataset.index),el.dataset.side);
+      else if(action==='sync-conflict-file')await conflictFile(Number(el.dataset.index),el.dataset.side);
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='open-vital'||action==='open-episode'){state.tab='vital';state.globalSearch='';state.vitalId=action==='open-vital'?el.dataset.id:'';state.episodeId=action==='open-episode'?el.dataset.id:'';if(action==='open-episode')state.filters.vital='illness';else state.filters.vital=state.doc.vitals.find(x=>x.id===el.dataset.id)?.type||'Масса';render();const panel=root.querySelector('.health-details');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='close-health-detail'){state.vitalId='';state.episodeId='';render();}
@@ -931,9 +1008,9 @@
       else if(action==='review-episode')episodeReview(el.dataset.id,el.dataset.mode);
       else if(action==='open-medical'){state.medicalId=el.dataset.id;state.medicalKind=el.dataset.kind;render();const panel=root.querySelector('.medical-detail');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='close-medical'){state.medicalId='';render();}
-      else if(action==='backup')backup();
+      else if(action==='backup')await backup();
       else if(action==='change-passphrase')passphraseDialog();
-      else if(action==='restore-file'){const input=document.createElement('input');input.type='file';input.accept='.json';input.hidden=true;input.addEventListener('cancel',()=>input.remove(),{once:true});input.addEventListener('change',()=>{void startRestore(input.files[0]).catch(error).finally(()=>input.remove());});document.body.append(input);input.click();}
+      else if(action==='restore-file'){const input=document.createElement('input');input.type='file';input.accept='.human';input.hidden=true;input.addEventListener('cancel',()=>input.remove(),{once:true});input.addEventListener('change',()=>{void startRestore(input.files[0]).catch(error).finally(()=>input.remove());});document.body.append(input);input.click();}
       else if(action==='delete-local')await deleteLocal();
       else if(action==='file-download')await fileDownload(el.dataset.id);
       else if(action==='file-preview')await previewFile(el.dataset.id,el.dataset.returnFinding||'');

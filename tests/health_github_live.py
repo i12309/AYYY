@@ -3,7 +3,7 @@
 Set HEALTH_GITHUB_TEST_REPO=i12309/TEST_TREE to explicitly authorize a temporary
 branch. Existing branches/data are untouched. No token or plaintext is published.
 """
-import json, os, subprocess, uuid, mimetypes, time
+import hashlib, json, os, subprocess, uuid, mimetypes, time
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
@@ -24,7 +24,7 @@ assert gh('repos/'+REPO)['private'] is True
 credential=subprocess.run(['gh','auth','token'],capture_output=True,text=True,check=True).stdout.strip()
 branch='test/health-browser-'+uuid.uuid4().hex[:12]
 # An independent root tree avoids inheriting any real vault from the default branch.
-tree=gh('repos/'+REPO+'/git/trees',{'tree':[{'path':'HEALTH_TEST.md','mode':'100644','type':'blob','content':'Temporary synthetic encrypted health roundtrip. No personal data.'}]})
+tree=gh('repos/'+REPO+'/git/trees',{'tree':[{'path':'family-data/TEST.txt','mode':'100644','type':'blob','content':'Unrelated synthetic file'}]})
 commit=gh('repos/'+REPO+'/git/commits',{'message':'test: synthetic health browser roundtrip','tree':tree['sha']})
 gh('repos/'+REPO+'/git/refs',{'ref':'refs/heads/'+branch,'sha':commit['sha']})
 print('Temporary branch:',branch,flush=True)
@@ -68,15 +68,26 @@ try:
   conflict=pa.evaluate('''async p=>{try{await HumanGithub.write(p.repo,testVault.envelope,p.sha);return false;}catch(e){return e.message.includes('Конфликт');}}''',{**params,'sha':result})
   assert conflict,'Stale SHA must not overwrite the other browser'
   print('PASS stale first browser write rejected',flush=True)
-  item=gh('repos/'+REPO+'/contents/health-data/v1/vault.json?ref='+branch)
+  item=gh('repos/'+REPO+'/contents/health-data/v2/vault.json?ref='+branch)
   import base64
   envelope=json.loads(base64.b64decode(item['content']))
-  assert envelope['format']=='ayyy-health-v1' and 'observations' not in envelope and 'profile' not in envelope
+  assert envelope['format']=='ayyy-health-v2' and 'observations' not in envelope and 'profile' not in envelope
   assert 'Synthetic' not in json.dumps(envelope)
   print('PASS remote contains only encrypted envelope',flush=True)
   # Exercise the real controller as well as the transport API.
   def open_ui(page,phrase=None):
-   form=page.locator('[data-form=download]');form.locator('[name=repo]').fill(REPO);form.locator('[name=branch]').fill(branch);form.locator('[name=token]').fill(credential);form.locator('[type=submit]').click();page.locator('[data-form=unlock]').wait_for();page.locator('[name=passphrase]').fill(phrase or params['passphrase']);page.locator('[data-form=unlock] [type=submit]').click();page.locator('.metric').first.wait_for()
+   form=page.locator('[data-form=download]')
+   form.locator('[name=repo]').fill(REPO)
+   form.locator('[name=branch]').fill(branch)
+   form.locator('[name=token]').fill(credential)
+   form.locator('[type=submit]').click()
+   page.wait_for_function("""() => document.querySelector('[data-form=unlock]') ||
+       document.querySelector('#health-notice').textContent.trim()""",timeout=60000)
+   unlock=page.locator('[data-form=unlock]')
+   assert unlock.count(),page.locator('#health-notice').text_content()
+   unlock.locator('[name=passphrase]').fill(phrase or params['passphrase'])
+   unlock.locator('[type=submit]').click()
+   page.locator('.metric').first.wait_for()
   def reminders(page):page.locator('.sidebar button[data-tab=care]').click();page.locator('[data-view=reminders]').click()
   def new_reminder(page,title):
    page.locator('[data-action=new-reminder]').click();page.locator('#health-dialog [name=title]').fill(title);page.locator('#health-dialog [name=date]').fill('2026-11-10');page.locator('#health-dialog [name=time]').fill('10:00');page.locator('#health-dialog [type=submit]').click();page.locator('#health-dialog').wait_for(state='hidden')
@@ -108,8 +119,10 @@ try:
    return form
   def pull(page):
    page.locator('.sidebar button[data-tab=settings]').click()
+   page.locator('#health-notice').evaluate('(e)=>e.textContent=""')
    page.locator('[data-action=sync]').click()
-   page.get_by_text('Загружены изменения из GitHub.',exact=True).wait_for(timeout=60000)
+   page.wait_for_function("() => document.querySelector('#health-notice').textContent.trim() !== ''",timeout=60000)
+   assert page.locator('#health-notice').text_content()=='Загружены изменения из GitHub.',page.locator('#health-notice').text_content()
   edit_reminder(pb,'Synthetic UI schedule','Synthetic second UI revision');synced(pb)
   new_reminder(pa,'Synthetic first UI pending draft');review=merge_review(pa)
   kept=pa.evaluate('''async p=>{const local=await HumanStore.get(await HumanStore.current()),opened=await HumanCrypto.unlock(local.envelope,p.passphrase),remote=await HumanGithub.read(p.repo),other=await HumanCrypto.unlock(remote.envelope,p.passphrase);return local.dirty&&opened.doc.reminders.length===2&&other.doc.reminders.length===1&&other.doc.reminders[0].title==='Synthetic second UI revision';}''',params)
@@ -146,15 +159,26 @@ try:
    page.locator('#health-dialog [name=title]').fill(name)
    page.locator('#health-dialog [type=submit]').click()
    page.locator('#health-dialog').wait_for(state='hidden')
-  add_document(pb,'remote-synthetic.txt',b'remote contents\n');synced(pb)
-  add_document(pa,'local-synthetic.txt',b'local contents\n')
+  large=(b'remote synthetic contents\n' * 150_000)
+  small=b'local contents\n'
+  add_document(pb,'remote-synthetic.txt',large);synced(pb)
+  add_document(pa,'local-synthetic.txt',small)
   review=merge_review(pa);assert review.locator('fieldset').count()==0
   review.locator('[type=submit]').click();synced(pa)
   pull(pb)
-  attached=pb.evaluate('''async p=>{const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);
-   return Object.fromEntries(v.doc.documents.map(file=>[file.name,new TextDecoder().decode(HumanCrypto.unbase64(file.data))]));}''',params)
-  assert attached=={'remote-synthetic.txt':'remote contents\n','local-synthetic.txt':'local contents\n'}
-  print('PASS independently uploaded documents kept their exact bytes after merging',flush=True)
+  attached=pb.evaluate('''async p=>{
+   const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase),verified={};
+   for(const file of v.doc.documents){
+    if('data' in file)throw Error('Plain bytes included in journal metadata');
+    const object=await HumanGithub.readObject(p.repo,file.objectId,r.commit);
+    const bytes=await HumanCrypto.openFile(v.doc.id,file,object,v.key);
+    verified[file.name]=[bytes.length,file.sha256];
+   }
+   return verified;
+  }''',params)
+  assert attached=={name:[len(data),hashlib.sha256(data).hexdigest()] for name,data in [
+   ('remote-synthetic.txt',large),('local-synthetic.txt',small)]}
+  print('PASS independently uploaded documents, including a multi-megabyte file, retained exact bytes after merging',flush=True)
   reminders(pb);edit_reminder(pb,'Synthetic first UI pending draft','Synthetic edited before deletion');synced(pb)
   reminders(pa);pa.once('dialog',lambda dialog:dialog.accept())
   pa.locator('.care-list tr').filter(has_text='Synthetic first UI pending draft').locator('[data-action=remove]').click()
@@ -174,11 +198,23 @@ try:
   print('PASS controller synchronized changed passphrase and action history',flush=True)
   c,pc=context();open_ui(pc,rotated);reminders(pc)
   assert 'Synthetic GitHub version' in pc.locator('.care-list').inner_text()
+  recovered=pc.evaluate('''async phrase=>{
+   const entry=await HumanStore.get(await HumanStore.current());
+   const {doc,key}=await HumanCrypto.unlock(entry.envelope,phrase),result={};
+   for(const file of doc.documents){
+    const object=await HumanStore.getObject(doc.id,file.objectId);
+    result[file.name]=(await HumanCrypto.openFile(doc.id,file,object,key)).length;
+   }
+   return result;
+  }''',rotated)
+  assert recovered=={'remote-synthetic.txt':len(large),'local-synthetic.txt':len(small)}
   pc.locator('.sidebar button[data-tab=timeline]').click();assert pc.locator('.timeline li').count()>=3
   print('PASS another browser reopened the synchronized journal with the new phrase',flush=True)
   pc.locator('.sidebar button[data-tab=recommendations]').click();pc.locator('.recommendation-report').wait_for();assert 'Synthetic saved review' in pc.locator('.recommendation-report h2').inner_text()
   print('PASS review UI survives GitHub synchronization and changed passphrase',flush=True)
   assert not runtime_errors,'Runtime error in GitHub UI roundtrip'
+  unrelated=gh('repos/'+REPO+'/contents/family-data/TEST.txt?ref='+branch)
+  assert base64.b64decode(unrelated['content'])==b'Unrelated synthetic file'
   browser.close()
 finally:
  gh('repos/'+REPO+'/git/refs/heads/'+branch,method='DELETE')

@@ -176,7 +176,7 @@
       if(selected)data=data.filter(x=>(kind==='medical'?x.category:x.kind)===selected);
     }
     if(kind==='document')section.append(banner('Вложения первой версии',
-      'PDF, JPG, PNG, XLSX, CSV, TXT, JSON и VCF — максимум 2 МиБ на файл; файлы входят в зашифрованный архив.'));
+      'PDF, JPG, PNG, XLSX, CSV, TXT, JSON и VCF. До 32 МиБ на файл и 128 МиБ на журнал. Файлы шифруются отдельно.'));
     const items=card(kind==='vital'?'История · '+data.length:null);
     if(!data.length)items.append(empty('Записей пока нет','new-'+kind));
     else if(kind==='document'){

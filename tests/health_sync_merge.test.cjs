@@ -19,42 +19,42 @@ const normalized = value => JSON.parse(JSON.stringify(value));
 test('independent changes, deletion and binary attachment union retain both histories', () => {
   const base = empty();
   base.observations = [{id:'edit',value:'original'}, {id:'delete',value:'original'}];
-  base.documents = [{id:'keep',data:'YWJj',size:3}];
+  base.documents = [{id:'keep',objectId:'a'.repeat(64),size:3}];
   const local = structuredClone(base);
   const remote = structuredClone(base);
   local.observations[0].value = 'edited';
-  local.documents.push({id:'left-file',data:'AAEC',size:3});
+  local.documents.push({id:'left-file',objectId:'b'.repeat(64),size:3});
   local.revisions.push({id:'left',changedAt:'2026-11-10T10:00:00Z'});
   remote.observations.pop();
-  remote.documents.push({id:'right-file',data:'ZGVm',size:3});
+  remote.documents.push({id:'right-file',objectId:'c'.repeat(64),size:3});
   remote.revisions.push({id:'right',changedAt:'2026-11-10T09:00:00Z'});
   remote.timeline.push({id:'delete-event'});
   const {doc, conflicts} = plan(base, local, remote);
   assert.equal(conflicts.length, 0);
   assert.deepEqual(normalized(doc.observations), [{id:'edit',value:'edited'}]);
-  assert.deepEqual(normalized(doc.documents.map(x => x.data)), ['YWJj','AAEC','ZGVm']);
+  assert.deepEqual(normalized(doc.documents.map(x => x.objectId)), ['a','b','c'].map(value=>value.repeat(64)));
   assert.deepEqual(normalized(doc.revisions.map(x => x.id)), ['right','left']);
   assert.equal(doc.timeline[0].id, 'delete-event');
   assert.equal(base.observations[0].value, 'original');
 });
 
-test('edit versus deletion and conflicting file bytes require a choice per item', () => {
+test('edit versus deletion and conflicting encrypted objects require a choice per item', () => {
   const base = empty();
   base.observations = [{id:'row',value:'old'}];
-  base.documents = [{id:'file',data:'AA==',size:1}];
+  base.documents = [{id:'file',objectId:'a'.repeat(64),size:1}];
   const local = structuredClone(base);
   const remote = structuredClone(base);
   local.observations = [];
   remote.observations[0].value = 'corrected';
-  local.documents[0].data = 'AQ==';
-  remote.documents[0].data = 'Ag==';
+  local.documents[0].objectId = 'b'.repeat(64);
+  remote.documents[0].objectId = 'c'.repeat(64);
   const pending = plan(base, local, remote, ['local']);
   assert.equal(pending.doc, null);
   assert.deepEqual(normalized(pending.conflicts.map(x => x.collection)), ['observations','documents']);
   assert.equal(pending.conflicts[0].local, undefined);
   const {doc} = plan(base, local, remote, ['local','remote']);
   assert.equal(doc.observations.length, 0);
-  assert.equal(doc.documents[0].data, 'Ag==');
+  assert.equal(doc.documents[0].objectId, 'c'.repeat(64));
 });
 
 test('a split questionnaire history keeps both versions and explicitly selects the current answers', () => {

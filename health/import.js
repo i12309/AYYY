@@ -4,7 +4,7 @@
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
  function dateInput(raw){const value=raw.trim(),m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);return m?`${m[3]}-${m[2]}-${m[1]}`:value;}
- async function open(file,{V,M,C,dialog,commit,getDoc,isCurrent=()=>true}){
+ async function open(file,{V,M,dialog,commit,getDoc,isCurrent=()=>true}){
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
   const original=await HumanDocuments.read(file);if(!isCurrent())return;if(getDoc()?.id!==identity)throw Error('Журнал сменился во время чтения файла. Повторите импорт.');
   let sheet=0,header=1,mapping={},drafts=[],busy=false;const imported=new Set(getDoc().observations.map(x=>x.importKey).filter(Boolean));
@@ -50,8 +50,18 @@
     for(const i of indices){const draft=drafts[i];if(!draft||draft.duplicate)throw Error('Неверная строка импорта.');const item=Object.fromEntries(fields.map(([key])=>[key,String(input.get(i+':'+key)||'')]));item.date=dateInput(item.date);item.datePrecision=!item.date?'unknown':/^\d{4}$/.test(item.date)?'year':/^\d{4}-\d{2}$/.test(item.date)?'month':'day';
      try{records.push({...M.checkLab(item),importKey:draft.importKey,provenance:{filename:original.name,sha256:original.hash,sheet:original.tables[sheet].name,row:draft.row,raw:draft.raw,rawCells:draft.rawCells}});}catch(err){throw Error('Строка '+draft.row+': '+err.message);}}
     const mime={pdf:'application/pdf',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',csv:'text/csv'}[original.extension];
-    const attachment={id:M.id(),name:M.text(original.name,255),title:M.text(original.name,255),date:new Date().toISOString().slice(0,10),mime,size:original.bytes.length,data:C.base64(original.bytes),sha256:original.hash,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-    await commit(doc=>{if(doc.id!==identity)throw Error('Журнал сменился.');if(records.some(r=>doc.observations.some(o=>o.importKey===r.importKey)))throw Error('Эти строки уже импортированы. Откройте проверку заново.');const saved=doc.documents.find(d=>d.sha256===original.hash)||attachment;if(saved===attachment)doc.documents.push(attachment);for(const r of records){r.documentId=saved.id;doc.observations.push(r);}});
+    const attachment={id:M.id(),name:M.text(original.name,255),title:M.text(original.name,255),date:new Date().toISOString().slice(0,10),mime,sha256:original.hash,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    await commit(async(doc,stageDocument)=>{
+     if(doc.id!==identity)throw Error('Журнал сменился.');
+     if(records.some(r=>doc.observations.some(o=>o.importKey===r.importKey)))
+      throw Error('Эти строки уже импортированы. Откройте проверку заново.');
+     let saved=doc.documents.find(d=>d.sha256===original.hash);
+     if(!saved){
+      saved=await stageDocument(attachment,original.bytes);
+      doc.documents.push(saved);
+     }
+     for(const r of records){r.documentId=saved.id;doc.observations.push(r);}
+    });
     dialog.close();
    }catch(err){error.hidden=false;error.textContent=err.message;}finally{busy=false;if(submit.isConnected)submit.disabled=false;}});
   }
