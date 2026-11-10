@@ -89,7 +89,7 @@ try{
   await page.reload();
   await openLibrary(page);
   assert.equal(await page.locator('.tree-demo-badge').count(),3);
-  await page.getByText('В браузере есть 3 учебных деревьев').waitFor();
+  await page.getByText('Учебных деревьев в браузере: 3').waitFor();
   await page.getByRole('button',{name:'Открыть пример'}).click();
   assert.equal((await stored(page)).length,3,'Existing duplicates must never be deleted or multiplied');
   const chosenId=await treeId(page);
