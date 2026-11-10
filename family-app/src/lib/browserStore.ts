@@ -7,6 +7,7 @@ type MediaRecord = {key: string; blob: Blob};
 type SyncRecord = {
   treeId: string; owner: string; repo: string; branch: string; path: string;
   blobSha?: string; lastCommit?: string; lastSync?: string; lastLocalSavedAt?: string;
+  baseline?: Document;
 };
 let opening: Promise<IDBDatabase> | null = null;
 const urls = new Map<string, {blob: Blob; url: string}>();
@@ -246,6 +247,42 @@ export async function importNewTreeSnapshot(
         failure=error instanceof Error?error:new Error('Некорректный семейный архив.');
         tx.abort();
       }
+    };
+  });
+}
+
+
+/**
+ * Conflict resolution commits to GitHub first. Atomically update this device
+ * only if no other tab has changed the local copy during the network request.
+ * Even if a concurrent edit is detected, save the new remote baseline without
+ * replacing the user's local version.
+ */
+export async function installResolvedSnapshot(
+  expected:Document,
+  merged:Document,
+  entries:Array<{filename:string;blob:Blob}>,
+  sync:SyncRecord,
+):Promise<boolean>{
+  validate(merged);
+  const db=await openDatabase();
+  return new Promise<boolean>((resolve,reject)=>{
+    const tx=db.transaction(['trees','files','sync'],'readwrite');
+    const trees=tx.objectStore('trees'),files=tx.objectStore('files'),synced=tx.objectStore('sync');
+    let installed=false;
+    tx.oncomplete=()=>resolve(installed);
+    tx.onabort=()=>reject(tx.error||new Error('Не удалось завершить объединение дерева.'));
+    const lookup=trees.get(expected.tree.id);
+    lookup.onerror=()=>tx.abort();
+    lookup.onsuccess=()=>{
+      if(!lookup.result){tx.abort();return;}
+      const actual=(lookup.result as TreeRecord).document;
+      installed=JSON.stringify(actual)===JSON.stringify(expected);
+      if(installed){
+        trees.put({id:merged.tree.id,document:merged});
+        for(const item of entries)files.put({key:merged.tree.id+'/'+item.filename,blob:item.blob});
+      }
+      synced.put(sync);
     };
   });
 }
