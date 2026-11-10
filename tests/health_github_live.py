@@ -96,20 +96,84 @@ try:
     print('Controller diagnostic:',label,detail,flush=True)
    raise AssertionError('Second controller did not restore the synchronized reminder')
   print('PASS independent browser UI restored the synchronized schedule',flush=True)
-  pb.locator('.care-list [data-action=edit]').click();pb.locator('#health-dialog [name=title]').fill('Synthetic second UI revision');pb.locator('#health-dialog [type=submit]').click();pb.locator('#health-dialog').wait_for(state='hidden');synced(pb)
-  new_reminder(pa,'Synthetic first UI pending draft');pa.get_by_text('Конфликт версий',exact=True).wait_for(timeout=60000)
+  def edit_reminder(page, title, next_title):
+   row=page.locator('.care-list tr').filter(has_text=title)
+   row.locator('[data-action=edit]').click()
+   page.locator('#health-dialog [name=title]').fill(next_title)
+   page.locator('#health-dialog [type=submit]').click()
+   page.locator('#health-dialog').wait_for(state='hidden')
+  def merge_review(page):
+   form=page.locator('[data-form=sync-merge]')
+   form.wait_for(timeout=60000)
+   return form
+  def pull(page):
+   page.locator('.sidebar button[data-tab=settings]').click()
+   page.locator('[data-action=sync]').click()
+   page.get_by_text('Загружены изменения из GitHub.',exact=True).wait_for(timeout=60000)
+  edit_reminder(pb,'Synthetic UI schedule','Synthetic second UI revision');synced(pb)
+  new_reminder(pa,'Synthetic first UI pending draft');review=merge_review(pa)
   kept=pa.evaluate('''async p=>{const local=await HumanStore.get(await HumanStore.current()),opened=await HumanCrypto.unlock(local.envelope,p.passphrase),remote=await HumanGithub.read(p.repo),other=await HumanCrypto.unlock(remote.envelope,p.passphrase);return local.dirty&&opened.doc.reminders.length===2&&other.doc.reminders.length===1&&other.doc.reminders[0].title==='Synthetic second UI revision';}''',params)
   assert kept,'Controller conflict must retain both independent versions'
-  print('PASS controller conflict preserves the local draft and remote revision',flush=True)
+  assert review.locator('fieldset').count()==0
+  new_reminder(pb,'Synthetic update during merge review');synced(pb)
+  previous_form=review.element_handle()
+  review.locator('[type=submit]').click()
+  previous_form.wait_for_element_state('hidden')
+  # A newer server head must be compared again against the newly recorded base.
+  next_review=merge_review(pa)
+  assert next_review.locator('fieldset').count()==0
+  next_review.locator('[type=submit]').click();synced(pa)
+  pull(pb);reminders(pb)
+  assert all(title in pb.locator('.care-list').inner_text() for title in [
+   'Synthetic first UI pending draft','Synthetic second UI revision','Synthetic update during merge review'])
+  print('PASS controller merged independent edits and detected a newer server head during review',flush=True)
+  edit_reminder(pb,'Synthetic second UI revision','Synthetic GitHub version');synced(pb)
+  reminders(pa);edit_reminder(pa,'Synthetic second UI revision','Synthetic local version')
+  review=merge_review(pa)
+  assert review.locator('fieldset').count()==1
+  assert 'Synthetic local version' in review.inner_text() and 'Synthetic GitHub version' in review.inner_text()
+  assert not review.locator('input:checked').count()
+  review.locator('[value=remote]').check()
+  review.locator('[type=submit]').click();synced(pa)
+  pull(pb);reminders(pb)
+  assert 'Synthetic GitHub version' in pb.locator('.care-list').inner_text()
+  assert 'Synthetic local version' not in pb.locator('.care-list').inner_text()
+  print('PASS simultaneous edits to one reminder required a choice and kept the chosen value',flush=True)
+  def add_document(page,name,contents):
+   page.locator('.sidebar button[data-tab=document]').click()
+   page.locator('[data-action=new-document].primary').click()
+   page.locator('#health-dialog [name=file]').set_input_files({'name':name,'mimeType':'text/plain','buffer':contents})
+   page.locator('#health-dialog [name=title]').fill(name)
+   page.locator('#health-dialog [type=submit]').click()
+   page.locator('#health-dialog').wait_for(state='hidden')
+  add_document(pb,'remote-synthetic.txt',b'remote contents\n');synced(pb)
+  add_document(pa,'local-synthetic.txt',b'local contents\n')
+  review=merge_review(pa);assert review.locator('fieldset').count()==0
+  review.locator('[type=submit]').click();synced(pa)
+  pull(pb)
+  attached=pb.evaluate('''async p=>{const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);
+   return Object.fromEntries(v.doc.documents.map(file=>[file.name,new TextDecoder().decode(HumanCrypto.unbase64(file.data))]));}''',params)
+  assert attached=={'remote-synthetic.txt':'remote contents\n','local-synthetic.txt':'local contents\n'}
+  print('PASS independently uploaded documents kept their exact bytes after merging',flush=True)
+  reminders(pb);edit_reminder(pb,'Synthetic first UI pending draft','Synthetic edited before deletion');synced(pb)
+  reminders(pa);pa.once('dialog',lambda dialog:dialog.accept())
+  pa.locator('.care-list tr').filter(has_text='Synthetic first UI pending draft').locator('[data-action=remove]').click()
+  review=merge_review(pa)
+  assert review.locator('fieldset').count()==1 and 'Записи нет' in review.inner_text()
+  review.locator('[value=local]').check();review.locator('[type=submit]').click();synced(pa)
+  pull(pb);reminders(pb)
+  assert 'Synthetic first UI pending draft' not in pb.locator('.care-list').inner_text()
+  assert 'Synthetic edited before deletion' not in pb.locator('.care-list').inner_text()
+  print('PASS edit versus delete stayed unresolved until the local deletion was selected',flush=True)
   rotated='synthetic-rotated-roundtrip-phrase'
   pb.locator('.sidebar button[data-tab=settings]').click();pb.locator('[data-action=change-passphrase]').click()
   for field,value in [('current',params['passphrase']),('next',rotated),('repeat',rotated)]:pb.locator('#health-dialog [name='+field+']').fill(value)
   pb.locator('#health-dialog [type=submit]').click();pb.locator('#health-dialog').wait_for(state='hidden');synced(pb)
-  rekeyed=pb.evaluate('''async p=>{const remote=await HumanGithub.read(p.repo),opened=await HumanCrypto.unlock(remote.envelope,p.rotated);let oldRejected=false;try{await HumanCrypto.unlock(remote.envelope,p.passphrase);}catch{oldRejected=true;}return oldRejected&&opened.doc.reminders[0].title==='Synthetic second UI revision'&&opened.doc.timeline.some(x=>x.kind==='security');}''',{**params,'rotated':rotated})
+  rekeyed=pb.evaluate('''async p=>{const remote=await HumanGithub.read(p.repo),opened=await HumanCrypto.unlock(remote.envelope,p.rotated);let oldRejected=false;try{await HumanCrypto.unlock(remote.envelope,p.passphrase);}catch{oldRejected=true;}return oldRejected&&opened.doc.reminders.some(r=>r.title==='Synthetic GitHub version')&&opened.doc.timeline.some(x=>x.kind==='security');}''',{**params,'rotated':rotated})
   assert rekeyed,'Rekey must synchronize the new envelope with the expected remote SHA'
   print('PASS controller synchronized changed passphrase and action history',flush=True)
   c,pc=context();open_ui(pc,rotated);reminders(pc)
-  assert 'Synthetic second UI revision' in pc.locator('.care-list').inner_text()
+  assert 'Synthetic GitHub version' in pc.locator('.care-list').inner_text()
   pc.locator('.sidebar button[data-tab=timeline]').click();assert pc.locator('.timeline li').count()>=3
   print('PASS another browser reopened the synchronized journal with the new phrase',flush=True)
   pc.locator('.sidebar button[data-tab=recommendations]').click();pc.locator('.recommendation-report').wait_for();assert 'Synthetic saved review' in pc.locator('.recommendation-report h2').inner_text()

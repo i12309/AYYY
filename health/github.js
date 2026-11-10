@@ -30,7 +30,11 @@
     }catch{throw new Error('GitHub недоступен. Проверьте подключение к интернету.');}
     if(allow404 && response.status===404)return null;
     if(!response.ok){
-      if([409,422].includes(response.status))throw new Error('Конфликт: данные в GitHub изменились. Загрузите их и разрешите конфликт.');
+      if([409,422].includes(response.status)){
+        const error=new Error('Конфликт: данные в GitHub изменились. Загрузите их и разрешите конфликт.');
+        error.status=response.status;
+        throw error;
+      }
       if(response.status===401)throw new Error('GitHub-токен недействителен или истёк.');
       if(response.status===403)throw new Error('Нет доступа к GitHub или превышен лимит API.');
       if(response.status===404)throw new Error('Не найден репозиторий, ветка или файл.');
@@ -44,22 +48,27 @@
     await api(root(repo)+'/git/ref/heads/'+encodeURIComponent(repo.branch));
     return true;
   }
+  function decodeEnvelope(encoded){
+    try{
+      const envelope=JSON.parse(decoder.decode(window.HumanCrypto.unbase64(encoded.replace(/\s/g,''))));
+      window.HumanCrypto.assertEnvelope(envelope);
+      return envelope;
+    }catch{throw new Error('В GitHub лежит файл неизвестного формата; данные не изменены.');}
+  }
+  async function readBlob(repo,sha){
+    if(!/^[0-9a-f]{40}$/i.test(sha))throw new Error('Некорректный идентификатор версии GitHub.');
+    const blob=await api(root(repo)+'/git/blobs/'+encodeURIComponent(sha),'GET',undefined,true);
+    if(!blob)return null;
+    if(blob.sha!==sha||blob.encoding!=='base64'||!blob.content)throw new Error('Не удалось прочитать версию архива GitHub.');
+    return decodeEnvelope(blob.content);
+  }
   async function read(repo){
     const item=await api(root(repo)+'/contents/'+PATH+'?ref='+encodeURIComponent(repo.branch),
       'GET',undefined,true);
     if(!item)return null;
     if(item.type!=='file'||typeof item.sha!=='string')throw new Error('Некорректный архив в GitHub.');
-    let encoded=item.encoding==='base64'&&item.content ? item.content.replace(/\s/g,'') : '';
-    if(!encoded) {
-      const blob=await api(root(repo)+'/git/blobs/'+encodeURIComponent(item.sha));
-      if(blob.encoding!=='base64'||!blob.content)throw new Error('Не удалось прочитать архив GitHub.');
-      encoded=blob.content.replace(/\s/g,'');
-    }
-    let envelope;
-    try{
-      envelope=JSON.parse(decoder.decode(window.HumanCrypto.unbase64(encoded)));
-      window.HumanCrypto.assertEnvelope(envelope);
-    }catch{throw new Error('В GitHub лежит файл неизвестного формата; данные не изменены.');}
+    const envelope=item.encoding==='base64'&&item.content ? decodeEnvelope(item.content) : await readBlob(repo,item.sha);
+    if(!envelope)throw new Error('Не удалось прочитать архив GitHub.');
     return {sha:item.sha,envelope};
   }
   async function write(repo,envelope,expectedSha){
@@ -73,5 +82,5 @@
     if(!result?.content?.sha)throw new Error('GitHub не подтвердил сохранение.');
     return result.content.sha;
   }
-  window.HumanGithub={PATH,token,hasToken,disconnect,parseRepo,verify,read,write};
+  window.HumanGithub={PATH,token,hasToken,disconnect,parseRepo,verify,read,readBlob,write};
 })();

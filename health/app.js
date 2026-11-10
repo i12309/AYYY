@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const V=window.HumanView,M=window.HumanModel,C=window.HumanCrypto;
-  const S=window.HumanStore,G=window.HumanGithub;
+  const S=window.HumanStore,G=window.HumanGithub,Merge=window.HumanSyncMerge;
   const root=document.getElementById('health-root');
   const header=document.getElementById('health-header');
   const dialog=document.getElementById('health-dialog');
@@ -159,14 +159,7 @@
       return box;
     }
     box.append(V.title('Настройки','Профиль, безопасность и синхронизация.'));
-    if(state.conflict){
-      box.append(V.card('Конфликт версий',[
-        V.banner('Данные не перезаписаны',
-          'Скачайте локальный архив, прежде чем вручную заменять его версией из GitHub.'),
-        V.button('Сохранить резервную копию','backup'),
-        V.button('Использовать GitHub-версию','restore-remote',{class:'danger'})
-      ]));
-    }
+    if(state.conflict)box.append(syncConflictCard(state.conflict));
     const profile=V.card('Профиль',[
       V.h('p',{},'Имя: '+(doc.profile.name||'Не указано')),
       V.h('p',{},'Дата рождения: '+V.date(doc.profile.birthDate)),
@@ -188,7 +181,9 @@
       V.banner('Тот же репозиторий, что у родословной',
         'Медицинские данные сохраняются по пути health-data/v1/vault.json. Семейное дерево находится в family-data/trees/. Публичные репозитории запрещены.'),
       V.h('p',{},repo?'Подключено: '+VRepo(repo):'Не подключён'),
-      form,V.button('Стереть токен из памяти','disconnect-token',{class:'small danger'}),
+      form,
+      repo?V.button('Синхронизировать сейчас','sync',{class:'small'}):null,
+      V.button('Стереть токен из памяти','disconnect-token',{class:'small danger'}),
       V.h('p',{class:'health-note'},
         'Токен не сохраняется на диск. Синхронизация выполняется только пока эта страница открыта.')
     ]));
@@ -201,6 +196,7 @@
   }
   let renderedVaultId=null;
   function render(){
+    if(!state.doc||state.conflict?.review&&state.conflict.review.snapshot!==state.local)state.conflict=false;
     const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.vitalOffset=0;state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
@@ -554,6 +550,130 @@
     syncTimer=setTimeout(()=>{void syncNow();},3000);
   }
   function sessionFence(){const revision=sessionRevision,id=state.doc?.id,localId=state.local?.id,key=state.key;return ()=>revision===sessionRevision&&id===state.doc?.id&&localId===state.local?.id&&key===state.key;}
+  const syncLabels={
+    observations:'Анализ',vitals:'Показатель',episodes:'Эпизод',medical:'Медкарта',
+    medications:'Препарат',findings:'Генетическая запись',diary:'Дневник',documents:'Документ',
+    intakes:'Приём',reminders:'Напоминание',recommendationIntakes:'Версия анкеты',
+    recommendationContexts:'Снимок для рекомендаций',recommendationReports:'Рецензия',
+    currentQuestionnaire:'Текущая анкета',analytePreferences:'Настройки показателя',
+    settings:'Настройки журнала',revisions:'История записи',timeline:'Событие',
+  };
+  function syncConflictCard(conflict){
+    const actions=[V.button('Скачать локальную копию','backup')];
+    if(!conflict.review){
+      return V.card('Конфликт версий',[
+        V.banner('Локальная копия сохранена',conflict.message),...actions,
+        V.button('Использовать GitHub-версию','restore-remote',{class:'danger'}),
+      ]);
+    }
+    const review=conflict.review;
+    const fields=review.conflicts.map((item,index)=>{
+      const display=item.local??item.remote;
+      const label=[syncLabels[item.collection],display?.title||display?.name||display?.description||display?.type||display?.date].filter(Boolean).join(' · ');
+      function summary(value){
+        if(value===undefined)return 'Записи нет';
+        const json=JSON.stringify(value,(key,field)=>{
+          if(key==='data'&&item.collection==='documents')return 'Содержимое вложения';
+          if(key==='data'&&item.collection==='recommendationContexts')return 'Данные снимка';
+          return field;
+        },2);
+        return json.length>16000?json.slice(0,16000)+'…':json;
+      }
+      function option(side,title,value){
+        return V.h('div',{},V.h('label',{},V.h('input',{type:'radio',name:'choice-'+index,value:side,required:true}),' '+title),
+          V.h('pre',{class:'health-sync-version'},summary(value)),
+          item.collection==='documents'&&value?.data
+            ? V.button('Скачать оригинал','sync-conflict-file',{'data-index':index,'data-side':side,class:'small'})
+            : null);
+      }
+      return V.h('fieldset',{class:'health-sync-choice'},V.h('legend',{},label),
+        V.h('div',{class:'health-grid equal'},option('local','Локальная версия',item.local),option('remote','Версия GitHub',item.remote)),
+        item.before===undefined?null:V.h('details',{},V.h('summary',{},'Общая исходная версия'),V.h('pre',{class:'health-sync-version'},summary(item.before))));
+    });
+    const form=V.form('sync-merge',[
+      V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),
+      ...fields,
+    ],'Объединить и синхронизировать');
+    formSnapshots.set(form,review);
+    return V.card('Конфликт версий',[
+      V.banner(review.conflicts.length?'Выберите версии записей':'Изменения можно объединить',
+        'Журнал сохранит независимые изменения с обоих устройств.'),
+      ...actions,form,
+    ]);
+  }
+  function showSyncConflict(message,review=null){
+    state.conflict={message,review};
+    state.tab='settings';
+    state.globalSearch='';
+    render();
+  }
+  async function compareSyncVersions(snapshot,remote,key,active){
+    if(!snapshot.remoteSha){
+      showSyncConflict('Для этих копий нет сохранённой общей версии. Скачайте локальную копию перед восстановлением из GitHub.');
+      return;
+    }
+    try{
+      const baseEnvelope=await G.readBlob(snapshot.repo,snapshot.remoteSha);
+      if(!active())return;
+      if(!baseEnvelope){
+        showSyncConflict('Общая версия больше недоступна в GitHub. Скачайте локальную копию перед восстановлением.');
+        return;
+      }
+      if(baseEnvelope.salt!==snapshot.envelope.salt||remote.envelope.salt!==snapshot.envelope.salt){
+        showSyncConflict('Фраза доступа была изменена. Скачайте локальную копию перед восстановлением версии GitHub.');
+        return;
+      }
+      const [base,local,other]=await Promise.all([baseEnvelope,snapshot.envelope,remote.envelope].map(value=>C.openWithKey(value,key)));
+      if(!active())return;
+      await writeQueue;
+      if(!active())return;
+      if(state.local!==snapshot){scheduleSync();return;}
+      const {conflicts}=Merge.plan(base,local,other);
+      showSyncConflict('',{snapshot,remote,base,local,other,conflicts});
+    }catch(e){
+      if(active())showSyncConflict(e.message);
+    }
+  }
+  async function acceptSyncMerge(form){
+    const review=formSnapshots.get(form);
+    if(state.syncBusy||state.rekeyBusy||!G.hasToken())throw Error('Подключите GitHub и дождитесь завершения текущей синхронизации.');
+    if(!review||review!==state.conflict?.review||state.local!==review.snapshot)
+      throw Error('Журнал изменился. Обновите сравнение через синхронизацию.');
+    const fields=new FormData(form);
+    const choices=review.conflicts.map((_,index)=>fields.get('choice-'+index));
+    const active=sessionFence();
+    state.syncBusy=true;
+    renderHeader();
+    const run=writeQueue.then(async()=>{
+      if(!active()||!form.isConnected||state.local!==review.snapshot||review!==state.conflict?.review)
+        throw Error('Журнал изменился. Обновите сравнение через синхронизацию.');
+      const {doc}=Merge.plan(review.base,review.local,review.other,choices);
+      if(!doc)throw Error('Выберите версию для каждой конфликтующей записи.');
+      doc.timeline.push({id:M.id(),kind:'sync',recordKind:'profile',entityId:'profile',
+        operation:'merge',title:'Объединены версии журнала',happenedAt:new Date().toISOString()});
+      const envelope=await C.seal(doc,state.key,review.snapshot.envelope);
+      if(!active()||!form.isConnected||!G.hasToken())throw Error('Подключение или журнал изменились.');
+      const saved=await S.save({...review.snapshot,envelope,remoteSha:review.remote.sha,dirty:true},review.snapshot);
+      channel?.postMessage({client:clientId,vaultId:saved.id});
+      if(!active())return;
+      state.doc=doc;
+      state.local=saved;
+      state.conflict=false;
+      render();
+    });
+    writeQueue=run.catch(()=>{});
+    try{await run;}finally{if(active()){state.syncBusy=false;renderHeader();}}
+    if(active())await syncNow();
+  }
+  function conflictFile(index,side){
+    const item=state.conflict?.review?.conflicts[index];
+    if(!item||item.collection!=='documents'||!['local','remote'].includes(side))return;
+    const file=item[side];
+    if(!file)return;
+    const bytes=C.unbase64(file.data);
+    if(bytes.length!==file.size)throw Error('Документ повреждён.');
+    download(file.name,bytes,'application/octet-stream');
+  }
   async function syncNow(){
     if(state.demo){toast('Демо никогда не отправляется в GitHub.');return;}
     if(state.syncBusy||state.rekeyBusy||!state.local?.repo||!state.key){if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');return;}
@@ -567,22 +687,41 @@
       const remote=await G.read(snapshot.repo);if(!active())return;
       if(remote&&remote.envelope.vaultId!==snapshot.id)throw new Error('В этом репозитории уже хранится другой медицинский профиль.');
       if(remote&&remote.sha!==snapshot.remoteSha){
-        if(snapshot.dirty){state.conflict=true;state.tab='settings';render();toast('Локальная и GitHub-версии различаются. Автоматическая перезапись запрещена.');return;}
+        const alreadySent=S.sameEnvelope(remote.envelope,snapshot.envelope);
+        if(snapshot.dirty&&!alreadySent){await compareSyncVersions(snapshot,remote,key,active);return;}
+        if(remote.envelope.salt!==snapshot.envelope.salt){
+          showSyncConflict('Версия GitHub зашифрована другой фразой доступа. Скачайте локальную копию перед восстановлением.');
+          return;
+        }
         const decrypted=await C.openWithKey(remote.envelope,key);if(!active())return;
         await writeQueue;if(!active())return;
         const fresh=await S.get(snapshot.id);if(!active())return;
         if(!fresh)throw Error('Локальный журнал удалён.');
-        if(fresh.dirty||!S.sameEnvelope(fresh.envelope,snapshot.envelope)){state.conflict=true;state.tab='settings';render();return;}
+        if(state.local!==snapshot||!S.sameEnvelope(fresh.envelope,snapshot.envelope)){scheduleSync();return;}
         const updated=await S.save({...fresh,envelope:remote.envelope,remoteSha:remote.sha,dirty:false,lastSyncAt:new Date().toISOString()},fresh);
         channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
         state.doc=decrypted;state.local=updated;state.conflict=false;render();toast('Загружены изменения из GitHub.');return;
       }
-      if(!remote&&snapshot.remoteSha){state.conflict=true;state.tab='settings';render();toast('Удалённая версия исчезла. Автоматическое восстановление заблокировано.');return;}
+      if(!remote&&snapshot.remoteSha){showSyncConflict('Удалённая версия больше недоступна. Локальная копия сохранена.');return;}
       if(!snapshot.dirty){toast('Все изменения уже синхронизированы.');return;}
-      const sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null);if(!active())return;
+      let sha;
+      try{
+        sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null);
+      }catch(e){
+        if(!active())return;
+        if(![409,422].includes(e.status))throw e;
+        const changed=await G.read(snapshot.repo);
+        if(!active())return;
+        if(changed?.sha===remote?.sha)throw e;
+        if(changed)await compareSyncVersions(snapshot,changed,key,active);
+        else showSyncConflict('Удалённая версия больше недоступна. Локальная копия сохранена.');
+        return;
+      }
+      if(!active())return;
       await writeQueue;if(!active())return;
       const fresh=await S.get(snapshot.id);if(!active())return;
       if(!fresh)throw Error('Локальный журнал удалён.');
+      if(fresh.remoteSha!==snapshot.remoteSha||['owner','repo','branch'].some(key=>fresh.repo?.[key]!==snapshot.repo[key]))return;
       const unchanged=S.sameEnvelope(fresh.envelope,snapshot.envelope);
       const updated=await S.save({...fresh,remoteSha:sha,dirty:!unchanged,lastSyncAt:new Date().toISOString()},fresh);if(!active())return;
       state.local=updated;state.conflict=false;render();toast(unchanged?'Зашифрованные данные отправлены в GitHub.':'Новые изменения ожидают следующей отправки.');if(updated.dirty)scheduleSync();
@@ -590,6 +729,7 @@
     finally{if(run===syncRun){state.syncBusy=false;renderHeader();}}
   }
   async function restoreRemote(){
+    if(state.syncBusy||state.rekeyBusy)throw new Error('Дождитесь завершения текущей операции.');
     if(!state.local?.repo||!G.hasToken()||!state.key)throw new Error('Сначала подключите токен GitHub и откройте журнал.');
     if(!confirm('Заменить локальную версию архивом из GitHub? Перед заменой будет скачана резервная копия.'))return;
     const active=sessionFence();await writeQueue;if(!active())return;
@@ -621,7 +761,9 @@
     const submit=form.querySelector('[type=submit]');if(submit)submit.disabled=true;const inlineError=form.querySelector('[data-form-error]');if(inlineError)inlineError.hidden=true;
     try{
       const mode=form.dataset.form;
-      if(mode==='create'){
+      if(mode==='sync-merge'){
+        await acceptSyncMerge(form);
+      }else if(mode==='create'){
         const active=sessionFence();
         const pass=form.elements.namedItem('password').value;
         if(pass.length<12||pass!==form.elements.namedItem('repeat').value)
@@ -778,7 +920,8 @@
         clearTimeout(syncTimer);G.disconnect();state.demo=false;state.doc=null;state.key=null;
         state.picker=false;state.conflict=false;render();
       }else if(action==='sync')await syncNow();
-      else if(action==='disconnect-token'){G.disconnect();render();}
+      else if(action==='disconnect-token'){G.disconnect();state.conflict=false;render();}
+      else if(action==='sync-conflict-file')conflictFile(Number(el.dataset.index),el.dataset.side);
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='open-vital'||action==='open-episode'){state.tab='vital';state.globalSearch='';state.vitalId=action==='open-vital'?el.dataset.id:'';state.episodeId=action==='open-episode'?el.dataset.id:'';if(action==='open-episode')state.filters.vital='illness';else state.filters.vital=state.doc.vitals.find(x=>x.id===el.dataset.id)?.type||'Масса';render();const panel=root.querySelector('.health-details');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='close-health-detail'){state.vitalId='';state.episodeId='';render();}
