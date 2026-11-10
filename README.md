@@ -16,6 +16,12 @@ python -m http.server 8000
 Модули погоды загружаются только при открытии её страницы. При публикации из `main` нужны
 `index.html`, `.nojekyll`, `src/`, `assets/`, `weather/` и `tools/` — нельзя копировать только HTML.
 
+Сборка и проверки выполняются локально. При изменении исходников GEN соберите
+`family/` командой `npm run build --prefix family-app` после `npm ci --prefix family-app`.
+Готовые изменения публикуются пушем в `main`. GitHub Pages запускает публикацию,
+а проверки **Build browser GEN** и **AYYY Project Viewer checks** можно запустить
+вручную во вкладке **Actions**.
+
 ```sh
 # Полная переносимая папка для статического хостинга
 python src/build.py dist/index.html
