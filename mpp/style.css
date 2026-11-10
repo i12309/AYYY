@@ -92,6 +92,8 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 .pv-links{position:absolute;left:0;z-index:2;overflow:visible;pointer-events:none}
 .pv-link{fill:none;stroke:#73949c;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
 .pv-link-critical{stroke:#b96d53;stroke-width:1.7}
+.pv-link-partial{stroke-dasharray:5 3;opacity:.65}
+.pv-link-label{font:10px/1 Arial,sans-serif;fill:#456e78;stroke:#fff;stroke-width:3px;paint-order:stroke}
 .pv-chart-rows{position:relative;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(7 * 12px - 1px),#e1eaea calc(7 * 12px - 1px),#e1eaea calc(7 * 12px));}
 .pv-chart-row{height:34px;position:relative;border-bottom:1px solid #edf1f1;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(100% - 1px),#e8eeee calc(100% - 1px),#e8eeee 100%);background-color:#fff}
 .pv-chart-row .pv-task-bar{top:9px;height:16px}
