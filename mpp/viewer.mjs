@@ -117,19 +117,43 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
 
 function resourceMarkup(model, query) {
   const q=query.trim().toLocaleLowerCase();
-  const resources=model.resources.filter(r => (r.name+' '+r.group+' '+r.initials).toLocaleLowerCase().includes(q));
-  const resourceTasks=new Map();
-  for(const a of model.assignments){
-    const names=resourceTasks.get(a.resource)||[];
-    const name=model.byUid.get(a.task)?.name;
+  const resourceTasks=new Map(),byResource=new Map(model.resources.map(r=>[r.uid,r]));
+  for(const assignment of model.assignments){
+    const names=resourceTasks.get(assignment.resource)||[];
+    const name=model.byUid.get(assignment.task)?.name;
     if(name)names.push(name);
-    resourceTasks.set(a.resource,names);
+    resourceTasks.set(assignment.resource,names);
   }
-  const rows=resources.map(r=>{
+  const filteredResources=model.resources.filter(r=>(r.name+' '+r.group+' '+r.initials).toLocaleLowerCase().includes(q));
+  const rows=filteredResources.slice(0,1000).map(r=>{
     const names=resourceTasks.get(r.uid)||[];
-    return '<tr><td><strong>'+escapeHtml(r.name)+'</strong></td><td>'+escapeHtml(r.type)+'</td><td>'+escapeHtml(r.group||'—')+'</td><td>'+escapeHtml(r.initials||'—')+'</td><td>'+escapeHtml(numberLabel(r.work))+'</td><td>'+escapeHtml(numberLabel(r.cost))+'</td><td title="'+escapeHtml(names.join(', '))+'">'+names.length+'</td></tr>';
+    const maxUnits=r.maxUnits==null?'—':numberLabel(r.maxUnits*100)+'%';
+    const rate=r.standardRate==null?'—':numberLabel(r.standardRate)+' / '+escapeHtml(r.rateUnits||'ч');
+    return '<tr><td><strong>'+escapeHtml(r.name)+'</strong></td><td>'+escapeHtml(r.type)+'</td><td>'+escapeHtml(r.group||'—')+'</td><td>'+maxUnits+'</td>'+
+      '<td>'+rate+'</td><td>'+escapeHtml(numberLabel(r.work))+'</td><td>'+escapeHtml(numberLabel(r.cost))+'</td>'+
+      '<td title="'+escapeHtml(names.join(', '))+'">'+names.length+'</td></tr>';
   }).join('');
-  return '<div class="pv-resource-container"><table class="pv-resource-table"><thead><tr><th>Ресурс</th><th>Тип</th><th>Группа</th><th>Инициалы</th><th>Работа</th><th>Стоимость</th><th>Назначений</th></tr></thead><tbody>'+rows+'</tbody></table>'+(rows?'':'<div class="pv-no-data">По вашему запросу ресурсов не найдено.</div>')+'</div>';
+  const matching=model.assignments.filter(a=>{
+    if(!q)return true;
+    const name=model.byUid.get(a.task)?.name||'';
+    const resource=byResource.get(a.resource)?.name||'';
+    return (name+' '+resource).toLocaleLowerCase().includes(q);
+  });
+  const assignmentRows=matching.slice(0,1500).map(a=>{
+    const task=model.byUid.get(a.task),resource=byResource.get(a.resource);
+    const units=a.units==null?'—':numberLabel(a.units*100)+'%';
+    return '<tr><td>'+escapeHtml(task?.wbs||task?.id||'—')+'</td><td>'+escapeHtml(task?.name||'—')+
+      '</td><td>'+escapeHtml(resource?.name||'—')+'</td><td>'+units+'</td><td>'+dateText(a.start)+'</td><td>'+
+      dateText(a.finish)+'</td><td>'+escapeHtml(numberLabel(a.work))+'</td><td>'+escapeHtml(numberLabel(a.cost))+'</td></tr>';
+  }).join('');
+  return '<div class="pv-resource-container"><table class="pv-resource-table"><thead><tr><th>Ресурс</th><th>Тип</th><th>Группа</th><th>Макс. загрузка</th>'+
+    '<th>Ставка</th><th>Работа</th><th>Стоимость</th><th>Назначений</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    (filteredResources.length>1000?'<p class="pv-resource-warning">Показаны первые 1000 ресурсов. Уточните поиск.</p>':'')+
+    (rows?'':'<div class="pv-no-data">По вашему запросу ресурсов не найдено.</div>')+
+    '<section class="pv-assignment-section"><div class="pv-assignment-head"><h3>Назначения задач</h3><span>'+matching.length+' записей</span></div>'+
+    '<table class="pv-assign-table"><thead><tr><th>WBS</th><th>Задача</th><th>Ресурс</th><th>Загрузка</th><th>Начало</th><th>Окончание</th><th>Работа</th><th>Стоимость</th></tr></thead><tbody>'+assignmentRows+'</tbody></table>'+
+    (matching.length>1500?'<p class="pv-resource-warning">Показаны первые 1500 назначений. Используйте поиск по имени задачи или ресурса.</p>':'')+
+    (assignmentRows?'':'<div class="pv-no-data">Назначений не найдено.</div>')+'</section></div>';
 }
 
 function calendarMarkup(model, selectedUid) {
