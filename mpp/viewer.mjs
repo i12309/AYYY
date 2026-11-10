@@ -1,5 +1,5 @@
 /* AYYY Project Viewer — local-only Microsoft Project plan reader and Gantt UI. */
-import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, tasksCsv, demoProject} from './model.mjs';
+import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, tasksCsv, demoProject} from './model.mjs';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const zoomWidths = {day:26,week:12,month:5};
@@ -12,40 +12,36 @@ const monthName = date => new Intl.DateTimeFormat('ru-RU',{month:'long',year:'nu
 const shortDay = date => new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(date);
 const className = task => task.milestone?'pv-milestone':task.summary?'pv-summary':task.critical?'pv-critical':'pv-ordinary';
 
-function ganttMarkup(tasks, model, zoom, selectedUid) {
+function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true, showBaseline = true) {
   const range = timelineRange(model), pixel = zoomWidths[zoom] || zoomWidths.week;
   const width = Math.round(range.days * pixel);
   const end = range.start + range.days * DAY;
   const months = [];
-  let d = new Date(range.start);
-  let date = Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1);
+  let date = Date.UTC(new Date(range.start).getUTCFullYear(),new Date(range.start).getUTCMonth(),1);
   for (let safety=0;date<end && safety<400;safety++) {
     const next = new Date(date);
     next.setUTCMonth(next.getUTCMonth()+1);
     const finish = next.getTime();
-    const left = Math.max(0, (date-range.start)/DAY*pixel);
+    const left = Math.max(0,(date-range.start)/DAY*pixel);
     const right = Math.min(width,(finish-range.start)/DAY*pixel);
-    if(right>left) months.push('<span class="pv-month" style="left:'+Math.round(left)+'px;width:'+Math.round(right-left)+'px">'+escapeHtml(monthName(new Date(date)))+'</span>');
+    if (right>left) months.push('<span class="pv-month" style="left:'+Math.round(left)+'px;width:'+Math.round(right-left)+'px">'+escapeHtml(monthName(new Date(date)))+'</span>');
     date=finish;
   }
   const steps = zoom==='day'?1:zoom==='week'?7:30;
   const ticks=[];
-  const maxTicks = Math.min(600,Math.ceil(range.days/steps));
-  for(let n=0;n<maxTicks;n++) {
-    const offset=n*steps;
-    const left=Math.round(offset*pixel);
-    ticks.push('<span class="pv-tick" style="left:'+left+'px">'+escapeHtml(shortDay(new Date(range.start+offset*DAY)))+'</span>');
+  for(let n=0;n<Math.min(600,Math.ceil(range.days/steps));n++){
+    const left=Math.round(n*steps*pixel);
+    ticks.push('<span class="pv-tick" style="left:'+left+'px">'+escapeHtml(shortDay(new Date(range.start+n*steps*DAY)))+'</span>');
   }
+  const items=tasks.slice(viewport.start,viewport.end);
   const leftRows=[],rightRows=[];
-  for (const task of tasks) {
-    const id = escapeHtml(task.uid);
-    const hasChildren=task.children>0;
-    const selected=task.uid===selectedUid?' is-selected':'';
+  for(const task of items){
+    const id=escapeHtml(task.uid), selected=task.uid===selectedUid?' is-selected':'';
     const depth=Math.min(7,Math.max(0,task.level-1));
     leftRows.push(
       '<div class="pv-list-row'+selected+'" data-pv-task="'+id+'" role="row" aria-selected="'+String(!!selected)+'">'+
       '<span class="pv-task-name" style="--pv-depth:'+depth+'">'+
-      (hasChildren?'<button type="button" class="pv-fold" data-pv-fold="'+id+'" aria-label="Свернуть или развернуть группу"><span data-fold-icon="'+id+'">▾</span></button>':'<span class="pv-fold-spacer"></span>')+
+      (task.children>0?'<button type="button" class="pv-fold" data-pv-fold="'+id+'" aria-label="Свернуть или развернуть группу"><span data-fold-icon="'+id+'">▾</span></button>':'<span class="pv-fold-spacer"></span>')+
       '<span class="pv-wbs">'+escapeHtml(task.wbs || String(task.id))+'</span>'+
       '<span class="pv-task-label" title="'+escapeHtml(task.name)+'">'+escapeHtml(task.name)+'</span></span>'+
       '<span class="pv-cell pv-start">'+dateText(task.start)+'</span>'+
@@ -53,15 +49,14 @@ function ganttMarkup(tasks, model, zoom, selectedUid) {
       '<span class="pv-cell pv-duration">'+escapeHtml(task.duration)+'</span>'+
       '<span class="pv-cell pv-percent">'+numberLabel(task.percent)+'%</span></div>'
     );
-    let bar='';
-    if(task.start!==null && task.finish!==null) {
-      const left = Math.round((task.start-range.start)/DAY*pixel);
-      const right = Math.round((task.finish-range.start)/DAY*pixel);
-      if(right>=0 && left<=width) {
+    let bar='', baseline='';
+    if(task.start!==null && task.finish!==null){
+      const left=Math.round((task.start-range.start)/DAY*pixel), right=Math.round((task.finish-range.start)/DAY*pixel);
+      if(right>=0 && left<=width){
         const tooltip=escapeHtml(task.name)+' · '+dateText(task.start)+' — '+dateText(task.finish)+' · '+numberLabel(task.percent)+'%';
-        if(task.milestone || task.start===task.finish) {
+        if(task.milestone || task.start===task.finish){
           bar='<span class="pv-task-diamond" style="left:'+Math.max(0,left)+'px" title="'+tooltip+'" aria-label="Веха: '+tooltip+'"></span>';
-        } else {
+        }else{
           const size=Math.max(5,right-left+pixel);
           bar='<span class="pv-task-bar '+className(task)+'" style="left:'+Math.max(0,left)+'px;width:'+size+'px" title="'+tooltip+'">'+
             '<span class="pv-bar-progress" style="width:'+task.percent+'%"></span>'+
@@ -69,19 +64,45 @@ function ganttMarkup(tasks, model, zoom, selectedUid) {
         }
       }
     }
-    rightRows.push('<div class="pv-chart-row'+selected+'" data-pv-task="'+id+'" role="row" aria-selected="'+String(!!selected)+'" style="width:'+width+'px;background-size:'+(7*pixel)+'px 100%">'+bar+'</div>');
+    if(showBaseline && task.baselineStart!==null && task.baselineFinish!==null && task.baselineFinish>=task.baselineStart){
+      const left=Math.round((task.baselineStart-range.start)/DAY*pixel);
+      const right=Math.round((task.baselineFinish-range.start)/DAY*pixel+pixel);
+      if(right>=0 && left<=width){
+        baseline='<span class="pv-baseline" style="left:'+Math.max(0,left)+'px;width:'+Math.max(3,Math.min(width,right)-Math.max(0,left))+'px" title="Базовый план: '+dateText(task.baselineStart)+' — '+dateText(task.baselineFinish)+'"></span>';
+      }
+    }
+    rightRows.push('<div class="pv-chart-row'+selected+'" data-pv-task="'+id+'" role="row" aria-selected="'+String(!!selected)+'" style="width:'+width+'px;background-size:'+(7*pixel)+'px 100%">'+bar+baseline+'</div>');
+  }
+  const before='<div class="pv-row-space" style="height:'+viewport.top+'px"></div>';
+  const after='<div class="pv-row-space" style="height:'+viewport.bottom+'px"></div>';
+  let connectors='';
+  if(showLinks && model.links.length && items.length){
+    const routes=dependencyLines(items,model.links,range.start,pixel).filter(x=>!/[Nn]a[Nn]/.test(x.d));
+    if(routes.length){
+      connectors='<svg class="pv-links" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+(items.length*rowHeight)+'" style="top:'+viewport.top+'px" viewBox="0 0 '+width+' '+(items.length*rowHeight)+'">'+
+        '<defs><marker id="pv-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8" fill="#73949c"/></marker></defs>'+
+        routes.map(route=>'<path class="pv-link'+(route.critical?' pv-link-critical':'')+'" d="'+route.d+'" marker-end="url(#pv-arrow)"/>').join('')+'</svg>';
+    }
   }
   return {
-    left:'<div class="pv-list-head"><span>Задача / WBS</span><span>Начало</span><span>Окончание</span><span>Длит.</span><span>Готово</span></div><div class="pv-list-rows">'+leftRows.join('')+'</div>',
-    right:'<div class="pv-chart-head" style="width:'+width+'px"><div class="pv-months">'+months.join('')+'</div><div class="pv-ticks">'+ticks.join('')+'</div></div><div class="pv-chart-rows" style="width:'+width+'px">'+rightRows.join('')+'</div>'
+    left:'<div class="pv-list-head"><span>Задача / WBS</span><span>Начало</span><span>Окончание</span><span>Длит.</span><span>Готово</span></div><div class="pv-list-rows">'+before+leftRows.join('')+after+'</div>',
+    right:'<div class="pv-chart-head" style="width:'+width+'px"><div class="pv-months">'+months.join('')+'</div><div class="pv-ticks">'+ticks.join('')+'</div></div>'+
+      '<div class="pv-chart-rows" style="width:'+width+'px">'+before+rightRows.join('')+after+connectors+'</div>'
   };
 }
 
 function resourceMarkup(model, query) {
   const q=query.trim().toLocaleLowerCase();
   const resources=model.resources.filter(r => (r.name+' '+r.group+' '+r.initials).toLocaleLowerCase().includes(q));
+  const resourceTasks=new Map();
+  for(const a of model.assignments){
+    const names=resourceTasks.get(a.resource)||[];
+    const name=model.byUid.get(a.task)?.name;
+    if(name)names.push(name);
+    resourceTasks.set(a.resource,names);
+  }
   const rows=resources.map(r=>{
-    const names=model.assignments.filter(a=>a.resource===r.uid).map(a=>model.byUid.get(a.task)?.name).filter(Boolean);
+    const names=resourceTasks.get(r.uid)||[];
     return '<tr><td><strong>'+escapeHtml(r.name)+'</strong></td><td>'+escapeHtml(r.type)+'</td><td>'+escapeHtml(r.group||'—')+'</td><td>'+escapeHtml(r.initials||'—')+'</td><td>'+escapeHtml(numberLabel(r.work))+'</td><td>'+escapeHtml(numberLabel(r.cost))+'</td><td title="'+escapeHtml(names.join(', '))+'">'+names.length+'</td></tr>';
   }).join('');
   return '<div class="pv-resource-container"><table class="pv-resource-table"><thead><tr><th>Ресурс</th><th>Тип</th><th>Группа</th><th>Инициалы</th><th>Работа</th><th>Стоимость</th><th>Назначений</th></tr></thead><tbody>'+rows+'</tbody></table>'+(rows?'':'<div class="pv-no-data">По вашему запросу ресурсов не найдено.</div>')+'</div>';
