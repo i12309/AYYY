@@ -2,7 +2,7 @@
 import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, tasksCsv, demoProject} from './model.mjs';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const zoomWidths = {day:26,week:12,month:5};
+const zoomWidths = {day:18,week:8,month:3.2};
 const rowHeight = 34;
 let parserPromise = null;
 const loadParser = () => parserPromise ||= import('./vendor/mpxj-ts/mpxj.mjs').catch(error => {parserPromise = null; throw error;});
@@ -27,7 +27,8 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
     if (right>left) months.push('<span class="pv-month" style="left:'+Math.round(left)+'px;width:'+Math.round(right-left)+'px">'+escapeHtml(monthName(new Date(date)))+'</span>');
     date=finish;
   }
-  const steps = zoom==='day'?1:zoom==='week'?7:30;
+  // Space ticks by readable date labels, not by a wasteful fixed day width.
+  const steps = zoom==='day'?2:zoom==='week'?7:30;
   const ticks=[];
   for(let n=0;n<Math.min(600,Math.ceil(range.days/steps));n++){
     const left=Math.round(n*steps*pixel);
@@ -112,12 +113,13 @@ export function mount(root, options={}) {
   if(!root) throw new Error('Project Viewer root not found');
   const app=options.app;
   const events=new AbortController();
-  const state={model:null, demo:false, filename:'', query:'', zoom:'week', scrollZoom:'week', scrollTop:0, scrollLeft:0, showLinks:true, showBaseline:true, tab:'gantt', collapsed:new Set(), selectedUid:null, destroyed:false, pending:0, cancelParse:null};
+  const state={model:null, demo:false, filename:'', query:'', zoom:'week', scrollZoom:'week', scrollTop:0, scrollLeft:0, tableWidth:null, showLinks:true, showBaseline:true, tab:'gantt', collapsed:new Set(), selectedUid:null, destroyed:false, pending:0, cancelParse:null};
   const sendStatus=(message='', kind='')=>{
     const el=root.querySelector('[data-pv-status]');
     if (el) {el.textContent=message;el.dataset.kind=kind;}
   };
-  const header = () => '<header class="pv-header"><a class="pv-brand" href="#home" aria-label="AYYY — на главную">ayyy<span>.</span></a><span class="pv-header-separator"></span><strong>PROJECT VIEWER</strong><span class="pv-header-spacer"></span><a href="#directory" class="pv-back">Все сервисы</a><span class="pv-private"><span class="pv-private-dot"></span>Файл остаётся у вас</span></header>';
+  // Reuse the actual AYYY home-page wordmark, not a second visual approximation.
+  const header = () => '<header class="pv-header"><a class="shore-brand pv-brand" href="#home" aria-label="AYYY — на главную">ayyy<span>.</span></a><span class="pv-header-separator"></span><strong>PROJECT VIEWER</strong><span class="pv-header-spacer"></span><a href="#directory" class="pv-back">Все сервисы</a><span class="pv-private"><span class="pv-private-dot"></span>Файл остаётся у вас</span></header>';
   const fileInput = () => '<input type="file" id="pv-file-input" accept=".mpp,.mpt,.mpx,.xml,application/xml" hidden>';
   const buttons = () => '<button type="button" class="pv-button pv-primary" data-pv-action="open">Открыть MPP / XML</button><button type="button" class="pv-button" data-pv-action="demo">Пример проекта</button>';
   const empty = () => '<div class="pv-empty"><div class="pv-empty-paper" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="pv-kicker">БРАУЗЕРНЫЙ ПРОСМОТРЩИК ПРОЕКТОВ</div><h1>План проекта —<br>перед глазами.</h1><p>Откройте Microsoft Project (.mpp, .mpt, .mpx) или Project XML. Дерево задач, сроки и диаграмма Ганта будут построены в этом браузере.</p><div class="pv-empty-actions">'+buttons()+'</div><div class="pv-formats">Можно также перетащить файл сюда · Без регистрации и загрузки на сервер</div></div>';
@@ -135,6 +137,79 @@ export function mount(root, options={}) {
     ];
     return '<aside class="pv-details" id="pv-details" aria-label="Сведения о задаче"><div class="pv-details-head"><strong>Сведения о задаче</strong><button type="button" data-pv-action="close-details" aria-label="Закрыть сведения">×</button></div><h2>'+escapeHtml(t.name)+'</h2><dl>'+fields.map(([k,v])=>'<div><dt>'+escapeHtml(k)+'</dt><dd>'+escapeHtml(v)+'</dd></div>').join('')+'</dl>'+(t.notes?'<div class="pv-notes"><strong>Примечание</strong><p>'+escapeHtml(t.notes.slice(0,6000))+'</p></div>':'')+'</aside>';
   };
+  // The task inspector occupies its own grid column; it never overlays Gantt bars.
+  function refreshDetails() {
+    const workspace=root.querySelector('.pv-workspace');
+    if(!workspace)return;
+    workspace.querySelector('#pv-details')?.remove();
+    const task=state.model?.byUid.get(state.selectedUid);
+    workspace.classList.toggle('pv-with-details',Boolean(task));
+    if(task) workspace.insertAdjacentHTML('beforeend',taskInfo(task));
+    if(state.tableWidth!==null) resizeTable(state.tableWidth,workspace);
+    else updateSplitterA11y(workspace);
+  }
+  function splitBounds(workspace) {
+    const splitter=workspace?.querySelector('.pv-splitter');
+    if(!splitter || getComputedStyle(splitter).display==='none')return null;
+    // On smaller screens the inspector moves BELOW the chart.
+    const detailWidth=workspace.classList.contains('pv-with-details') && matchMedia('(min-width:1121px)').matches ? 300 : 0;
+    const available=Math.max(0,workspace.clientWidth-detailWidth-8);
+    const min=Math.min(340,Math.max(0,available-240));
+    const max=Math.max(min,available-240);
+    return {min,max};
+  }
+  function updateSplitterA11y(workspace) {
+    const bounds=splitBounds(workspace), splitter=workspace?.querySelector('.pv-splitter');
+    if(!bounds||!splitter)return;
+    splitter.setAttribute('aria-valuemin',String(Math.round(bounds.min)));
+    splitter.setAttribute('aria-valuemax',String(Math.round(bounds.max)));
+    const width=workspace.querySelector('.pv-list-scroll').getBoundingClientRect().width;
+    splitter.setAttribute('aria-valuenow',String(Math.round(width)));
+  }
+  function resizeTable(width,workspace=root.querySelector('.pv-workspace')) {
+    const bounds=splitBounds(workspace);
+    if(!bounds)return;
+    state.tableWidth=Math.max(bounds.min,Math.min(bounds.max,Math.round(width)));
+    workspace.style.setProperty('--pv-table-width',state.tableWidth+'px');
+    updateSplitterA11y(workspace);
+  }
+  function installSplitter() {
+    const workspace=root.querySelector('.pv-workspace');
+    const splitter=workspace?.querySelector('.pv-splitter');
+    if(!workspace || !splitter)return;
+    if(state.tableWidth!==null)resizeTable(state.tableWidth,workspace);
+    else updateSplitterA11y(workspace);
+    let pointer=null;
+    splitter.addEventListener('pointerdown',event=>{
+      if(event.button!==0 || !splitBounds(workspace))return;
+      pointer={id:event.pointerId,x:event.clientX,width:workspace.querySelector('.pv-list-scroll').getBoundingClientRect().width};
+      splitter.setPointerCapture(event.pointerId);
+      splitter.classList.add('is-dragging');
+      event.preventDefault();
+    },{signal:events.signal});
+    splitter.addEventListener('pointermove',event=>{
+      if(!pointer||event.pointerId!==pointer.id)return;
+      resizeTable(pointer.width+event.clientX-pointer.x,workspace);
+    },{signal:events.signal});
+    const endResize=event=>{
+      if(!pointer||event.pointerId!==pointer.id)return;
+      if(splitter.hasPointerCapture(event.pointerId))splitter.releasePointerCapture(event.pointerId);
+      pointer=null;
+      splitter.classList.remove('is-dragging');
+    };
+    splitter.addEventListener('pointerup',endResize,{signal:events.signal});
+    splitter.addEventListener('pointercancel',endResize,{signal:events.signal});
+    splitter.addEventListener('lostpointercapture',()=>{pointer=null;splitter.classList.remove('is-dragging');},{signal:events.signal});
+    splitter.addEventListener('keydown',event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)||!splitBounds(workspace))return;
+      event.preventDefault();
+      const bounds=splitBounds(workspace);
+      const current=workspace.querySelector('.pv-list-scroll').getBoundingClientRect().width;
+      const target=event.key==='Home'?bounds.min:event.key==='End'?bounds.max:current+(event.key==='ArrowRight'?24:-24);
+      resizeTable(target,workspace);
+    },{signal:events.signal});
+  }
+
   function render(resetScroll = false) {
     if(state.destroyed) return;
     const oldList=root.querySelector('#pv-list-scroll'), oldChart=root.querySelector('#pv-chart-scroll');
@@ -148,7 +223,7 @@ export function mount(root, options={}) {
     const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button></div></div>'+
       '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label><button type="button" class="pv-toggle" data-pv-action="toggle-links" aria-pressed="'+state.showLinks+'">Связи</button><button type="button" class="pv-toggle" data-pv-action="toggle-baseline" aria-pressed="'+state.showBaseline+'">Базовый план</button></div></div>'+
       '<div class="pv-body">'+(state.tab==='resources'?resourceMarkup(model,state.query):
-      '<div class="pv-workspace"><div class="pv-list-scroll" tabindex="0" aria-label="Таблица задач" id="pv-list-scroll"></div><div class="pv-chart-scroll" tabindex="0" aria-label="Диаграмма Ганта" id="pv-chart-scroll"></div></div>')+
+      '<div class="pv-workspace"><div class="pv-list-scroll" tabindex="0" aria-label="Таблица задач" id="pv-list-scroll"></div><div class="pv-splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Изменить ширину таблицы задач и диаграммы Ганта" aria-valuemin="340" aria-valuemax="950" aria-valuenow="550" title="Перетащите для изменения ширины. Клавиши ← и → тоже работают"><span aria-hidden="true"></span></div><div class="pv-chart-scroll" tabindex="0" aria-label="Диаграмма Ганта" id="pv-chart-scroll"></div></div>')+
       (model.warnings.length?'<p class="pv-warning">Предупреждения при чтении файла: '+escapeHtml(model.warnings.slice(0,5).join('; '))+'</p>':'')+
       '<div class="pv-bottom"><span>Только чтение · Оригинальный файл не изменяется</span><span>'+visible.length+' из '+model.tasks.length+' задач</span></div></div>' : empty();
     root.innerHTML='<div class="pv-root">'+header()+'<main class="pv-main">'+viewState+'<div class="pv-message" data-pv-status role="status" aria-live="polite"></div></main>'+fileInput()+'</div>';
@@ -160,7 +235,7 @@ export function mount(root, options={}) {
       let lastStart=-1,lastEnd=-1,queued=false;
       const paint=(top=list.scrollTop)=>{
         if(state.destroyed || !list.isConnected || !timeline.isConnected)return;
-        const viewport=rowWindow(visible.length,top,Math.max(100,list.clientHeight-56),rowHeight);
+        const viewport=rowWindow(visible.length,top,Math.max(100,list.clientHeight-44),rowHeight);
         if(viewport.start===lastStart && viewport.end===lastEnd)return;
         lastStart=viewport.start;lastEnd=viewport.end;
         const chart=ganttMarkup(visible,model,state.zoom,state.selectedUid,viewport,state.showLinks,state.showBaseline);
@@ -197,8 +272,10 @@ export function mount(root, options={}) {
     }
     const controls=root.querySelector('.pv-chart-controls');
     if(controls)controls.hidden=state.tab!=='gantt';
-    const task=state.model?.byUid.get(state.selectedUid);
-    if(task && state.tab==='gantt')root.querySelector('.pv-body').insertAdjacentHTML('beforeend',taskInfo(task));
+    if(loaded && state.tab==='gantt'){
+      refreshDetails();
+      installSplitter();
+    }
     if (state.demo) sendStatus('Демонстрационный проект: все данные вымышлены. Это не прочитанный MPP-файл.','info');
   }
   function readInWorker(bytes, filename) {
@@ -289,8 +366,7 @@ export function mount(root, options={}) {
       element.classList.toggle('is-selected',selected);
       element.setAttribute('aria-selected',String(selected));
     }
-    root.querySelector('#pv-details')?.remove();
-    root.querySelector('.pv-body')?.insertAdjacentHTML('beforeend',taskInfo(state.model.byUid.get(uid)));
+    refreshDetails();
   }
   function renderDemo() {
     ++state.pending;
@@ -314,7 +390,7 @@ export function mount(root, options={}) {
     if(action==='export'){exportCsv();return;}
     if(action==='toggle-links'){state.showLinks=!state.showLinks;render();return;}
     if(action==='toggle-baseline'){state.showBaseline=!state.showBaseline;render();return;}
-    if(action==='close-details'){state.selectedUid=null;root.querySelector('#pv-details')?.remove();root.querySelectorAll('.is-selected').forEach(el=>{el.classList.remove('is-selected');el.setAttribute('aria-selected','false');});return;}
+    if(action==='close-details'){state.selectedUid=null;refreshDetails();root.querySelectorAll('.is-selected').forEach(el=>{el.classList.remove('is-selected');el.setAttribute('aria-selected','false');});return;}
     if(action==='expand'){state.collapsed.clear();render();return;}
     if(action==='collapse'){state.collapsed=new Set(state.model?.tasks.filter(t=>t.children).map(t=>t.uid)||[]);render();return;}
     if(control.dataset.pvTab){state.tab=control.dataset.pvTab;state.selectedUid=null;render();return;}
