@@ -76,7 +76,7 @@ export async function readArchive(file:Blob):Promise<ParsedBackup> {
     const checksum=u32(view,p+16),compressed=u32(view,p+20),expanded=u32(view,p+24);
     const nameLen=u16(view,p+28),extra=u16(view,p+30),comment=u16(view,p+32);
     const disk=u16(view,p+34),external=u32(view,p+38),local=u32(view,p+42);
-    assert(disk===0&&!((external>>>16)&0xf000),'Ссылки и специальные типы файлов не поддерживаются.');
+    assert(disk===0&&((external>>>16)&0xf000)!==0xa000,'Символические ссылки не поддерживаются.');
     assert(!(flags&1)&&[0,8].includes(method),'ZIP защищён паролем или содержит неподдерживаемое сжатие.');
     assert(![compressed,expanded,local].includes(0xffffffff),'ZIP64 не поддерживается.');
     assert(p+46+nameLen+extra+comment<=end,'Неверная длина записи.');

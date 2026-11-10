@@ -113,11 +113,11 @@ export function ImportDialog({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!file) {
-      setError('Выберите GEDCOM или документ GEN в формате JSON');
+      setError('Выберите ZIP, GEDCOM или JSON');
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
-      setError('Размер файла должен быть не больше 25 МБ');
+    if (file.size > (/\.zip$/i.test(file.name) ? 150 : 25) * 1024 * 1024) {
+      setError(/\.zip$/i.test(file.name) ? 'ZIP должен быть не больше 150 МБ' : 'Максимальный размер 25 МБ');
       return;
     }
     const body = new FormData();
@@ -145,24 +145,24 @@ export function ImportDialog({
     onNavigationGuard,
   );
   return (
-    <Dialog title="Импорт GEDCOM или JSON" onClose={close}>
+    <Dialog title="Импорт ZIP, GEDCOM или JSON" onClose={close}>
       <form className="dialog-form" onSubmit={submit}>
         <p className="form-description">
-          Импортируйте GEDCOM 5.5.1/7 из генеалогической программы или tree.json из GEN.
-          Неизвестные структуры исходного GEDCOM сохраняются при редактировании.
+          Импортируйте полный резервный ZIP с фотографиями (из Python GEN или браузерного GEN),
+          GEDCOM 5.5.1/7 или tree.json. Импорт всегда создаёт отдельную копию дерева.
         </p>
         <label className={`file-drop ${file ? 'has-file' : ''}`}>
           <FileUp size={30} />
-          <strong>{file ? file.name : 'Выбрать GEDCOM / JSON'}</strong>
+          <strong>{file ? file.name : 'Выбрать ZIP / GEDCOM / JSON'}</strong>
           <span>
-            {file ? `${(file.size / 1024).toFixed(0)} КБ` : 'GEDCOM 5.5.1/7 или JSON GEN · до 25 МБ'}
+            {file ? `${(file.size / 1024).toFixed(0)} КБ` : 'ZIP до 150 МБ · GEDCOM / JSON до 25 МБ'}
           </span>
           <input
             type="file"
-            accept=".ged,.gedcom,.json,application/json,text/plain"
+            accept=".zip,.ged,.gedcom,.json,application/zip,application/json,text/plain"
             onChange={(event) => setFile(event.target.files?.[0] || null)}
             disabled={busy}
-            aria-label="Файл GEDCOM или JSON"
+            aria-label="Файл ZIP, GEDCOM или JSON"
           />
         </label>
         <label className="field">
@@ -188,8 +188,8 @@ export function ImportDialog({
           </label>
         )}
         <p className="field-hint">
-          Файл .ged не содержит сами фотографии. Оригинал импорта сохраняется без изменений;
-          для полного переноса изображений позже добавим восстановление ZIP.
+          ZIP восстанавливает дерево и связанные фотографии/PDF. Резервная копия
+          проверяется до сохранения. Исходный GEDCOM, если он был в архиве, сохраняется без изменений.
         </p>
         {error && (
           <div className="error-banner" role="alert">
