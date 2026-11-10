@@ -17,6 +17,20 @@
     const n=Number(s);
     return Number.isFinite(n)?n:null;
   }
+  function observationDate(value,precision){
+    const raw=text(value,20),kind=precision||(/^\d{4}$/.test(raw)?'year':/^\d{4}-\d{2}$/.test(raw)?'month':'day');
+    if(kind==='unknown'){if(raw)throw new Error('Для неизвестной даты оставьте поле пустым.');return {date:'',datePrecision:kind};}
+    if(kind==='year'&&/^\d{4}$/.test(raw)&&Number(raw)>0)return {date:raw,datePrecision:kind};
+    if(kind==='month'&&/^\d{4}-\d{2}$/.test(raw)){isoDate(raw+'-01');return {date:raw,datePrecision:kind};}
+    if(kind==='day')return {date:isoDate(raw),datePrecision:kind};
+    throw new Error('Дата не соответствует выбранной точности.');
+  }
+  function checkPreferences(input,original={}){
+    const low=text(input.low,50),high=text(input.high,50);
+    if((low&&number(low)===null)||(high&&number(high)===null)||(low&&high&&number(low)>number(high)))throw new Error('Проверьте числовые границы референса.');
+    return {...original,low,high,unit:text(input.unit,50),note:text(input.note,2000),useReference:input.useReference==='yes',updatedAt:new Date().toISOString()};
+  }
+  function referenceRow(row,preferences){return preferences?.useReference&&preferences.unit===row.unit?{...row,low:preferences.low,high:preferences.high}:row;}
   function checkLab(input,original){
     const name=text(input.name,180),value=text(input.value,100);
     if(!name || !value)throw new Error('Название показателя и результат обязательны.');
@@ -24,7 +38,8 @@
     if((low && number(low)===null)||(high && number(high)===null))
       throw new Error('Референсы должны содержать числа или оставаться пустыми.');
     if(low&&high&&number(low)>number(high))throw new Error('Нижняя граница больше верхней.');
-    return {id:original?.id||id(),date:isoDate(input.date),name,value,
+    return {...original,id:original?.id||id(),...observationDate(input.date,input.datePrecision),name,value,
+      canonicalName:text(input.canonicalName,180),valueKind:number(value)!==null?'quantity':/^[<>≤≥]/.test(value)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(value)?'range':'qualitative',
       unit:text(input.unit,50),low,high,source:text(input.source,180),
       material:text(input.material,90),method:text(input.method,90),
       notes:text(input.notes,3000),createdAt:original?.createdAt||new Date().toISOString(),
@@ -66,19 +81,21 @@
       updatedAt:new Date().toISOString()};
   }
   function groupKey(r){
-    return [r.name,r.unit,r.material,r.method].map(s=>text(s).toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')).join('\u001f');
+    return [r.canonicalName||r.name,r.unit,r.material,r.method].map(s=>text(s).toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')).join('\u001f');
   }
-  function groups(records){
+  function groups(records,preferences={}){
     const map=new Map();
     for(const row of records){
       const key=groupKey(row);
-      if(!map.has(key))map.set(key,{key,name:row.name,unit:row.unit,rows:[]});
+      if(!map.has(key))map.set(key,{key,name:row.canonicalName||row.name,unit:row.unit,rows:[]});
       map.get(key).rows.push(row);
     }
     return [...map.values()].map(group=>{
       group.rows.sort((a,b)=>b.date.localeCompare(a.date)||b.updatedAt.localeCompare(a.updatedAt));
       group.latest=group.rows[0];
-      group.status=status(group.latest);
+      group.preferences=preferences[group.key]||{};
+      group.effectiveLatest=referenceRow(group.latest,group.preferences);
+      group.status=status(group.effectiveLatest);
       return group;
     }).sort((a,b)=>b.latest.date.localeCompare(a.latest.date)||a.name.localeCompare(b.name,'ru'));
   }
@@ -90,7 +107,7 @@
     return 'normal';
   }
   function chartRows(rows){
-    return rows.filter(row=>number(row.value)!==null&&/^\d{4}-\d\d-\d\d$/.test(row.date))
+    return rows.filter(row=>text(row.unit)&&number(row.value)!==null&&/^\d{4}-\d\d-\d\d$/.test(row.date))
       .slice().sort((a,b)=>a.date.localeCompare(b.date));
   }
   function recent(items,limit=6){
@@ -125,7 +142,7 @@
       value:['value','result','значение','результат'],unit:['unit','единица','ед.изм.'],
       low:['low','min','нижняя граница','мин'],high:['high','max','верхняя граница','макс'],
       source:['source','лаборатория','источник'],material:['material','материал'],
-      method:['method','метод'],notes:['notes','комментарий','примечание']
+      datePrecision:['dateprecision','точность даты'],canonicalName:['canonicalname','показатель в каталоге'],method:['method','метод'],notes:['notes','комментарий','примечание']
     };
     const header=all.shift().map(v=>v.trim().toLocaleLowerCase('ru-RU'));
     const column={};
@@ -141,6 +158,6 @@
     });
     return {records,errors};
   }
-  window.HumanModel={id,text,isoDate,number,checkLab,checkVital,checkMedical,checkMedication,
+  window.HumanModel={id,text,isoDate,number,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
     checkDiary,groupKey,groups,status,chartRows,recent,parseCSV};
 })();

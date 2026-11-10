@@ -215,8 +215,9 @@
     const x=kind==='profile'?state.doc.profile:(existing||{}),now=today(),f=V.field,r=V.row;
     let fields=[];
     if(kind==='lab')fields=[
-      r(f('Дата','date',x.date||now,'date'),f('Результат','value',x.value||'')),
-      f('Показатель','name',x.name||''),
+      r(f('Дата (ГГГГ-ММ-ДД, ГГГГ-ММ или ГГГГ)','date',existing?x.date:now),f('Точность даты','datePrecision',x.datePrecision||'day','select',[['day','День'],['month','Месяц'],['year','Год'],['unknown','Неизвестна']])),
+      f('Результат как в бланке','value',x.value||''),
+      f('Показатель в бланке','name',x.name||''),f('Показатель в каталоге (необязательно)','canonicalName',x.canonicalName||''),
       r(f('Единица','unit',x.unit||''),f('Лаборатория','source',x.source||'')),
       r(f('Референс от','low',x.low||''),f('Референс до','high',x.high||'')),
       r(f('Материал','material',x.material||''),f('Метод','method',x.method||'')),
@@ -508,6 +509,7 @@
         await S.select(local.id);await profileList();
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
       }else if(mode==='record')await recordSubmit(form);
+      else if(mode==='analyte-preferences'){const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous:structuredClone(old),changedAt:new Date().toISOString()});d.analytePreferences[key]=M.checkPreferences(input,old);});toast('Настройки показателя сохранены.');}
       else if(mode==='profile')await profileSubmit(form);
       else if(mode==='connect')await connect(form);
     }catch(e){error(e);}
@@ -570,6 +572,8 @@
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
       else if(action==='close-menu')document.body.classList.remove('health-menu-open');
       else if(action==='quick-add'){dialog.querySelector('#health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},'Добавить запись'),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content health-quick-options'},[['Анализ','lab'],['Домашнее измерение','vital'],['Медицинская запись','medical'],['Препарат','medication'],['Запись дневника','diary'],['Документ','document']].map(([title,kind])=>V.button(title,'new-'+kind))));dialog.showModal();}
+      else if(action==='toggle-favorite'){const key=el.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.analytePreferences[key]={...old,favorite:!old.favorite};});}
+      else if(action==='filter-favorites'){state.favoritesOnly=!state.favoritesOnly;render();}
       else if(action==='filter-abnormal'){state.abnormalOnly=!state.abnormalOnly;state.groupKey='';render();}
       else if(action==='select-observation'){state.observationId=el.dataset.id;render();}
       else if(action==='open-group'){state.abnormalOnly=false;state.observationId='';state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
@@ -582,7 +586,7 @@
       else if(action==='remove')await remove(el.dataset.kind,el.dataset.id);
       else if(action==='select-group'){
         const query=state.search.toLocaleLowerCase('ru-RU');
-        const all=M.groups(state.doc.observations).filter(x=>
+        const all=M.groups(state.doc.observations,state.doc.analytePreferences).filter(x=>
           (x.name+' '+x.unit+' '+x.latest.source).toLocaleLowerCase('ru-RU').includes(query));
         state.groupKey=all[Number(el.dataset.index)]?.key||'';
         render();

@@ -43,6 +43,35 @@ test('impossible dates are rejected rather than silently normalised',()=>{
   assert.throws(()=>m.isoDate('2026-13-01'));
   assert.equal(m.isoDate('2026-02-28'),'2026-02-28');
 });
+
+test('partial dates and censored values retain their original meaning',()=>{
+  const m=model(),base={name:'Synthetic CRP',unit:'мг/л',value:'< 0,1'};
+  const year=m.checkLab({...base,date:'2026',datePrecision:'year'});
+  assert.equal(year.date,'2026');assert.equal(year.value,'< 0,1');assert.equal(year.valueKind,'censored');
+  assert.equal(m.chartRows([year]).length,0);assert.equal(m.status(year),'unknown');
+  const unknown=m.checkLab({...base,value:'отрицательно',date:'',datePrecision:'unknown'});
+  assert.equal(unknown.date,'');assert.equal(unknown.valueKind,'qualitative');
+  assert.throws(()=>m.checkLab({...base,date:'2026-13',datePrecision:'month'}));
+  assert.throws(()=>m.checkLab({...base,date:'2026',datePrecision:'day'}));
+});
+
+test('classification preserves the source name and only merges compatible groups',()=>{
+ const m=model(),base={name:'Synthetic lab A',value:'3',unit:'mg',date:'2026-11-01',canonicalName:'Synthetic catalog'};
+ const a=m.checkLab(base),b=m.checkLab({...base,name:'Synthetic lab B'}),c=m.checkLab({...base,unit:'g'});
+ assert.equal(a.name,'Synthetic lab A');assert.equal(m.groups([a,b,c]).length,2);
+ assert.equal(m.groups([a,b])[0].name,'Synthetic catalog');
+});
+
+test('shared references and favorites preserve source references and survive serialization',()=>{
+ const m=model(),record=m.checkLab({name:'Synthetic marker',value:'3',unit:'mg',date:'2026-11-01',low:'1',high:'5'}),key=m.groupKey(record);
+ const pref=m.checkPreferences({unit:'mg',low:'0',high:'2',useReference:'yes',note:'Synthetic reference'},{favorite:true});
+ const prefs=JSON.parse(JSON.stringify({[key]:pref})),g=m.groups([record],prefs)[0];
+ assert.equal(g.status,'abnormal');assert.equal(g.preferences.favorite,true);
+ assert.equal(record.high,'5');assert.equal(m.status(record),'normal');
+ assert.equal(m.referenceRow({...record,unit:'g'},pref).high,'5');
+ assert.throws(()=>m.checkPreferences({low:'5',high:'1'}));
+ assert.throws(()=>m.checkPreferences({high:'NaN'}));
+});
 test('CSV supports quoted columns and partial success with row errors',()=>{
   const m=model();
   const csv='Дата;Показатель;Результат;Единица;Мин;Макс\n'+
