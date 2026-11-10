@@ -31,10 +31,11 @@ test('measurements group only when type, unit, specimen and method match',()=>{
 });
 test('reference rules handle zero, partial bounds and qualitative results',()=>{
   const m=model();
-  assert.equal(m.status({value:'0',low:'1',high:'2'}),'abnormal');
-  assert.equal(m.status({value:'2',low:'',high:'3'}),'normal');
-  assert.equal(m.status({value:'положительно',low:'',high:'3'}),'unknown');
-  assert.equal(m.status({value:'3',low:'',high:''}),'unknown');
+  assert.equal(m.status({value:'0',unit:'ммоль/л',low:'1',high:'2'}),'abnormal');
+  assert.equal(m.status({value:'2',unit:'ммоль/л',low:'',high:'3'}),'normal');
+  assert.equal(m.status({value:'положительно',unit:'ммоль/л',low:'',high:'3'}),'unknown');
+  assert.equal(m.status({value:'3',unit:'ммоль/л',low:'',high:''}),'unknown');
+  assert.equal(m.status({value:'8',unit:'',low:'0',high:'5'}),'unknown');
 });
 test('impossible dates are rejected rather than silently normalised',()=>{
   const m=model();
