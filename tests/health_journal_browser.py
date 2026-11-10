@@ -3,16 +3,18 @@ from pathlib import Path
 from urllib.parse import urlsplit
 import json
 import mimetypes
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
+ENGINE=os.getenv('HEALTH_BROWSER','chromium')
 OLD='synthetic-journal-original';NEW='synthetic-journal-changed'
 def check(label,result):
  assert result,label
  checks.append(label);print('PASS',label,flush=True)
 
 with sync_playwright() as pw:
- b=pw.chromium.launch();errors=[];remote=[]
+ b=getattr(pw,ENGINE).launch();errors=[];remote=[]
  def context():
   c=b.new_context(viewport={'width':1440,'height':1000})
   def serve(route):
@@ -45,13 +47,13 @@ with sync_playwright() as pw:
  p.locator('.profile-entry').click();p.locator('[data-action=edit-profile]').click();before=stored(p);fill(p,'timezone','Invalid/Zone');submit(p);p.locator('[data-form-error]').wait_for();check('invalid profile stays reviewable without a write',stored(p)==before and p.locator('[name=timezone]').input_value()=='Invalid/Zone');close(p)
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('profile cards fit '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
-  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/profile-{width}.png'),full_page=True)
+  if width in [390,1440] and ENGINE=='chromium':p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/profile-{width}.png'),full_page=True)
  p.set_viewport_size({'width':1440,'height':1000});tab(p,'document');p.locator('[data-action=new-document]').first.click();source=b'Synthetic backup attachment\n';p.locator('#health-dialog [name=file]').set_input_files({'name':'synthetic-backup.txt','mimeType':'text/plain','buffer':source});save(p)
  tab(p,'vital');p.locator('.health-vital-summary [data-action=new-vital]').click();p.locator('#health-dialog [name=type]').select_option('Давление');fill(p,'value','120/80');save(p);tab(p,'timeline');check('timeline contains actual new actions',p.locator('.timeline li').count()==4);p.locator('[data-timeline-kind]').select_option('document');check('timeline kind filters without altering stored actions',p.locator('.timeline li').count()==1 and len(snap(p)['timeline'])==4);p.locator('.timeline-open').click();check('document event opens its original file','Synthetic backup attachment' in p.locator('#health-dialog').inner_text());close(p)
  tab(p,'timeline');p.locator('[data-timeline-kind]').select_option('');p.locator('[data-search=timeline]').fill('Synthetic Profile');check('timeline search filters by recorded title',p.locator('.timeline li').count()==0);p.locator('[data-search=timeline]').fill('')
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('timeline fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
-  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/timeline-{width}.png'),full_page=True)
+  if width in [390,1440] and ENGINE=='chromium':p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/timeline-{width}.png'),full_page=True)
  p.set_viewport_size({'width':1440,'height':1000});p.reload();unlock(p);tab(p,'timeline');check('action history survives encrypted reload',p.locator('.timeline li').count()==4)
  # A real browser download is then restored in an independent browser context.
  tab(p,'settings')

@@ -16,10 +16,10 @@ function makeModules(window,extras={}){
   const context=vm.createContext({
     window,TextEncoder,TextDecoder,
     btoa:base64,atob:fromBase64,
-    crypto:{randomUUID:()=>('demo-test-'+(++seq))},
+    crypto:{subtle:require('node:crypto').webcrypto.subtle,randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/genetics-state.js','health/journal-state.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/genetics-state.js','health/journal-state.js','health/recommendations-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }
@@ -106,6 +106,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
   vm.runInContext(read('health/health-view.js'),context,{filename:'health/health-view.js'});
   vm.runInContext(read('health/journal-view.js'),context,{filename:'health/journal-view.js'});
+  vm.runInContext(read('health/recommendations-view.js'),context,{filename:'health/recommendations-view.js'});
   vm.runInContext(read('health/genetics-view.js'),context,{filename:'health/genetics-view.js'});
   vm.runInContext(read('health/diary-view.js'),context,{filename:'health/diary-view.js'});
   vm.runInContext(read('health/care-view.js'),context,{filename:'health/care-view.js'});
@@ -124,6 +125,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     ['activity','Ритм дней'],
     ['genetics','Результаты из ваших отчётов'],
     ['timeline','История'],
+    ['recommendations','Данные для разбора'],
     ['profile','Личные данные'],
     ['diary','Пешая прогулка'],
     ['document','Бланк анализов'],

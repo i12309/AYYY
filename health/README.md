@@ -14,6 +14,7 @@
 - Генетические записи из отчётов: категории, поля источника, частичные даты, поиск, документы и история. VCF/JSON остаются исходными файлами, без интерпретации генома.
 - Питание с итогами известных значений и активность по дням с графиком, поиском и историей.
 - Профиль с возрастом, ростом и зоной; карточки данных и история действий с фильтрами, поиском и переходами.
+- Рекомендации: анкета, снимки текущих данных, загрузка отдельных JSON-рецензий, источники, статусы и предупреждение об устаревании. Автоматических назначений и вызовов ИИ нет. [Формат пакета/рецензии](RECOMMENDATIONS.md).
 - Несколько изолированных профилей, восстановление текущих зашифрованных копий после проверки фразы и атомарная смена фразы доступа; синхронизация с приватным GitHub.
 
 Все записи шифруются WebCrypto AES-GCM/PBKDF2 перед IndexedDB/GitHub. Ключ, фраза и GitHub-токен не сохраняются на диск. GitHub получает только `health-data/v1/vault.json`; модуль родословной хранит данные отдельно в `family-data/`. Конфликт не перезаписывает чужую версию автоматически.
@@ -29,10 +30,12 @@
 ## Разработка
 
 ```powershell
-node --test tests/health_model.test.cjs tests/health_demo.test.cjs tests/health_care.test.cjs tests/health_diary.test.cjs tests/health_genetics.test.cjs tests/health_journal.test.cjs
+node --test tests/health_model.test.cjs tests/health_demo.test.cjs tests/health_care.test.cjs tests/health_diary.test.cjs tests/health_genetics.test.cjs tests/health_journal.test.cjs tests/health_recommendations.test.cjs
 python -X utf8 tests/health_diary_browser.py
 python -X utf8 tests/health_genetics_browser.py
 python -X utf8 tests/health_journal_browser.py
+python -X utf8 tests/health_recommendations_browser.py
+python -X utf8 tests/health_browser_matrix.py
 python -X utf8 src/build.py dist/index.html
 ```
 

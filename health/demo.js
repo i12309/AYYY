@@ -120,7 +120,7 @@
       reminders:[{id:'demo-reminder',version:1,title:'Пример: внести измерение',frequency:'daily',date:'2026-11-01',until_date:'',time:'09:00',timezone:'Europe/Moscow',utc_offset:'',enabled:true,medication_id:'',medication_name:'',scheduled_at:'2026-11-07T06:00:00Z',next_due_at:'2026-11-07T06:00:00Z',notes:'Вымышленное расписание. Уведомления в демо не отправляются.'}],carePreferences:{browser_enabled:false},
       findings:[window.HumanGenetics.checkFinding({title:'Демонстрационная запись из отчёта',category:'other',status:'recorded',result:'Вымышленный пример структуры результата. Клинического заключения здесь нет.',provider:'Поставщик (демо)',test_name:'Учебный отчёт',date_precision:'year',test_date:'2025',genes:'DEMO1',variants:'SYNTHETIC:no-call',provider_text:'Исходный текст в этом примере вымышлен.',method_version:'Демонстрационная версия'}, {},{documents:[]},new Date('2026-11-01T12:00:00Z')),window.HumanGenetics.checkFinding({title:'Пример метки из отчёта',category:'nutrition',status:'attention',result:'Учебный пример метки поставщика. Эта запись не является рекомендацией по питанию.',provider:'Лаборатория (демо)',date_precision:'unknown'}, {},{documents:[]},new Date('2026-11-02T12:00:00Z'))],
       observations,vitals,episodes,medical:medicalRecords,medications,diary:diaryRows,documents,
-      revisions:[],timeline:[]
+      revisions:[],timeline:[],recommendationIntakes:[],recommendationContexts:[],recommendationReports:[]
     };
     for(const [collection,kind] of Object.entries(window.HumanJournal.collections))for(const row of doc[collection]){const at=row.createdAt||row.created_at;if(at)doc.timeline.push(window.HumanJournal.event(kind,row,'create',at));}
     window.HumanCrypto.assertData(doc);

@@ -34,7 +34,7 @@
     if(doc?.humanMigration)throw new Error('Архив переноса старого HUMAN не поддерживается. Создайте новый журнал и загрузите данные заново.');
     if (!doc || typeof doc!=='object' || Array.isArray(doc) || doc.schema!==1 ||
         typeof doc.id!=='string' || !doc.profile || typeof doc.profile!=='object' ||
-        ['observations','vitals','episodes','intakes','reminders','medical','medications','findings','diary','documents','revisions','timeline'].some(k=>!Array.isArray(doc[k])))
+        ['observations','vitals','episodes','intakes','reminders','medical','medications','findings','diary','documents','revisions','timeline','recommendationIntakes','recommendationContexts','recommendationReports'].some(k=>!Array.isArray(doc[k])))
       throw new Error('Неизвестная структура медицинских данных.');
     return doc;
   }
@@ -83,7 +83,7 @@
     requireCrypto();
     const id=crypto.randomUUID();
     const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'unknown',heightCm:null,notes:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'},
-      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],findings:[],diary:[],documents:[],revisions:[],timeline:[]};
+      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],findings:[],diary:[],documents:[],revisions:[],timeline:[],recommendationIntakes:[],recommendationContexts:[],recommendationReports:[]};
     return {doc,...await rekey(doc,passphrase)};
   }
   async function rekey(doc,passphrase) {

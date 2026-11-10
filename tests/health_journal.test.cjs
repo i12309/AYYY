@@ -1,7 +1,7 @@
 // Synthetic profile, action chronology and current-format encryption contracts.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
 function modules(){const window={},ctx=vm.createContext({window,crypto:webcrypto,isSecureContext:true,TextEncoder,TextDecoder,btoa,atob});for(const name of ['crypto','model','health-state','journal-state'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../health',name+'.js'),'utf8'),ctx);return window;}
-const fixture=()=>({profile:{name:'Synthetic profile',timezone:'Europe/Moscow'},observations:[],vitals:[],episodes:[],medical:[],medications:[],findings:[],diary:[],documents:[],intakes:[],reminders:[],revisions:[],timeline:[]});
+const fixture=()=>({profile:{name:'Synthetic profile',timezone:'Europe/Moscow'},observations:[],vitals:[],episodes:[],medical:[],medications:[],findings:[],diary:[],documents:[],intakes:[],reminders:[],revisions:[],timeline:[],recommendationIntakes:[],recommendationContexts:[],recommendationReports:[]});
 
 test('profile calendar age and height preserve unknowns and use the profile zone',()=>{
  const J=modules().HumanJournal,now=new Date('2026-11-10T00:30:00Z');

@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const M=window.HumanModel;
-  function icon(name,size=18){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),use=document.createElementNS(ns,'use');svg.setAttribute('width',size);svg.setAttribute('height',size);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');use.setAttribute('href','./icons.svg#'+name);svg.append(use);return svg;}
+  function icon(name,size=18){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),use=document.createElementNS(ns,'use');svg.setAttribute('width',size);svg.setAttribute('height',size);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');use.setAttribute('href','./icons.svg?v=3434fab979f5#'+name);svg.append(use);return svg;}
   function brand(mode='pair'){
     const portal=h('a',{class:'ayyy-wordmark',href:'../#home',target:'_top','aria-label':'AYYY · на главную портала'},'ayyy',h('span',{},'.'));
     const human=h('a',{class:'brand',href:'./','data-tab':'overview','aria-label':'HUMAN · обзор журнала здоровья'},
@@ -208,7 +208,7 @@
     section.append(title(state.groupKey&&selected?selected.name:'Анализы',
       'История результатов с единицами, референсами и первоисточниками.',
       [button('Импорт файлов','csv'),button('Добавить','new-lab',{class:'primary'})]));
-    section.append(h('input',{type:'search',class:'health-search','data-search':'labs',
+    section.append(h('input',{type:'search',class:'health-search','data-search':'labs','aria-label':'Поиск анализов',
       placeholder:'Найти показатель…',value:state.search||''}));
     if(!state.groupKey){
       const box=card(null);box.classList.add('health-labs-card');
