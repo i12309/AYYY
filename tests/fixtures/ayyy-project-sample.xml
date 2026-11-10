@@ -51,6 +51,6 @@
     <Resource><UID>1</UID><ID>1</ID><Name>Аналитик</Name><Initials>АН</Initials><Type>1</Type><MaxUnits>1</MaxUnits></Resource>
   </Resources>
   <Assignments>
-    <Assignment><UID>1</UID><TaskUID>2</TaskUID><ResourceUID>1</ResourceUID><Units>1</Units></Assignment>
+    <Assignment><UID>1</UID><TaskUID>2</TaskUID><ResourceUID>1</ResourceUID><Units>1</Units><Start>2026-11-10T09:00:00</Start><Finish>2026-11-13T18:00:00</Finish><Work>PT32H0M0S</Work></Assignment>
   </Assignments>
 </Project>
