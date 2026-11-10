@@ -317,3 +317,35 @@ export async function listAutoSyncedTrees():Promise<string[]>{
   const rows=await requestValue<SyncRecord[]>(db.transaction('sync','readonly').objectStore('sync').getAll());
   return rows.filter(x=>x.autoSync===true).map(x=>x.treeId);
 }
+
+
+/** Pull a newer GitHub snapshot only when the local document has not changed.
+ * Unlike a resolved publish, a failed pull MUST NOT move the local SHA baseline.
+ */
+export async function installRemoteIfUnchanged(
+  expected:Document,remote:Document,files:Array<{filename:string;blob:Blob}>,sync:SyncRecord
+):Promise<boolean>{
+  validate(remote);
+  const db=await openDatabase();
+  return new Promise<boolean>((resolve,reject)=>{
+    const tx=db.transaction(['trees','files','sync'],'readwrite');
+    let installed=false;
+    tx.oncomplete=()=>{
+      if(installed)window.dispatchEvent(new CustomEvent('gen:sync-settings',{detail:{treeId:sync.treeId}}));
+      resolve(installed);
+    };
+    tx.onabort=()=>reject(tx.error||new Error('Не удалось безопасно обновить дерево.'));
+    const trees=tx.objectStore('trees');
+    const query=trees.get(expected.tree.id);
+    query.onerror=()=>tx.abort();
+    query.onsuccess=()=>{
+      const actual=(query.result as TreeRecord|undefined)?.document;
+      if(!actual||JSON.stringify(actual)!==JSON.stringify(expected))return;
+      trees.put({id:remote.tree.id,document:remote});
+      for(const {filename,blob} of files)
+        tx.objectStore('files').put({key:remote.tree.id+'/'+filename,blob});
+      tx.objectStore('sync').put(sync);
+      installed=true;
+    };
+  });
+}
