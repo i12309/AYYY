@@ -1,7 +1,7 @@
 name: Build browser GEN
 on:
   push:
-    branches: [main, feat/gen-browser-portal]
+    branches: [main, feat/gen-browser-portal, feat/gen-zip-conflict-hardening]
     paths:
       - 'family-app/**'
       - 'tests/family-*.test.cjs'

@@ -3,7 +3,7 @@
  * ZIP_DEFLATED archives; no network, third-party ZIP code or server required.
  * All checks run before a single IndexedDB transaction installs the document.
  */
-import {type Document,validate} from './browserModel';
+import {type Document,validate} from './browserModel.ts';
 
 const MAX_ARCHIVE = 150*1024*1024;
 const MAX_EXPANDED = 350*1024*1024;
