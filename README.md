@@ -36,6 +36,17 @@ python src/build.py dist/index.html --inline
 Проверка: `python tests/search_browser.py` (`CHROMIUM_PATH` — путь к Chromium).
 Актуальная компоновка — [SEARCH_ART_AND_LAYOUT_RESULT.md](docs/SEARCH_ART_AND_LAYOUT_RESULT.md).
 
+## Project Viewer — Microsoft Project в браузере
+
+Раздел **#mpp** открывает .mpp, .mpt, .mpx и Microsoft Project XML непосредственно
+на устройстве пользователя без отправки файла на сервер. Доступны дерево задач,
+диаграмма Ганта с линиями зависимостей FS/SS/FF/SF и Baseline, поиск, ресурсы,
+карточки задач и экспорт CSV. Для больших планов используются Web Worker и
+виртуализация строк. Это версия для просмотра: изменение задач, запись MPP и
+обмен с Jira пока не реализованы.
+
+[Архитектура, запуск, тесты и ограничения](docs/MPP_VIEWER.md).
+
 ## Финансы и инженерия
 
 Раздел `#tools` открывает ипотеку и кредит. `#tools/loan` — прямой вход; `#tools/science` — инженерный калькулятор. Прежний `#tools/calc` совместим и открывает инженерный экран.
