@@ -120,6 +120,7 @@ export default function App() {
   const [treesLoading, setTreesLoading] = useState(true);
   const [treesError, setTreesError] = useState('');
   const [busy, setBusy] = useState(false);
+  const openingDemo = useRef(false);
   const [view, setView] = useState<'graph' | 'table' | 'generations'>('graph');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rootId, setRootId] = useState<string | null>(null);
@@ -430,6 +431,8 @@ export default function App() {
     [selectPerson],
   );
   async function createDemo() {
+    if (openingDemo.current) return;
+    openingDemo.current = true;
     setBusy(true);
     try {
       const tree = await api<TreeSummary>('/trees', {
@@ -445,6 +448,7 @@ export default function App() {
     } catch (error) {
       setNotice({ text: errorMessage(error), error: true });
     } finally {
+      openingDemo.current = false;
       setBusy(false);
     }
   }

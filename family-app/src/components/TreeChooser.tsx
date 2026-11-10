@@ -46,6 +46,7 @@ export function TreeChooser({
   onDelete,
   onRetry,
 }: Props) {
+  const demoCount = trees.filter((tree) => tree.is_demo).length;
   return (
     <div className="library-page">
       <header className="library-top">
@@ -105,6 +106,9 @@ export function TreeChooser({
                     <GitFork size={32} strokeWidth={1.5} />
                   </div>
                   <h2>{tree.name}</h2>
+                  {tree.is_demo && (
+                    <span className="tree-demo-badge">Учебный пример</span>
+                  )}
                   <p>{tree.description || 'Семейная история'}</p>
                   <div className="tree-tile-meta">
                     <span>
@@ -176,11 +180,15 @@ export function TreeChooser({
             <BookOpen size={25} />
           </span>
           <div>
-            <h3>Сначала познакомиться с редактором</h3>
-            <p>Учебное дерево с вымышленной семьёй и несколькими поколениями.</p>
+            <h3>{demoCount ? 'Учебный пример уже есть' : 'Сначала познакомиться с редактором'}</h3>
+            <p>{demoCount > 1
+              ? `В браузере есть ${demoCount} учебных деревьев. Откроем существующее, новую копию не создаём.`
+              : demoCount === 1
+                ? 'Откроем уже сохранённое учебное дерево — без создания новой копии.'
+                : 'Учебное дерево с вымышленной семьёй и несколькими поколениями.'}</p>
           </div>
           <button className="button secondary" disabled={busy} onClick={onDemo}>
-            {busy ? 'Создаём…' : 'Открыть пример'}
+            {busy ? 'Открываем…' : 'Открыть пример'}
           </button>
         </section>
         <section className="ownership-card" aria-labelledby="ownership-title">

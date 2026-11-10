@@ -67,6 +67,8 @@ export interface TreeSummary {
   person_count: number;
   family_count: number;
   updated_at: string;
+  /** True for the built-in fictional sample (also inferred for legacy copies). */
+  is_demo?: boolean;
 }
 export interface TreeData {
   tree: TreeSummary;

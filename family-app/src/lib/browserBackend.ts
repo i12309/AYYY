@@ -3,7 +3,7 @@ import {
   summary, uid, updateFamily, updatePerson, validate, normalizeDocument, type Document
 } from './browserModel';
 import {
-  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot, importNewTreeSnapshot
+  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot, importNewTreeSnapshot, getOrCreateDemoTree
 } from './browserStore';
 
 import {parseGedcom} from './gedcomParse';
@@ -129,8 +129,16 @@ export async function browserRequest(path: string, options: RequestInit = {}): P
       if (typeof body.name !== 'string' || !body.name.trim()) {
         throw new BackendError('Укажите название дерева.',422);
       }
+      if (body.demo === true) {
+        const demo = await getOrCreateDemoTree(() => {
+          const doc = newTree('Семья Волковых · пример',
+            'Учебное дерево. Все люди и события вымышлены.');
+          sampleTree(doc);
+          return doc;
+        });
+        return summary(demo);
+      }
       const doc = newTree(body.name, body.description || '');
-      if (body.demo) sampleTree(doc);
       await putTree(doc);
       return summary(doc);
     }
