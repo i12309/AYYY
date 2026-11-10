@@ -35,9 +35,12 @@ export function slugify(value: string): string {
  */
 export function isDemoDocument(document: Document): boolean {
   if(document.tree.is_demo===true)return true;
-  if(document.tree.name!=='Семья Волковых · пример' ||
-     document.tree.description!=='Учебное дерево. Все люди и события вымышлены.' ||
-     document.persons.length!==6 || document.families.length!==2)return false;
+  // Title + the shipped description still identifies a legacy sample
+  // after someone has edited its people while learning to use the editor.
+  if(document.tree.name==='Семья Волковых · пример' &&
+     document.tree.description==='Учебное дерево. Все люди и события вымышлены.')return true;
+  // A legacy copy may have had its title edited before the marker existed.
+  if(document.persons.length!==6||document.families.length!==2)return false;
   const has=(given:string,surname:string)=>
     document.persons.some(p=>p.given_name===given&&p.surname===surname);
   return has('Алексей','Смирнов') && has('Мария','Смирнова') &&
