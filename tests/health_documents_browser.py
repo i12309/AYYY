@@ -3,6 +3,7 @@ import io, zipfile, mimetypes, base64
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser,capture,fill_home_value
 
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
 def check(label,result):
@@ -28,7 +29,7 @@ def pdf():
  at=len(output);output+=f'xref\n0 {len(objects)+1}\n0000000000 65535 f \n'.encode()+b''.join(f'{o:010} 00000 n \n'.encode() for o in offsets)+f'trailer << /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{at}\n%%EOF'.encode()
  return output
 with sync_playwright() as pw:
- browser=pw.chromium.launch();ctx=browser.new_context(viewport={'width':1440,'height':1000});errors=[];remote=[]
+ browser=launch_browser(pw);ctx=browser.new_context(viewport={'width':1440,'height':1000});errors=[];remote=[]
  def serve(route):
   if not route.request.url.startswith(BASE):remote.append(route.request.url);route.abort();return
   file=(ROOT/urlsplit(route.request.url).path.lstrip('/')).resolve()
@@ -48,12 +49,12 @@ with sync_playwright() as pw:
   p.locator('[data-form=document-review] [type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
  baseline=p.locator('.analyte-groups tbody tr').count();payload=workbook();upload('synthetic.xlsx',payload,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
  check('XLSX cached formula read without execution','Synthetic XLSX marker' in p.locator('[data-form=document-mapping]').inner_text())
- draft();check('review uses wide workspace',p.locator('#health-dialog').bounding_box()['width']>=1100);check('table scroll stays inside dialog',p.locator('#health-dialog').evaluate('(e)=>e.scrollWidth<=e.clientWidth'));(ROOT/'docs/health-ui').mkdir(parents=True,exist_ok=True);p.screenshot(path=str(ROOT/'docs/health-ui/import-review-1440.png'),full_page=True);check('source file not committed before confirmation',p.locator('.analyte-groups tbody tr').count()==baseline)
+ draft();check('review uses wide workspace',p.locator('#health-dialog').bounding_box()['width']>=1100);check('table scroll stays inside dialog',p.locator('#health-dialog').evaluate('(e)=>e.scrollWidth<=e.clientWidth'));(ROOT/'docs/health-ui').mkdir(parents=True,exist_ok=True);capture(p,path=str(ROOT/'docs/health-ui/import-review-1440.png'),full_page=True);check('source file not committed before confirmation',p.locator('.analyte-groups tbody tr').count()==baseline)
  p.locator('[name="0:value"]').fill('3.5');save();check('XLSX confirmed editable value saved','Synthetic XLSX marker' in p.locator('.analyte-groups').inner_text())
  upload('synthetic.xlsx',payload,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');draft();check('reimport identifies source row duplicates',p.locator('[name=selected]:disabled').count()==1);p.locator('#health-dialog [data-action=close-dialog]').click()
  upload('synthetic.pdf',pdf(),'application/pdf');p.locator('[data-form=document-mapping] [name=sheet]').select_option('1');check('blank PDF page requires another sheet',p.locator('[data-form=document-mapping] [type=submit]').is_disabled());p.locator('[data-form=document-mapping] [name=sheet]').select_option('0');draft();save();check('PDF text columns become confirmed record','Synthetic PDF marker' in p.locator('.analyte-groups').inner_text())
  p.locator('.group-name').filter(has_text='Synthetic PDF marker').click();p.locator('.analyte-source [data-action=file-preview]').click();p.locator('.health-pdf-pages canvas').wait_for()
- p.screenshot(path=str(ROOT/'docs/health-ui/pdf-preview-1440.png'),full_page=True)
+ capture(p,path=str(ROOT/'docs/health-ui/pdf-preview-1440.png'),full_page=True)
  check('PDF preview renders locally','Страница 1 из 2' in p.locator('.health-document-preview').inner_text())
  p.get_by_role('button',name='Вперёд →').click();p.get_by_text('Страница 2 из 2',exact=True).wait_for();check('PDF page navigation',p.locator('.health-pdf-pages canvas').count()==1);p.locator('#health-dialog [data-action=close-dialog]').click()
  p.locator('.sidebar button[data-tab=lab]').click();upload('synthetic.csv',b'name;value;date;unit\nSynthetic censored;<0.1;;mg\nSynthetic invalid;3;2026-02-30;mg','text/csv');draft()

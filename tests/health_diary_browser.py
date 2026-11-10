@@ -4,12 +4,13 @@ from urllib.parse import urlsplit
 from datetime import datetime,timezone
 import mimetypes
 from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser,capture,fill_home_value
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
 def check(label,result):
  assert result,label
  checks.append(label);print('PASS',label,flush=True)
 with sync_playwright() as pw:
- b=pw.chromium.launch();ctx=b.new_context(viewport={'width':1440,'height':1000},timezone_id='America/Los_Angeles');errors=[];remote=[]
+ b=launch_browser(pw);ctx=b.new_context(viewport={'width':1440,'height':1000},timezone_id='America/Los_Angeles');errors=[];remote=[]
  def serve(route):
   if not route.request.url.startswith(BASE):remote.append(route.request.url);route.abort();return
   file=(ROOT/urlsplit(route.request.url).path.lstrip('/')).resolve()
@@ -35,15 +36,15 @@ with sync_playwright() as pw:
  p.locator('[data-action=diary-range][data-all=true]').click();check('all meal history includes another calendar day',p.locator('.diary-list tbody tr').count()==3)
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('nutrition fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
-  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/nutrition-{width}.png'),full_page=True)
+  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');capture(p,path=str(ROOT/f'docs/health-ui/nutrition-{width}.png'),full_page=True)
  p.set_viewport_size({'width':1440,'height':1000});tab('activity');check('empty activity metrics stay unknown',p.locator('.activity-metrics .metric-number').all_text_contents()==['—']*3);p.locator('[data-action=new-activity-day]').click();p.locator('.diary-editor [type=submit]').click();check('empty daily record is rejected',p.locator('.diary-editor [data-form-error]').is_visible());fill('steps','0');fill('sleep_minutes','450');fill('activity_type','Synthetic walking');save();check('activity stores explicit zero and minutes without inventing exercise',snap()['diary'][-1]['steps']==0 and snap()['diary'][-1]['exercise_minutes'] is None and '7 ч 30 мин' in p.locator('.activity-metrics').inner_text())
  check('known zero is a selectable chart point',p.locator('.diary-chart svg [role=button]').count()==1);day('2026-11-09');p.locator('[data-action=new-activity-day]').click();fill('steps','5000');fill('exercise_minutes','45');save();check('daily history retains both days',p.locator('.diary-list tbody tr').count()==2);p.locator('[data-action=diary-metric][data-metric=sleep_minutes]').click();check('chart skips unknown sleep values',p.locator('.diary-chart svg [role=button]').count()==1);p.locator('.diary-chart svg [role=button]').focus();p.keyboard.press('Enter');check('chart keyboard opens its calendar day',p.locator('[aria-label="Дата дневника"]').input_value()=='2026-11-10')
  p.locator('[data-action=new-activity-day]').click();check('same day opens the existing record',p.locator('.diary-editor form').get_attribute('data-id')=='activity:2026-11-10');fill('steps','1.5');p.locator('.diary-editor [type=submit]').click();check('fractional daily counts are rejected',p.locator('.diary-editor [data-form-error]').is_visible());fill('steps','1');save();check('editing a day never adds another day record',len([x for x in snap()['diary'] if x.get('daily')])==2)
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('activity fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   if width<=390:p.wait_for_function('()=>document.querySelector(".diary-chart svg").viewBox.baseVal.width<=innerWidth');check('activity chart retains readable dimensions '+str(width),p.locator('.diary-chart svg').evaluate('(e)=>e.viewBox.baseVal.width<=innerWidth'))
-  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/activity-{width}.png'),full_page=True)
- p.set_viewport_size({'width':1440,'height':1000});p.locator('.diary-list tbody tr').filter(has_text='10.11.2026').locator('[data-action=remove]').click();check('deletion removes only one day',len([x for x in snap()['diary'] if x.get('daily')])==1);p.locator('[data-action=new-activity-day]').click();fill('steps','10');save();r=next(x for x in snap()['diary'] if x.get('daily') and x['date']=='2026-11-10');check('explicit day recreation retains history and increments version',r['version']==3 and r['id']=='activity:2026-11-10')
+  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');capture(p,path=str(ROOT/f'docs/health-ui/activity-{width}.png'),full_page=True)
+ p.set_viewport_size({'width':1440,'height':1000});p.locator('.diary-list tbody tr').filter(has_text='10.11.2026').locator('[data-action=remove]').click();p.locator('.diary-list tbody tr').filter(has_text='10.11.2026').wait_for(state='hidden');check('deletion removes only one day',len([x for x in snap()['diary'] if x.get('daily')])==1);p.locator('[data-action=new-activity-day]').click();fill('steps','10');save();r=next(x for x in snap()['diary'] if x.get('daily') and x['date']=='2026-11-10');check('explicit day recreation retains history and increments version',r['version']==3 and r['id']=='activity:2026-11-10')
  p.locator('#health-global-search').fill('Synthetic known meal');check('global search does not duplicate native diary entries',p.locator('#health-root .data-row').count()==1);p.locator('#health-root .data-row').click();check('global result opens the full meal editor',p.locator('.diary-editor [name=protein_g]').input_value()=='10');p.locator('[data-action=close-diary-editor]').click()
  p.reload();p.locator('[name=passphrase]').fill('synthetic-diary-passphrase');p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for();tab('nutrition');p.locator('[data-action=diary-range][data-all=true]').click();check('meal records and corrected unknowns survive encrypted reload',p.locator('.diary-list tbody tr').count()==3 and snap()['diary'][2]['calories_kcal'] is None);tab('activity');check('daily metrics and history survive encrypted reload',p.locator('.diary-list tbody tr').count()==2 and snap()['revisions'])
  tab('settings');check('current workspace has no old HUMAN converters',not p.locator('[data-form=human-migration-file]').count() and not p.locator('script[src*=sqljs]').count() and p.evaluate('typeof HumanMigration==="undefined"'))

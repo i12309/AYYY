@@ -3,13 +3,14 @@ from pathlib import Path
 from urllib.parse import urlsplit,unquote
 import mimetypes
 from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser,capture,fill_home_value
 ROOT=Path(__file__).resolve().parents[1];BASE='http://127.0.0.1:8877/';checks=[]
 OUT=ROOT/'docs/health-ui'
 def check(name,ok):
  assert ok,name
  checks.append(name);print('PASS',name,flush=True)
 with sync_playwright() as pw:
- browser=pw.chromium.launch();context=browser.new_context(viewport={'width':1440,'height':1000})
+ browser=launch_browser(pw);context=browser.new_context(viewport={'width':1440,'height':1000})
  errors=[];external=[]
  def serve(r):
   if not r.request.url.startswith(BASE):external.append(r.request.url);r.abort();return
@@ -49,7 +50,7 @@ with sync_playwright() as pw:
  check('chart keyboard selects original measurement',expected_date in p.locator('.analyte-source').inner_text())
  for width in [360,768,1440]:
   p.set_viewport_size({'width':width,'height':1000});check('analyte no overflow '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
- p.set_viewport_size({'width':1440,'height':1000});OUT.mkdir(parents=True,exist_ok=True);p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(OUT/'analyte-1440.png'),full_page=True)
+ p.set_viewport_size({'width':1440,'height':1000});OUT.mkdir(parents=True,exist_ok=True);p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');capture(p,path=str(OUT/'analyte-1440.png'),full_page=True)
  p.locator('#health-global-search').fill('3.14');check('global search finds edited result','Холестерин ЛПНП' in p.locator('#health-root').inner_text())
  p.locator('#health-global-search').fill('')
  for tab in ['overview','vital','medical','diary','document','settings']:
@@ -71,7 +72,7 @@ with sync_playwright() as pw:
  p.reload();p.wait_for_selector('.metric')
  check('demo edits reset on reload',p.locator('.metric-number').first.inner_text()=='68' and '3.14' not in p.locator('.overview-latest').inner_text())
  check('overview value cells preserve table layout',p.locator('.overview-table td.observation-value').first.evaluate('(e)=>getComputedStyle(e).display')=='table-cell')
- OUT.mkdir(parents=True,exist_ok=True);p.screenshot(path=str(OUT/'overview-1440.png'),full_page=True)
+ OUT.mkdir(parents=True,exist_ok=True);capture(p,path=str(OUT/'overview-1440.png'),full_page=True)
  for width in [360,390,768,1024,1440,1920]:
   p.set_viewport_size({'width':width,'height':844})
   check('topbar fits width '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
@@ -82,13 +83,13 @@ with sync_playwright() as pw:
    p.locator('.sidebar button[data-tab='+tab+']').click()
    check('no page overflow '+str(width)+' '+tab,p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   if width==390:
-   p.locator('[data-action=toggle-menu]').click();p.locator('.sidebar button[data-tab=overview]').click();p.screenshot(path=str(OUT/'overview-390.png'),full_page=True)
- p.set_viewport_size({'width':1440,'height':1000});p.locator('.sidebar button[data-tab=lab]').click();p.screenshot(path=str(OUT/'analyses-1440.png'),full_page=True)
+   p.locator('[data-action=toggle-menu]').click();p.locator('.sidebar button[data-tab=overview]').click();capture(p,path=str(OUT/'overview-390.png'),full_page=True)
+ p.set_viewport_size({'width':1440,'height':1000});p.locator('.sidebar button[data-tab=lab]').click();capture(p,path=str(OUT/'analyses-1440.png'),full_page=True)
  for tab in ['vital','medical','document']:
-  p.locator('.sidebar button[data-tab='+tab+']').click();p.screenshot(path=str(OUT/(tab+'-1440.png')),full_page=True)
+  p.locator('.sidebar button[data-tab='+tab+']').click();capture(p,path=str(OUT/(tab+'-1440.png')),full_page=True)
  check('demo never used remote services',not external)
  # A separate page exercises an actual encrypted browser vault.
- v=context.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/')
+ v=context.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/');v.locator('.health-intro-top').wait_for()
  check('HUMAN landing has paired wordmarks',v.locator('.health-intro-top .brand').count()==1 and v.locator('.health-intro-top .ayyy-wordmark').count()==1)
  check('AYYY sits left of HUMAN on landing',v.locator('.health-intro-top .ayyy-wordmark').bounding_box()['x']<v.locator('.health-intro-top .brand').bounding_box()['x'])
  check('heading is at logo level',abs(v.locator('.health-intro-top .brand').bounding_box()['y']-v.locator('.health-intro-heading h1').bounding_box()['y'])<35)
@@ -105,7 +106,7 @@ with sync_playwright() as pw:
   check('landing has no horizontal overflow '+str(width),v.evaluate('document.documentElement.scrollWidth<=innerWidth'))
  v.set_viewport_size({'width':1440,'height':1000})
  v.locator('[data-form=create] [name=password]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [name=repeat]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [type=submit]').click();v.wait_for_selector('.metric')
- v.locator('#health-header [data-action=quick-add]').click();v.locator('#health-dialog [data-action=new-vital]').click();v.locator('[name=value]').fill('120/80');v.locator('[data-form=record] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
+ v.locator('#health-header [data-action=quick-add]').click();v.locator('#health-dialog [data-action=new-vital]').click();fill_home_value(v,'120/80');v.locator('[data-form=record] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
  v.reload();v.wait_for_selector('[data-form=unlock]');v.locator('[data-form=unlock] [name=passphrase]').fill('synthetic-ui-passphrase');v.locator('[data-form=unlock] [type=submit]').click();v.wait_for_selector('.metric')
  v.locator('.sidebar button[data-tab=vital]').click();check('encrypted record survives reload','120/80' in v.locator('#health-root').inner_text())
  # Preferences, classification and partial dates roundtrip through the actual encrypted UI.

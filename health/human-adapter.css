@@ -5,7 +5,10 @@
 .health-page .health-table{min-width:620px}
 .health-page .health-toolbar{align-items:center}
 .health-page .health-chart{margin:0}
-.health-page .health-chart svg{max-height:260px}
+.health-page .health-chart svg{height:195px;max-height:195px}
+.health-form-row:has([data-pressure-secondary][hidden]){grid-template-columns:1fr}
+.health-form [data-vital-notes] .field{margin-top:10px}
+@media(max-width:600px){.health-list .health-table{min-width:0}.health-list .health-table td:last-child{text-align:left}.health-list .health-actions{justify-content:flex-start}}
 .health-page .episode-inbox button{margin:6px 6px 0 0}
 .health-list>.field{max-width:300px;margin-bottom:14px}
 .medical-page .health-card{margin:0;min-width:0}

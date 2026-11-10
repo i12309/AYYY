@@ -156,6 +156,7 @@ test('calendar-day episode review and wall-time ambiguity respect profile timezo
 
 test('measurements retain glucose units and reject invalid pressure or saturation',()=>{
  const m=model(),base={date:'2026-11-01',type:'Глюкоза',value:'100',unit:'мг/дл'};
+ const original=m.checkVital(base);assert.throws(()=>m.checkVital({...base,type:'Масса',unit:'кг'},original));
  assert.equal(m.checkVital(base).unit,'мг/дл');assert.equal(m.checkVital(base).value,'100');
  assert.throws(()=>m.checkVital({...base,type:'Давление',value:'80/120',unit:'мм рт. ст.'}));assert.throws(()=>m.checkVital({...base,type:'Сатурация',value:'101',unit:'%'}));
  assert.equal(m.checkVital({...base,type:'Шаги',value:'0',unit:'шагов'}).value,'0');

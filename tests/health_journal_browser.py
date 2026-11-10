@@ -5,6 +5,7 @@ import json
 import mimetypes
 import os
 from playwright.sync_api import sync_playwright
+from health_browser_support import fill_home_value
 
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
 ENGINE=os.getenv('HEALTH_BROWSER','chromium')
@@ -29,7 +30,9 @@ with sync_playwright() as pw:
  def snap(p,phrase=OLD):return p.evaluate("""async phrase=>{const local=await HumanStore.get(await HumanStore.current());return (await HumanCrypto.unlock(local.envelope,phrase)).doc;}""",phrase)
  def stored(p):return p.evaluate('async()=>await HumanStore.get(await HumanStore.current())')
  def tab(p,name):p.locator('.sidebar button[data-tab='+name+']').click()
- def fill(p,name,value):p.locator('#health-dialog [name='+name+']').fill(value)
+ def fill(p,name,value):
+  if name=='value' and '/' in value:fill_home_value(p,value)
+  else:p.locator('#health-dialog [name='+name+']').fill(value)
  def submit(p):p.locator('#health-dialog [type=submit]').click()
  def save(p):submit(p);p.locator('#health-dialog').wait_for(state='hidden')
  def close(p):p.locator('#health-dialog [data-action=close-dialog]').click();p.locator('#health-dialog').wait_for(state='hidden')
@@ -77,7 +80,7 @@ with sync_playwright() as pw:
  rotate(p,current=NEW,new='synthetic-third-passphrase');p.evaluate("""()=>{const rekey=HumanCrypto.rekey;HumanCrypto.rekey=async(...args)=>{const result=await rekey(...args);await new Promise(resolve=>window.syntheticRelease=()=>{HumanCrypto.rekey=rekey;resolve();});return result;};}""");submit(p);p.wait_for_function('()=>typeof syntheticRelease==="function"');p.evaluate("document.querySelector('.sidebar [data-action=lock]').click()");p.locator('[data-form=unlock]').wait_for();p.evaluate('syntheticRelease()');p.wait_for_function('()=>!document.querySelector("#health-dialog form")');check('locking during rekey cancels the pending save and never reopens the journal',stored(p)==changed and p.locator('[data-form=unlock]').is_visible());unlock(p,NEW)
  # Real event navigation, deleted-source history and bounded pagination.
  tab(p,'timeline');p.locator('[data-timeline-kind]').select_option('health_created');p.locator('.timeline-open').click();check('measurement event opens its original recorded detail',p.locator('.health-details').count()==1 and '120/80' in p.locator('.health-details').inner_text())
- tab(p,'document');p.locator('.documents-table [data-action=remove]').click();tab(p,'timeline');p.locator('[data-timeline-kind]').select_option('document');p.locator('.timeline-open').click();check('deleted document event retains history without resurrecting its file','Запись удалена' in p.locator('#health-dialog').inner_text() and snap(p,NEW)['documents']==[]);close(p)
+ tab(p,'document');p.locator('.documents-table [data-action=remove]').click();p.locator('.documents-table [data-action=remove]').wait_for(state='hidden');tab(p,'timeline');p.locator('[data-timeline-kind]').select_option('document');p.locator('.timeline-open').click();check('deleted document event retains history without resurrecting its file','Запись удалена' in p.locator('#health-dialog').inner_text() and snap(p,NEW)['documents']==[]);close(p)
  p.evaluate("""async phrase=>{const local=await HumanStore.get(await HumanStore.current()),{doc,key}=await HumanCrypto.unlock(local.envelope,phrase);for(let i=0;i<45;i++)doc.timeline.push(HumanJournal.event('profile',doc.profile,'edit',new Date(1700000000000+i)));const envelope=await HumanCrypto.seal(doc,key,local.envelope);await HumanStore.save({...local,envelope,dirty:true},local);}""",NEW);p.reload();unlock(p,NEW);tab(p,'timeline');check('timeline limits a page to 50 actions',p.locator('.timeline li').count()==50);p.locator('[data-action=timeline-page][data-offset="50"]').click();check('next timeline page shows the remaining action',p.locator('.timeline li').count()==1);p.locator('[data-timeline-kind]').select_option('security');check('timeline filtering resets pagination',p.locator('.timeline li').count()==1 and 'Фраза доступа изменена' in p.locator('.timeline').inner_text())
  p.locator('.sidebar [data-action=lock]').click();p.locator('[data-action=picker]').click();p.locator('[data-form=create] [name=password]').fill('synthetic-isolated-journal');p.locator('[name=repeat]').fill('synthetic-isolated-journal');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for();tab(p,'timeline');check('new profile has an empty history and cleared filters',p.locator('.timeline li').count()==0 and p.locator('[data-timeline-kind]').input_value()=='')
  check('journal tests made no external requests',not remote);check('journal tests have no runtime errors',not errors);b.close()

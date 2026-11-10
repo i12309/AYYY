@@ -201,7 +201,7 @@
   }
   let renderedVaultId=null;
   function render(){
-    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.vitalOffset=0;state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
     const reviewDetails=new Map(Array.from(root.querySelectorAll('.recommendations-page details[data-review-details]'),e=>[e.dataset.reviewDetails,e.open])),reviewTask=root.querySelector('[name=reviewTask]'),reviewFocus=reviewTask&&document.activeElement===reviewTask,reviewSelection=reviewFocus?[reviewTask.selectionStart,reviewTask.selectionEnd]:null;
@@ -234,6 +234,7 @@
   const formSnapshots=new WeakMap();
   function openDiaryEditor(kind,id){state.tab=kind==='meal'?'nutrition':'activity';state.globalSearch='';const item=id?recordsFor(state.doc,kind).find(r=>r.id===id):kind==='activity-day'?recordsFor(state.doc,kind).find(r=>r.date===window.HumanDiaryView.selectedDay(state)):null;if(id&&!item)throw Error('Запись больше не существует.');if(item&&kind==='activity-day'){state.diaryDays??={};state.diaryDays.activity=item.date;}state.diaryEditor={kind,id:item?.id||''};if(dialog.open)dialog.close();render();root.querySelector('.diary-editor input:not([type=hidden])')?.focus();root.querySelector('.diary-editor')?.scrollIntoView({block:'start'});}
   function chooseDiaryDay(day){window.HumanDiary.day(day);state.diaryDays??={};state.diaryDays[state.tab]=day;state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;state.diaryAll=false;state.diaryEditor=null;render();}
+  function diaryDateInput(input){if(!input?.dataset?.diaryDay||input.isConnected===false||!input.value||!state.doc||!['nutrition','activity'].includes(state.tab)||input.value===window.HumanDiaryView.selectedDay(state)||input.validity?.valid===false)return;try{const focused=document.activeElement===input;chooseDiaryDay(input.value);if(focused)root.querySelector('[data-diary-day]')?.focus();}catch(e){error(e);}}
   function openFinding(id){const item=state.doc.findings.find(x=>x.id===id);if(!item)throw Error('Результат больше не существует.');careDialog(item.title,window.HumanGeneticsView.detail(state,item));}
   function careDialog(title,content){document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();}
   function refreshReviewPreview(){
@@ -378,7 +379,7 @@
     if(kind==='genetic'){form.classList.add('genetics-form');window.HumanGeneticsView.updateForm(form);form.querySelector('[name=date_precision]').addEventListener('change',()=>window.HumanGeneticsView.updateForm(form,true));}
     if(kind==='intake'||kind==='reminder'){form.classList.add('care-form');window.HumanCareView.updateForm(form);form.querySelector(kind==='intake'?'[name=outcome]':'[name=frequency]')?.addEventListener('change',()=>window.HumanCareView.updateForm(form));}
     if(existing){form.dataset.id=existing.id;formSnapshots.set(form,JSON.stringify(existing));}
-    if(kind==='vital'||kind==='episode'){if(kind==='vital')form.elements.namedItem('unit').dataset.original=x.unit||'';window.HumanHealthView.updateForm(form);form.querySelector(kind==='vital'?'[name=type]':'[name=status]')?.addEventListener('change',()=>window.HumanHealthView.updateForm(form,true));}
+    if(kind==='vital'||kind==='episode'){if(kind==='vital'){form.elements.namedItem('unit').dataset.original=x.unit||'';form.elements.type.disabled=!!existing;}window.HumanHealthView.updateForm(form);form.querySelector(kind==='vital'?'[name=type]':'[name=status]')?.addEventListener('change',()=>window.HumanHealthView.updateForm(form,true));}
     if(kind==='medical'||kind==='medication'){window.HumanMedicalView.updateForm(form);form.querySelector('[name=category]')?.addEventListener('change',()=>window.HumanMedicalView.updateForm(form));}
     const body=document.getElementById('health-dialog-body');
     const close=V.button('×','close-dialog',{class:'ghost'});
@@ -433,6 +434,7 @@
     const input=Object.fromEntries(new FormData(form).entries());
     let record;
     if(kind==='lab')record=M.checkLab(input,old);
+    if(kind==='vital'&&input.secondary!==undefined)input.value+='/'+input.secondary;
     if(kind==='vital')record=M.checkVital(window.HumanHealth.formInput(input,old,window.HumanHealth.zoneName(state.doc.profile.timezone)),old);
     if(kind==='episode')record=window.HumanHealth.checkEpisode(window.HumanHealth.formInput(input,old,window.HumanHealth.zoneName(state.doc.profile.timezone)),old,new Date(),window.HumanHealth.zoneName(state.doc.profile.timezone));
     if(kind==='vital'&&record.episodeId&&!window.HumanHealth.episodes(state.doc).some(x=>x.id===record.episodeId)&&record.episodeId!==old?.episodeId)throw Error('Связанный эпизод не найден.');
@@ -474,6 +476,7 @@
     });
     if(!form.isConnected)return;
     if(kind==='meal'||kind==='activity-day'){state.diaryEditor=null;state.diaryOffsets={};render();}
+    if(kind==='vital'||kind==='episode'){state.tab='vital';state.globalSearch='';state.vitalOffset=0;state.vitalUnit=record.unit||'';state.filters.vital=kind==='vital'?record.type:'illness';state.vitalId=kind==='vital'?record.id:'';state.episodeId=kind==='episode'?record.id:'';render();}
     if(kind==='intake'||kind==='reminder'){state.careMedication='';state.careOffset=0;render();}
     dialog.close();toast(state.demo?'Демо-запись изменена только в памяти.':'Запись сохранена в зашифрованном хранилище.');
   }
@@ -754,7 +757,7 @@
       else if(action==='open-group'){state.abnormalOnly=false;state.observationId=el.dataset.id||'';state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
       else if(action==='open-demo'||action==='reset-demo')openDemo();
       else if(action==='exit-demo')await exitDemo();
-      else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;if(el.dataset.kind==='vital'){state.episodeId='';state.vitalId='';state.vitalUnit='';}if(el.dataset.kind==='medical'){state.medicalId='';state.medicalStatus='';}render();}
+      else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;if(el.dataset.kind==='vital'){state.episodeId='';state.vitalId='';state.vitalUnit='';state.vitalOffset=0;}if(el.dataset.kind==='medical'){state.medicalId='';state.medicalStatus='';}render();}
       else if(['new-meal','new-activity-day'].includes(action))openDiaryEditor(action.slice(4));
       else if(action?.startsWith('new-')){modal(action.slice(4),null,['new-intake','new-reminder'].includes(action)?{medication_id:el.dataset.medication||''}:action==='new-medical'?{category:state.filters.medical||'allergy'}:action==='new-vital'?{type:el.dataset.value&&el.dataset.value!=='illness'?el.dataset.value:'Давление',episodeId:el.dataset.episode||''}:{});}
       else if(action==='edit'){let kind=el.dataset.kind;if(kind==='diary'){const row=state.doc.diary.find(r=>r.id===el.dataset.id);if(row?.kind==='food')kind='meal';else if(row&&window.HumanDiary.isDaily(row))kind='activity-day';}if(['meal','activity-day'].includes(kind))openDiaryEditor(kind,el.dataset.id);else modal(kind,el.dataset.id);}
@@ -779,6 +782,7 @@
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='open-vital'||action==='open-episode'){state.tab='vital';state.globalSearch='';state.vitalId=action==='open-vital'?el.dataset.id:'';state.episodeId=action==='open-episode'?el.dataset.id:'';if(action==='open-episode')state.filters.vital='illness';else state.filters.vital=state.doc.vitals.find(x=>x.id===el.dataset.id)?.type||'Масса';render();const panel=root.querySelector('.health-details');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='close-health-detail'){state.vitalId='';state.episodeId='';render();}
+      else if(action==='vital-page'){state.vitalOffset=Number(el.dataset.offset);render();root.querySelector('.health-list')?.scrollIntoView({block:'start'});}
       else if(action==='vital-unit'){state.vitalUnit=el.dataset.unit;render();}
       else if(action==='open-linked-medical'){state.tab='medical';state.filters.medical='';state.medicalSearch='';state.medicalStatus='';state.medicalId=el.dataset.id;state.medicalKind=el.dataset.kind;render();const panel=root.querySelector('.medical-detail');panel?.focus();panel?.scrollIntoView({block:'start'});}
       else if(action==='review-episode')episodeReview(el.dataset.id,el.dataset.mode);
@@ -804,6 +808,7 @@
   document.addEventListener('submit',event=>{void onSubmit(event);});
   document.addEventListener('click',event=>{void onClick(event);});
   document.addEventListener('input',event=>{
+    diaryDateInput(event.target);
     if(event.target?.name==='reviewTask')state.reviewTask=event.target.value;
     if(event.target?.dataset?.search==='timeline'){const value=event.target.value,position=event.target.selectionStart||0;state.timelineQuery=value;state.timelineOffset=0;render();const next=root.querySelector('[data-search=timeline]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='genetics'){const value=event.target.value,position=event.target.selectionStart||0;state.geneticQuery=value;state.geneticOffset=0;render();const next=root.querySelector('[data-search=genetics]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
@@ -818,7 +823,7 @@
     }
   });
   document.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('circle[data-action],[role=button][data-action]')){event.preventDefault();void onClick(event);return;}if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
-  document.addEventListener('change',event=>{if(event.target?.dataset?.reviewSelected){state.reviewSelected=event.target.value;state.reviewSection='assessment';render();}if(event.target?.dataset?.reviewUpload){const file=event.target.files[0];event.target.value='';void reviewUpload(file);}if(event.target?.dataset?.timelineKind){state.timelineKind=event.target.value;state.timelineOffset=0;render();}if(event.target?.dataset?.geneticCategory){state.geneticCategory=event.target.value;state.geneticOffset=0;render();}if(event.target?.dataset?.diaryDay&&event.target.value){try{chooseDiaryDay(event.target.value);}catch(e){error(e);}}if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
+  document.addEventListener('change',event=>{if(event.target?.dataset?.reviewSelected){state.reviewSelected=event.target.value;state.reviewSection='assessment';render();}if(event.target?.dataset?.reviewUpload){const file=event.target.files[0];event.target.value='';void reviewUpload(file);}if(event.target?.dataset?.timelineKind){state.timelineKind=event.target.value;state.timelineOffset=0;render();}if(event.target?.dataset?.geneticCategory){state.geneticCategory=event.target.value;state.geneticOffset=0;render();}diaryDateInput(event.target);if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;state.vitalOffset=0;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
   dialog.addEventListener('close',()=>{if(!dialog.open)document.getElementById('health-dialog-body').replaceChildren();});
   function refreshCare(){
@@ -826,13 +831,14 @@
     if(state.tab==='recommendations'&&!dialog.open)refreshReviewPreview();
     if(state.tab==='care'&&!dialog.open&&!document.activeElement?.matches('input,textarea,select'))render();
   }
-  let diaryResize;window.addEventListener?.('resize',()=>{if(state.doc&&state.tab==='activity'){clearTimeout(diaryResize);diaryResize=setTimeout(render,120);}});
+  let diaryResize;window.addEventListener?.('resize',()=>{if(state.doc&&['activity','vital'].includes(state.tab)){clearTimeout(diaryResize);diaryResize=setTimeout(render,120);}});
   window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});window.addEventListener?.('pagehide',()=>activeNotification?.close());
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
     const id=state.local.id;sessionRevision++;clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();render();const revision=sessionRevision;
     void S.get(id).then(data=>{if(revision!==sessionRevision||state.local?.id!==id)return;state.local=data;render();toast('Профиль изменён в другой вкладке. Откройте его снова.');}).catch(error);
   };
+  root.replaceChildren(V.h('p',{class:'health-muted',role:'status'},'Открываем журнал…'));
   void (async()=>{
     try{
       if(new URLSearchParams(window.location?.search||'').get('demo')==='1'){

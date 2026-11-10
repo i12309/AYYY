@@ -4,12 +4,13 @@ from urllib.parse import urlsplit
 from datetime import datetime, timezone
 import mimetypes
 from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser,capture,fill_home_value
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
 def check(label,result):
  assert result,label
  checks.append(label);print('PASS',label,flush=True)
 with sync_playwright() as pw:
- b=pw.chromium.launch();ctx=b.new_context(viewport={'width':1440,'height':1000},timezone_id='Europe/Moscow');errors=[];remote=[]
+ b=launch_browser(pw);ctx=b.new_context(viewport={'width':1440,'height':1000},timezone_id='Europe/Moscow');errors=[];remote=[]
  def serve(route):
   if not route.request.url.startswith(BASE):remote.append(route.request.url);route.abort();return
   file=(ROOT/urlsplit(route.request.url).path.lstrip('/')).resolve()
@@ -46,10 +47,10 @@ with sync_playwright() as pw:
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('care workspace fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   if width<=390:check('care actions fit without internal horizontal scrolling '+str(width),p.locator('.care-list .health-table-wrap').evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
-  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');p.screenshot(path=str(ROOT/f'docs/health-ui/care-{width}.png'),full_page=True)
+  if width in [390,1440]:p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');capture(p,path=str(ROOT/f'docs/health-ui/care-{width}.png'),full_page=True)
  p.set_viewport_size({'width':1440,'height':1000});p.reload();p.locator('[name=passphrase]').fill('synthetic-care-passphrase');p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for();tab('care');check('encrypted reload preserves reported intake','Пропуск' in p.locator('.care-list').inner_text());p.locator('[data-view=reminders]').click();check('encrypted reload preserves both schedules',p.locator('.care-list tbody tr').count()==2)
- tab('medical');p.locator('[data-action=remove][data-kind=medication]').click();tab('care');p.locator('[data-view=intakes]').click();p.locator('.care-list [data-action=edit]').click();check('deleted medication name remains on original event','удалён' in p.locator('#health-dialog [name=medication_id] option:checked').inner_text());fill('notes','Synthetic correction after medication deletion');save();check('correction retains deleted medication reference',snapshot()['intakes'][0]['medication_name']=='Synthetic care medication')
- p.locator('.care-list [data-action=remove]').click();check('intake deletion retains audit history',snapshot()['intakes']==[] and any(x['operation']=='delete' and x['kind']=='intake' for x in snapshot()['revisions']))
+ tab('medical');p.locator('[data-action=remove][data-kind=medication]').click();p.locator('.medical-list [data-action=remove][data-kind=medication]').wait_for(state='hidden');tab('care');p.locator('[data-view=intakes]').click();p.locator('.care-list [data-action=edit]').click();check('deleted medication name remains on original event','удалён' in p.locator('#health-dialog [name=medication_id] option:checked').inner_text());fill('notes','Synthetic correction after medication deletion');save();check('correction retains deleted medication reference',snapshot()['intakes'][0]['medication_name']=='Synthetic care medication')
+ p.locator('.care-list [data-action=remove]').click();p.locator('.care-list [data-action=remove]').wait_for(state='hidden');check('intake deletion retains audit history',snapshot()['intakes']==[] and any(x['operation']=='delete' and x['kind']=='intake' for x in snapshot()['revisions']))
  p.locator('[data-view=reminders]').click();p.locator('[data-action=new-reminder]').click();fill('title','Synthetic due before lock');fill('date','2026-11-10');fill('time','10:00');save();p.wait_for_function('()=>syntheticNotices.length>0');p.locator('.sidebar [data-action=lock]').click();check('locking closes active notification',p.evaluate('syntheticNotices.every(n=>n.closed)'));check('locked screen contains no care data','Synthetic' not in p.locator('#health-root').inner_text())
  p.locator('[data-action=picker]').click();p.locator('[data-form=create] [name=password]').fill('synthetic-other-profile');p.locator('[name=repeat]').fill('synthetic-other-profile');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for();tab('care');check('second profile has no prior intake or notification preference','Событий пока нет' in p.locator('.care-list').inner_text() and p.locator('#health-reminder-bell').get_attribute('aria-label').endswith(': 0'))
  check('care kept all requests local',not remote);check('care has no runtime errors',not errors);b.close()

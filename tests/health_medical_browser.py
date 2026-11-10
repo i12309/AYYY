@@ -3,12 +3,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 import mimetypes
 from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser,capture,fill_home_value
 ROOT=Path(__file__).resolve().parents[1];BASE='http://localhost:8877/';checks=[]
 def check(label,value):
  assert value,label
  checks.append(label);print('PASS',label,flush=True)
 with sync_playwright() as pw:
- b=pw.chromium.launch();ctx=b.new_context(viewport={'width':1440,'height':1000});errors=[];remote=[]
+ b=launch_browser(pw);ctx=b.new_context(viewport={'width':1440,'height':1000});errors=[];remote=[]
  def serve(route):
   if not route.request.url.startswith(BASE):remote.append(route.request.url);route.abort();return
   file=(ROOT/urlsplit(route.request.url).path.lstrip('/')).resolve()
@@ -36,14 +37,21 @@ with sync_playwright() as pw:
  p.locator('[data-action=filter-records][data-value=medication]').click();p.locator('[data-action=new-medication]').click();fill('name','Synthetic supplement');choose('status','planned');choose('medicationCategory','supplement');fill('dose','Synthetic dose');fill('frequency','Synthetic schedule');fill('route','Synthetic route');fill('indication','Synthetic indication');save();p.locator('.medical-name').click();check('supplement and medication scheme visible','Добавка' in p.locator('.medical-detail').inner_text() and 'Synthetic schedule' in p.locator('.medical-detail').inner_text())
  p.locator('#health-global-search').fill('Synthetic indication');check('global search indexes medication details','Synthetic supplement' in p.locator('#health-root').inner_text());p.locator('#health-global-search').fill('')
  p.locator('[data-action=filter-records][data-value=""]').click();check('category switch closes previous record detail',p.locator('.medical-detail').count()==0)
- (ROOT/'docs/health-ui').mkdir(parents=True,exist_ok=True);p.evaluate('()=>window.scrollTo(0,0)');p.screenshot(path=str(ROOT/'docs/health-ui/medical-rich-1440.png'),full_page=True)
+ (ROOT/'docs/health-ui').mkdir(parents=True,exist_ok=True);p.evaluate('()=>window.scrollTo(0,0)');capture(p,path=str(ROOT/'docs/health-ui/medical-rich-1440.png'),full_page=True)
  for width in [360,390,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('medical page fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
-  if width==390:p.screenshot(path=str(ROOT/'docs/health-ui/medical-rich-390.png'),full_page=True)
+  if width==390:capture(p,path=str(ROOT/'docs/health-ui/medical-rich-390.png'),full_page=True)
  p.set_viewport_size({'width':1440,'height':1000});p.reload();p.locator('[name=passphrase]').fill('synthetic-clinical-password');p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for();tab('medical')
  check('all clinical records survive encrypted reload',p.locator('.medical-name').count()==3)
  p.locator('.medical-name').filter(has_text='Synthetic allergy').click();check('allergy correction survives reload','Synthetic revised rash' in p.locator('.medical-detail').inner_text() and 'Неактуально' in p.locator('.medical-detail').inner_text())
- p.locator('.medical-list tr').filter(has_text='Synthetic allergy').locator('[data-action=remove]').click();check('delete removes only selected clinical record',p.locator('.medical-name').count()==2)
+ p.locator('.medical-list tr').filter(has_text='Synthetic allergy').locator('[data-action=remove]').click();p.locator('.medical-list tr').filter(has_text='Synthetic allergy').wait_for(state='hidden');check('delete removes only selected clinical record',p.locator('.medical-name').count()==2)
+ # All remaining current clinical kinds have their own fields and statuses.
+ for category,status in [('condition','remission'),('surgery','planned'),('other','unknown')]:
+  p.locator('[data-action=filter-records][data-value="'+category+'"]').click();p.locator('[data-action=new-medical]').click();fill('title','Synthetic '+category);choose('status',status);fill('start','2024');choose('startPrecision','year');fill('description','Synthetic '+category+' description');fill('notes','<script>Synthetic '+category+' note</script>');check(category+' disables unrelated clinical blocks',p.locator('#health-dialog [name=reaction]').is_disabled() and p.locator('#health-dialog [name=dose]').is_disabled())
+  for width in [360,1440]:
+   p.set_viewport_size({'width':width,'height':900});check(category+' form fits '+str(width),p.locator('#health-dialog').evaluate('(e)=>e.scrollWidth<=e.clientWidth') and p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+  p.set_viewport_size({'width':1440,'height':1000});save();p.locator('.medical-name').click();check(category+' keeps its description, status and unknown end',('Synthetic '+category+' description') in p.locator('.medical-detail').inner_text() and {'condition':'Ремиссия','surgery':'Запланировано','other':'Не указан'}[category] in p.locator('.medical-detail').inner_text() and '<script>' in p.locator('.medical-detail').inner_text() and p.locator('.medical-detail script').count()==0)
+ p.reload();p.locator('[name=passphrase]').fill('synthetic-clinical-password');p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for();tab('medical');check('all clinical kinds persist without category conversion',p.locator('.medical-name').count()==5)
  p.locator('[data-search=medical]').fill('Synthetic private query');tab('settings');p.locator('[data-action=picker]').click();p.locator('[data-form=create] [name=password]').fill('synthetic-second-password');p.locator('[name=repeat]').fill('synthetic-second-password');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for();tab('medical');check('new profile has isolated records and cleared search',p.locator('.medical-name').count()==0 and p.locator('[data-search=medical]').input_value()=='')
  check('clinical changes stayed local',not remote);check('no runtime errors',not errors);b.close()
 print(len(checks),'medical checks PASS')
