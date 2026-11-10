@@ -38,7 +38,7 @@ function label(kind:string,record:RecordValue|null|undefined,id:string):string{
   return kind==='tree'?'Настройки дерева':kind==='metadata'?'Метаданные GEDCOM':'Документ';
 }
 function compareField(
-  key:string,kind:string,description:string,field:string,
+  key:string,description:string,field:string,
   base:any,local:any,remote:any,
   choices:MergeChoice,conflicts:MergeConflict[],auto:{value:number}
 ):any {
@@ -69,7 +69,7 @@ function mergeRecord(
   const names=new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)]);
   for(const field of names){
     if(field==='revision'||field==='updated_at'||field==='id')continue;
-    const value=compareField(key,kind,description,field,base[field],local[field],remote[field],choices,conflicts,auto);
+    const value=compareField(key,description,field,base[field],local[field],remote[field],choices,conflicts,auto);
     if(value!==undefined)output[field]=value;
   }
   if(kind==='person'||kind==='family'){
@@ -117,7 +117,7 @@ export function mergeDocuments(
   const tree={...clone(local.tree)} as Document['tree'];
   for(const key of new Set([...Object.keys(baseline.tree),...Object.keys(local.tree),...Object.keys(remote.tree)])){
     if(['id','slug','revision','updated_at'].includes(key))continue;
-    const value=compareField('tree','tree','Настройки дерева',key,
+    const value=compareField('tree','Настройки дерева',key,
       (baseline.tree as RecordValue)[key],(local.tree as RecordValue)[key],(remote.tree as RecordValue)[key],
       choices,conflicts,auto);
     if(value===undefined)delete (tree as RecordValue)[key];
@@ -127,7 +127,7 @@ export function mergeDocuments(
   tree.revision=Math.max(Number(baseline.tree.revision)||1,Number(local.tree.revision)||1,Number(remote.tree.revision)||1)+1;
   const persons=mergeItems('person',baseline.persons,local.persons,remote.persons,choices,conflicts,auto);
   const families=mergeItems('family',baseline.families,local.families,remote.families,choices,conflicts,auto);
-  const metadata=compareField('metadata','metadata','Метаданные GEDCOM','metadata',
+  const metadata=compareField('metadata','Метаданные GEDCOM','metadata',
     baseline.metadata,local.metadata,remote.metadata,choices,conflicts,auto);
   const document:Document={...clone(local),tree,persons,families,metadata};
   // A selected side can still create inconsistent ancestry; do not allow such a
