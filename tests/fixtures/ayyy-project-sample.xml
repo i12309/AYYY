@@ -16,7 +16,7 @@
         <WeekDay><DayType>2</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>13:00:00</ToTime></WorkingTime><WorkingTime><FromTime>14:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
         <WeekDay><DayType>3</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
         <WeekDay><DayType>4</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
-        <WeekDay><DayType>5</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>5</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
         <WeekDay><DayType>6</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
         <WeekDay><DayType>7</DayType><DayWorking>0</DayWorking></WeekDay>
       </WeekDays>
