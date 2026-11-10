@@ -145,24 +145,30 @@ export function workingHoursOnDate(model, date, calendarId = model?.calendar) {
   const value=dateValue(date);
   if(value===null || !Number.isFinite(value) || calendarId==null)return null;
   const day=Math.floor(value/DAY)*DAY;
-  const byId=calendarLookup(model);
-  const weekday=new Date(day).getUTCDay();
-  let uid=String(calendarId),loops=0;
+  const byId=calendarLookup(model),weekday=new Date(day).getUTCDay(),chain=[];
+  let uid=String(calendarId);
   const visited=new Set();
-  while(uid && loops++<30 && !visited.has(uid)) {
+  while(uid && chain.length<30 && !visited.has(uid)){
     visited.add(uid);
     const cal=byId.get(uid);
     if(!cal)return null;
-    for(const ex of cal.exceptions||[]) {
-      const matches=Array.isArray(ex.dates)?ex.dates.includes(day):ex.from!==null && ex.to!==null && day>=ex.from && day<=ex.to;
+    chain.push(cal);uid=cal.parent;
+  }
+  // A base-calendar holiday also applies to derived calendars unless a
+  // derived calendar has a more specific exception for the same date.
+  for(const cal of chain){
+    for(const ex of cal.exceptions||[]){
+      const matches=Array.isArray(ex.dates)?ex.dates.includes(day):
+        ex.from!==null && ex.to!==null && day>=ex.from && day<=ex.to;
       if(matches)return ex.hours;
     }
-    const activeWeek=(cal.weeks||[]).find(w=>w.from!==null && w.to!==null && day>=w.from && day<=w.to);
-    const weekOverride=activeWeek?.days?.[weekday];
-    const entry=weekOverride?.type && weekOverride.type!=='default'?weekOverride:(cal.days?.[weekday]||null);
+  }
+  for(const cal of chain){
+    const activeWeek=(cal.weeks||[]).find(w=>w.from!==null&&w.to!==null&&day>=w.from&&day<=w.to);
+    const special=activeWeek?.days?.[weekday];
+    const entry=special?.type && special.type!=='default'?special:(cal.days?.[weekday]||null);
     if(entry?.type==='working')return entry.hours;
     if(entry?.type==='nonworking')return [];
-    uid=cal.parent;
   }
   return null;
 }
