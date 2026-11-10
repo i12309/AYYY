@@ -325,6 +325,37 @@ export function dependencyLines(tasks, links, timelineStart, pixelsPerDay, size 
   return routes;
 }
 
+/** Dependency segments crossing a virtualized viewport. Hidden endpoints continue beyond its edges. */
+export function viewportDependencyLines(allTasks,links,timelineStart,pixelsPerDay,first,last,size=34,criticalIds=new Set()) {
+  if(!allTasks?.length||last<=first)return [];
+  const index=new Map(allTasks.map((t,i)=>[t.uid,i]));
+  const height=(last-first)*size,lines=[];
+  for(const link of links||[]) {
+    if(lines.length>=1200)break;
+    const a=index.get(link.from),b=index.get(link.to);
+    if(a===undefined||b===undefined)continue;
+    if(Math.min(a,b)>=last||Math.max(a,b)<first)continue;
+    const from=allTasks[a],to=allTasks[b];
+    const fromFinish=link.type==='FS'||link.type==='FF';
+    const toFinish=link.type==='FF'||link.type==='SF';
+    const t1=from[fromFinish?'finish':'start'],t2=to[toFinish?'finish':'start'];
+    if(!Number.isFinite(t1)||!Number.isFinite(t2))continue;
+    const x1=Math.round((t1-timelineStart)/DAY*pixelsPerDay+(fromFinish?pixelsPerDay:0));
+    const x2=Math.round((t2-timelineStart)/DAY*pixelsPerDay+(toFinish?pixelsPerDay:0));
+    const original1=(a-first+.5)*size,original2=(b-first+.5)*size;
+    const y1=Math.round(Math.max(-size,Math.min(height+size,original1)));
+    const y2=Math.round(Math.max(-size,Math.min(height+size,original2)));
+    const elbow=x2>=x1+24?Math.round((x1+x2)/2):Math.max(x1,x2)+16;
+    const label=(link.type!=='FS'?link.type+' ':'')+(link.lag||'');
+    const labelY=Math.max(11,Math.min(height-4,Math.round((y1+y2)/2-4)));
+    lines.push({d:'M'+x1+' '+y1+' H'+elbow+' V'+y2+' H'+x2,from:link.from,to:link.to,
+      critical:criticalIds.has(from.uid)&&criticalIds.has(to.uid),
+      partial:a<first||a>=last||b<first||b>=last,
+      label:label.trim(),labelX:elbow+4,labelY});
+  }
+  return lines;
+}
+
 export function csvCell(value) {
   const original = String(value === null || value === undefined ? '' : value);
   const safe = /^[\s]*[=+\-@\t\r]/.test(original) ? "'" + original : original;
