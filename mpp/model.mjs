@@ -138,8 +138,9 @@ export function timelineRange(model) {
   const today = Math.floor(Date.now() / DAY) * DAY;
   const min = dates.length ? dates.reduce((result,value)=>Math.min(result,value),Infinity) : today;
   const max = dates.length ? dates.reduce((result,value)=>Math.max(result,value),-Infinity) : today + 28*DAY;
-  const start = Math.floor(min / DAY) * DAY - 7 * DAY;
-  const end = Math.floor(max / DAY) * DAY + 14 * DAY;
+  // Keep a small visual margin without wasting full weeks at either end.
+  const start = Math.floor(min / DAY) * DAY - 3 * DAY;
+  const end = Math.floor(max / DAY) * DAY + 5 * DAY;
   return {start, days:Math.max(28,Math.min(10000,Math.ceil((end-start)/DAY)))};
 }
 
