@@ -124,6 +124,10 @@ async function pushScheduled(treeId:string):Promise<void>{
   }
 }
 
+export function autoSyncSetActiveTree(treeId:string|null):void{
+  currentTree=treeId;
+}
+
 export async function autoSyncOpened(treeId:string,force=false):Promise<void>{
   currentTree=treeId;
   if(!started)return;
