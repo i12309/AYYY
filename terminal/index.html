@@ -292,6 +292,37 @@
       .heading .subtitle { font-size:10px; }
       .machine { min-height:calc(100dvh - 164px); }
     }
+    /* Three optional inference modes; switches belong to the terminal, not to the portal. */
+    [hidden] { display:none!important; }
+    .engine-strip { display:flex; align-items:center; flex-wrap:wrap; gap:12px;
+      margin:-5px 0 15px; padding:9px 13px; border:1px solid #294d35;
+      background:linear-gradient(100deg,#0b1c12,#09150d); border-radius:8px;
+      color:#80c795; font:11px/1.4 Consolas,monospace; }
+    .engine-buttons { display:flex; gap:5px; flex-wrap:wrap; }
+    .engine-btn { border:1px solid #355842; color:#87b898; background:#102017;
+      padding:6px 11px; border-radius:3px; font-size:10px; letter-spacing:.7px; }
+    .engine-btn:hover,.engine-btn:focus-visible { border-color:#78ff9b; color:#c8ffd1; }
+    .engine-btn.active { background:#215035; border-color:#60d883; color:#d2ffdb;
+      box-shadow:inset 2px 0 #79ff9c,0 0 12px #36ed7930; }
+    .engine-option { color:#779987; font-size:9px; display:inline-flex; align-items:center; gap:7px; }
+    .engine-option select,.engine-option input { background:#0b1c13; border:1px solid #355c42;
+      color:#aafab8; padding:5px 7px; border-radius:2px; font:10px Consolas,monospace;
+      max-width:min(235px,75vw); }
+    .engine-option input { width:166px; }
+    .engine-status { color:#639f74; flex:1; min-width:130px; text-align:right; font-size:10px; }
+    .engine-info { width:100%; font-size:9px; color:#678874; letter-spacing:0; }
+    @media(max-width:790px) {
+      .engine-strip { margin:0 0 12px; gap:7px; }
+      .engine-status { text-align:left; flex-basis:100%; }
+      .engine-info { font-size:8px; }
+    }
+    @media(max-width:550px) {
+      .engine-strip { padding:7px 8px; margin-bottom:9px; }
+      .engine-btn { padding:6px 7px; font-size:9px; }
+      .engine-option select { max-width:200px; }
+      .machine { min-height:calc(100dvh - 220px); }
+      .machine-bottom { flex-wrap:wrap; gap:7px; }
+    }
   </style>
 </head>
 <body>
@@ -310,7 +341,32 @@
           </div>
           <div class="heading-note">ИНТЕРФЕЙС: <b>CRT / GREEN PHOSPHOR</b><br>СЕССИЯ: <b>БЕЗ СОХРАНЕНИЯ</b></div>
         </div>
-        <section class="machine" aria-label="Демонстрационный терминал">
+        <section class="engine-strip" aria-label="Источник ответа">
+          <div class="engine-buttons" role="group" aria-label="Режим работы">
+            <button class="engine-btn" type="button" data-engine="public" aria-pressed="false">PUBLIC / NET</button>
+            <button class="engine-btn" type="button" data-engine="webgpu" aria-pressed="false">LOCAL / WEBGPU</button>
+            <button class="engine-btn active" type="button" data-engine="demo" aria-pressed="true">DEMO / OFFLINE</button>
+          </div>
+          <label class="engine-option" id="publicOption" hidden>ИСТОЧНИК
+            <select id="publicProvider" aria-label="Публичный провайдер">
+              <option value="ovh">OVH / Qwen3.8-27B</option>
+              <option value="hf">Hugging Face / Qwen3</option>
+            </select>
+          </label>
+          <label class="engine-option" id="spaceOption" hidden>SPACE
+            <input id="hfSpace" aria-label="Публичный Hugging Face Space" value="Qwen/Qwen3-Demo" maxlength="120" spellcheck="false">
+          </label>
+          <label class="engine-option" id="localOption" hidden>МОДЕЛЬ
+            <select id="localModel" aria-label="Локальная модель">
+              <option value="qwen">Qwen2 0.5B / LIGHT</option>
+              <option value="llama">Llama 3.2 1B</option>
+              <option value="qwen15">Qwen2 1.5B</option>
+            </select>
+          </label>
+          <span id="engineStatus" class="engine-status" role="status" aria-live="polite">DEMO / НЕТ ПОДКЛЮЧЕНИЯ</span>
+          <span id="engineInfo" class="engine-info">DEMO: ответы имитируются. В PUBLIC запросы уходят к выбранному внешнему сервису; WEBGPU загружает модель на устройство.</span>
+        </section>
+        <section class="machine" aria-label="Нейронный терминал">
           <div class="machine-top"><span>AYYY DATA SYSTEMS <span style="opacity:.4">/</span> MODEL T-07 <span style="opacity:.4">/</span> MONOCHROME DISPLAY</span><span>SERIAL NO. 1984 - 026</span></div>
           <div class="screen" id="screen">
             <div class="screen-inner">
@@ -327,7 +383,7 @@
                   <div class="tele-label">// SYSTEM TELEMETRY</div>
                   <div class="tele-card">
                     <div class="tele-row"><span>TERMINAL</span><b>ACTIVE</b></div>
-                    <div class="tele-row"><span>INFERENCE</span><b class="amber">DISABLED</b></div>
+                    <div class="tele-row"><span>INFERENCE</span><b class="amber" id="inferenceIndicator">DISABLED</b></div>
                     <div class="tele-row"><span>MEMORY</span><b>VOLATILE</b></div>
                     <div class="tele-row"><span>CHANNEL</span><b>LOCAL / 01</b></div>
                     <div class="tele-row"><span>MESSAGES</span><b id="msgCount">000</b></div>
@@ -364,14 +420,16 @@
             <div class="hardware-right">
               <button type="button" class="hw-btn active" id="scanlineBtn" aria-pressed="true">SCANLINES <strong id="scanlineValue">ON</strong></button>
               <button type="button" class="hw-btn active" id="glowBtn" aria-pressed="true">GLOW <strong id="glowValue">ON</strong></button>
+              <button type="button" class="hw-btn" id="stopBtn" hidden>■ STOP</button>
               <button type="button" class="hw-btn" id="resetBtn" title="Удалить сообщения из этой вкладки">↻ RESET</button>
             </div>
           </div>
         </section>
-        <footer class="under"><span><b>AYYY / CONCEPT ONLY.</b> Ответы зашиты в JavaScript. Никакого сервера, модели или хранения сообщений.</span><span>DESIGNED FOR THE OLD FUTURE / 1984 → 2026</span></footer>
+        <footer class="under"><span><b>AYYY / DIRECT CLIENT.</b> DEMO — имитация; PUBLIC — внешние сервисы; WEBGPU — модель в браузере. История не сохраняется.</span><span>DESIGNED FOR THE OLD FUTURE / 1984 → 2026</span></footer>
       </main>
     </div>
   </div>
+  <script src="providers.js"></script>
   <script>
     (() => {
       'use strict';
@@ -389,6 +447,21 @@
       let typingTimer = null;
       let responseIndex = 0;
       let generation = 0;
+      let engineMode = 'demo';
+      let activeReply = null;
+      let activeController = null;
+      const turns = [];
+      const providers = window.AYYY_TERMINAL_PROVIDERS.createProviders();
+      const publicOption = document.querySelector('#publicOption');
+      const publicChoice = document.querySelector('#publicProvider');
+      const spaceOption = document.querySelector('#spaceOption');
+      const localOption = document.querySelector('#localOption');
+      const localChoice = document.querySelector('#localModel');
+      const engineInfo = document.querySelector('#engineInfo');
+      const engineStatus = document.querySelector('#engineStatus');
+      const inferenceIndicator = document.querySelector('#inferenceIndicator');
+      const stopButton = document.querySelector('#stopBtn');
+      const providerNames = {ovh:'OVH / Qwen3.8-27B', hf:'HUGGING FACE / Qwen3'};
       const stamp = () => new Date().toLocaleTimeString('ru-RU', { hour12: false });
       const date = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
       const updateClock = () => { document.querySelector('#screenClock').textContent = stamp(); document.querySelector('#dateText').textContent = date(); };
@@ -414,10 +487,96 @@
         scrollBottom();
         return text;
       }
+
+      function setEngineStatus(text) {
+        engineStatus.textContent = String(text).slice(0, 350);
+      }
+      function updateEngineUI() {
+        document.querySelectorAll('[data-engine]').forEach(b => {
+          const active = b.dataset.engine === engineMode;
+          b.classList.toggle('active',active);
+          b.setAttribute('aria-pressed',String(active));
+        });
+        publicOption.hidden = engineMode !== 'public';
+        spaceOption.hidden = engineMode !== 'public' || publicChoice.value !== 'hf';
+        localOption.hidden = engineMode !== 'webgpu';
+        const label = engineMode === 'demo' ? 'DISABLED' :
+          engineMode === 'webgpu' ? (providers.hasWebGPU() ? 'WEBGPU' : 'NO GPU') :
+          'PUBLIC';
+        inferenceIndicator.textContent = label;
+        inferenceIndicator.classList.toggle('amber',engineMode === 'demo');
+        if (!working) setEngineStatus(engineMode === 'demo' ? 'DEMO / OFFLINE' :
+          engineMode === 'webgpu' ? (providers.hasWebGPU() ? 'WEBGPU / ДОСТУПЕН' : 'WEBGPU / НЕДОСТУПЕН') :
+          'PUBLIC / ' + providerNames[publicChoice.value]);
+        engineInfo.textContent = engineMode === 'demo' ?
+          'DEMO: демонстрационные ответы. Нет модели, сети и сохранения истории.' :
+          engineMode === 'webgpu' ?
+          'WEBGPU: модель загружается на ваш GPU при первом запросе (сотни МБ / ГБ). Ответы не уходят на сервер; история только в этой вкладке.' :
+          'PUBLIC: запрос и контекст переписки отправляются выбранному внешнему сервису. Без ключа и прокси, возможны CORS, очередь и ограничения.';
+      }
+      function switchEngine(next) {
+        if (!['public','webgpu','demo'].includes(next)) return;
+        if (working) stopGeneration();
+        engineMode = next;
+        updateEngineUI();
+        addMessage('system','CHANNEL / SWITCH','РЕЖИМ: ' + next.toUpperCase() +
+          (next === 'public' ? ' / ' + providerNames[publicChoice.value] : '') +
+          '\nИстория на экране сохранена только до перезагрузки страницы.');
+      }
+      async function realReply(message, token) {
+        const selectedMode = engineMode === 'webgpu' ? 'webgpu' : publicChoice.value;
+        const header = selectedMode === 'webgpu' ? 'AYYY / WEBGPU' :
+          selectedMode === 'hf' ? 'AYYY / HF SPACE' : 'AYYY / OVH';
+        const el = addMessage('assistant',header,'Подключение...');
+        activeReply = el;
+        const ctrl = new AbortController();
+        activeController = ctrl;
+        let result = '';
+        try {
+          result = await providers.run(selectedMode,{
+            prompt:message,history:turns.slice(-10),
+            modelPreference:localChoice.value,space:document.querySelector('#hfSpace').value,
+            signal:ctrl.signal,
+            onStatus:text=>{
+              if (generation !== token) return;
+              setEngineStatus(text);
+              if (!result) el.textContent = text;
+              scrollBottom();
+            },
+            onText:text=>{
+              if (generation !== token) return;
+              result = text;
+              el.textContent = text;
+              scrollBottom();
+            }
+          });
+          if (generation !== token) return;
+          el.textContent = result;
+          turns.push({role:'user',content:message},{role:'assistant',content:result});
+          if (turns.length > 20) turns.splice(0,turns.length-20);
+          setEngineStatus(header + ' / ГОТОВО');
+        } catch(error) {
+          if (generation !== token) return;
+          const aborted = ctrl.signal.aborted || error?.name === 'AbortError';
+          const detail = error instanceof Error ? error.message : String(error);
+          el.textContent = aborted ? '[Генерация остановлена]' :
+            'СБОЙ ПОДКЛЮЧЕНИЯ: ' + detail +
+            '\n\nПопробуйте другого публичного провайдера, режим WEBGPU или DEMO. ' +
+            'Автоматической подмены ответа нет.';
+          setEngineStatus(aborted ? 'ОСТАНОВЛЕНО' : 'ERROR / ' + detail.slice(0,100));
+        } finally {
+          if (generation === token) {
+            activeController = null;
+            activeReply = null;
+            setWorking(false);
+          }
+        }
+      }
       function boot() {
         log.replaceChildren();
         total = 0;
-        addMessage('system', 'BOOT / SYSTEM', 'INITIALIZING DISPLAY ................. OK\nLOADING LOCAL INTERFACE ............. OK\nINFERENCE ENGINE .................... NOT CONNECTED', 'boot');
+        turns.length = 0;
+        addMessage('system', 'BOOT / SYSTEM', 'INITIALIZING DISPLAY ................. OK\nLOADING LOCAL INTERFACE ............. OK\nINFERENCE ENGINE .................... SELECTABLE / 3 MODES', 'boot');
         const article = document.createElement('article');
         article.className = 'message message-boot';
         const art = document.createElement('pre');
@@ -436,7 +595,7 @@
         header.style.whiteSpace = 'pre';
         const note = document.createElement('div');
         note.className = 'message-body boot-note';
-        note.textContent = 'Это прототип интерфейса AYYY. ИИ пока не подключён.\nПопробуйте написать сообщение или введите /help для команд.';
+        note.textContent = 'Выберите PUBLIC, WEBGPU или DEMO над монитором.\nКоманды: /help, /status, /mode. История сообщений не сохраняется.';
         article.append(art, header, note);
         log.append(article);
         addMessage('assistant', 'AYYY / TERMINAL', 'Слушаю вас, оператор. С чего начнём?');
@@ -452,17 +611,18 @@
           '│ /status  состояние терминала              │',
           '│ /ascii   псевдографика                    │',
           '│ /clear   очистить экран                   │',
+          '│ /mode    переключить движок (public/webgpu/demo)',
           '└────────────────────────────────────────────┘',
-          'Можно также написать обычное сообщение. Ответы демонстрационные.'
+          'Выберите PUBLIC или WEBGPU для реальной генерации; DEMO имитирует ответы.'
         ].join('\n');
         if (/^(\/status|status|статус)$/.test(lower)) return [
           '┌─ SYSTEM STATUS ────────────────────────────┐',
           '│ TERMINAL       AYYY / T-07               │',
           '│ DISPLAY        GREEN PHOSPHOR / CRT      │',
-          '│ INFERENCE      [ NOT CONNECTED ]        │',
+          '│ INFERENCE      [ ' + engineMode.toUpperCase().padEnd(14) + ' ] │',
           '│ CHAT STORAGE   [ DISABLED      ]        │',
-          '│ NETWORK        [ NOT REQUIRED  ]        │',
-          '│ SIMULATION     [ ACTIVE        ]        │',
+          '│ NETWORK        [ ' + (engineMode === 'public' ? 'EXTERNAL API' : 'NO CHAT API').padEnd(14) + ' ] │',
+          '│ SIMULATION     [ ' + (engineMode === 'demo' ? 'ACTIVE' : 'DISABLED').padEnd(14) + ' ] │',
           '└───────────────────────────────────────────┘',
           'Всё работает прямо в этой HTML-странице.'
         ].join('\n');
@@ -499,6 +659,7 @@
         working = value;
         send.disabled = value;
         led.classList.toggle('busy', value);
+        stopButton.hidden = !value;
         status.textContent = value ? 'ПРИЁМ / ВЫВОД СИМВОЛОВ...' : 'ОЖИДАНИЕ ВВОДА_';
       }
       function typeReply(text, token) {
@@ -517,6 +678,10 @@
       }
       function stopGeneration() {
         generation++;
+        activeController?.abort();
+        providers.abort();
+        activeController = null;
+        if (activeReply) {activeReply.textContent = '[Генерация остановлена]'; activeReply = null;}
         if (pendingTimeout) { clearTimeout(pendingTimeout); pendingTimeout = null; }
         if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
         setWorking(false);
@@ -527,9 +692,15 @@
         input.value = '';
         input.style.height = '31px';
         if (/^(\/clear|clear|очистить|сброс)$/i.test(message)) { stopGeneration(); boot(); input.focus(); return; }
+        const modeCommand = /^\/mode\s+(public|webgpu|demo)$/i.exec(message);
+        if (modeCommand) { switchEngine(modeCommand[1].toLowerCase()); input.focus(); return; }
         addMessage('user', 'OPERATOR >', message);
         setWorking(true);
         const token = generation;
+        if (engineMode !== 'demo' && !/^(\/help|help|помощь|команды|\?|\/status|status|статус|\/ascii|ascii|арт|псевдографика)$/i.test(message)) {
+          void realReply(message, token);
+          return;
+        }
         const reply = getReply(message);
         pendingTimeout = setTimeout(() => { pendingTimeout = null; if (token === generation) typeReply(reply, token); }, 340);
         scrollBottom();
@@ -550,6 +721,12 @@
         document.querySelector('#glowValue').textContent = enabled ? 'ON' : 'OFF';
       });
       document.querySelector('#resetBtn').addEventListener('click', () => { stopGeneration(); boot(); input.focus(); });
+      document.querySelectorAll('[data-engine]').forEach(b =>
+        b.addEventListener('click',()=>switchEngine(b.dataset.engine)));
+      publicChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
+      localChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
+      stopButton.addEventListener('click',()=>{stopGeneration(); input.focus();});
+      updateEngineUI();
       boot();
       const initialPrompt = new URLSearchParams(window.location.search).get('prompt');
       if (initialPrompt) { input.value = initialPrompt.slice(0, 500); input.dispatchEvent(new Event('input')); }
