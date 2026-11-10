@@ -33,6 +33,12 @@ with sync_playwright() as pw:
  # A locked journal must never be reopened by a late encryption result.
  add(p,'120/80');gate(p);savePending(p);p.evaluate("document.querySelector('.sidebar [data-action=lock]').click()");p.locator('[data-form=unlock]').wait_for();p.evaluate('syntheticRelease()');p.locator('[data-form=unlock]').wait_for();check('lock during encryption leaves stored data unchanged',snapshot(p)['vitals']==[]);check('late result cannot reopen editor or journal',not p.locator('#health-dialog').is_visible() and not p.locator('.sidebar').is_visible())
  unlock(p)
+ # A page eligible for the back/forward cache must clear the live journal and modal before freezing.
+ add(p,'129/89');p.evaluate("""()=>{HumanGithub.token('synthetic-page-cache-token');window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}));}""")
+ check('pagehide clears the GitHub token and the open editor',p.evaluate("()=>!HumanGithub.hasToken()&&!document.querySelector('#health-dialog [name=value]')"))
+ check('cached page is already locked before it is shown',p.locator('[data-form=unlock]').is_visible() and not p.locator('.sidebar').is_visible())
+ p.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))");p.locator('[data-form=unlock]').wait_for()
+ check('restored page still needs the phrase and has no unsaved record',snapshot(p)['vitals']==[] and not p.locator('.metric').count());unlock(p)
  # Failed writes are atomic and retryable; the form remains reviewable.
  add(p,'121/81');p.evaluate("""()=>{window.syntheticPut=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(...args){if(this.name==='vaults')throw new DOMException('Synthetic quota failure','QuotaExceededError');return syntheticPut.apply(this,args);};}""");p.locator('#health-dialog [type=submit]').click();p.locator('#health-dialog [data-form-error]').wait_for();check('quota error does not mutate the encrypted journal',snapshot(p)['vitals']==[]);check('quota error keeps the editor and input',p.locator('#health-dialog [name=value]').input_value()=='121' and p.locator('#health-dialog [name=secondary]').input_value()=='81');p.evaluate('()=>{IDBObjectStore.prototype.put=syntheticPut;}');p.locator('#health-dialog [type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden');check('retry after quota failure writes once',len(snapshot(p)['vitals'])==1)
  # Both tabs derive from the same envelope and finish encryption together.

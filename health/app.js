@@ -569,12 +569,13 @@
     if(active())download(file.name,bytes,file.mime);
   }
   let previewURL=null;
+  function clearPreview(){if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}}
   async function previewFile(id,returnFinding=''){
     const active=sessionFence();
     const file=state.doc.documents.find(x=>x.id===id);if(!file)return;
     const bytes=await documentBytes(file);
     if(!active()||!state.doc.documents.includes(file))return;
-    if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}
+    clearPreview();
     const content=V.h('div',{class:'health-document-preview'});let renderFirst;
     if(file.mime==='application/pdf'){const pages=V.h('div',{class:'health-pdf-pages'}),note=V.h('p',{role:'status'},'Открываю PDF…'),prev=V.h('button',{type:'button',class:'button'},'← Назад'),next=V.h('button',{type:'button',class:'button'},'Вперёд →');let page=1,total=1,busy=false;
       async function render(){if(busy)return;busy=true;prev.disabled=next.disabled=true;try{const result=await HumanDocuments.renderPDF(bytes,page);if(!pages.isConnected||!dialog.open)return;total=result.pages;pages.replaceChildren(result.canvas);note.textContent='Страница '+page+' из '+total;}catch(e){note.textContent=e.message;}finally{busy=false;prev.disabled=page<=1;next.disabled=page>=total;}}
@@ -589,7 +590,16 @@
     content.append(V.h('p',{class:'health-muted'},file.name+' · '+V.date(file.date)+' · '+new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'),V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'}));
     document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),returnFinding?V.button('К результату','open-finding',{'data-id':returnFinding,class:'small'}):null,V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();if(renderFirst)await renderFirst();
   }
-  dialog.addEventListener('close',()=>{if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}});
+  dialog.addEventListener('close',clearPreview);
+  function lockJournal(){
+    sessionRevision++;clearTimeout(syncTimer);clearTimeout(toastTimer);
+    G.disconnect();clearPreview();
+    if(dialog.open)dialog.close();
+    document.getElementById('health-dialog-body').replaceChildren();
+    notice.textContent='';notice.classList.remove('show');
+    state.demo=false;state.doc=null;state.key=null;state.picker=false;state.conflict=false;
+    render();
+  }
   async function switchProfile(id){
     const request=++sessionRevision;
     const chosen=await S.get(id);
@@ -809,14 +819,15 @@
     if(state.syncBusy||state.rekeyBusy)throw new Error('Дождитесь завершения текущей операции.');
     if(!state.local?.repo||!G.hasToken()||!state.key)throw new Error('Сначала подключите токен GitHub и откройте журнал.');
     if(!confirm('Заменить локальную версию архивом из GitHub? Перед заменой будет скачана резервная копия.'))return;
-    const active=sessionFence();await writeQueue;if(!active())return;
+    const session=sessionFence(),run=syncRun,active=()=>session()&&run===syncRun&&G.hasToken();
+    await writeQueue;if(!active())return;
     const snapshot=state.local;
     await backup();if(!active())return;
     await G.verify(snapshot.repo);if(!active())return;
     const remote=await G.read(snapshot.repo);if(!active())return;
     if(!remote||remote.envelope.vaultId!==snapshot.id)throw new Error('Удалённый архив не найден либо принадлежит другому профилю.');
     const objects=await fetchDocuments(snapshot.repo,remote,snapshot.envelope,null,null,active);
-    if(!objects)return;
+    if(!objects||!active())return;
     const updated=await S.save({...snapshot,envelope:remote.envelope,remoteSha:remote.sha,dirty:false},snapshot,objects);
     channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
     state.local=updated;state.key=null;state.doc=null;state.conflict=false;G.disconnect();render();toast('Архив заменён; откройте его фразой доступа.');
@@ -855,16 +866,20 @@
   }
   async function connect(form){
     if(state.demo)throw new Error('Демо не подключается к GitHub.');
-    const values=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(values.repo,values.branch),active=sessionFence();
-    G.token(values.token);
+    const values=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(values.repo,values.branch),session=sessionFence();
+    const run=++syncRun,authorized=G.token(values.token),current=()=>session()&&run===syncRun;
+    const active=()=>current()&&authorized();
+    clearTimeout(syncTimer);state.syncBusy=true;renderHeader();
+    form.elements.namedItem('token').value='';
     try{
       await G.verify(repo);if(!active())return;
       await writeQueue;if(!active())return;
       const fresh=await S.get(state.local.id);if(!active())return;if(!fresh)throw Error('Локальный журнал удалён.');
       const old=fresh.repo,equals=old&&old.owner===repo.owner&&old.repo===repo.repo&&old.branch===repo.branch;
       const updated=await S.save({...fresh,repo,remoteSha:equals?fresh.remoteSha:null,dirty:equals?fresh.dirty:true},fresh);if(!active())return;
-      syncRun++;state.syncBusy=false;state.local=updated;state.conflict=false;render();await syncNow();
-    }catch(e){if(active()){G.disconnect();throw e;}}
+      state.syncBusy=false;state.local=updated;state.conflict=false;render();await syncNow();
+    }catch(e){if(current()){if(authorized())G.disconnect();throw e;}}
+    finally{if(run===syncRun){state.syncBusy=false;renderHeader();}}
   }
   async function onSubmit(event){
     const form=event.target;
@@ -894,20 +909,24 @@
         state.doc=opened.doc;state.key=opened.key;state.picker=false;state.tab='overview';
         render();
       }else if(mode==='download'){
-        const active=sessionFence();
+        const session=sessionFence();
         const v=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(v.repo,v.branch);
-        G.token(v.token);await G.verify(repo);if(!active())return;
-        const data=await G.read(repo);if(!active())return;
-        if(!data)throw new Error('В репозитории нет текущего журнала HUMAN.');
-        if(await S.get(data.envelope.vaultId))throw new Error('Этот профиль уже есть на устройстве.');
-        if(!active())return;
-        const objects=await fetchDocuments(repo,data,null,null,null,active);
-        if(!objects)return;
-        const local=await S.createSelected({id:data.envelope.vaultId,envelope:data.envelope,
-          repo,remoteSha:data.sha,dirty:false},objects);
-        if(!active())return;await profileList();if(!active())return;
-        state.local=local;state.doc=null;state.key=null;state.picker=false;render();
-        toast('Архив загружен. Введите вашу фразу доступа.');
+        const authorized=G.token(v.token),active=()=>session()&&authorized();
+        form.elements.namedItem('token').value='';
+        try{
+          await G.verify(repo);if(!active())return;
+          const data=await G.read(repo);if(!active())return;
+          if(!data)throw new Error('В репозитории нет текущего журнала HUMAN.');
+          if(await S.get(data.envelope.vaultId))throw new Error('Этот профиль уже есть на устройстве.');
+          if(!active())return;
+          const objects=await fetchDocuments(repo,data,null,null,null,active);
+          if(!objects)return;
+          const local=await S.createSelected({id:data.envelope.vaultId,envelope:data.envelope,
+            repo,remoteSha:data.sha,dirty:false},objects);
+          if(!active())return;await profileList();if(!active())return;
+          state.local=local;state.doc=null;state.key=null;state.picker=false;render();
+          toast('Архив загружен. Введите вашу фразу доступа.');
+        }catch(e){if(session()){if(authorized())G.disconnect();throw e;}}
       }else if(mode==='import-vault')await startRestore(form.elements.namedItem('file').files[0]);
       else if(mode==='restore-unlock')await inspectRestore(form);
       else if(mode==='restore-confirm')await finishRestore(form);
@@ -1076,11 +1095,9 @@
         clearTimeout(syncTimer);G.disconnect();state.demo=false;
         state.picker=true;state.local=null;state.doc=null;state.key=null;render();
       }else if(action==='select-profile')await switchProfile(el.dataset.id);
-      else if(action==='lock'){
-        clearTimeout(syncTimer);G.disconnect();state.demo=false;state.doc=null;state.key=null;
-        state.picker=false;state.conflict=false;render();
-      }else if(action==='sync')await syncNow();
-      else if(action==='disconnect-token'){G.disconnect();state.conflict=false;render();}
+      else if(action==='lock')lockJournal();
+      else if(action==='sync')await syncNow();
+      else if(action==='disconnect-token'){clearTimeout(syncTimer);syncRun++;G.disconnect();state.syncBusy=false;state.conflict=false;render();}
       else if(action==='sync-conflict-file')await conflictFile(Number(el.dataset.index),el.dataset.side);
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='open-vital'||action==='open-episode'){state.tab='vital';state.globalSearch='';state.vitalId=action==='open-vital'?el.dataset.id:'';state.episodeId=action==='open-episode'?el.dataset.id:'';if(action==='open-episode')state.filters.vital='illness';else state.filters.vital=state.doc.vitals.find(x=>x.id===el.dataset.id)?.type||'Масса';render();const panel=root.querySelector('.health-details');panel?.focus();panel?.scrollIntoView({block:'start'});}
@@ -1149,7 +1166,9 @@
     if(state.tab==='care'&&!dialog.open&&!document.activeElement?.matches('input,textarea,select'))render();
   }
   let diaryResize;window.addEventListener?.('resize',()=>{if(state.doc&&['activity','vital'].includes(state.tab)){clearTimeout(diaryResize);diaryResize=setTimeout(render,120);}});
-  window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});window.addEventListener?.('pagehide',()=>activeNotification?.close());
+  window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});
+  window.addEventListener?.('pagehide',()=>{activeNotification?.close();if(!state.demo)lockJournal();});
+  window.addEventListener?.('pageshow',event=>{if(event.persisted&&!state.demo)void loadLocal();});
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
     const id=state.local.id;sessionRevision++;clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();render();const revision=sessionRevision;
@@ -1167,18 +1186,18 @@
       toast(data?'Профиль изменён в другой вкладке. Откройте его снова.':'Локальная копия удалена в другой вкладке.');
     }).catch(error);
   };
-  root.replaceChildren(V.h('p',{class:'health-muted',role:'status'},'Открываем журнал…'));
-  void (async()=>{
+  async function loadLocal(){
+    const revision=++sessionRevision;
+    root.replaceChildren(V.h('p',{class:'health-muted',role:'status'},'Открываем журнал…'));
     try{
-      if(new URLSearchParams(window.location?.search||'').get('demo')==='1'){
-        openDemo();
-        return;
-      }
-      await profileList();
+      const profiles=await S.list();
       const selected=await S.current();
-      state.local=selected?await S.get(selected):null;
-      if(!state.local&&state.profiles.length===1)state.local=await S.get(state.profiles[0].id);
-      render();
-    }catch(e){root.replaceChildren(V.banner('Ошибка хранилища',e.message));}
-  })();
+      let local=selected?await S.get(selected):null;
+      if(!local&&profiles.length===1)local=await S.get(profiles[0].id);
+      if(revision!==sessionRevision)return;
+      state.local=local;state.profiles=profiles;render();
+    }catch(e){if(revision===sessionRevision)root.replaceChildren(V.banner('Ошибка хранилища',e.message));}
+  }
+  if(new URLSearchParams(window.location?.search||'').get('demo')==='1')openDemo();
+  else void loadLocal();
 })();

@@ -8,14 +8,20 @@
   const C=window.HumanCrypto;
   const MAX_ENVELOPE=Math.ceil((C.MAX_METADATA+16)/3)*4+C.MAX_OBJECTS*70+2048;
   let bearer='';
+  let requests;
   let rateLimitedUntil=0;
   let stagingRepo='';
   const stagedBlobs=new Map();
   const encoder=new TextEncoder(), decoder=new TextDecoder('utf-8',{fatal:true});
   function token(value){
     const next=String(value||'').trim();
-    if(next!==bearer){stagedBlobs.clear();stagingRepo='';}
-    bearer=next;
+    if(next!==bearer){
+      requests?.abort();
+      requests=next?new AbortController():null;
+      stagedBlobs.clear();stagingRepo='';bearer=next;
+    }
+    const authorized=requests;
+    return ()=>!!authorized&&authorized===requests;
   }
   function hasToken(){return !!bearer;}
   function disconnect(){token('');}
@@ -35,15 +41,18 @@
   async function api(path,method='GET',body,allow404=false,accept='application/vnd.github+json'){
     if(!bearer)throw new Error('Введите GitHub-токен с разрешением Contents на приватный репозиторий.');
     if(Date.now()<rateLimitedUntil)throw rateError();
+    const signal=requests.signal;
+    const cancelled=()=>new Error('Подключение к GitHub отменено.');
     let response;
     try{
       response=await fetch('https://api.github.com'+path,{
-        method,cache:'no-store',
+        method,cache:'no-store',credentials:'omit',redirect:'error',signal,
         headers:{'Accept':accept,'Authorization':'Bearer '+bearer,
           'X-GitHub-Api-Version':'2022-11-28',...(body===undefined?{}:{'Content-Type':'application/json'})},
         ...(body===undefined?{}:{body:JSON.stringify(body)})
       });
-    }catch{throw new Error('GitHub недоступен. Проверьте подключение к интернету.');}
+    }catch{if(signal.aborted)throw cancelled();throw new Error('GitHub недоступен или изменился адрес репозитория. Проверьте подключение и адрес.');}
+    if(signal.aborted)throw cancelled();
     if(allow404 && response.status===404)return null;
     if(!response.ok){
       if([409,422].includes(response.status)){
@@ -57,6 +66,7 @@
         const remaining=response.headers.get('x-ratelimit-remaining');
         const reset=Number(response.headers.get('x-ratelimit-reset'))*1000;
         const body=await response.json().catch(()=>null);
+        if(signal.aborted)throw cancelled();
         if(response.status===429||retry>0||remaining==='0'||/rate limit/i.test(body?.message||'')){
           rateLimitedUntil=retry>0?Date.now()+retry*1000
             :remaining==='0'&&reset>Date.now()?reset:Date.now()+60000;
@@ -67,7 +77,10 @@
       if(response.status===404)throw new Error('Не найден репозиторий, ветка или файл.');
       throw new Error('GitHub вернул ошибку HTTP '+response.status+'.');
     }
-    return response.status===204?null:response.json();
+    if(response.status===204)return null;
+    const data=await response.json();
+    if(signal.aborted)throw cancelled();
+    return data;
   }
   const branchPath=repo=>root(repo)+'/git/ref/heads/'+encodeURIComponent(repo.branch);
   async function branchHead(repo){
@@ -75,9 +88,14 @@
     if(!result?.object?.sha)throw Error('Не удалось прочитать состояние ветки GitHub.');
     return result.object.sha;
   }
-  async function verify(repo){
+  async function privateRepo(repo){
     const info=await api(root(repo));
-    if(info.private!==true)throw new Error('Медицинские данные запрещено синхронизировать с публичным репозиторием.');
+    if(info.private!==true||info.visibility!=='private')throw new Error('Синхронизация доступна только для приватного репозитория GitHub.');
+    if(!Number.isSafeInteger(info.id)||info.id<1)throw new Error('GitHub не подтвердил идентификатор репозитория.');
+    return info.id;
+  }
+  async function verify(repo){
+    await privateRepo(repo);
     await branchHead(repo);
     return true;
   }
@@ -134,7 +152,11 @@
   async function write(repo,envelope,expectedSha,loadObject,active=()=>true){
     C.assertEnvelope(envelope);
     const apiRoot=root(repo);
-    function requireSession(){if(!active())throw Error('Журнал закрыт.');}
+    const authorized=requests;
+    function requireSession(){if(!active()||requests!==authorized)throw Error('Журнал или подключение к GitHub закрыто.');}
+    requireSession();
+    const repoId=await privateRepo(repo);
+    requireSession();
     const head=await branchHead(repo);
     requireSession();
     const latest=await read(repo,head);
@@ -147,7 +169,7 @@
     const oldIds=new Set(latest?.envelope.objectIds||[]);
     const wanted=new Set(envelope.objectIds);
     const changes=[];
-    if(stagingRepo!==apiRoot){stagedBlobs.clear();stagingRepo=apiRoot;}
+    if(stagingRepo!==repoId){stagedBlobs.clear();stagingRepo=repoId;}
     for(const id of stagedBlobs.keys())if(!wanted.has(id))stagedBlobs.delete(id);
     async function newBlob(bytes){
       requireSession();
@@ -191,6 +213,8 @@
       message:'health: sync encrypted personal data [skip ci]',tree:tree.sha,parents:[head],
     });
     // The complete tree becomes visible together. A concurrent head wins over this draft.
+    requireSession();
+    if(await privateRepo(repo)!==repoId)throw Error('Репозиторий GitHub изменился во время отправки.');
     requireSession();
     const ref=await api(apiRoot+'/git/refs/heads/'+encodeURIComponent(repo.branch),'PATCH',{sha:commit.sha,force:false});
     if(ref?.object?.sha!==commit.sha)throw Error('GitHub не подтвердил сохранение журнала.');

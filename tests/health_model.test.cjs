@@ -146,7 +146,7 @@ test('GitHub rate limit blocks a second network request until the permitted time
     requests++;
     return new Response('{"message":"secondary rate limit"}',{status:429,headers:{'retry-after':'30'}});
   };
-  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch});
+  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch,AbortController});
   const github=window.HumanGithub;
   github.token('synthetic-token');
   const repo=github.parseRepo('test-owner/test-repo');
@@ -174,13 +174,73 @@ test('binary downloads use the immutable Git blob and verify its content identit
       : {sha:gitSha,size:bytes.length,encoding:'base64',content:bytes.toString('base64')};
     return new Response(JSON.stringify(content),{status:200});
   };
-  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch});
+  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch,AbortController});
   const github=window.HumanGithub;
   github.token('synthetic-token');
   const result=await github.readObject(github.parseRepo('test-owner/test-repo'),objectId,'c'.repeat(40));
   assert.deepEqual(Buffer.from(result.bytes),bytes);
   assert.match(calls[0],/objects\/[a-f0-9]{64}\.bin\?ref=[a-f0-9]{40}$/);
   assert.ok(calls[1].endsWith('/git/blobs/'+gitSha));
+});
+
+test('replacing the GitHub token aborts requests and discards late responses',async()=>{
+  const window={HumanCrypto:{MAX_METADATA:28*1024*1024,MAX_OBJECTS:1000}};
+  const calls=[];
+  let finish;
+  const fetch=(url,options)=>{
+    calls.push(options);
+    if(calls.length===1)return new Promise(resolve=>{finish=resolve;});
+    return Promise.resolve(Response.json(url.endsWith('/test-repo')?{id:41,private:true,visibility:'private'}:{object:{sha:'a'.repeat(40)}}));
+  };
+  vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch,AbortController});
+  const github=window.HumanGithub,repo=github.parseRepo('test-owner/test-repo');
+  const old=github.token('synthetic-old-token');
+  const pending=github.verify(repo);
+  const current=github.token('synthetic-new-token');
+  assert.equal(calls[0].signal.aborted,true);
+  assert.equal(old(),false);
+  finish(Response.json({id:41,private:true,visibility:'private'}));
+  await assert.rejects(pending,/отменено/);
+  assert.equal(calls.length,1);
+  await github.verify(repo);
+  assert.equal(calls.length,3);
+  assert.equal(calls[1].headers.Authorization,'Bearer synthetic-new-token');
+  assert.equal(calls[1].credentials,'omit');
+  assert.equal(calls[1].redirect,'error');
+  github.disconnect();
+  assert.equal(current(),false);
+  assert.equal(calls[2].signal.aborted,true);
+});
+
+test('a visibility or repository identity change stops GitHub branch publication',async()=>{
+  const {createHash,webcrypto}=require('node:crypto');
+  for(const changed of [{id:11,private:false,visibility:'public'},{id:11,private:true,visibility:'internal'},{id:12,private:true,visibility:'private'}]){
+    const window={HumanCrypto:{MAX_METADATA:28*1024*1024,MAX_OBJECTS:1000,
+      assertEnvelope(){},base64:value=>Buffer.from(value).toString('base64')}};
+    const calls=[];
+    let checks=0;
+    const fetch=async (url,options)=>{
+      calls.push({url,method:options.method});
+      if(url.endsWith('/test-repo'))return Response.json(++checks===1?{id:11,private:true,visibility:'private'}:changed);
+      if(url.includes('/git/ref/heads/'))return Response.json({object:{sha:'a'.repeat(40)}});
+      if(url.includes('/contents/'))return new Response(null,{status:404});
+      if(url.endsWith('/git/blobs')){
+        const bytes=Buffer.from(JSON.parse(options.body).content,'base64');
+        return Response.json({sha:createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex')});
+      }
+      if(url.includes('/git/commits/'))return Response.json({tree:{sha:'b'.repeat(40)}});
+      if(url.endsWith('/git/trees'))return Response.json({sha:'c'.repeat(40)});
+      if(url.endsWith('/git/commits'))return Response.json({sha:'d'.repeat(40)});
+      throw Error('Unexpected GitHub request');
+    };
+    vm.runInNewContext(script('health/github.js'),{window,TextEncoder,TextDecoder,fetch,AbortController,crypto:webcrypto});
+    const github=window.HumanGithub;
+    github.token('synthetic-private-token');
+    await assert.rejects(github.write(github.parseRepo('test-owner/test-repo'),{objectIds:[]},null),/приватного|изменился во время/);
+    assert.equal(checks,2);
+    assert.ok(calls.some(call=>call.method==='POST'&&call.url.endsWith('/git/commits')));
+    assert.ok(!calls.some(call=>call.method==='PATCH'));
+  }
 });
 
 test('lab results are never silently truncated during import',()=>{

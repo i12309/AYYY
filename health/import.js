@@ -12,6 +12,7 @@
   const entries=files.map(file=>({name:file.name,file})),single=entries.length===1,controller=new AbortController();
   const body=document.getElementById('health-dialog-body');dialog.classList.add('health-import-dialog');
   const active=()=>dialog.open&&!controller.signal.aborted&&isCurrent()&&getDoc()?.id===identity;
+  window.addEventListener('pagehide',()=>controller.abort(),{once:true,signal:controller.signal});
   dialog.addEventListener('close',()=>{controller.abort();dialog.classList.remove('health-import-dialog');entries.length=0;},{once:true});
   function frame(title){const content=V.h('div',{class:'health-modal-content'});body.replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть импорт'})),content);return content;}
   function action(label,key,run,attrs={}){
