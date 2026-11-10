@@ -56,6 +56,9 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 .pv-text-button:hover{text-decoration:underline}
 .pv-chart-controls label{display:flex;align-items:center;gap:7px;color:#849596;font-size:11px}
 .pv-chart-controls select{border:1px solid #dce5e4;color:#456068;padding:6px 20px 6px 6px;background:#fff;border-radius:4px;font-size:11px}
+.pv-toggle{border:1px solid #d7e3e4;border-radius:4px;background:#fff;color:#698089;font-size:11px!important;padding:6px 9px;white-space:nowrap}
+.pv-toggle[aria-pressed="true"]{background:#eaf4f2;border-color:#a7d0cb;color:#235e68;font-weight:700}
+.pv-toggle:hover{border-color:#8cb9bd}
 .pv-body{border:1px solid #dce6e6;border-radius:0 0 7px 7px;background:#fff;position:relative;overflow:hidden}
 .pv-workspace{display:grid;grid-template-columns:minmax(490px,48%) minmax(0,1fr);height:clamp(340px,calc(100svh - 295px),800px)}
 .pv-list-scroll,.pv-chart-scroll{overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#c1d2d1 #f4f7f6;outline-offset:-3px}
@@ -80,6 +83,11 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 .pv-month{position:absolute;top:0;height:28px;border-right:1px solid #d5e2e2;padding:5px 10px;font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap;color:#4a6b73}
 .pv-ticks{height:28px;position:relative;overflow:hidden}
 .pv-tick{position:absolute;top:0;height:28px;border-left:1px solid #dce7e7;padding:7px 0 0 6px;font-size:10px;white-space:nowrap;color:#849ba0;min-width:45px}
+.pv-list-rows{position:relative}
+.pv-row-space{display:block;pointer-events:none}
+.pv-links{position:absolute;left:0;z-index:2;overflow:visible;pointer-events:none}
+.pv-link{fill:none;stroke:#73949c;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.pv-link-critical{stroke:#b96d53;stroke-width:1.7}
 .pv-chart-rows{position:relative;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(7 * 12px - 1px),#e1eaea calc(7 * 12px - 1px),#e1eaea calc(7 * 12px));}
 .pv-chart-row{height:34px;position:relative;border-bottom:1px solid #edf1f1;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(100% - 1px),#e8eeee calc(100% - 1px),#e8eeee 100%);background-color:#fff}
 .pv-chart-row .pv-task-bar{top:9px;height:16px}
@@ -90,6 +98,8 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 .pv-task-bar.pv-summary .pv-bar-progress{background:#294c5b}
 .pv-task-bar.pv-critical .pv-bar-progress{background:#b96d53}
 .pv-bar-title{font-size:9px;line-height:15px;color:#fff;position:absolute;top:0;left:5px;right:2px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-weight:600}
+.pv-task-bar,.pv-task-diamond,.pv-baseline{z-index:3}
+.pv-baseline{position:absolute;display:block;top:27px;height:4px;min-width:3px;background:#a4a1a8;border:1px solid #87848d;border-radius:1px;pointer-events:auto}
 .pv-task-diamond{width:12px;height:12px;background:#d39b55;border:1px solid #b77d3d;display:block;position:absolute;top:11px;transform:rotate(45deg)}
 .pv-bottom{padding:10px 14px;display:flex;justify-content:space-between;gap:10px;color:#839495;font-size:10px;background:#fafcfc;border-top:1px solid #e3ebeb}
 .pv-message:empty{display:none}
