@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f7f9fc">
+  <title>Здоровье · AYYY</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <a class="health-skip" href="#health-root">К содержимому</a>
+  <div class="health-app">
+    <header id="health-header" class="health-header"></header>
+    <main id="health-root" class="health-root" tabindex="-1"></main>
+  </div>
+  <dialog id="health-dialog" class="health-dialog" aria-label="Редактирование медицинских данных">
+    <div id="health-dialog-body"></div>
+  </dialog>
+  <div id="health-notice" role="status" aria-live="polite"></div>
+  <script src="./crypto.js" defer></script>
+  <script src="./store.js" defer></script>
+  <script src="./github.js" defer></script>
+  <script src="./model.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
