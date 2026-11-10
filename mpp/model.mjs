@@ -41,7 +41,8 @@ export function normalizeProject(project, fileName = '') {
   const resources = (Array.isArray(project.resources) ? project.resources : []).filter(r => r && r.uniqueId !== null && r.uniqueId !== undefined && r.name).map(r => ({
     uid:String(r.uniqueId), id:r.id, name:String(r.name), type:r.type || 'Work',
     initials:r.initials || '', group:r.group || '', maxUnits:r.maxUnits,
-    work:r.work, cost:r.cost
+    work:r.work, cost:r.cost, calendar:r.calendar==null?null:String(r.calendar),
+    standardRate:r.standardRate??null, rateUnits:r.rateUnits||'h'
   }));
   const resourceMap = new Map(resources.map(r => [r.uid, r]));
   const assignments = (Array.isArray(project.assignments) ? project.assignments : []).filter(x => x && x.task !== null && x.resource !== null).map(x => ({
@@ -61,6 +62,13 @@ export function normalizeProject(project, fileName = '') {
     baselineStart:dateValue(t.baselineStart), baselineFinish:dateValue(t.baselineFinish),
     duration:durationText(t.duration), percent:Math.max(0,Math.min(100,Number(t.percentComplete)||0)),
     summary:!!t.summary, milestone:!!t.milestone, critical:!!t.critical,
+    criticalSource:!!t.critical?'Исходный файл':'Не подтверждено',
+    totalSlack:t.extra?.TOTAL_SLACK??t.extra?.TOTAL_FLOAT??null,
+    freeSlack:t.extra?.FREE_SLACK??t.extra?.FREE_FLOAT??null,
+    active:t.active!==false,manual:!!t.manual,estimated:!!t.estimated,
+    constraint:String(t.constraint||''),constraintDate:dateValue(t.constraintDate),
+    work:t.work??null,cost:t.cost??null,deadline:dateValue(t.extra?.DEADLINE),
+    calendar:t.calendar==null?null:String(t.calendar),
     notes:String(t.notes||''), resourceNames:String(t.resourceNames||''),
     predecessors:[], successors:[], predecessorText:'', children:0
   }));
@@ -93,6 +101,15 @@ export function normalizeProject(project, fileName = '') {
     if (!task.resourceNames) task.resourceNames = (assignedResources.get(task.uid) || []).join(', ');
     if (task.children) task.summary = true;
   }
+  const calendars=(Array.isArray(project.calendars)?project.calendars:[]).filter(c=>c&&c.uniqueId!=null).map(c=>({
+    uid:String(c.uniqueId),name:String(c.name||'Календарь'),parent:c.parent==null?null:String(c.parent),
+    resource:c.resource==null?null:String(c.resource),
+    days:Array.isArray(c.days)?c.days.map(d=>({type:['working','nonworking','default'].includes(d?.type)?d.type:'default',hours:cleanHours(d?.hours)})):[],
+    weeks:Array.isArray(c.weeks)?c.weeks.map(w=>({name:String(w.name||''),from:dateValue(w.from),to:dateValue(w.to),
+      days:Array.isArray(w.days)?w.days.map(d=>({type:['working','nonworking','default'].includes(d?.type)?d.type:'default',hours:cleanHours(d?.hours)})):[]})):[],
+    exceptions:Array.isArray(c.exceptions)?c.exceptions.map(e=>({name:String(e.name||''),from:dateValue(e.from),to:dateValue(e.to),hours:cleanHours(e.hours),
+      recurrence:String(e.recurrence||''),dates:Array.isArray(e.dates)?e.dates.filter(Number.isFinite):null})):[]
+  }));
   const validStarts = tasks.map(t=>t.start).filter(t=>t!==null);
   const validFinishes = tasks.map(t=>t.finish).filter(t=>t!==null);
   const projectStart = dateValue(project.start);
@@ -102,12 +119,90 @@ export function normalizeProject(project, fileName = '') {
     fileName, format:String(project.format||''), author:String(project.author||''),
     start:projectStart ?? (validStarts.length ? validStarts.reduce((min,value)=>Math.min(min,value),Infinity) : null),
     finish:projectFinish ?? (validFinishes.length ? validFinishes.reduce((max,value)=>Math.max(max,value),-Infinity) : null),
-    tasks, resources, assignments, links, byUid,
+    tasks, resources, assignments, links, byUid, calendars,
+    calendar:project.calendar==null?null:String(project.calendar),
+    minutesPerDay:Number(project.minutesPerDay)||480,
+    minutesPerWeek:Number(project.minutesPerWeek)||2400,
+    statusDate:dateValue(project.statusDate),
     warnings:Array.isArray(project.warnings) ? project.warnings.map(String) : []
   };
 }
 
-export function visibleTasks(model, query = '', collapsed = new Set()) {
+function cleanHours(hours) {
+  return (Array.isArray(hours)?hours:[]).filter(h=>Number.isFinite(h?.start)&&Number.isFinite(h?.end) && h.start>=0 && h.end>h.start && h.end<=1440)
+    .map(h=>({start:h.start,end:h.end}));
+}
+
+/** Return read-only working hours, inheriting base calendar and overrides. Null means unknown. */
+export function workingHoursOnDate(model, date, calendarId = model?.calendar) {
+  const day=Math.floor(dateValue(date)/DAY)*DAY;
+  if (!Number.isFinite(day) || calendarId==null)return null;
+  const byId=new Map((model?.calendars||[]).map(c=>[c.uid,c]));
+  const weekday=new Date(day).getUTCDay();
+  let uid=String(calendarId),loops=0;
+  const visited=new Set();
+  while(uid && loops++<30 && !visited.has(uid)) {
+    visited.add(uid);
+    const cal=byId.get(uid);
+    if(!cal)return null;
+    for(const ex of cal.exceptions||[]) {
+      const matches=Array.isArray(ex.dates)?ex.dates.includes(day):ex.from!==null && ex.to!==null && day>=ex.from && day<=ex.to;
+      if(matches)return ex.hours;
+    }
+    const activeWeek=(cal.weeks||[]).find(w=>w.from!==null && w.to!==null && day>=w.from && day<=w.to);
+    const entry=(activeWeek?.days?.[weekday]||cal.days?.[weekday])||null;
+    if(entry?.type==='working')return entry.hours;
+    if(entry?.type==='nonworking')return [];
+    uid=cal.parent;
+  }
+  return null;
+}
+
+export function calendarStats(model, calendarId = model?.calendar) {
+  const calendar=(model?.calendars||[]).find(c=>c.uid===String(calendarId));
+  if(!calendar)return null;
+  const reference=Date.UTC(2026,0,4);
+  const week=Array.from({length:7},(_,i)=>workingHoursOnDate(model,reference+i*DAY,calendar.uid));
+  return {calendar,week,exceptions:calendar.exceptions.length,workWeeks:calendar.weeks.length};
+}
+
+/** Per-project warning: imported "critical" flags do not mean we recalculated CPM. */
+export function criticalReport(model) {
+  const flagged=(model?.tasks||[]).filter(t=>t.critical).length;
+  return {flagged,total:model?.tasks?.length||0,sourceOnly:true};
+}
+
+/** Stable hierarchy-aware sibling sorting preserves the parent-before-child invariant. */
+export function orderedTasks(model, sort='id') {
+  const list=model?.tasks||[];
+  if(sort==='id'||!['name','start','finish','percent','duration'].includes(sort))return list;
+  const byParent=new Map(),known=new Set(list.map(t=>t.uid));
+  for (const task of list) {
+    const parent=task.parent && known.has(task.parent)?task.parent:null;
+    if(!byParent.has(parent))byParent.set(parent,[]);
+    byParent.get(parent).push(task);
+  }
+  const cmp=(a,b)=>{
+    let value=0;
+    if(sort==='name')value=a.name.localeCompare(b.name,'ru',{numeric:true,sensitivity:'base'});
+    else if(sort==='duration')value=(Number.parseFloat(String(a.duration).replace(',','.'))||0)-(Number.parseFloat(String(b.duration).replace(',','.'))||0);
+    else value=sort==='percent'?a.percent-b.percent:(a[sort]??Infinity)-(b[sort]??Infinity);
+    return value || a.id-b.id;
+  };
+  for(const group of byParent.values())group.sort(cmp);
+  const result=[],done=new Set(),stack=[...(byParent.get(null)||[])].reverse();
+  while(stack.length) {
+    const task=stack.pop();
+    if(done.has(task.uid))continue;
+    done.add(task.uid);result.push(task);
+    for(const child of (byParent.get(task.uid)||[]).slice().reverse())stack.push(child);
+  }
+  // Corrupt parent cycles must never make tasks disappear.
+  for(const task of list)if(!done.has(task.uid))result.push(task);
+  return result;
+}
+
+export function visibleTasks(model, query = '', collapsed = new Set(), sort = 'id') {
   if (!model) return [];
   const q = query.trim().toLocaleLowerCase();
   const included = q ? new Set() : null;
@@ -121,7 +216,7 @@ export function visibleTasks(model, query = '', collapsed = new Set()) {
       parent = model.byUid.get(parent).parent;
     }
   }
-  return model.tasks.filter(t => {
+  return orderedTasks(model,sort).filter(t => {
     if (included && !included.has(t.uid)) return false;
     if (q) return true;
     let parent = t.parent, guard = 0;
