@@ -104,7 +104,7 @@
     }
   };
   app.services = [
-    {id:'ai',name:'ИИ-помощник',desc:'Идеи, тексты и ответы на вопросы',icon:'sparkles',color:'purple',group:'everyday',kind:'connect',route:'ai',tag:'Ваш AI'},
+    {id:'ai',name:'ИИ-помощник',desc:'Нейронный терминал · локальное демо',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'},
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
     {id:'finance',name:'Валюты и рынки',desc:'Курсы, конвертер и индексы',icon:'chart',color:'green',group:'everyday',kind:'api',route:'finance'},
@@ -118,7 +118,6 @@
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
     {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
-    {id:'focus',name:'Время фокуса',desc:'25 минут на одно важное дело',icon:'focus',color:'purple',group:'personal',kind:'local',route:'focus'},
     {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
     {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},
     {id:'math',name:'Математика в игре',desc:'Считать становится интересно',icon:'plus',color:'green',group:'games',kind:'local',route:'games',param:'math'},

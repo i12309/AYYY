@@ -3,10 +3,10 @@
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
   const artwork = 'assets/lighthouse-watercolor.webp';
-  const defaults = ['memory', 'ai', 'calc', 'weather', 'focus', 'search'];
+  const defaults = ['memory', 'ai', 'calc', 'weather', 'family', 'search'];
   const groups = [['all','Все'],['everyday','Каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
-  const shortNames = {memory:'Игры',ai:'Спросить ИИ',calc:'Посчитать',weather:'Погода',focus:'Фокус',search:'Поиск'};
-  const shortDescriptions = {memory:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',focus:'Время для важного',search:'Найти направление'};
+  const shortNames = {memory:'Игры',ai:'Спросить ИИ',calc:'Посчитать',weather:'Погода',search:'Поиск'};
+  const shortDescriptions = {memory:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',search:'Найти направление'};
   a.catalogCategory = 'all';
 
   const shortcutIds = () => {
@@ -64,7 +64,7 @@
           <div class="shore-data-source" data-home-rates="source"></div><p class="shore-data-error" data-home-rates="error" hidden></p>
         </article>
         <article class="shore-time shore-widget"><div class="shore-widget-top"><span class="shore-widget-title">Сейчас у вас</span><span class="shore-clock-dot" title="Время вашего устройства"></span></div>
-          <div class="shore-time-main">${clockFace()}<time class="shore-digital-time" data-shore-clock></time></div><p class="shore-day" data-shore-day></p><a class="shore-pause" href="#focus">Найти время для себя ${icon('arrow-right',12)}</a>
+          <div class="shore-time-main">${clockFace()}<time class="shore-digital-time" data-shore-clock></time></div><p class="shore-day" data-shore-day></p>
         </article>
       </div>
     </section>`;
