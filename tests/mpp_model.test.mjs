@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
+import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, csvCell, tasksCsv, assignmentsCsv, demoProject, DAY} from '../mpp/model.mjs';
 import {readProject} from '../mpp/vendor/mpxj-ts/mpxj.mjs';
 import {ganttSvg} from '../mpp/export-svg.mjs';
 
@@ -212,4 +212,15 @@ test('dependencies crossing a virtual viewport retain visible continuations and 
   assert.equal(routes[0].critical,true);
   assert.ok(routes[0].d.startsWith('M'));
   assert.equal(viewportDependencyLines(tasks,links,start,8,5,6).length,1);
+});
+
+
+test('assignment CSV keeps task/resource relationship and neutralizes spreadsheet formula cells',()=>{
+  const model=demoProject();
+  model.byUid.get('6').name='=UNSAFE()';
+  const csv=assignmentsCsv(model);
+  assert.ok(csv.startsWith('\uFEFF'));
+  assert.match(csv,/Разработчик/);
+  assert.ok(csv.includes('"\'=UNSAFE()"'));
+  assert.equal(csv.split('\r\n').length,model.assignments.length+1);
 });
