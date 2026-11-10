@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
 import {readProject} from '../mpp/vendor/mpxj-ts/mpxj.mjs';
+import {ganttSvg} from '../mpp/export-svg.mjs';
 
 test('synthetic demo has stable tasks, groups, assignments, and links', () => {
   const model=demoProject();
@@ -84,6 +85,11 @@ test('the actual embedded browser reader imports MSPDI XML with tasks and depend
   assert.equal(model.byUid.get('3').predecessorText,'2');
   assert.equal(model.byUid.get('2').resourceNames,'Аналитик');
   assert.equal(model.byUid.get('3').start,Date.UTC(2026,10,16,9,0));
+  assert.equal(model.calendar,'1');
+  assert.equal(model.calendars.length,1);
+  assert.equal(model.calendars[0].name,'Стандартный');
+  assert.deepEqual(workingHoursOnDate(model,Date.UTC(2026,10,17)),[],'MSPDI holiday applies');
+  assert.equal(workingHoursOnDate(model,Date.UTC(2026,10,16))?.length,2,'weekday working intervals imported');
 });
 
 test('parser rejects arbitrary bytes instead of displaying corrupt data', () => {
@@ -172,4 +178,17 @@ test('critical path flags are never silently substituted by approximation',()=>{
   assert.equal(criticalChain(simple).mode,'none','lagged links need full scheduler');
   simple.links[0].lag='';simple.links.push({from:'2',to:'1',type:'FS',lag:''});
   assert.equal(criticalChain(simple).mode,'none','cycles must disable path estimate');
+});
+
+
+test('local SVG export is standalone, read-only and properly escapes project text',()=>{
+  const model=demoProject();
+  model.title='План <PRIVATE & COMPANY>';
+  const diagram=ganttSvg(model,model.tasks,{zoom:'week',criticalIds:new Set(['7'])});
+  assert.match(diagram,/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.ok(diagram.includes('План &lt;PRIVATE &amp; COMPANY&gt;'));
+  assert.ok(diagram.includes('fill="#c68068"'),'highlighted chain must be visible');
+  assert.ok(diagram.includes('Публикация'));
+  assert.ok(diagram.endsWith('</svg>'));
+  assert.throws(()=>ganttSvg(model,Array.from({length:1001},()=>model.tasks[0])),/1000/);
 });
