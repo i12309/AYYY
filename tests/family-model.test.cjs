@@ -65,3 +65,17 @@ test('browser build integrates GEN without including private family-data',()=>{
   assert.match(entry,/a\.register\('family'/);
   assert.equal(fs.existsSync(path.join(root,'family-data')),false);
 });
+
+test('tutorial marker distinguishes fictional sample from personal trees',()=>{
+  const ordinary=model.newTree('Моё семейное дерево','Личные сведения');
+  assert.equal(model.isDemoDocument(ordinary),false);
+  assert.equal(model.summary(ordinary).is_demo,false);
+  const sample=model.newTree('Семья Волковых · пример','Учебное дерево. Все люди и события вымышлены.');
+  assert.equal(model.isDemoDocument(sample),true,'Legacy sample is inferred from its fixed identity');
+  assert.equal(model.summary(sample).is_demo,true);
+  sample.tree.name='Переименованное учебное дерево';
+  assert.equal(model.isDemoDocument(sample),false);
+  sample.tree.is_demo=true;
+  assert.equal(model.isDemoDocument(sample),true,'Permanent marker survives title edits');
+  assert.equal(model.summary(sample).is_demo,true);
+});
