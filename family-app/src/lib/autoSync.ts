@@ -89,6 +89,12 @@ async function pushScheduled(treeId:string):Promise<void>{
       emit(treeId,'offline','Ожидаем интернет. Локальные данные сохранены.');
       return;
     }
+    // Manual sync may have completed before this debounce timer fired.
+    const latest=await readTree(treeId);
+    if(link.blobSha&&latest.tree.updated_at===link.lastLocalSavedAt){
+      emit(treeId,'synced','Все изменения сохранены в GitHub');
+      return;
+    }
     emit(treeId,'saving','Сохраняем дерево в приватный GitHub…');
     const repo:RemoteRepo={owner:link.owner,repo:link.repo,branch:link.branch};
     const result=await pushToGitHub(treeId,repo);
@@ -199,7 +205,10 @@ function onSettingsChanged(event:Event){
   const id=(event as CustomEvent<{treeId:string}>).detail?.treeId;
   if(!id)return;
   states.delete(id);
-  void queueAutoSync(id);
+  // Reconcile the remote baseline first when auto-sync is enabled on an
+  // already-linked tree; never push a stale local copy without checking.
+  if(id===currentTree)void autoSyncOpened(id,true);
+  else void queueAutoSync(id);
 }
 function onFocus(){
   if(document.visibilityState==='visible'&&currentTree){
