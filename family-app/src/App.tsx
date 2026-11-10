@@ -178,7 +178,9 @@ export default function App() {
   useEffect(() => startAutoSync(), []);
   useEffect(() => {
     if(!treeId){autoSyncSetActiveTree(null);return;}
-    void autoSyncOpened(treeId);
+    // Every explicit tree open checks remote freshness, even if this tree
+    // was opened moments ago. The 60s throttle applies only to window focus.
+    void autoSyncOpened(treeId,true);
     const onRemoteUpdate=(event:Event)=>{
       if((event as CustomEvent<{treeId:string}>).detail?.treeId===treeId)
         void refresh();
