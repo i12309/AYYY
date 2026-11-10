@@ -1,5 +1,7 @@
 /* AYYY Project Viewer — local-only Microsoft Project plan reader and Gantt UI. */
-import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
+import {DAY, dateValue, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
+
+import {ganttSvg} from './export-svg.mjs';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const zoomWidths = {day:18,week:8,month:3.2};
@@ -433,6 +435,56 @@ export function mount(root, options={}) {
       if(!state.destroyed&&ticket===state.pending)root.classList.remove('pv-busy');
     }
   }
+  function jumpToDate(value) {
+    const when=dateValue(value);
+    const chart=root.querySelector('#pv-chart-scroll');
+    if(!chart || when===null) {sendStatus('Укажите корректную дату в календаре.','error');return;}
+    const range=timelineRange(state.model);
+    if(when<range.start || when>range.start+range.days*DAY) {
+      sendStatus('Указанная дата вне диапазона задач проекта.','info');return;
+    }
+    chart.scrollLeft=Math.max(0,Math.round((when-range.start)/DAY*zoomWidths[state.zoom]-chart.clientWidth*.3));
+    state.scrollLeft=chart.scrollLeft;
+    sendStatus('Диаграмма перемещена к '+dateText(when)+'.','success');
+  }
+  function focusSelectedTask() {
+    const task=state.model?.byUid.get(state.selectedUid);
+    if(!task)return;
+    let visible=visibleTasks(state.model,state.query,state.collapsed,state.sort);
+    if(!visible.some(t=>t.uid===task.uid) || state.criticalOnly) {
+      state.query='';state.collapsed.clear();state.criticalOnly=false;
+      render();visible=visibleTasks(state.model,'',state.collapsed,state.sort);
+    }
+    const index=visible.findIndex(t=>t.uid===task.uid),list=root.querySelector('#pv-list-scroll');
+    const chart=root.querySelector('#pv-chart-scroll');
+    if(index<0 || !list || !chart)return;
+    list.scrollTop=Math.max(0,index*rowHeight-list.clientHeight/2+44);
+    chart.scrollTop=list.scrollTop;
+    if(task.start!==null)jumpToDate(task.start);
+    state.scrollTop=list.scrollTop;
+    selectTask(task.uid);
+  }
+  function exportSvg() {
+    if(!state.model || !app?.download)return;
+    const model=state.model;
+    let tasks=visibleTasks(model,state.query,state.collapsed,state.sort);
+    if(state.criticalOnly && state.analysis?.uids.size){
+      const keep=new Set(state.analysis.uids);
+      for(const uid of state.analysis.uids){
+        let p=model.byUid.get(uid)?.parent,guard=0;
+        while(p && guard++<60 && model.byUid.has(p)){keep.add(p);p=model.byUid.get(p).parent;}
+      }
+      tasks=tasks.filter(t=>keep.has(t.uid));
+    }
+    try {
+      const svg=ganttSvg(model,tasks,{zoom:state.zoom,criticalIds:state.analysis?.uids,showBaseline:state.showBaseline,
+        showCalendar:state.showCalendar,showLinks:state.showLinks,showToday:state.showToday});
+      const name=(state.filename||'project').replace(/\.[^.]+$/,'').replace(/[\/\\:*?"<>|]/g,'_').slice(0,70)||'project';
+      app.download(name+'-gantt.svg',svg,'image/svg+xml;charset=utf-8');
+      sendStatus('SVG-диаграмма сохранена локально. Оригинальный MPP не изменился.','success');
+    } catch(error) {sendStatus(String(error?.message||error),'error');}
+  }
+
   function selectTask(uid) {
     if(!state.model?.byUid.has(uid))return;
     state.selectedUid=uid;
@@ -457,18 +509,28 @@ export function mount(root, options={}) {
   }
 
   root.addEventListener('click',event=>{
-    const control=event.target.closest('[data-pv-action], [data-pv-tab], [data-pv-fold], [data-pv-task]');
+    const control=event.target.closest('[data-pv-action], [data-pv-tab], [data-pv-fold], [data-pv-task], [data-pv-calendar]');
     if(!control || !root.contains(control))return;
     const action=control.dataset.pvAction;
     if(action==='open'){root.querySelector('#pv-file-input')?.click();return;}
     if(action==='demo'){renderDemo();return;}
     if(action==='export'){exportCsv();return;}
-    if(action==='toggle-links'){state.showLinks=!state.showLinks;render();return;}
-    if(action==='toggle-baseline'){state.showBaseline=!state.showBaseline;render();return;}
+    if(action==='export-svg'){exportSvg();return;}
+    if(action==='today'){jumpToDate(todayStamp());return;}
+    if(action==='jump-date'){jumpToDate(state.jumpDate);return;}
+    if(action==='focus-task'){focusSelectedTask();return;}
+    if(action==='toggle-calendar'){state.showCalendar=!state.showCalendar;savePrefs();render();return;}
+    if(action==='critical-only'){
+      if(!state.analysis?.uids.size)return;
+      state.criticalOnly=!state.criticalOnly;state.collapsed.clear();state.scrollTop=0;render(true);return;
+    }
+    if(action==='toggle-links'){state.showLinks=!state.showLinks;savePrefs();render();return;}
+    if(action==='toggle-baseline'){state.showBaseline=!state.showBaseline;savePrefs();render();return;}
     if(action==='close-details'){state.selectedUid=null;refreshDetails();root.querySelectorAll('.is-selected').forEach(el=>{el.classList.remove('is-selected');el.setAttribute('aria-selected','false');});return;}
     if(action==='expand'){state.collapsed.clear();render();return;}
     if(action==='collapse'){state.collapsed=new Set(state.model?.tasks.filter(t=>t.children).map(t=>t.uid)||[]);render();return;}
     if(control.dataset.pvTab){state.tab=control.dataset.pvTab;state.selectedUid=null;render();return;}
+    if(control.dataset.pvCalendar){state.calendarId=control.dataset.pvCalendar;render();return;}
     if(control.dataset.pvFold){
       const id=control.dataset.pvFold;
       if(state.collapsed.has(id))state.collapsed.delete(id);else state.collapsed.add(id);
@@ -481,7 +543,9 @@ export function mount(root, options={}) {
       const file=event.target.files?.[0];event.target.value='';
       openFile(file);
     }
-    if(event.target?.id==='pv-zoom'){state.zoom=event.target.value in zoomWidths?event.target.value:'week';render();}
+    if(event.target?.id==='pv-zoom'){state.zoom=event.target.value in zoomWidths?event.target.value:'week';savePrefs();render();}
+    if(event.target?.id==='pv-sort'){state.sort=allowedSort.includes(event.target.value)?event.target.value:'id';state.scrollTop=0;savePrefs();render(true);}
+    if(event.target?.id==='pv-jump-date'){state.jumpDate=event.target.value;}
   },{signal:events.signal});
   root.addEventListener('input',event=>{
     if(event.target?.id!=='pv-search')return;
