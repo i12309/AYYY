@@ -23,6 +23,9 @@ with sync_playwright() as pw:
  p.add_init_script('''(()=>{if(location.search.includes('demo=1'))Object.defineProperty(window,'indexedDB',{get(){throw new Error('Demo accessed personal IndexedDB')}})})()''')
  p.goto(BASE+'health/?demo=1');p.wait_for_selector('.metric')
  check('HUMAN brand and original icon',p.locator('.sidebar .brand-copy>span').inner_text()=='HUMAN')
+ check('AYYY brand is separate portal link',p.locator('.sidebar .ayyy-wordmark').count()==1 and p.locator('.sidebar .ayyy-wordmark').get_attribute('href')=='../#home')
+ p.locator('.sidebar [data-tab=lab]').click();p.locator('.sidebar .brand').click()
+ check('HUMAN logo returns to journal overview without leaving page',p.url==BASE+'health/?demo=1' and p.locator('.metric').count()==4)
  check('original sidebar width',p.locator('.sidebar').bounding_box()['width']==208)
  check('original header height',p.locator('.topbar').bounding_box()['height']==58)
  check('original paper color',p.locator('body').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(247, 248, 250)')
@@ -71,6 +74,13 @@ with sync_playwright() as pw:
  check('demo never used remote services',not external)
  # A separate page exercises an actual encrypted browser vault.
  v=context.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/')
+ check('HUMAN landing has paired wordmarks',v.locator('.health-intro-top .brand').count()==1 and v.locator('.health-intro-top .ayyy-wordmark').count()==1)
+ check('landing stretches across desktop',v.locator('.health-intro').bounding_box()['width']>=1100)
+ check('landing retains all primary flows',all(v.locator('[data-form='+x+']').count()==1 for x in ['create','download','import-vault']) and v.locator('[data-action=open-demo]').count()==1)
+ for width in [360,390,640,768,1024,1440,1920]:
+  v.set_viewport_size({'width':width,'height':900})
+  check('landing has no horizontal overflow '+str(width),v.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+ v.set_viewport_size({'width':1440,'height':1000})
  v.locator('[data-form=create] [name=password]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [name=repeat]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [type=submit]').click();v.wait_for_selector('.metric')
  v.locator('#health-header [data-action=quick-add]').click();v.locator('#health-dialog [data-action=new-vital]').click();v.locator('[name=value]').fill('120/80');v.locator('[data-form=record] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
  v.reload();v.wait_for_selector('[data-form=unlock]');v.locator('[data-form=unlock] [name=passphrase]').fill('synthetic-ui-passphrase');v.locator('[data-form=unlock] [type=submit]').click();v.wait_for_selector('.metric')

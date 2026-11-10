@@ -29,7 +29,9 @@
   function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
+    outer.append(V.h('div',{class:'health-intro-top'},V.brand()));
     if(state.local&&!state.picker){
+      outer.classList.add('health-intro-unlock');
       const form=V.form('unlock',[V.field('Фраза доступа','passphrase','', 'password')],'Открыть');
       outer.append(V.card(null,[
         V.h('div',{class:'health-intro-panel'},V.h('span',{class:'health-overline'},'ЗАЩИЩЁННЫЙ ЖУРНАЛ'),
@@ -42,7 +44,8 @@
       ]));
       return outer;
     }
-    outer.append(V.brand(),V.h('span',{class:'health-overline'},'ЛИЧНОЕ ПРОСТРАНСТВО'),
+    const heading=V.h('div',{class:'health-intro-heading'},
+      V.h('span',{class:'health-overline'},'ЛИЧНОЕ ПРОСТРАНСТВО'),
       V.h('h1',{},'Ваш журнал ',V.h('span',{class:'title-underline'},'здоровья')),
       V.h('p',{},'Локальное зашифрованное хранилище с возможностью синхронизации в ваш приватный GitHub.'));
     const sample=V.card(null,[
@@ -54,7 +57,7 @@
         V.button('Открыть демо без регистрации','open-demo',{class:'primary health-demo-open'}))
     ]);
     sample.classList.add('health-demo-card');
-    outer.append(sample);
+    outer.append(V.h('div',{class:'health-intro-hero'},heading,sample));
     if(state.profiles.length){
       const list=V.h('div',{class:'health-profile-picker'});
       for(const item of state.profiles){
@@ -79,10 +82,12 @@
         'Придумайте фразу, которую будете использовать на других устройствах.'),create]),
       V.card('Продолжить на другом устройстве',[V.h('p',{class:'health-note'},
         'Можно использовать репозиторий родословной — папки данных раздельные.'),download])));
-    outer.append(V.card('Восстановить зашифрованный файл',[
+    const restore=V.card('Восстановить зашифрованный файл',[
       V.h('p',{class:'health-note'},'Поддерживается vault.json этого модуля. Экспорт SQLite из HUMAN v2 потребует конвертера.'),
       V.form('import-vault',[V.field('Зашифрованный JSON','file','','file')],'Импортировать')
-    ]));
+    ]);
+    restore.classList.add('health-restore-card');
+    outer.append(restore);
     outer.append(V.h('p',{class:'health-security'},
       'Личные данные не сохраняются в публичном репозитории AYYY.'));
     return outer;
@@ -545,7 +550,7 @@
   async function onClick(event){
     const el=event.target.closest('[data-action],[data-tab]');
     if(!el)return;
-    if(el.dataset.tab){state.tab=el.dataset.tab;state.globalSearch='';state.search='';state.groupKey='';document.body.classList.remove('health-menu-open');render();root.focus({preventScroll:true});window.scrollTo(0,0);return;}
+    if(el.dataset.tab){event.preventDefault();state.tab=el.dataset.tab;state.globalSearch='';state.search='';state.groupKey='';document.body.classList.remove('health-menu-open');render();root.focus({preventScroll:true});window.scrollTo(0,0);return;}
     const action=el.dataset.action;
     try{
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}

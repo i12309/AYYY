@@ -101,3 +101,111 @@ body{font-size:14px}
  .health-vital-summary{align-items:flex-start;flex-direction:column}
  .documents-table tr{flex-wrap:wrap}.documents-table .document-main{flex:1;min-width:0}.documents-table .document-actions{display:flex;gap:6px;width:100%;padding-left:44px}.documents-table .document-actions>.health-actions{margin:0}
 }
+
+
+/* AYYY x HUMAN: balanced entrance, independent wordmarks and compact forms. */
+.health-brand-pair{display:flex;align-items:center;gap:17px;width:max-content;max-width:100%}
+.health-brand-pair .brand{display:flex;align-items:center;gap:10px;height:auto;padding:0;min-width:0;color:var(--text);text-decoration:none}
+.health-brand-pair .brand:hover .brand-copy>span{color:var(--blue-ink)}
+.health-brand-divider{display:block;width:1px;height:33px;flex:none;background:var(--border-strong)}
+.ayyy-wordmark{display:inline-flex;align-items:baseline;flex:none;padding:3px 4px 3px 0;color:#203640;font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:36px;font-weight:800;letter-spacing:-3.1px;line-height:1;transform:rotate(-3deg);text-decoration:none}
+.ayyy-wordmark span{color:#e77d36}
+.ayyy-wordmark:hover{color:#203640;text-decoration:none}
+.sidebar .health-brand-pair{width:100%;height:79px;gap:6px;justify-content:space-between}
+.sidebar .health-brand-pair .brand{gap:6px;padding-left:2px;flex-shrink:1}
+.sidebar .health-brand-pair .brand img{width:26px;height:26px}
+.sidebar .health-brand-pair .brand-copy{gap:5px}
+.sidebar .health-brand-pair .brand-copy>span{font-size:17px;letter-spacing:1.1px}
+.sidebar .health-brand-pair .brand-copy>small{font-size:6px;letter-spacing:.45px}
+.sidebar .health-brand-divider{height:24px}
+.sidebar .ayyy-wordmark{font-size:21px;letter-spacing:-1.7px;padding:2px 0}
+
+.health-intro{width:100%;max-width:1220px;margin:26px auto 40px;padding:0 30px}
+.health-intro-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px;min-height:45px}
+.health-intro-top .brand img{width:35px;height:35px}
+.health-intro-top .brand-copy>span{font-size:23px;letter-spacing:2px}
+.health-intro-top .brand-copy>small{font-size:8px}
+.health-intro-top .health-brand-divider{height:34px}
+.health-intro-hero{display:grid;grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr);gap:22px;align-items:stretch;margin-bottom:17px}
+.health-intro-heading{align-self:center;padding:10px 8px 10px 0}
+.health-intro-heading>.health-overline{display:block;font-size:10px;font-weight:650;letter-spacing:1.35px;color:var(--muted-soft);margin-bottom:11px}
+.health-intro-heading h1{font-size:clamp(29px,2.35vw,35px);letter-spacing:-1px;line-height:1.18;margin:0}
+.health-intro-heading>p{max-width:480px;margin:13px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+.health-intro-hero .health-demo-card{display:flex;align-items:center;min-height:188px;margin:0;padding:20px 24px;border-radius:9px}
+.health-intro-hero .health-demo-card-body{display:flex;flex-direction:column;align-items:flex-start;gap:13px;width:100%}
+.health-intro-hero .health-demo-card h2{font-size:19px;margin:5px 0 6px}
+.health-intro-hero .health-demo-card p{max-width:none;font-size:12px;line-height:1.55}
+.health-intro-hero .health-demo-open{align-self:flex-start;white-space:normal;text-align:center}
+
+.health-intro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;margin:0 0 17px}
+.health-intro-grid>.health-card{display:flex;flex-direction:column;padding:20px 22px 18px;margin:0;min-width:0;min-height:286px}
+.health-intro-grid .health-note{margin:8px 0 2px;font-size:12px;line-height:1.55}
+.health-intro-grid .health-form{margin-top:auto;padding-top:12px;gap:10px;min-width:0}
+.health-intro-grid .health-form-row{min-width:0}
+.health-intro-grid .health-form-row>*{min-width:0}
+.health-intro-grid .health-form-actions{margin-top:3px;padding-top:12px}
+.health-intro-grid .health-form input{min-width:0}
+.health-intro-grid .section-heading h2{font-size:16px}
+
+.health-restore-card{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:4px 26px;align-items:center;padding:17px 22px;margin-bottom:0}
+.health-restore-card>.section-heading{grid-column:1;grid-row:1;align-self:end}
+.health-restore-card>.section-heading h2{font-size:15px}
+.health-restore-card>.health-note{grid-column:1;grid-row:2;align-self:start;margin:4px 0 0;line-height:1.5}
+.health-restore-card>.health-form{grid-column:2;grid-row:1 / span 2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin:0;min-width:0}
+.health-restore-card>.health-form>.field{min-width:0}
+.health-restore-card>.health-form input[type=file]{min-width:0;width:100%;padding:6px;cursor:pointer}
+.health-restore-card .health-form-actions{grid-column:2;margin:0;padding:0;border:0}
+.health-intro>.health-security{margin-top:16px}
+.health-intro-unlock{max-width:760px}
+.health-intro-unlock>.health-card{padding:24px}
+.health-intro-unlock .health-intro-panel{padding:0}
+.health-intro-unlock .health-intro-panel .health-form{max-width:520px}
+.health-intro-unlock .health-intro-panel .health-security{margin-top:16px}
+
+@media(max-width:1180px){
+  .sidebar .health-brand-pair{gap:5px}
+  .sidebar .health-brand-pair .brand img{width:24px;height:24px}
+  .sidebar .health-brand-pair .brand-copy>span{font-size:15px;letter-spacing:1px}
+  .sidebar .health-brand-pair .brand-copy>small{font-size:6px;letter-spacing:.25px}
+  .sidebar .ayyy-wordmark{font-size:19px;letter-spacing:-1.6px}
+}
+@media(max-width:900px){
+  .health-intro{max-width:780px;padding:0 24px;margin-top:23px}
+  .health-intro-top{margin-bottom:19px}
+  .health-intro-hero{grid-template-columns:1fr;gap:14px}
+  .health-intro-heading{padding:0}
+  .health-intro-heading>p{max-width:650px}
+  .health-intro-hero .health-demo-card{min-height:0}
+  .health-intro-grid{gap:13px}
+  .health-intro-grid>.health-card{padding:17px;min-height:0}
+  .health-restore-card{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+  .health-restore-card>.health-form{width:100%}
+}
+@media(max-width:640px){
+  .health-intro{margin:18px auto 28px;padding:0 16px}
+  .health-intro-top{margin-bottom:19px}
+  .health-intro-top .brand{gap:7px}
+  .health-intro-top .brand img{width:31px;height:31px}
+  .health-intro-top .brand-copy>span{font-size:19px;letter-spacing:1.3px}
+  .health-intro-top .brand-copy>small{font-size:7px;letter-spacing:.6px}
+  .health-intro-top .health-brand-pair{gap:12px}
+  .health-intro-top .health-brand-divider{height:28px}
+  .health-intro-top .ayyy-wordmark{font-size:27px;letter-spacing:-2.3px}
+  .health-intro-heading h1{font-size:27px}
+  .health-intro-heading>p{font-size:12px;margin-top:9px}
+  .health-intro-hero .health-demo-card{padding:17px}
+  .health-intro-hero .health-demo-card h2{font-size:17px}
+  .health-intro-grid{grid-template-columns:1fr;gap:12px}
+  .health-intro-grid>.health-card{padding:17px 16px}
+  .health-intro-grid .health-form{margin-top:0}
+  .health-restore-card{padding:17px 16px}
+  .health-restore-card>.health-form{grid-template-columns:minmax(0,1fr);gap:9px}
+  .health-restore-card .health-form-actions{grid-column:1;border-top:1px solid var(--border);padding-top:11px;justify-content:flex-end}
+  .health-intro-unlock>.health-card{padding:18px}
+}
+@media(max-width:380px){
+  .health-intro-top .brand-copy>span{font-size:17px}
+  .health-intro-top .brand-copy>small{font-size:6px}
+  .health-intro-top .health-brand-pair{gap:9px}
+  .health-intro-top .ayyy-wordmark{font-size:25px}
+}
