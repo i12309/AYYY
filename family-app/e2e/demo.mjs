@@ -52,7 +52,7 @@ async function insertLegacyCopies(page,originalId){
       const doc=structuredClone(original.document);
       doc.tree.id=crypto.randomUUID().replace(/-/g,'');
       doc.tree.slug='legacy-demo-copy-'+i;
-      doc.tree.updated_at=new Date(Date.now()+10000+i*1000).toISOString();
+      doc.tree.updated_at=new Date(Date.now()-10000+i*1000).toISOString();
       delete doc.tree.is_demo;
       table.put({id:doc.tree.id,document:doc});
     }
