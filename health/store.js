@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const DATABASE='ayyy-health-v2';
+  const durable={durability:'strict'};
   let connection;
   function open() {
     if(connection)return connection;
@@ -23,7 +24,7 @@
   async function request(store,mode,command) {
     const db=await open();
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(store,mode), object=tx.objectStore(store);
+      const tx=db.transaction(store,mode,mode==='readwrite'?durable:undefined), object=tx.objectStore(store);
       let op;
       try{op=command(object);}catch(error){tx.abort();reject(error);return;}
       tx.oncomplete=()=>resolve(op.result);
@@ -55,7 +56,7 @@
     const db=await open();
     await new Promise((resolve,reject)=>{
       const stores=selectNew?['vaults','objects','meta']:['vaults','objects'];
-      const tx=db.transaction(stores,'readwrite'),store=tx.objectStore('vaults'),files=tx.objectStore('objects');
+      const tx=db.transaction(stores,'readwrite',durable),store=tx.objectStore('vaults'),files=tx.objectStore('objects');
       let failure;
       const fail=error=>{failure=error;tx.abort();};
       tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(failure||tx.error||new Error('Локальное сохранение отменено.'));
@@ -105,19 +106,29 @@
       tx.onerror=tx.onabort=()=>reject(tx.error||Error('Не удалось собрать полную резервную копию.'));
     });
   }
-  async function remove(id){
+  async function remove(id,expectedEnvelope){
     const db=await open();
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(['vaults','objects','meta'],'readwrite'),objects=tx.objectStore('objects');
+      const tx=db.transaction(['vaults','objects','meta'],'readwrite',durable);
+      const vaults=tx.objectStore('vaults'),objects=tx.objectStore('objects'),meta=tx.objectStore('meta');
+      let failure;
       tx.oncomplete=resolve;
-      tx.onerror=tx.onabort=()=>reject(tx.error||Error('Не удалось удалить локальную копию.'));
-      tx.objectStore('vaults').delete(id);
-      const selected=tx.objectStore('meta').get('current');
-      selected.onsuccess=()=>{if(selected.result===id)tx.objectStore('meta').delete('current');};
-      const cursor=objects.index('vault').openKeyCursor(id);
-      cursor.onsuccess=()=>{
-        const item=cursor.result;
-        if(item){objects.delete(item.primaryKey);item.continue();}
+      tx.onerror=tx.onabort=()=>reject(failure||tx.error||Error('Не удалось удалить локальную копию.'));
+      const current=vaults.get(id);
+      current.onsuccess=()=>{
+        if(!sameEnvelope(current.result?.envelope,expectedEnvelope)){
+          failure=Error('Журнал изменился после подготовки копии. Откройте его заново перед удалением.');
+          tx.abort();
+          return;
+        }
+        vaults.delete(id);
+        const selected=meta.get('current');
+        selected.onsuccess=()=>{if(selected.result===id)meta.delete('current');};
+        const cursor=objects.index('vault').openKeyCursor(id);
+        cursor.onsuccess=()=>{
+          const item=cursor.result;
+          if(item){objects.delete(item.primaryKey);item.continue();}
+        };
       };
     });
   }

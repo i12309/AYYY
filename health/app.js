@@ -544,7 +544,9 @@
     if(state.demo)throw new Error('Демо не экспортируется и не содержит личных данных.');
     const active=sessionFence(),snapshot=await S.snapshot(state.local.id);
     const archive=await HumanBackup.pack(snapshot.envelope,snapshot.objects);
-    if(active())download('ayyy-health-'+today()+'.human',archive,'application/octet-stream');
+    if(!active())return null;
+    download('ayyy-health-'+today()+'.human',archive,'application/octet-stream');
+    return snapshot.envelope;
   }
   async function documentBytes(file){
     if(state.demo){
@@ -897,11 +899,20 @@
     if(state.demo)throw new Error('Демо удаляется при выходе.');
     if(!state.local)return;
     const sameSession=sessionFence();
-    await backup();if(!sameSession())return;
+    const copied=await backup();if(!copied||!sameSession())return;
     if(!confirm('Удалить локальную зашифрованную копию? GitHub останется без изменений.'))return;
     if(!confirm('Подтвердите окончательное удаление с устройства.'))return;
     const id=state.local.id;clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
-    await S.remove(id);if(!active())return;const selected=await S.current();if(!active())return;if(selected===id)await S.select('');if(!active())return;await profileList();if(!active())return;
+    try{
+      await S.remove(id,copied);
+    }catch(e){
+      const current=await S.get(id);
+      if(active()){state.local=current;render();}
+      throw e;
+    }
+    channel?.postMessage({client:clientId,vaultId:id});
+    if(!active())return;
+    await profileList();if(!active())return;
     state.local=null;state.picker=true;render();
   }
   function openDemo(){
@@ -1056,7 +1067,19 @@
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
     const id=state.local.id;sessionRevision++;clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();render();const revision=sessionRevision;
-    void S.get(id).then(data=>{if(revision!==sessionRevision||state.local?.id!==id)return;state.local=data;render();toast('Профиль изменён в другой вкладке. Откройте его снова.');}).catch(error);
+    const current=()=>revision===sessionRevision&&state.local?.id===id;
+    void S.get(id).then(async data=>{
+      if(!current())return;
+      if(!data){
+        const profiles=await S.list();
+        if(!current())return;
+        state.profiles=profiles;
+        state.picker=true;
+      }
+      state.local=data;
+      render();
+      toast(data?'Профиль изменён в другой вкладке. Откройте его снова.':'Локальная копия удалена в другой вкладке.');
+    }).catch(error);
   };
   root.replaceChildren(V.h('p',{class:'health-muted',role:'status'},'Открываем журнал…'));
   void (async()=>{
