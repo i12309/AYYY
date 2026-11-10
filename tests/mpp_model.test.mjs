@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
+import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
 import {readProject} from '../mpp/vendor/mpxj-ts/mpxj.mjs';
 import {ganttSvg} from '../mpp/export-svg.mjs';
 
@@ -191,4 +191,22 @@ test('local SVG export is standalone, read-only and properly escapes project tex
   assert.ok(diagram.includes('Публикация'));
   assert.ok(diagram.endsWith('</svg>'));
   assert.throws(()=>ganttSvg(model,Array.from({length:1001},()=>model.tasks[0])),/1000/);
+});
+
+
+test('dependencies crossing a virtual viewport retain visible continuations and lag labels',()=>{
+  const start=Date.UTC(2026,10,1);
+  const tasks=Array.from({length:6},(_,i)=>({uid:String(i+1),start:start+i*DAY,finish:start+(i+1)*DAY}));
+  const links=[
+    {from:'1',to:'4',type:'FF',lag:'2 д'},
+    {from:'2',to:'6',type:'FS',lag:''},
+    {from:'1',to:'2',type:'FS',lag:''}
+  ];
+  const routes=viewportDependencyLines(tasks,links,start,8,2,4,34,new Set(['1','4']));
+  assert.equal(routes.length,2);
+  assert.equal(routes[0].label,'FF 2 д');
+  assert.equal(routes[0].partial,true);
+  assert.equal(routes[0].critical,true);
+  assert.ok(routes[0].d.startsWith('M'));
+  assert.equal(viewportDependencyLines(tasks,links,start,8,5,6).length,1);
 });
