@@ -93,7 +93,7 @@
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
       document.body.dataset.page=app.route;
-      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games'].includes(app.route)?app.route:'service';
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family'].includes(app.route)?app.route:'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -116,6 +116,7 @@
     {id:'json',name:'JSON-редактор',desc:'Проверить и отформатировать',icon:'code',color:'purple',group:'tools',kind:'local',route:'tools',param:'json'},
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
+    {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
     {id:'focus',name:'Время фокуса',desc:'25 минут на одно важное дело',icon:'focus',color:'purple',group:'personal',kind:'local',route:'focus'},
     {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
     {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},
