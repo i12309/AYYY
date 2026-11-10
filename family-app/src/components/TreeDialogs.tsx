@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { FileUp, FolderHeart } from 'lucide-react';
+import { FileUp, FolderHeart, Github, HardDrive, LockKeyhole, ShieldCheck } from 'lucide-react';
 import type { TreeSummary } from '../types';
 import { api, errorMessage } from '../lib/api';
 import { Dialog } from './Dialog';
+import {parseRepo,pushToGitHub,setSessionToken,verifyGitHubConnection,hasSessionToken} from '../lib/githubSync';
+import {setAutoSync} from '../lib/browserStore';
 import { useUnsavedGuard, type RegisterNavigationGuard } from '../lib/useUnsavedGuard';
 
 export function TreeDialog({
@@ -14,13 +16,18 @@ export function TreeDialog({
 }: {
   tree?: TreeSummary;
   onClose: () => void;
-  onSaved: (tree: TreeSummary) => Promise<void>;
+  onSaved: (tree: TreeSummary, warning?:string) => Promise<void>;
   onNavigationGuard?: RegisterNavigationGuard;
 }) {
   const [name, setName] = useState(tree?.name || '');
   const [description, setDescription] = useState(tree?.description || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [storage, setStorage] = useState<'github'|'local'>('github');
+  const [repository, setRepository] = useState('');
+  const [branch, setBranch] = useState('main');
+  const [token, setToken] = useState('');
+  const [autoSync, setAutoSyncEnabled] = useState(true);
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) {
@@ -30,6 +37,15 @@ export function TreeDialog({
     setBusy(true);
     setError('');
     try {
+      const remote = !tree && storage === 'github' ? parseRepo(repository,branch) : null;
+      if(remote) {
+        if(!token.trim()&&!hasSessionToken()) {
+          throw new Error('Введите токен GitHub с доступом Contents: Read and write.');
+        }
+        if(token.trim())setSessionToken(token);
+        // Reject public repositories and missing permissions *before* creating.
+        await verifyGitHubConnection(remote,true);
+      }
       const saved = await api<TreeSummary>(tree ? `/trees/${tree.id}` : '/trees', {
         method: tree ? 'PATCH' : 'POST',
         body: JSON.stringify({
@@ -38,7 +54,18 @@ export function TreeDialog({
           ...(tree ? { revision: tree.revision } : {}),
         }),
       });
-      await onSaved(saved);
+      let warning: string | undefined;
+      if(remote) {
+        try {
+          await pushToGitHub(saved.id,remote);
+          if(autoSync) await setAutoSync(saved.id,true);
+        }catch(cause) {
+          warning='Дерево создано локально, но первая отправка в GitHub не выполнена: '+
+            errorMessage(cause)+'. Подключите репозиторий через «Локальное дерево».';
+        }
+      }
+      setToken('');
+      await onSaved(saved,warning);
     } catch (error) {
       setError(errorMessage(error));
     } finally {
@@ -46,7 +73,8 @@ export function TreeDialog({
     }
   }
   const close = useUnsavedGuard(
-    name !== (tree?.name || '') || description !== (tree?.description || ''),
+    name !== (tree?.name || '') || description !== (tree?.description || '') ||
+      (!tree && (repository!=='' || token!=='' || storage!=='github')) ,
     busy,
     onClose,
     onNavigationGuard,
@@ -78,6 +106,57 @@ export function TreeDialog({
             placeholder="Какие ветви семьи вы исследуете?"
           />
         </label>
+        {!tree && (
+          <section className="gen-storage-step" aria-labelledby="gen-storage-title">
+            <h3 id="gen-storage-title">Где хранить семейный архив?</h3>
+            <div className="gen-storage-choices">
+              <label className={`gen-storage-choice ${storage==='github'?'selected':''}`}>
+                <input type="radio" name="gen-storage" checked={storage==='github'}
+                  onChange={()=>setStorage('github')} disabled={busy}/>
+                <Github size={21} aria-hidden="true"/>
+                <span><strong>Мой GitHub · рекомендуем</strong>
+                  <small>Приватный репозиторий и синхронизация между устройствами</small></span>
+              </label>
+              <label className={`gen-storage-choice ${storage==='local'?'selected':''}`}>
+                <input type="radio" name="gen-storage" checked={storage==='local'}
+                  onChange={()=>setStorage('local')} disabled={busy}/>
+                <HardDrive size={21} aria-hidden="true"/>
+                <span><strong>Только этот браузер</strong>
+                  <small>Можно подключить GitHub позже, без потери дерева</small></span>
+              </label>
+            </div>
+            {storage==='github' && (
+              <div className="gen-storage-connect">
+                <p className="field-hint"><ShieldCheck size={14}/> Нужен собственный приватный
+                  репозиторий с веткой main. <a href="help/#github" target="_blank"
+                  rel="noopener noreferrer">Как его создать</a></p>
+                <label className="field">Репозиторий GitHub
+                  <input value={repository} onChange={event=>setRepository(event.target.value)}
+                    placeholder="username/family-archive" required disabled={busy}
+                    autoComplete="off"/>
+                </label>
+                <label className="field">Ветка
+                  <input value={branch} onChange={event=>setBranch(event.target.value)}
+                    required disabled={busy} autoComplete="off"/>
+                </label>
+                <label className="field"><span><LockKeyhole size={14}/> GitHub fine-grained token</span>
+                  <input type="password" value={token}
+                    onChange={event=>setToken(event.target.value)} disabled={busy}
+                    placeholder={hasSessionToken()?'Токен уже подключён на время вкладки':'Contents: Read and write'}
+                    autoComplete="off"/>
+                </label>
+                <label className="checkbox-label gen-storage-auto">
+                  <input type="checkbox" checked={autoSync}
+                    onChange={event=>setAutoSyncEnabled(event.target.checked)} disabled={busy}/>
+                  <span><strong>Автоматически синхронизировать изменения</strong>
+                    <small>После ~22 секунд без правок, пока вкладка открыта и токен подключён</small></span>
+                </label>
+                <p className="field-hint">Токен не сохраняется на сервере или в браузерной базе.
+                  После повторного открытия вкладки его потребуется ввести снова.</p>
+              </div>
+            )}
+          </section>
+        )}
         {error && (
           <div role="alert" className="error-banner">
             {error}
