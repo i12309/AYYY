@@ -435,6 +435,10 @@ export async function checkAndPullGitHub(treeId:string):Promise<
       extra.push({filename:'original.ged',blob:new Blob([raw],{type:'text/plain'})});
     }
   }
+  // Never refresh over an open person/family editor with an unsaved draft.
+  if(!window.dispatchEvent(new CustomEvent('gen:remote-refresh-request',{
+    cancelable:true,detail:{treeId}
+  })))return 'conflict';
   const currentLink=await getSync(treeId);
   if(!currentLink?.autoSync||currentLink.blobSha!==link.blobSha)return 'interrupted';
   const installed=await installRemoteIfUnchanged(local,remote,extra,{
