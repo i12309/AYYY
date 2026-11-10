@@ -84,6 +84,8 @@ test('the actual embedded browser reader imports MSPDI XML with tasks and depend
   assert.equal(model.links.length,1);
   assert.equal(model.byUid.get('3').predecessorText,'2');
   assert.equal(model.byUid.get('2').resourceNames,'Аналитик');
+  assert.equal(model.assignments[0].start,Date.UTC(2026,10,10,9));
+  assert.equal(model.assignments[0].finish,Date.UTC(2026,10,13,18));
   assert.equal(model.byUid.get('3').start,Date.UTC(2026,10,16,9,0));
   assert.equal(model.calendar,'1');
   assert.equal(model.calendars.length,1);
