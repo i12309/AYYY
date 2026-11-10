@@ -14,7 +14,7 @@
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
     ['medical','Медкарта'],['care','Приёмы и напоминания'],['diary','Дневник'],['document','Документы'],['settings','Настройки']];
   const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-  let writeQueue=Promise.resolve(),syncTimer,toastTimer;
+  let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0;
   const clientId=crypto.randomUUID();
   const careRecords=(doc,kind)=>kind==='episode'?window.HumanHealth.episodes(doc):['intake','reminder'].includes(kind)?window.HumanCare.records(doc,kind):doc[kinds[kind]]||[];
   const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('ayyy-health-v1'):null;
@@ -204,7 +204,7 @@
   }
   let renderedVaultId=null;
   function render(){
-    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;state.syncBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
     let view;
@@ -301,24 +301,32 @@
     dialog.showModal();
   }
   async function mutate(change){
+    const session=sessionRevision,id=state.doc?.id,key=state.key,demo=state.demo;
+    const active=()=>sessionRevision===session&&state.doc?.id===id&&state.local?.id===id&&state.key===key&&state.demo===demo;
+    const requireSession=()=>{if(!active())throw new Error('Журнал был закрыт или изменён. Операция отменена.');};
     const run=writeQueue.then(async()=>{
+      requireSession();
       if(!state.doc)throw new Error('Откройте журнал.');
       if(state.demo){
         const copy=structuredClone(state.doc);
         await change(copy);
         C.assertData(copy);
-        state.doc=copy;render();
+        requireSession();state.doc=copy;render();
         toast('Демо: изменение действует только до выхода из примера.');
         return;
       }
       if(!state.key)throw new Error('Откройте зашифрованный журнал.');
-      const data=structuredClone(state.doc);
+      const data=structuredClone(state.doc),before=state.local;
       await change(data);
+      requireSession();
       C.assertData(data);
-      const envelope=await C.seal(data,state.key,state.local.envelope);
-      const saved=await S.save({...state.local,envelope,dirty:true});
-      state.doc=data;state.local=saved;render();
+      const envelope=await C.seal(data,key,before.envelope);requireSession();
+      const fresh=await S.get(id);requireSession();
+      if(!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw new Error('Журнал изменился во время сохранения. Откройте его заново; новая версия не перезаписана.');
+      const saved=await S.save({...fresh,envelope,dirty:true},fresh);
       channel?.postMessage({client:clientId,vaultId:saved.id});
+      if(!active())return;
+      state.doc=data;state.local=saved;render();
       if(saved.repo&&G.hasToken())scheduleSync();
     });
     writeQueue=run.catch(()=>{});
@@ -330,6 +338,7 @@
       changedAt:new Date().toISOString()});
   }
   async function recordSubmit(form){
+    const active=sessionFence();
     const kind=form.dataset.kind,collection=kinds[kind];
     if(!collection)throw new Error('Неизвестная запись.');
     const old=form.dataset.id?careRecords(state.doc,kind).find(x=>x.id===form.dataset.id):null;
@@ -359,6 +368,7 @@
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     }
     if(kind==='medical'||kind==='medication'){const previous=M.clinical(old||{},kind);if(record.documentId&&!state.doc.documents.some(x=>x.id===record.documentId)&&record.documentId!==previous.documentId)throw Error('Документ не найден.');if(record.episodeId&&!window.HumanMedicalView.episodes(state.doc).some(x=>x.id===record.episodeId)&&record.episodeId!==previous.episodeId)throw Error('Эпизод не найден.');}
+    if(!active()||!form.isConnected)return;
     await mutate(data=>{
       const list=data[collection]??=[];if(old){const current=careRecords(data,kind).find(x=>x.id===old.id);if(!current||formSnapshots.has(form)&&formSnapshots.get(form)!==JSON.stringify(current))throw Error('Запись изменилась после открытия формы. Откройте редактор заново.');}
       if(kind==='intake')record=window.HumanCare.checkIntake({...input,dose:input.outcome==='skipped'?'':input.dose},old||{},data);
@@ -370,6 +380,7 @@
         version(data,kind,list[idx],'edit');list[idx]=record;
       }else list.push(record);
     });
+    if(!form.isConnected)return;
     if(kind==='intake'||kind==='reminder'){state.careMedication='';state.careOffset=0;render();}
     dialog.close();toast(state.demo?'Демо-запись изменена только в памяти.':'Запись сохранена в зашифрованном хранилище.');
   }
@@ -384,7 +395,7 @@
         previous:structuredClone(data.profile),changedAt:new Date().toISOString()});
       data.profile=next;
     });
-    dialog.close();
+    if(form.isConnected)dialog.close();
   }
   async function remove(kind,id){
     const collection=kinds[kind];
@@ -409,12 +420,13 @@
     download('ayyy-health-'+today()+'.encrypted.json',bytes,'application/json');
   }
   async function fileDownload(id){
+    const active=sessionFence();
     const file=state.doc.documents.find(d=>d.id===id);
     if(!file)throw new Error('Файл не найден.');
     const bytes=C.unbase64(file.data);
     if(bytes.length!==file.size)throw new Error('Документ повреждён.');
     if(file.sha256){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');if(hash!==file.sha256)throw new Error('Не совпадает контрольная сумма документа.');}
-    download(file.name,bytes,file.mime);
+    if(active())download(file.name,bytes,file.mime);
   }
   let previewURL=null;
   async function previewFile(id){
@@ -434,88 +446,77 @@
   }
   dialog.addEventListener('close',()=>{if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}});
   async function switchProfile(id){
+    const request=++sessionRevision;
     const chosen=await S.get(id);
+    if(request!==sessionRevision)return;
     if(!chosen)throw new Error('Локальный профиль не найден.');
-    await S.select(id);G.disconnect();state.demo=false;state.local=chosen;state.key=null;state.doc=null;
+    await S.select(id);if(request!==sessionRevision)return;G.disconnect();state.demo=false;state.local=chosen;state.key=null;state.doc=null;
     state.picker=false;state.conflict=false;state.tab='overview';state.filters={};render();
   }
   function scheduleSync(){
     clearTimeout(syncTimer);
     syncTimer=setTimeout(()=>{void syncNow();},3000);
   }
+  function sessionFence(){const revision=sessionRevision,id=state.doc?.id,localId=state.local?.id,key=state.key;return ()=>revision===sessionRevision&&id===state.doc?.id&&localId===state.local?.id&&key===state.key;}
   async function syncNow(){
     if(state.demo){toast('Демо никогда не отправляется в GitHub.');return;}
-    if(state.syncBusy||!state.local?.repo||!state.key){
-      if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');
-      return;
-    }
+    if(state.syncBusy||!state.local?.repo||!state.key){if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');return;}
     if(!G.hasToken()){state.tab='settings';render();toast('Введите токен GitHub.');return;}
+    const fence=sessionFence(),run=++syncRun,active=()=>fence()&&run===syncRun;
     state.syncBusy=true;renderHeader();
     try{
-      await writeQueue;
-      const snapshot=state.local;
-      await G.verify(snapshot.repo);
-      const remote=await G.read(snapshot.repo);
-      if(remote&&remote.envelope.vaultId!==snapshot.id)
-        throw new Error('В этом репозитории уже хранится другой медицинский профиль.');
+      await writeQueue;if(!active())return;
+      const snapshot=state.local,key=state.key;
+      await G.verify(snapshot.repo);if(!active())return;
+      const remote=await G.read(snapshot.repo);if(!active())return;
+      if(remote&&remote.envelope.vaultId!==snapshot.id)throw new Error('В этом репозитории уже хранится другой медицинский профиль.');
       if(remote&&remote.sha!==snapshot.remoteSha){
-        if(snapshot.dirty){
-          state.conflict=true;state.tab='settings';render();
-          toast('Локальная и GitHub-версии различаются. Автоматическая перезапись запрещена.');
-          return;
-        }
-        const decrypted=await C.openWithKey(remote.envelope,state.key);
-        await writeQueue;
-        const fresh=await S.get(snapshot.id);
-        if(fresh.dirty){state.conflict=true;state.tab='settings';render();return;}
-        const updated=await S.save({...fresh,envelope:remote.envelope,remoteSha:remote.sha,
-          dirty:false,lastSyncAt:new Date().toISOString()});
-        state.doc=decrypted;state.local=updated;state.conflict=false;render();
-        toast('Загружены изменения из GitHub.');return;
+        if(snapshot.dirty){state.conflict=true;state.tab='settings';render();toast('Локальная и GitHub-версии различаются. Автоматическая перезапись запрещена.');return;}
+        const decrypted=await C.openWithKey(remote.envelope,key);if(!active())return;
+        await writeQueue;if(!active())return;
+        const fresh=await S.get(snapshot.id);if(!active())return;
+        if(!fresh)throw Error('Локальный журнал удалён.');
+        if(fresh.dirty||!S.sameEnvelope(fresh.envelope,snapshot.envelope)){state.conflict=true;state.tab='settings';render();return;}
+        const updated=await S.save({...fresh,envelope:remote.envelope,remoteSha:remote.sha,dirty:false,lastSyncAt:new Date().toISOString()},fresh);
+        channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
+        state.doc=decrypted;state.local=updated;state.conflict=false;render();toast('Загружены изменения из GitHub.');return;
       }
-      if(!remote&&snapshot.remoteSha){
-        state.conflict=true;state.tab='settings';render();
-        toast('Удалённая версия исчезла. Автоматическое восстановление заблокировано.');return;
-      }
+      if(!remote&&snapshot.remoteSha){state.conflict=true;state.tab='settings';render();toast('Удалённая версия исчезла. Автоматическое восстановление заблокировано.');return;}
       if(!snapshot.dirty){toast('Все изменения уже синхронизированы.');return;}
-      const sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null);
-      await writeQueue;
-      const fresh=await S.get(snapshot.id);
-      const unchanged=fresh.envelope.ciphertext===snapshot.envelope.ciphertext&&
-        fresh.envelope.iv===snapshot.envelope.iv;
-      const updated=await S.save({...fresh,remoteSha:sha,dirty:!unchanged,
-        lastSyncAt:new Date().toISOString()});
-      state.local=updated;state.conflict=false;render();
-      toast(unchanged?'Зашифрованные данные отправлены в GitHub.':'Новые изменения ожидают следующей отправки.');
-      if(updated.dirty)scheduleSync();
-    }catch(e){error(e);}
-    finally{state.syncBusy=false;renderHeader();}
+      const sha=await G.write(snapshot.repo,snapshot.envelope,remote?.sha||null);if(!active())return;
+      await writeQueue;if(!active())return;
+      const fresh=await S.get(snapshot.id);if(!active())return;
+      if(!fresh)throw Error('Локальный журнал удалён.');
+      const unchanged=S.sameEnvelope(fresh.envelope,snapshot.envelope);
+      const updated=await S.save({...fresh,remoteSha:sha,dirty:!unchanged,lastSyncAt:new Date().toISOString()},fresh);if(!active())return;
+      state.local=updated;state.conflict=false;render();toast(unchanged?'Зашифрованные данные отправлены в GitHub.':'Новые изменения ожидают следующей отправки.');if(updated.dirty)scheduleSync();
+    }catch(e){if(active())error(e);}
+    finally{if(run===syncRun){state.syncBusy=false;renderHeader();}}
   }
   async function restoreRemote(){
-    if(!state.local?.repo||!G.hasToken())throw new Error('Сначала подключите токен GitHub.');
+    if(!state.local?.repo||!G.hasToken()||!state.key)throw new Error('Сначала подключите токен GitHub и откройте журнал.');
     if(!confirm('Заменить локальную версию архивом из GitHub? Перед заменой будет скачана резервная копия.'))return;
-    backup();
-    await G.verify(state.local.repo);
-    const remote=await G.read(state.local.repo);
-    if(!remote||remote.envelope.vaultId!==state.local.id)
-      throw new Error('Удалённый архив не найден либо принадлежит другому профилю.');
-    state.local=await S.save({...state.local,envelope:remote.envelope,remoteSha:remote.sha,dirty:false});
-    state.key=null;state.doc=null;state.conflict=false;G.disconnect();render();
-    toast('Архив заменён; откройте его фразой доступа.');
+    const active=sessionFence();await writeQueue;if(!active())return;
+    const snapshot=state.local;backup();
+    await G.verify(snapshot.repo);if(!active())return;
+    const remote=await G.read(snapshot.repo);if(!active())return;
+    if(!remote||remote.envelope.vaultId!==snapshot.id)throw new Error('Удалённый архив не найден либо принадлежит другому профилю.');
+    const updated=await S.save({...snapshot,envelope:remote.envelope,remoteSha:remote.sha,dirty:false},snapshot);
+    channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
+    state.local=updated;state.key=null;state.doc=null;state.conflict=false;G.disconnect();render();toast('Архив заменён; откройте его фразой доступа.');
   }
   async function connect(form){
     if(state.demo)throw new Error('Демо не подключается к GitHub.');
-    const values=Object.fromEntries(new FormData(form).entries());
-    const repo=G.parseRepo(values.repo,values.branch);
+    const values=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(values.repo,values.branch),active=sessionFence();
     G.token(values.token);
     try{
-      await G.verify(repo);
-      const old=state.local.repo,equals=old&&old.owner===repo.owner&&old.repo===repo.repo&&
-        old.branch===repo.branch;
-      state.local=await S.save({...state.local,repo,
-        remoteSha:equals?state.local.remoteSha:null,dirty:equals?state.local.dirty:true});
-      state.conflict=false;render();await syncNow();
-    }catch(e){G.disconnect();throw e;}
+      await G.verify(repo);if(!active())return;
+      await writeQueue;if(!active())return;
+      const fresh=await S.get(state.local.id);if(!active())return;if(!fresh)throw Error('Локальный журнал удалён.');
+      const old=fresh.repo,equals=old&&old.owner===repo.owner&&old.repo===repo.repo&&old.branch===repo.branch;
+      const updated=await S.save({...fresh,repo,remoteSha:equals?fresh.remoteSha:null,dirty:equals?fresh.dirty:true},fresh);if(!active())return;
+      syncRun++;state.syncBusy=false;state.local=updated;state.conflict=false;render();await syncNow();
+    }catch(e){if(active()){G.disconnect();throw e;}}
   }
   async function onSubmit(event){
     const form=event.target;
@@ -525,44 +526,53 @@
     try{
       const mode=form.dataset.form;
       if(mode==='create'){
+        const active=sessionFence();
         const pass=form.elements.namedItem('password').value;
         if(pass.length<12||pass!==form.elements.namedItem('repeat').value)
           throw new Error('Фразы не совпадают или короче 12 символов.');
         const created=await C.create(pass);
-        state.local=await S.save({id:created.doc.id,envelope:created.envelope,dirty:true});
+        if(!active())return;const local=await S.save({id:created.doc.id,envelope:created.envelope,dirty:true},null);if(!active())return;
+        await profileList();if(!active())return;await S.select(local.id);if(!active())return;
+        state.local=local;
         state.doc=created.doc;state.key=created.key;state.picker=false;state.tab='overview';
-        await profileList();await S.select(state.local.id);render();
+        render();
         toast('Зашифрованный профиль создан. Не теряйте фразу доступа.');
       }else if(mode==='unlock'){
+        const active=sessionFence();
         const opened=await C.unlock(state.local.envelope,form.elements.namedItem('passphrase').value);
+        if(!active())return;
         state.doc=opened.doc;state.key=opened.key;state.picker=false;state.tab='overview';
         render();
       }else if(mode==='download'){
+        const active=sessionFence();
         const v=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(v.repo,v.branch);
-        G.token(v.token);await G.verify(repo);
-        const data=await G.read(repo);
+        G.token(v.token);await G.verify(repo);if(!active())return;
+        const data=await G.read(repo);if(!active())return;
         if(!data)throw new Error('В репозитории нет health-data/v1/vault.json.');
         if(await S.get(data.envelope.vaultId))throw new Error('Этот профиль уже есть на устройстве.');
+        if(!active())return;
         const local=await S.save({id:data.envelope.vaultId,envelope:data.envelope,
-          repo,remoteSha:data.sha,dirty:false});
-        await S.select(local.id);await profileList();
+          repo,remoteSha:data.sha,dirty:false},null);
+        if(!active())return;await S.select(local.id);if(!active())return;await profileList();if(!active())return;
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
         toast('Архив загружен. Введите вашу фразу доступа.');
       }else if(mode==='import-vault'){
+        const active=sessionFence();
         const file=form.elements.namedItem('file').files[0];
         if(!file||file.size>45*1024*1024)throw new Error('Неверный размер файла.');
-        const envelope=JSON.parse(await file.text());
+        const envelope=JSON.parse(await file.text());if(!active())return;
         C.assertEnvelope(envelope);
         if(await S.get(envelope.vaultId))throw new Error('Такой профиль уже существует.');
-        const local=await S.save({id:envelope.vaultId,envelope,dirty:true});
-        await S.select(local.id);await profileList();
+        if(!active())return;
+        const local=await S.save({id:envelope.vaultId,envelope,dirty:true},null);
+        if(!active())return;await S.select(local.id);if(!active())return;await profileList();if(!active())return;
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
-      }else if(mode==='human-migration-file'){if(state.demo)throw Error('Перенос доступен в личном журнале.');const file=form.elements.namedItem('file').files[0];await HumanMigrationUI.open(file,{V,C,S,dialog,getDoc:()=>state.doc,onCreated:async next=>{clearTimeout(syncTimer);G.disconnect();state.local=next.local;state.doc=next.doc;state.key=next.key;state.demo=false;state.picker=false;state.tab='overview';state.filters={};state.search='';state.globalSearch='';state.groupKey='';state.conflict=false;await profileList();render();toast('Создан отдельный журнал из экспорта HUMAN.');}});}
+      }else if(mode==='human-migration-file'){if(state.demo)throw Error('Перенос доступен в личном журнале.');const file=form.elements.namedItem('file').files[0],active=sessionFence();await HumanMigrationUI.open(file,{V,C,S,dialog,getDoc:()=>state.doc,isCurrent:active,onCreated:async next=>{if(!active())return;clearTimeout(syncTimer);G.disconnect();state.local=next.local;state.doc=next.doc;state.key=next.key;state.demo=false;state.picker=false;state.tab='overview';state.filters={};state.search='';state.globalSearch='';state.groupKey='';state.conflict=false;render();const imported=sessionFence();await profileList();if(imported()){render();toast('Создан отдельный журнал из экспорта HUMAN.');}}});}
       else if(mode==='episode-answer'){
         const id=form.dataset.id,expected=Number(form.dataset.version),input=Object.fromEntries(new FormData(form).entries()),H=window.HumanHealth;
-        await mutate(data=>{const old=H.episodes(data).find(x=>x.id===id);if(!old)throw Error('Эпизод больше не существует.');if((old.version||0)!==expected)throw Error('Эпизод изменился. Откройте уточнение заново.');const next=H.answerEpisode(old,form.dataset.action,{days:input.days?Number(input.days):0,endDate:input.endDate||'',zone:H.zoneName(data.profile.timezone)});version(data,'episode',old,'episode_'+form.dataset.action);const list=data.episodes??=[],index=list.findIndex(x=>x.id===id);if(index<0)list.push(next);else list[index]=next;});dialog.close();
+        await mutate(data=>{const old=H.episodes(data).find(x=>x.id===id);if(!old)throw Error('Эпизод больше не существует.');if((old.version||0)!==expected)throw Error('Эпизод изменился. Откройте уточнение заново.');const next=H.answerEpisode(old,form.dataset.action,{days:input.days?Number(input.days):0,endDate:input.endDate||'',zone:H.zoneName(data.profile.timezone)});version(data,'episode',old,'episode_'+form.dataset.action);const list=data.episodes??=[],index=list.findIndex(x=>x.id===id);if(index<0)list.push(next);else list[index]=next;});if(form.isConnected)dialog.close();
       }
-      else if(mode==='care-action'){await careAction(form.dataset.id,form.dataset.version,form.dataset.mode,Number(form.elements.minutes.value));dialog.close();}
+      else if(mode==='care-action'){await careAction(form.dataset.id,form.dataset.version,form.dataset.mode,Number(form.elements.minutes.value));if(form.isConnected)dialog.close();}
       else if(mode==='record')await recordSubmit(form);
       else if(mode==='analyte-preferences'){const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous:structuredClone(old),changedAt:new Date().toISOString()});d.analytePreferences[key]=M.checkPreferences(input,old);});toast('Настройки показателя сохранены.');}
       else if(mode==='profile')await profileSubmit(form);
@@ -573,8 +583,8 @@
   let importGeneration=0;
   async function importCSV(file){
     if(!file)return;
-    const generation=++importGeneration,tab=state.tab;
-    await HumanImport.open(file,{V,M,C,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>generation===importGeneration&&state.tab===tab});
+    const generation=++importGeneration,tab=state.tab,active=sessionFence();
+    await HumanImport.open(file,{V,M,C,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
   }
   async function deleteLocal(){
     if(state.demo)throw new Error('Демо удаляется при выходе.');
@@ -582,11 +592,12 @@
     backup();
     if(!confirm('Удалить локальную зашифрованную копию? GitHub останется без изменений.'))return;
     if(!confirm('Подтвердите окончательное удаление с устройства.'))return;
-    clearTimeout(syncTimer);
-    await S.remove(state.local.id);await S.select('');await profileList();
-    G.disconnect();state.local=null;state.doc=null;state.key=null;state.picker=true;render();
+    const id=state.local.id;clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
+    await S.remove(id);if(!active())return;const selected=await S.current();if(!active())return;if(selected===id)await S.select('');if(!active())return;await profileList();if(!active())return;
+    state.local=null;state.picker=true;render();
   }
   function openDemo(){
+    sessionRevision++;
     clearTimeout(syncTimer);
     G.disconnect();
     state.demo=true;
@@ -598,20 +609,16 @@
     render();
   }
   async function exitDemo(){
-    clearTimeout(syncTimer);
-    G.disconnect();
-    state.demo=false;state.doc=null;state.key=null;
-    state.tab='overview';state.search='';state.groupKey='';state.conflict=false;
+    sessionRevision++;clearTimeout(syncTimer);G.disconnect();
+    state.demo=false;state.doc=null;state.key=null;state.local=null;state.picker=true;
+    state.tab='overview';state.search='';state.groupKey='';state.conflict=false;render();
+    const active=sessionFence();
     try{
-      await profileList();
-      const id=await S.current();
-      state.local=id?await S.get(id):null;
-    }catch{
-      // The sample must remain usable even when IndexedDB is unavailable.
-      state.profiles=[];state.local=null;
-    }
-    state.picker=!state.local;
-    render();
+      await profileList();if(!active())return;
+      const id=await S.current();if(!active())return;
+      const local=id?await S.get(id):null;if(!active())return;state.local=local;
+    }catch{if(!active())return;state.profiles=[];state.local=null;}
+    state.picker=!state.local;render();
   }
   async function onClick(event){
     const el=event.target.closest('[data-action],[data-tab]');
@@ -650,6 +657,7 @@
         state.groupKey=all[Number(el.dataset.index)]?.key||'';
         render();
       }else if(action==='picker'){
+        sessionRevision++;
         clearTimeout(syncTimer);G.disconnect();state.demo=false;
         state.picker=true;state.local=null;state.doc=null;state.key=null;render();
       }else if(action==='select-profile')await switchProfile(el.dataset.id);
@@ -705,9 +713,8 @@
   window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});window.addEventListener?.('pagehide',()=>activeNotification?.close());
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
-    clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();
-    void S.get(state.local.id).then(data=>{state.local=data;render();
-      toast('Профиль изменён в другой вкладке. Откройте его снова.');});
+    const id=state.local.id;sessionRevision++;clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();render();const revision=sessionRevision;
+    void S.get(id).then(data=>{if(revision!==sessionRevision||state.local?.id!==id)return;state.local=data;render();toast('Профиль изменён в другой вкладке. Откройте его снова.');}).catch(error);
   };
   void (async()=>{
     try{

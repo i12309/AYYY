@@ -1,9 +1,10 @@
 /* Migration is isolated in a new vault; no existing local profile is replaced. */
 (() => {
  'use strict';
- async function open(file,{V,C,S,dialog,getDoc,onCreated}){
+ async function open(file,{V,C,S,dialog,getDoc,onCreated,isCurrent=()=>true}){
   const identity=getDoc()?.id;if(!identity)throw Error('Откройте журнал перед переносом.');
-  const result=await HumanMigration.inspect(file);if(getDoc()?.id!==identity)throw Error('Открытый журнал сменился. Повторите перенос.');
+  const current=()=>isCurrent()&&getDoc()?.id===identity;
+  const result=await HumanMigration.inspect(file);if(!current())throw Error('Открытый журнал сменился. Повторите перенос.');
   if(getDoc().humanMigration?.archiveHash===result.archiveHash)throw Error('Этот экспорт уже перенесён в открытый журнал.');
   let busy=false;
   const contents=V.h('div',{class:'health-modal-content'}),message=V.h('p',{class:'error',role:'alert',hidden:true}),close=V.button('×','close-dialog',{'aria-label':'Закрыть перенос'});
@@ -18,9 +19,9 @@
   if(!dialog.open)dialog.showModal();
   const preventCancel=e=>{if(busy)e.preventDefault();};dialog.addEventListener('cancel',preventCancel);dialog.addEventListener('close',()=>dialog.removeEventListener('cancel',preventCancel),{once:true});
   form.addEventListener('submit',async e=>{e.preventDefault();e.stopPropagation();if(busy)return;busy=true;const submit=form.querySelector('[type=submit]');submit.disabled=close.disabled=true;
-   try{const values=new FormData(form),pass=String(values.get('password')||'');if(pass!==values.get('repeat'))throw Error('Фразы не совпадают.');const created=await C.create(pass);doc.id=created.doc.id;
-    const envelope=await C.seal(doc,created.key,created.envelope);if(getDoc()?.id!==identity||!dialog.open)throw Error('Открытый журнал сменился.');
-    const local=await S.createSelected({id:doc.id,envelope});await onCreated({local,doc,key:created.key});dialog.close();
+   try{if(!current()||!form.isConnected)throw Error('Открытый журнал сменился.');const values=new FormData(form),pass=String(values.get('password')||'');if(pass!==values.get('repeat'))throw Error('Фразы не совпадают.');const created=await C.create(pass);if(!current()||!form.isConnected)throw Error('Открытый журнал сменился.');doc.id=created.doc.id;
+    const envelope=await C.seal(doc,created.key,created.envelope);if(!current()||!form.isConnected||!dialog.open)throw Error('Открытый журнал сменился.');
+    const local=await S.createSelected({id:doc.id,envelope});if(!current())return;await onCreated({local,doc,key:created.key});if(form.isConnected)dialog.close();
    }catch(err){message.hidden=false;message.textContent=err.message;}finally{busy=false;if(submit.isConnected)submit.disabled=close.disabled=false;}
   });
  }

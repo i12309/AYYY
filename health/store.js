@@ -34,14 +34,24 @@
     return values.map(x=>({id:x.id,repo:x.repo||null,dirty:!!x.dirty,lastSyncAt:x.lastSyncAt||null}));
   }
   function get(id){return request('vaults','readonly',s=>s.get(id));}
-  async function save(entry){
+  const sameEnvelope=(a,b)=>!!a&&!!b&&['format','vaultId','kdf','iterations','salt','iv','ciphertext'].every(k=>a[k]===b[k]);
+  function sameRecord(a,b){return !!a&&!!b&&a.id===b.id&&sameEnvelope(a.envelope,b.envelope)&&!!a.dirty===!!b.dirty&&(a.remoteSha||null)===(b.remoteSha||null)&&(a.lastSyncAt||null)===(b.lastSyncAt||null)&&['owner','repo','branch'].every(k=>(a.repo?.[k]||null)===(b.repo?.[k]||null));}
+  async function save(entry,expected){
     if(!entry || typeof entry.id!=='string' || entry.envelope?.vaultId!==entry.id)
       throw new Error('Попытка записать несовпадающий архив.');
     window.HumanCrypto.assertEnvelope(entry.envelope);
     const record={id:entry.id,envelope:entry.envelope,
       repo:entry.repo||null,remoteSha:entry.remoteSha||null,
       dirty:!!entry.dirty,lastSyncAt:entry.lastSyncAt||null};
-    await request('vaults','readwrite',s=>s.put(record));
+    const db=await open();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('vaults','readwrite'),store=tx.objectStore('vaults');let failure;
+      tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(failure||tx.error||new Error('Локальное сохранение отменено.'));
+      const current=store.get(record.id);current.onsuccess=()=>{
+        if(expected===null?!!current.result:expected!==undefined&&!sameRecord(current.result,expected)){failure=new Error('Журнал изменён в другой операции. Откройте его заново; новые данные не перезаписаны.');tx.abort();return;}
+        try{store.put(record);}catch(e){failure=e;tx.abort();}
+      };
+    });
     return record;
   }
   function remove(id){return request('vaults','readwrite',s=>s.delete(id));}
@@ -54,5 +64,5 @@
     await new Promise((resolve,reject)=>{const tx=db.transaction(['vaults','meta'],'readwrite');tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Не удалось создать импортированный журнал.'));try{tx.objectStore('vaults').add(record);tx.objectStore('meta').put(record.id,'current');}catch(error){tx.abort();reject(error);}});
     return record;
   }
-  window.HumanStore={list,get,save,remove,current,select,createSelected};
+  window.HumanStore={list,get,save,remove,current,select,createSelected,sameEnvelope};
 })();

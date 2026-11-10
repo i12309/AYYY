@@ -3,7 +3,7 @@
 Set HEALTH_GITHUB_TEST_REPO=i12309/TEST_TREE to explicitly authorize a temporary
 branch. Existing branches/data are untouched. No token or plaintext is published.
 """
-import json, os, subprocess, uuid, mimetypes
+import json, os, subprocess, uuid, mimetypes, time
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
@@ -30,7 +30,7 @@ gh('repos/'+REPO+'/git/refs',{'ref':'refs/heads/'+branch,'sha':commit['sha']})
 print('Temporary branch:',branch,flush=True)
 try:
  with sync_playwright() as pw:
-  browser=pw.chromium.launch()
+  browser=pw.chromium.launch();runtime_errors=[]
   def context():
    ctx=browser.new_context()
    def serve(route):
@@ -41,7 +41,7 @@ try:
     if ROOT in file.parents and file.is_file():route.fulfill(body=file.read_bytes(),content_type=mimetypes.guess_type(file)[0] or 'text/plain')
     else:route.abort()
    ctx.route('**/*',serve)
-   page=ctx.new_page();page.goto('http://localhost:8877/health/');page.wait_for_function('!!window.HumanGithub')
+   page=ctx.new_page();page.on('pageerror',lambda e:runtime_errors.append(str(e)));page.goto('http://localhost:8877/health/');page.wait_for_function('()=>!!window.HumanGithub')
    return ctx,page
   a,pa=context();b,pb=context()
   repo={'owner':'i12309','repo':'TEST_TREE','branch':branch}
@@ -68,6 +68,34 @@ try:
   assert envelope['format']=='ayyy-health-v1' and 'observations' not in envelope and 'profile' not in envelope
   assert 'Synthetic' not in json.dumps(envelope)
   print('PASS remote contains only encrypted envelope',flush=True)
+  # Exercise the real controller as well as the transport API.
+  def open_ui(page):
+   form=page.locator('[data-form=download]');form.locator('[name=repo]').fill(REPO);form.locator('[name=branch]').fill(branch);form.locator('[name=token]').fill(credential);form.locator('[type=submit]').click();page.locator('[data-form=unlock]').wait_for();page.locator('[name=passphrase]').fill(params['passphrase']);page.locator('[data-form=unlock] [type=submit]').click();page.locator('.metric').first.wait_for()
+  def reminders(page):page.locator('.sidebar button[data-tab=care]').click();page.locator('[data-view=reminders]').click()
+  def new_reminder(page,title):
+   page.locator('[data-action=new-reminder]').click();page.locator('#health-dialog [name=title]').fill(title);page.locator('#health-dialog [name=date]').fill('2026-11-10');page.locator('#health-dialog [name=time]').fill('10:00');page.locator('#health-dialog [type=submit]').click();page.locator('#health-dialog').wait_for(state='hidden')
+  def synced(page):
+   # wait_for_function treats a Promise as truthy; await IndexedDB in evaluate instead.
+   deadline=time.monotonic()+60
+   while time.monotonic()<deadline:
+    if page.evaluate('async()=>{const x=await HumanStore.get(await HumanStore.current());return x&&!x.dirty&&!!x.lastSyncAt;}'):return
+    time.sleep(.25)
+   raise AssertionError('Controller did not confirm synchronization')
+  open_ui(pa);reminders(pa);new_reminder(pa,'Synthetic UI schedule');synced(pa)
+  print('PASS controller saved and synchronized a reminder',flush=True)
+  open_ui(pb);reminders(pb)
+  if 'Synthetic UI schedule' not in pb.locator('.care-list').inner_text():
+   for label,page in [('first',pa),('second',pb)]:
+    detail=page.evaluate('''async p=>{const local=await HumanStore.get(await HumanStore.current()),opened=await HumanCrypto.unlock(local.envelope,p.passphrase),remote=await HumanGithub.read(p.repo),other=await HumanCrypto.unlock(remote.envelope,p.passphrase);return {localSHA:local.remoteSha,dirty:local.dirty,localReminders:opened.doc.reminders?.length||0,remoteSHA:remote.sha,remoteReminders:other.doc.reminders?.length||0};}''',params)
+    print('Controller diagnostic:',label,detail,flush=True)
+   raise AssertionError('Second controller did not restore the synchronized reminder')
+  print('PASS independent browser UI restored the synchronized schedule',flush=True)
+  pb.locator('.care-list [data-action=edit]').click();pb.locator('#health-dialog [name=title]').fill('Synthetic second UI revision');pb.locator('#health-dialog [type=submit]').click();pb.locator('#health-dialog').wait_for(state='hidden');synced(pb)
+  new_reminder(pa,'Synthetic first UI pending draft');pa.get_by_text('Конфликт версий',exact=True).wait_for(timeout=60000)
+  kept=pa.evaluate('''async p=>{const local=await HumanStore.get(await HumanStore.current()),opened=await HumanCrypto.unlock(local.envelope,p.passphrase),remote=await HumanGithub.read(p.repo),other=await HumanCrypto.unlock(remote.envelope,p.passphrase);return local.dirty&&opened.doc.reminders.length===2&&other.doc.reminders.length===1&&other.doc.reminders[0].title==='Synthetic second UI revision';}''',params)
+  assert kept,'Controller conflict must retain both independent versions'
+  print('PASS controller conflict preserves the local draft and remote revision',flush=True)
+  assert not runtime_errors,'Runtime error in GitHub UI roundtrip'
   browser.close()
 finally:
  gh('repos/'+REPO+'/git/refs/heads/'+branch,method='DELETE')
