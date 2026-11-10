@@ -95,6 +95,42 @@ export function validate(document: Document): void {
   }
 }
 
+/** Complete optional schema-v1 fields from older archives without dropping
+ * unknown GEDCOM source nodes or other original properties.
+ */
+export function normalizeDocument<T extends Document>(document:T):T {
+  if(!document||!document.tree||!Array.isArray(document.persons)||!Array.isArray(document.families))
+    throw new Error('Некорректный JSON семейного дерева.');
+  const tree=document.tree as Record<string,any>;
+  if(typeof tree.description!=='string')tree.description='';
+  if(!Number.isInteger(tree.revision)||tree.revision<1)tree.revision=1;
+  if(!tree.updated_at)tree.updated_at=now();
+  if(typeof tree.slug!=='string'||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tree.slug))
+    tree.slug=slugify(tree.name||'family')+'-'+String(tree.id||'').slice(0,6);
+  for(const person of document.persons){
+    for(const field of ['given_name','surname','patronymic','maiden_name','birth_date','birth_place',
+      'death_date','death_place','occupation','biography','notes']){
+      if(person[field]===undefined||person[field]===null)person[field]='';
+    }
+    if(!['M','F','U','X'].includes(person.sex))person.sex='U';
+    if(typeof person.is_living!=='boolean')person.is_living=!person.death_date;
+    if(!['markdown','text'].includes(person.biography_format))person.biography_format='text';
+    if(person.events===undefined)person.events=[];
+    if(!Array.isArray(person.events))throw new Error('Некорректные события человека.');
+    if(!Number.isInteger(person.revision)||person.revision<1)person.revision=1;
+    if(typeof person.updated_at!=='string')person.updated_at=now();
+  }
+  for(const family of document.families){
+    for(const field of ['partner1_id','partner2_id'])
+      if(family[field]===undefined)family[field]=null;
+    for(const field of ['marriage_date','marriage_place','divorce_date','notes'])
+      if(family[field]===undefined||family[field]===null)family[field]='';
+    if(!Number.isInteger(family.revision)||family.revision<1)family.revision=1;
+  }
+  if(document.metadata===null||typeof document.metadata!=='object')document.metadata={};
+  return document;
+}
+
 export function newTree(name: string, description = ''): Document {
   const id = uid();
   const document: Document = {
