@@ -201,6 +201,60 @@ export function mount(root, options={}) {
     if(task && state.tab==='gantt')root.querySelector('.pv-body').insertAdjacentHTML('beforeend',taskInfo(task));
     if (state.demo) sendStatus('Демонстрационный проект: все данные вымышлены. Это не прочитанный MPP-файл.','info');
   }
+  function readInWorker(bytes, filename) {
+    return new Promise((resolve,reject)=>{
+      let worker;
+      try {
+        worker=new Worker(new URL('./reader-worker.mjs',import.meta.url),{type:'module'});
+      } catch(error) {
+        reject(Object.assign(new Error('Невозможно запустить Web Worker.'),{code:'worker',cause:error}));
+        return;
+      }
+      let timer;
+      const finish=()=>{
+        clearTimeout(timer);
+        worker.terminate();
+        if(state.cancelParse===cancel)state.cancelParse=null;
+      };
+      const fail=(message,code='worker')=>{
+        finish();
+        reject(Object.assign(new Error(String(message)),{code}));
+      };
+      const cancel=()=>fail('Чтение отменено','cancelled');
+      state.cancelParse=cancel;
+      worker.onmessage=event=>{
+        const data=event.data;
+        if(!data?.ok){fail(data?.error||'Ошибка чтения файла.',data?.code||'format');return;}
+        finish();
+        const model=data.model;
+        model.byUid=new Map(model.tasks.map(task=>[task.uid,task]));
+        resolve(model);
+      };
+      worker.onerror=event=>{
+        event.preventDefault();
+        fail('Ошибка загрузки браузерного парсера.','worker');
+      };
+      timer=setTimeout(()=>fail('Чтение превысило 45 секунд.','worker'),45000);
+      try {worker.postMessage({bytes,filename},[bytes]);}
+      catch(error){fail(error?.message||'Ошибка запуска чтения.','worker');}
+    });
+  }
+  async function parseLocalFile(file,ticket){
+    const bytes=await file.arrayBuffer();
+    if(state.destroyed||ticket!==state.pending)throw Object.assign(new Error('Чтение отменено'),{code:'cancelled'});
+    if(typeof Worker==='function'){
+      try {return await readInWorker(bytes,file.name);}
+      catch(error) {
+        if(error?.code!=='worker')throw error;
+        console.warn('AYYY Project Viewer: worker unavailable, falling back to direct read',error);
+      }
+    }
+    const fallback=bytes.byteLength?bytes:await file.arrayBuffer();
+    const reader=await loadParser();
+    if(state.destroyed||ticket!==state.pending)throw Object.assign(new Error('Чтение отменено'),{code:'cancelled'});
+    return normalizeProject(reader.readProject(new Uint8Array(fallback)),file.name);
+  }
+
   async function openFile(file) {
     if(!file) return;
     const extension=file.name.split('.').pop()?.toLowerCase() || '';
@@ -208,16 +262,13 @@ export function mount(root, options={}) {
     if(file.size>40*1024*1024){sendStatus('Файл больше 40 МБ. Для первой версии установлен лимит безопасности.','error');return;}
     if(file.size===0){sendStatus('Файл пустой.','error');return;}
     const ticket=++state.pending;
+    state.cancelParse?.();
     sendStatus('Открываем '+file.name+' локально…','working');
     root.classList.add('pv-busy');
     try{
-      const bytes=new Uint8Array(await file.arrayBuffer());
-      const reader=await loadParser();
+      const normalized=await parseLocalFile(file,ticket);
       if(state.destroyed||ticket!==state.pending)return;
-      const project=reader.readProject(bytes);
-      const normalized=normalizeProject(project,file.name);
-      if(state.destroyed||ticket!==state.pending)return;
-      state.model=normalized;state.demo=false;state.filename=file.name;state.query='';state.tab='gantt';state.selectedUid=null;state.collapsed.clear();
+      state.model=normalized;state.demo=false;state.filename=file.name;state.query='';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();
       render();
       sendStatus('Файл прочитан локально. Ничего не отправлено на сервер.','success');
     }catch(error){
@@ -243,6 +294,7 @@ export function mount(root, options={}) {
   }
   function renderDemo() {
     ++state.pending;
+    state.cancelParse?.();
     state.model=demoProject();state.filename='Пример (вымышленный)';state.demo=true;
     state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render();
   }
@@ -296,5 +348,5 @@ export function mount(root, options={}) {
     openFile(event.dataTransfer.files[0]);
   },{signal:events.signal});
   render();
-  return {destroy(){state.destroyed=true;state.pending++;events.abort();root.replaceChildren();}};
+  return {destroy(){state.destroyed=true;state.pending++;state.cancelParse?.();events.abort();root.replaceChildren();}};
 }
