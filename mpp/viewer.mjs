@@ -17,8 +17,10 @@ const todayStamp=()=>{const now=new Date();return Date.UTC(now.getFullYear(),now
 
 function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true, showBaseline = true, options = {}) {
   const range = timelineRange(model), pixel = zoomWidths[zoom] || zoomWidths.week;
-  const width = Math.round(range.days * pixel);
-  const end = range.start + range.days * DAY;
+  // Cover every horizontal pixel of the chart pane without stretching task dates.
+  const days=Math.max(range.days,Math.min(10000,Math.ceil(Math.max(0,options.chartViewportWidth||0)/pixel)));
+  const width=Math.max(Math.ceil(days*pixel),Math.ceil(options.chartViewportWidth||0));
+  const end = range.start + days * DAY;
   const criticalIds=options.criticalIds||new Set();
   const columnMode=options.columnMode||'basic';
   const calendarId=options.calendarId||model.calendar;
@@ -36,7 +38,7 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
   // Space ticks by readable date labels, not by a wasteful fixed day width.
   const steps = zoom==='day'?2:zoom==='week'?7:30;
   const ticks=[];
-  for(let n=0;n<Math.min(600,Math.ceil(range.days/steps));n++){
+  for(let n=0;n<Math.min(600,Math.ceil(days/steps));n++){
     const left=Math.round(n*steps*pixel);
     ticks.push('<span class="pv-tick" style="left:'+left+'px">'+escapeHtml(shortDay(new Date(range.start+n*steps*DAY)))+'</span>');
   }
@@ -96,9 +98,9 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
     }
   }
   let overlays='';
-  if(options.showCalendar && model.calendars?.length && calendarId && range.days<=900) {
+  if(options.showCalendar && model.calendars?.length && calendarId && days<=900) {
     const offdays=[];
-    for(let n=0;n<range.days;n++){
+    for(let n=0;n<days;n++){
       const hours=workingHoursOnDate(model,range.start+n*DAY,calendarId);
       if(hours && !hours.length)offdays.push('<span class="pv-nonwork" style="left:'+Math.round(n*pixel)+'px;width:'+Math.max(1,Math.ceil(pixel))+'px"></span>');
     }
@@ -208,10 +210,24 @@ export function mount(root, options={}) {
     const el=root.querySelector('[data-pv-status]');
     if (el) {el.textContent=message;el.dataset.kind=kind;}
   };
-  // Reuse the actual AYYY home-page wordmark, not a second visual approximation.
-  const header = () => '<header class="pv-header"><a class="shore-brand pv-brand" href="#home" aria-label="AYYY — на главную">ayyy<span>.</span></a><span class="pv-header-separator"></span><strong>PROJECT VIEWER</strong><span class="pv-header-spacer"></span><a href="#directory" class="pv-back">Все сервисы</a><span class="pv-private"><span class="pv-private-dot"></span>Файл остаётся у вас</span></header>';
   const fileInput = () => '<input type="file" id="pv-file-input" accept=".mpp,.mpt,.mpx,.xml,application/xml" hidden>';
-  const buttons = () => '<button type="button" class="pv-button pv-primary" data-pv-action="open">Открыть MPP / XML</button><button type="button" class="pv-button" data-pv-action="demo">Пример проекта</button>';
+  const openButton = () => '<button type="button" class="pv-button pv-primary" data-pv-action="open">Открыть MPP / XML</button>';
+  const buttons = () => openButton()+'<button type="button" class="pv-button" data-pv-action="demo">Пример проекта</button>';
+  // The project identity and actions share the top bar; avoid a second tall banner.
+  const header = (model) => '<header class="pv-header'+(model?' pv-header-loaded':'')+'">'+
+    '<a class="shore-brand pv-brand" href="#home" aria-label="AYYY — на главную">ayyy<span>.</span></a>'+
+    '<span class="pv-header-separator"></span>'+
+    '<div class="pv-header-context"><span class="pv-header-section">PROJECT VIEWER</span>'+
+    (model?'<h1 class="pv-project-title" title="'+escapeHtml(model.title)+'">'+escapeHtml(model.title)+'</h1>'+
+      '<div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span>'+
+      '<span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span>'+
+      (state.demo?'<span>Демонстрация</span>':'')+'</div>':'')+'</div>'+
+    (model?'<div class="pv-header-actions">'+openButton()+
+      '<button type="button" class="pv-button" data-pv-action="export">CSV задач</button>'+
+      '<button type="button" class="pv-button" data-pv-action="export-svg">SVG диаграммы</button>'+
+      (state.tab==='resources'?'<button type="button" class="pv-button" data-pv-action="export-assignments">CSV назначений</button>':'')+'</div>':'')+
+    '<div class="pv-header-links"><a href="#directory" class="pv-back">Все сервисы</a>'+
+      '<span class="pv-private"><span class="pv-private-dot"></span>Файл остаётся у вас</span></div></header>';
   const empty = () => '<div class="pv-empty"><div class="pv-empty-paper" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="pv-kicker">БРАУЗЕРНЫЙ ПРОСМОТРЩИК ПРОЕКТОВ</div><h1>План проекта —<br>перед глазами.</h1><p>Откройте Microsoft Project (.mpp, .mpt, .mpx) или Project XML. Дерево задач, сроки и диаграмма Ганта будут построены в этом браузере.</p><div class="pv-empty-actions">'+buttons()+'</div><div class="pv-formats">Можно также перетащить файл сюда · Без регистрации и загрузки на сервер</div></div>';
   const taskInfo = t => {
     const fields = [
@@ -329,29 +345,32 @@ export function mount(root, options={}) {
       }
       visible=baseVisible.filter(t=>included.has(t.uid));
     }
-    const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button><button type="button" class="pv-button" data-pv-action="export-svg">SVG диаграммы</button>'+(state.tab==='resources'?'<button type="button" class="pv-button" data-pv-action="export-assignments">CSV назначений</button>':'')+'</div></div>'+
+    const viewState=loaded?
       '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button><button type="button" data-pv-tab="calendars" aria-selected="'+(state.tab==='calendars')+'">Календари</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><label>Колонки <select id="pv-columns" aria-label="Столбцы таблицы задач"><option value="basic"'+(state.columnMode==='basic'?' selected':'')+'>Основные</option><option value="resources"'+(state.columnMode==='resources'?' selected':'')+'>Ресурсы</option><option value="baseline"'+(state.columnMode==='baseline'?' selected':'')+'>Базовый план</option><option value="critical"'+(state.columnMode==='critical'?' selected':'')+'>Критичность</option></select></label><label>Сортировка <select id="pv-sort" aria-label="Сортировка задач"><option value="id"'+(state.sort==='id'?' selected':'')+'>WBS</option><option value="name"'+(state.sort==='name'?' selected':'')+'>Название</option><option value="start"'+(state.sort==='start'?' selected':'')+'>Начало</option><option value="finish"'+(state.sort==='finish'?' selected':'')+'>Окончание</option><option value="percent"'+(state.sort==='percent'?' selected':'')+'>Готовность</option></select></label><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label><button type="button" class="pv-toggle" data-pv-action="toggle-links" aria-pressed="'+state.showLinks+'">Связи</button><button type="button" class="pv-toggle" data-pv-action="toggle-baseline" aria-pressed="'+state.showBaseline+'">Базовый план</button><button type="button" class="pv-toggle" data-pv-action="toggle-calendar" aria-pressed="'+state.showCalendar+'">Нерабочие дни</button><button type="button" class="pv-toggle" data-pv-action="critical-only" aria-pressed="'+state.criticalOnly+'"'+(state.analysis?.mode==='none'?' disabled':'')+'>Критические</button><button type="button" class="pv-text-button" data-pv-action="today">Сегодня</button><label class="pv-jump"><input type="date" id="pv-jump-date" value="'+escapeHtml(state.jumpDate)+'" aria-label="Дата перехода"></label><button type="button" class="pv-text-button" data-pv-action="jump-date">Перейти</button></div></div>'+
       '<div class="pv-body">'+(state.tab==='resources'?resourceMarkup(model,state.query):state.tab==='calendars'?calendarMarkup(model,state.calendarId):
       '<div class="pv-workspace"><div class="pv-list-scroll" tabindex="0" aria-label="Таблица задач" id="pv-list-scroll"></div><div class="pv-splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Изменить ширину таблицы задач и диаграммы Ганта" aria-valuemin="340" aria-valuemax="950" aria-valuenow="550" title="Перетащите для изменения ширины. Клавиши ← и → тоже работают"><span aria-hidden="true"></span></div><div class="pv-chart-scroll" tabindex="0" aria-label="Диаграмма Ганта" id="pv-chart-scroll"></div></div>')+
       (state.tab==='gantt'&&state.analysis?'<p class="pv-analysis-note">Критическая цепочка: '+escapeHtml(state.analysis.mode==='source'?'по признакам из файла':state.analysis.mode==='estimate'?'приблизительная оценка':'данных недостаточно')+' · '+escapeHtml(state.analysis.reason)+'</p>':'')+
       (model.warnings.length?'<p class="pv-warning">Предупреждения при чтении файла: '+escapeHtml(model.warnings.slice(0,5).join('; '))+'</p>':'')+
       '<div class="pv-bottom"><span>Только чтение · Оригинальный файл не изменяется</span><span>'+visible.length+' из '+model.tasks.length+' задач</span></div></div>' : empty();
-    root.innerHTML='<div class="pv-root">'+header()+'<main class="pv-main">'+viewState+'<div class="pv-message" data-pv-status role="status" aria-live="polite"></div></main>'+fileInput()+'</div>';
+    root.innerHTML='<div class="pv-root'+(loaded?' pv-loaded':'')+'">'+header(model)+'<main class="pv-main">'+viewState+'<div class="pv-message" data-pv-status role="status" aria-live="polite"></div></main>'+fileInput()+'</div>';
     if(loaded && state.tab==='gantt'){
       const list=root.querySelector('#pv-list-scroll');
       const timeline=root.querySelector('#pv-chart-scroll');
       list.dataset.pvColumns=state.columnMode;
       const desiredTop=state.scrollTop;
       const desiredLeft=Math.round(state.scrollLeft*(zoomWidths[state.zoom]/zoomWidths[state.scrollZoom]));
-      let lastStart=-1,lastEnd=-1,queued=false;
-      const paint=(top=list.scrollTop)=>{
+      let lastStart=-1,lastEnd=-1,queued=false,lastViewportWidth=-1;
+      const paint=(top=list.scrollTop,force=false)=>{
         if(state.destroyed || !list.isConnected || !timeline.isConnected)return;
         const viewport=rowWindow(visible.length,top,Math.max(100,list.clientHeight-44),rowHeight);
-        if(viewport.start===lastStart && viewport.end===lastEnd)return;
-        lastStart=viewport.start;lastEnd=viewport.end;
-        const chart=ganttMarkup(visible,model,state.zoom,state.selectedUid,viewport,state.showLinks,state.showBaseline,{criticalIds:state.analysis?.uids,showCalendar:state.showCalendar,showToday:state.showToday,calendarId:state.calendarId||model.calendar,columnMode:state.columnMode});
+        const paneWidth=timeline.clientWidth;
+        if(!force && viewport.start===lastStart && viewport.end===lastEnd && Math.abs(paneWidth-lastViewportWidth)<1)return;
+        lastStart=viewport.start;lastEnd=viewport.end;lastViewportWidth=paneWidth;
+        const listTop=list.scrollTop,chartTop=timeline.scrollTop,chartLeft=timeline.scrollLeft;
+        const chart=ganttMarkup(visible,model,state.zoom,state.selectedUid,viewport,state.showLinks,state.showBaseline,{criticalIds:state.analysis?.uids,showCalendar:state.showCalendar,showToday:state.showToday,calendarId:state.calendarId||model.calendar,columnMode:state.columnMode,chartViewportWidth:paneWidth});
         list.innerHTML=chart.left;
         timeline.innerHTML=chart.right;
+        if(force){list.scrollTop=listTop;timeline.scrollTop=chartTop;timeline.scrollLeft=chartLeft;}
         for(const node of list.querySelectorAll('[data-fold-icon]'))node.textContent=state.collapsed.has(node.dataset.foldIcon)?'▸':'▾';
       };
       paint(desiredTop);
@@ -380,6 +399,19 @@ export function mount(root, options={}) {
       };
       list.addEventListener('scroll',()=>sync(list,timeline),{signal:uiEvents.signal});
       timeline.addEventListener('scroll',()=>sync(timeline,list),{signal:uiEvents.signal});
+      // Opening task details and dragging the divider change the available chart width.
+      if(typeof ResizeObserver==='function'){
+        let frame=0;
+        const observer=new ResizeObserver(()=>{
+          if(frame || !timeline.isConnected)return;
+          if(Math.abs(timeline.clientWidth-lastViewportWidth)<1)return;
+          frame=requestAnimationFrame(()=>{frame=0;if(timeline.isConnected)paint(list.scrollTop,true);});
+        });
+        observer.observe(timeline);
+        uiEvents.signal.addEventListener('abort',()=>{observer.disconnect();if(frame)cancelAnimationFrame(frame);},{once:true});
+      } else {
+        window.addEventListener('resize',()=>paint(list.scrollTop,true),{signal:uiEvents.signal});
+      }
     }
     const controls=root.querySelector('.pv-chart-controls');
     if(controls)controls.hidden=state.tab!=='gantt';
