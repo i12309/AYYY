@@ -36,7 +36,7 @@ function makePortal() {
 
 test('only active services are registered; games and focus remain', () => {
   const { app } = makePortal();
-  assert.equal(app.services.length, 18);
+  assert.equal(app.services.length, 19);
   assert.ok(app.services.find(s => s.id === 'family'));
   retired.forEach(id => {
     assert.equal(app.services.find(s => s.id === id), undefined, id);
@@ -89,7 +89,7 @@ test('removed modules have no runtime imports or service links', () => {
       assert.doesNotMatch(html, new RegExp('href="#'+id+'"'));
     }
   });
-  assert.match(index, /nav-count">18<\/span>/);
+  assert.match(index, /nav-count">19<\/span>/);
   assert.doesNotMatch(boot, /result\.(?:tasks|notes|bookmarks|parcels|mailDrafts)\s*=/);
   assert.doesNotMatch(read('src/creative.js'), /register\('paint'/);
   assert.doesNotMatch(read('src/productivity.js'), /register\('(notes|bookmarks)'/);
