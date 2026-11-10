@@ -135,3 +135,33 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 @media(max-width:800px){.pv-header{height:54px;padding:0 15px;gap:10px}.pv-header>strong{font-size:9px;letter-spacing:.1em}.pv-private{font-size:0;border:0;padding:0}.pv-private-dot{height:8px;width:8px}.pv-back{font-size:11px}.pv-main{padding:16px 12px}.pv-file-banner{display:block}.pv-file-actions{justify-content:flex-start;max-width:none;margin-top:12px}.pv-control-bar{align-items:stretch}.pv-tabs{flex-shrink:0}.pv-search{margin-left:auto;flex:1}.pv-chart-controls{width:100%;justify-content:flex-end;border-top:1px solid #edf2f2;padding-top:6px}.pv-workspace,.pv-workspace.pv-with-details{display:flex;flex-direction:column;height:auto;overflow:visible}.pv-splitter{display:none}.pv-list-scroll{height:310px;flex:none;border-right:0;border-bottom:2px solid #c8d9da}.pv-chart-scroll{height:300px;flex:none}.pv-with-details .pv-details{height:auto;max-height:360px;min-height:190px;width:100%;flex:none;border-left:0;border-top:1px solid #cfdddd}.pv-empty{padding:40px 12px}.pv-empty h1{font-size:42px}.pv-resource-container{max-height:65svh}.pv-details{padding:15px}}
 @media(max-width:520px){.pv-header .pv-brand{padding-right:3px}.pv-header-separator{height:18px}.pv-back{display:none}.pv-private{margin-left:auto}.pv-file-meta{gap:5px 14px}.pv-button{padding:7px 9px;font-size:11px!important}.pv-search{min-width:100%;order:3}.pv-chart-controls{justify-content:space-between}.pv-file-banner h1{font-size:19px}.pv-empty h1{font-size:36px}.pv-empty p{font-size:13px}.pv-bottom span:first-child{display:none}.pv-bottom{justify-content:flex-end}}
 @media(prefers-reduced-motion:reduce){.pv-root *{transition:none!important;animation:none!important}}
+
+/* Read-only analysis overlays and navigation. */
+.pv-chart-controls{flex-wrap:wrap;justify-content:flex-end}
+.pv-jump input{width:130px;min-height:29px;padding:4px 5px;border:1px solid #d8e6e6;border-radius:4px;color:#49676d;background:#fff;font-size:11px}
+.pv-toggle:disabled{opacity:.45;cursor:not-allowed}
+.pv-analysis-note{margin:0;padding:7px 13px;border-top:1px solid #e3eded;background:#f8fbfb;color:#64818b;font-size:10px}
+.pv-calendar-overlay{position:absolute;inset:0;z-index:1;pointer-events:none}
+.pv-nonwork{position:absolute;top:0;height:100%;background:rgba(161,181,178,.17)}
+.pv-today-line{position:absolute;z-index:2;top:0;bottom:0;border-left:2px dashed #d98a60;pointer-events:none}
+.pv-focus-task{margin:-5px 0 11px;text-decoration:underline;text-underline-offset:3px}
+.pv-calendar-empty{padding:48px 24px;color:#607c82;font-size:13px;line-height:1.7}
+.pv-calendar-view{max-height:clamp(340px,calc(100svh - 295px),800px);overflow:auto;padding:18px 22px;color:#34545b}
+.pv-calendar-intro strong{font-size:16px;color:#2c4c53}
+.pv-calendar-intro p{margin:5px 0 15px;color:#71888f;font-size:12px;max-width:850px}
+.pv-calendar-choices{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 18px}
+.pv-calendar-choice{border:1px solid #d0e2e1;border-radius:5px;background:#fff;color:#46717b;padding:7px 11px;font-size:11px}
+.pv-calendar-choice[aria-pressed="true"]{background:#dceeee;border-color:#76acb1;font-weight:700;color:#246476}
+.pv-calendar-summary{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.pv-calendar-summary strong{font-size:15px}
+.pv-calendar-summary span{font-size:11px;color:#729096}
+.pv-calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.pv-calendar-day{min-width:0;display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid #dfeaea;background:#f9fbfb;border-radius:6px}
+.pv-calendar-day strong{font-size:11px;color:#356875}
+.pv-calendar-day span{font-size:10px;color:#637f86;line-height:1.5;overflow-wrap:anywhere}
+.pv-calendar-section{overflow:auto;margin-top:20px;border-top:1px solid #e2eded}
+.pv-calendar-section h3{margin:12px 0;font-size:12px;letter-spacing:.02em;color:#365d64}
+.pv-calendar-section p{font-size:12px;color:#85969a}
+.pv-calendar-section .pv-resource-table td{font-size:11px}
+@media(max-width:900px){.pv-calendar-week{grid-template-columns:repeat(4,minmax(0,1fr))}.pv-chart-controls{justify-content:flex-start}}
+@media(max-width:520px){.pv-calendar-view{padding:12px}.pv-calendar-week{grid-template-columns:repeat(2,minmax(0,1fr))}.pv-jump input{width:120px}.pv-chart-controls{gap:6px}}
