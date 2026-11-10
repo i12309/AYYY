@@ -29,9 +29,9 @@
   function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
-    outer.append(V.h('div',{class:'health-intro-top'},V.brand()));
     if(state.local&&!state.picker){
       outer.classList.add('health-intro-unlock');
+      outer.append(V.h('div',{class:'health-intro-top'},V.brand()));
       const form=V.form('unlock',[V.field('Фраза доступа','passphrase','', 'password')],'Открыть');
       outer.append(V.card(null,[
         V.h('div',{class:'health-intro-panel'},V.h('span',{class:'health-overline'},'ЗАЩИЩЁННЫЙ ЖУРНАЛ'),
@@ -48,6 +48,7 @@
       V.h('span',{class:'health-overline'},'ЛИЧНОЕ ПРОСТРАНСТВО'),
       V.h('h1',{},'Ваш журнал ',V.h('span',{class:'title-underline'},'здоровья')),
       V.h('p',{},'Локальное зашифрованное хранилище с возможностью синхронизации в ваш приватный GitHub.'));
+    outer.append(V.h('div',{class:'health-intro-top'},V.brand(),heading));
     const sample=V.card(null,[
       V.h('div',{class:'health-demo-card-body'},
         V.h('div',{},
@@ -57,7 +58,7 @@
         V.button('Открыть демо без регистрации','open-demo',{class:'primary health-demo-open'}))
     ]);
     sample.classList.add('health-demo-card');
-    outer.append(V.h('div',{class:'health-intro-hero'},heading,sample));
+    outer.append(sample);
     if(state.profiles.length){
       const list=V.h('div',{class:'health-profile-picker'});
       for(const item of state.profiles){

@@ -24,6 +24,7 @@ with sync_playwright() as pw:
  p.goto(BASE+'health/?demo=1');p.wait_for_selector('.metric')
  check('HUMAN brand and original icon',p.locator('.sidebar .brand-copy>span').inner_text()=='HUMAN')
  check('AYYY brand is separate portal link',p.locator('.sidebar .ayyy-wordmark').count()==1 and p.locator('.sidebar .ayyy-wordmark').get_attribute('href')=='../#home')
+ check('AYYY sits left of HUMAN in sidebar',p.locator('.sidebar .ayyy-wordmark').bounding_box()['x']<p.locator('.sidebar .brand').bounding_box()['x'])
  p.locator('.sidebar [data-tab=lab]').click();p.locator('.sidebar .brand').click()
  check('HUMAN logo returns to journal overview without leaving page',p.url==BASE+'health/?demo=1' and p.locator('.metric').count()==4)
  check('original sidebar width',p.locator('.sidebar').bounding_box()['width']==208)
@@ -75,6 +76,14 @@ with sync_playwright() as pw:
  # A separate page exercises an actual encrypted browser vault.
  v=context.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/')
  check('HUMAN landing has paired wordmarks',v.locator('.health-intro-top .brand').count()==1 and v.locator('.health-intro-top .ayyy-wordmark').count()==1)
+ check('AYYY sits left of HUMAN on landing',v.locator('.health-intro-top .ayyy-wordmark').bounding_box()['x']<v.locator('.health-intro-top .brand').bounding_box()['x'])
+ check('heading is at logo level',abs(v.locator('.health-intro-top .brand').bounding_box()['y']-v.locator('.health-intro-heading h1').bounding_box()['y'])<35)
+ check('demo is wide and compact',v.locator('.health-demo-card').bounding_box()['width']>=1100 and v.locator('.health-demo-card').bounding_box()['height']<=145)
+ check('demo button visible',v.locator('.health-demo-open').is_visible())
+ brand=v.locator('.health-intro-top .brand-copy>span')
+ regular_color=brand.evaluate('(e)=>getComputedStyle(e).color')
+ v.locator('.health-intro-top .brand').hover()
+ check('HUMAN does not turn blue on hover',brand.evaluate('(e)=>getComputedStyle(e).color')==regular_color)
  check('landing stretches across desktop',v.locator('.health-intro').bounding_box()['width']>=1100)
  check('landing retains all primary flows',all(v.locator('[data-form='+x+']').count()==1 for x in ['create','download','import-vault']) and v.locator('[data-action=open-demo]').count()==1)
  for width in [360,390,640,768,1024,1440,1920]:
