@@ -77,6 +77,7 @@
   for(const [table,rows] of Object.entries(tables))if(table.endsWith('_revisions'))for(const row of rows)doc.revisions.push({id:table+':'+(row.id||doc.revisions.length),kind:'human:'+table,previous:row.snapshot?JSON.parse(row.snapshot):row,changedAt:row.changed_at||'',human:row});
   const archiveHash=await hash(bytes),counts=Object.fromEntries(Object.entries(tables).map(([k,v])=>[k,v.length]));
   doc.humanMigration={format:'human-user',version:2,userId:manifest.user_id,archiveHash,archiveName:file.name,originalArchive:HumanCrypto.base64(bytes),manifest,counts,tables,retained,importedAt:new Date().toISOString()};
+  doc.intakes=window.HumanCare.records(doc,'intake');doc.reminders=window.HumanCare.records(doc,'reminder');doc.carePreferences={browser_enabled:false};
   doc.episodes=window.HumanHealth.episodes(doc);if(retained.health_records){retained.health_records-=doc.episodes.length;if(!retained.health_records)delete retained.health_records;}
   const size=new TextEncoder().encode(JSON.stringify(doc)).length;if(size>28*1024*1024)throw Error('Перенос превышает текущий предел журнала 28 МиБ. Исходный архив не изменён.');
   return {doc,archiveHash,counts,size};

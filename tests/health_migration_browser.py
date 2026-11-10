@@ -40,6 +40,13 @@ def archive(bad_hash=False,missing=False,future=False):
   for i,kind in enumerate(['allergy','medication']):
    record={'id':uid(60+i),'kind':kind,'name':'Synthetic '+kind,'status':'active','basis':'self_reported','start':{'precision':'year','value':'2001'},'end':{'precision':'unknown','value':''},'notes':'Synthetic clinical note','allergy':{'reaction':'Synthetic reaction','severity':'unknown'} if kind=='allergy' else None,'medication':{'dose':'Synthetic dose','schedule':'Synthetic schedule','route':'oral','category':'medication','indication':''} if kind=='medication' else None}
    insert('medical_records',id=uid(60+i),kind=kind,status='active',search_text=record['name'],updated_at='2026-11-01',version=1,deleted=0,source_id=uid(1),payload=json.dumps(record))
+  for i,kind in enumerate(['intake','reminder','intake']):
+   record={'id':uid(80+i),'version':2,'source':source,'medication_id':uid(61),'medication_name':'Synthetic medication','notes':'Synthetic care source note'}
+   if kind=='intake':record.update({'outcome':'taken','dose':'','occurred_at':'2026-11-01T12:00:00Z'})
+   else:record.update({'title':'Synthetic migrated reminder','frequency':'once','date':'2026-11-01','time':'15:00','timezone':'Europe/Moscow','utc_offset':'','until_date':'','enabled':True,'scheduled_at':'2026-11-01T12:00:00Z','next_due_at':'2026-11-01T12:00:00Z'})
+   insert('care_records',id=uid(80+i),kind=kind,occurred_at='2026-11-01T12:00:00Z',version=2,deleted=1 if i==2 else 0,source_id=uid(1),payload=json.dumps(record))
+   if i==0:insert('care_revisions',record_id=uid(80),version=1,changed_at='2026-11-02T12:00:00Z',action='corrected',snapshot=json.dumps({**record,'version':1,'notes':'Synthetic previous care note'}))
+  insert('care_preferences',id=1,browser_enabled=1,version=1)
   for kind,id,payload in [('meal',uid(70),{'description':'Synthetic meal','eaten_at':'2026-11-01T12:00:00Z','calories_kcal':0,'protein_g':None,'notes':'Synthetic meal note'}),('activity','2026-11-01',{'date':'2026-11-01','activity_type':'Synthetic activity','steps':500,'sleep_minutes':None,'exercise_minutes':None,'notes':''})]:
    insert('journal_entries',id=id,kind=kind,occurred_at='2026-11-01',title=kind,search_title=kind,version=1,deleted=0,payload=json.dumps(payload))
   db.commit();db.close();data=path.read_bytes()
@@ -76,6 +83,9 @@ with sync_playwright() as pw:
  check('censored and qualitative results preserved','< 0.1' in p.locator('.analyte-history').inner_text() and 'отрицательно' in p.locator('.analyte-history').inner_text())
  p.locator('.analyte-source [data-action=file-preview]').click();check('source document restored','SYNTHETIC document' in p.locator('.health-document-preview pre').inner_text());p.locator('#health-dialog [data-action=close-dialog]').click()
  p.locator('.sidebar button[data-tab=medical]').click();check('medical records and medication schedule visible','Synthetic allergy' in p.locator('#health-root').inner_text() and 'Synthetic schedule' in p.locator('#health-root').inner_text())
+ p.locator('.sidebar button[data-tab=care]').click();check('active care events migrated without deleted events',p.locator('.care-list tbody tr').count()==1 and 'Не указана' in p.locator('.care-list').inner_text())
+ p.locator('[data-action=care-history]').click();check('care source revision available','Synthetic previous care note' in p.locator('.care-history').inner_text());p.locator('#health-dialog [data-action=close-dialog]').click()
+ p.locator('[data-view=reminders]').click();check('migrated reminder retains the original schedule and asks for browser opt-in','Synthetic migrated reminder' in p.locator('.care-list').inner_text() and 'внутри HUMAN' in p.locator('.care-notification-options').inner_text())
  p.locator('.sidebar button[data-tab=diary]').click();check('meal and activity visible','Synthetic meal' in p.locator('#health-root').inner_text() and 'Synthetic activity' in p.locator('#health-root').inner_text())
  preserved=p.evaluate("""async()=>{const entry=await HumanStore.get(await HumanStore.current()),{doc}=await HumanCrypto.unlock(entry.envelope,'synthetic-migration-passphrase');return doc.profile.timezone==='Europe/Moscow'&&doc.profile.sex==='intersex'&&doc.profile.heightCm===170&&doc.diary.find(x=>x.kind==='food').human.calories_kcal===0&&doc.medical[0].human.allergy.reaction==='Synthetic reaction';}""")
  check('clinical detail, unknown nutrients and profile fields preserved',preserved)

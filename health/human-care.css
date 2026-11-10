@@ -1,0 +1,253 @@
+.care-page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.care-tabs,
+.care-section-heading,
+.care-page .actions {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.care-tabs [aria-pressed="true"] {
+  color: var(--blue-ink);
+  background: var(--blue-soft);
+  border-color: #a6bdec;
+}
+.care-section-heading {
+  justify-content: space-between;
+}
+.care-page h2 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+.care-page .button,
+.care-form .button {
+  min-height: 32px;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.care-page .care-list {
+  padding: 0;
+  margin: 0;
+}
+.care-list .table-wrap {
+  width: 100%;
+  margin: 0;
+}
+.care-list table {
+  font-size: 12px;
+}
+.care-list td,
+.care-list th {
+  padding: 10px 12px;
+  vertical-align: top;
+}
+.care-list td small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+}
+.care-list td {
+  overflow-wrap: anywhere;
+}
+.care-list .actions {
+  justify-content: flex-start;
+  max-width: 560px;
+}
+.care-tag {
+  padding: 3px 7px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: var(--blue-soft);
+  color: var(--blue-ink);
+}
+.care-tag.skipped {
+  background: var(--yellow-soft);
+  color: var(--yellow-ink);
+}
+.care-due {
+  background: #fffdf5;
+}
+.form.care-form {
+  padding: 18px 20px;
+  gap: 12px;
+}
+.care-form .form-grid {
+  gap: 12px;
+  align-items: start;
+}
+.care-form .field {
+  font-size: 12px;
+}
+.care-form input,
+.care-form select,
+.care-form textarea {
+  font-size: 13px;
+  min-height: 36px;
+  padding: 7px 9px;
+}
+.care-form .form-grid > label:has(textarea) {
+  grid-column: 1/-1;
+}
+.care-form small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.care-form footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--surface);
+  justify-content: flex-end;
+  padding-block: 10px;
+}
+.care-checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.care-checkbox input {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+}
+.medication-picker {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.medication-picker details {
+  font-size: 11px;
+  margin: 0;
+}
+.medication-picker details .field {
+  margin-top: 8px;
+}
+.medication-picker .document-link {
+  margin-top: 8px;
+}
+.care-form details {
+  font-size: 12px;
+}
+.care-confirm {
+  border-top: 1px solid var(--border);
+  background: var(--red-soft);
+  padding: 12px 14px;
+}
+.care-confirm p {
+  font-size: 13px;
+}
+.care-pagination {
+  padding: 12px;
+}
+.care-filters {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.care-filters .field {
+  font-size: 12px;
+}
+.care-filters select {
+  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 9px;
+}
+.care-notification-options {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.care-notification-options p {
+  font-size: 12px;
+  color: var(--muted);
+}
+.care-history {
+  padding: 16px 20px;
+  font-size: 13px;
+}
+.care-history > div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.care-history small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.reminder-bell {
+  position: relative;
+  flex: none !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 6px !important;
+}
+.reminder-bell > span {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  border-radius: 9px;
+  min-width: 16px;
+  background: var(--blue);
+  color: white;
+  font-size: 9px;
+  padding: 1px 4px;
+  line-height: 14px;
+}
+@media (max-width: 600px) {
+  .care-form {
+    padding: 14px;
+  }
+  .care-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .care-list thead {
+    display: none;
+  }
+  .care-list table,
+  .care-list tbody,
+  .care-list tr,
+  .care-list td {
+    display: block;
+    width: 100%;
+  }
+  .care-list tr {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .care-list td {
+    border: 0;
+    padding: 4px 6px;
+  }
+  .care-list td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .care-list .actions {
+    gap: 5px;
+  }
+  .care-section-heading {
+    align-items: flex-start;
+  }
+  .care-notification-options {
+    font-size: 11px;
+  }
+  .care-filters {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .top-actions {
+    gap: 6px;
+  }
+}

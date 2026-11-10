@@ -114,6 +114,8 @@
       schema:1,id:'demo-human-example-v1',
       profile:{name:'Анна Примерова',birthDate:'1988-04-18',sex:'female',
         notes:'Вымышленный профиль для знакомства с интерфейсом HUMAN. Записи не являются медицинскими рекомендациями.'},
+      intakes:[{id:'demo-intake',version:1,medication_id:medications[0].id,medication_name:medications[0].name,occurred_at:'2026-11-06T09:00:00Z',outcome:'taken',dose:'',notes:'Вымышленное событие для знакомства с журналом.',source:{type:'manual'}}],
+      reminders:[{id:'demo-reminder',version:1,title:'Пример: внести измерение',frequency:'daily',date:'2026-11-01',until_date:'',time:'09:00',timezone:'Europe/Moscow',utc_offset:'',enabled:true,medication_id:'',medication_name:'',scheduled_at:'2026-11-07T06:00:00Z',next_due_at:'2026-11-07T06:00:00Z',notes:'Вымышленное расписание. Уведомления в демо не отправляются.'}],carePreferences:{browser_enabled:false},
       observations,vitals,episodes,medical:medicalRecords,medications,diary:diaryRows,documents,
       revisions:[]
     };

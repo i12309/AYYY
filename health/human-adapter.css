@@ -269,3 +269,11 @@ body{font-size:14px}
 
 .medical-page .medical-list{padding:0}
 .medical-detail{scroll-margin-top:80px}
+.care-list .health-table{min-width:0}
+.care-page .care-list td,.care-page .care-list th{padding:10px 12px;vertical-align:top}
+.care-form .care-checkbox input{min-height:0;width:16px;height:16px}
+@media(max-width:600px){
+ .care-page .care-list td{padding:4px 6px;border:0}
+ .care-list .health-table-wrap{overflow:visible}
+ .care-form .health-form-row{grid-template-columns:minmax(0,1fr)}
+}

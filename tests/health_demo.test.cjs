@@ -19,7 +19,7 @@ function makeModules(window,extras={}){
     crypto:{randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }
@@ -52,6 +52,7 @@ class FakeNode {
     this.className='';this.textContent='';this.value='';this.isConnected=true;
     this.classList={add:(...xs)=>{this.className+=' '+xs.join(' ')},remove:x=>{this.className=this.className.split(' ').filter(v=>v!==x).join(' ')},contains:x=>this.className.split(' ').includes(x),toggle:(x,value)=>{const on=value??!this.classList.contains(x);if(on)this.classList.add(x);else this.classList.remove(x);return on;}};
   }
+  insertBefore(node,before){const i=this.children.indexOf(before);if(i<0)return this.appendChild(node);this.children.splice(i,0,node);node.parentNode=this;return node;}
   append(...items){items.forEach(x=>this.appendChild(x));}
   appendChild(item){if(item){this.children.push(item);item.parentNode=this;}return item;}
   replaceChildren(...items){this.children=[];this.append(...items);}
@@ -104,6 +105,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
   };
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
   vm.runInContext(read('health/health-view.js'),context,{filename:'health/health-view.js'});
+  vm.runInContext(read('health/care-view.js'),context,{filename:'health/care-view.js'});
   vm.runInContext(read('health/medical-view.js'),context,{filename:'health/medical-view.js'});
   vm.runInContext(read('health/app.js'),context,{filename:'health/app.js'});
   const target=nodes.get('health-root');
@@ -114,6 +116,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     ['lab','Холестерин ЛПНП'],
     ['vital','Домашние измерения'],
     ['medical','Сезонная реакция на пыльцу'],
+    ['care','Фактические приёмы и пропуски'],
     ['diary','Пешая прогулка'],
     ['document','Бланк анализов'],
     ['settings','Настройки демо']

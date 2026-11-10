@@ -9,13 +9,14 @@
   const notice=document.getElementById('health-notice');
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
     globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false};
-  const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',
+  const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
     diary:'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
-    ['medical','Медкарта'],['diary','Дневник'],['document','Документы'],['settings','Настройки']];
+    ['medical','Медкарта'],['care','Приёмы и напоминания'],['diary','Дневник'],['document','Документы'],['settings','Настройки']];
   const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
   let writeQueue=Promise.resolve(),syncTimer,toastTimer;
   const clientId=crypto.randomUUID();
+  const careRecords=(doc,kind)=>kind==='episode'?window.HumanHealth.episodes(doc):['intake','reminder'].includes(kind)?window.HumanCare.records(doc,kind):doc[kinds[kind]]||[];
   const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('ayyy-health-v1'):null;
   function toast(message){
     notice.textContent=String(message);
@@ -26,6 +27,7 @@
   function error(e){toast(e instanceof Error?e.message:String(e));}
   async function profileList(){state.profiles=await S.list();}
   const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.'],settings:['Settings','neutral','Профиль, безопасность и синхронизация.']};
+  navMeta.care=['Bell','blue','Фактические события и ваши расписания.'];
   function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
@@ -113,6 +115,8 @@
     const label=tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
     const search=V.h('div',{class:'global-search'},V.icon('Search',15),V.h('input',{type:'search',id:'health-global-search','aria-label':'Поиск по всем данным',placeholder:'Найти в журнале',value:state.globalSearch||'','data-search':'global'}),V.h('kbd',{},'/'));
     const top=V.h('div',{class:'health-topbar-content'},V.brand('ayyy'),V.h('div',{class:'breadcrumb'},V.h('span',{},'Личное пространство'),V.icon('ChevronRight',13),V.h('strong',{},label)),search,V.h('span',{class:'health-status',role:'status','aria-label':status(),'data-state':state.conflict?'problem':'ok',title:status()},V.icon('ShieldCheck',15)),V.button('Добавить','quick-add',{class:'primary desktop-add'}));
+    const dueCount=window.HumanCare.records(state.doc,'reminder').filter(r=>window.HumanCare.due(r)).length;
+    top.insertBefore(V.h('button',{type:'button',id:'health-reminder-bell',class:'button reminder-bell','data-action':'care-center','aria-label':'Центр напоминаний: '+dueCount,title:'Открыть напоминания'},V.icon('Bell',18),dueCount?V.h('span',{},dueCount>99?'99+':dueCount):null),top.lastChild);
     header.replaceChildren(top);
     bottom.replaceChildren(...[['overview','Обзор','LayoutGrid'],['lab','Анализы','FlaskConical'],['add','Добавить','Plus'],['vital','Показатели','HeartPulse'],['more','Ещё','Menu']].map(([id,title,glyph])=>V.h('button',{type:'button',...(id==='add'?{'data-action':'quick-add',class:'mobile-add'}:id==='more'?{'data-action':'toggle-menu','aria-expanded':String(document.body.classList.contains('health-menu-open')),'aria-controls':'health-sidebar'}:{'data-tab':id,'aria-current':state.tab===id?'page':null})},V.icon(glyph,20),id==='add'?V.h('span',{class:'sr-only'},title):title)));
     footer.replaceChildren(V.h('span',{},V.icon('Activity',13),'HUMAN · ваш журнал здоровья'),V.h('a',{href:'../#home',target:'_top'},'AYYY · Все сервисы'));
@@ -121,10 +125,10 @@
     const q=state.globalSearch.toLocaleLowerCase('ru-RU'),box=V.h('div',{});
     box.append(V.title('Результаты поиска','По всем данным текущего журнала.'));
     const results=V.card(null);let count=0;
-    for(const [kind,key] of Object.entries(kinds))for(const x of (kind==='episode'?window.HumanHealth.episodes(state.doc):state.doc[key]||[])){
-      const extra=['medical','medication'].includes(kind)?M.clinical(x,kind):{};const text=[x.name,x.title,x.type,x.value,x.notes,x.source,x.symptoms,x.treatments,x.context,extra.allergy?.reaction,extra.medication?.dose,extra.medication?.schedule,extra.medication?.route,extra.medication?.indication,extra.vaccination?.against,extra.vaccination?.dose_label,extra.vaccination?.lot,extra.vaccination?.place,extra.condition?.description].filter(Boolean).join(' ');
+    for(const [kind,key] of Object.entries(kinds))for(const x of careRecords(state.doc,kind)){
+      const extra=['medical','medication'].includes(kind)?M.clinical(x,kind):{};const text=[x.name,x.title,x.type,x.value,x.notes,x.medication_name,x.dose,x.source,x.symptoms,x.treatments,x.context,extra.allergy?.reaction,extra.medication?.dose,extra.medication?.schedule,extra.medication?.route,extra.medication?.indication,extra.vaccination?.against,extra.vaccination?.dose_label,extra.vaccination?.lot,extra.vaccination?.place,extra.condition?.description].filter(Boolean).join(' ');
       if(!text.toLocaleLowerCase('ru-RU').includes(q))continue;
-      count++;results.append(V.h('button',{class:'data-row','data-action':kind==='document'?'file-preview':kind==='episode'?'open-episode':kind==='vital'?'open-vital':['medical','medication'].includes(kind)?'open-linked-medical':kind==='lab'?'open-group':'edit','data-kind':kind,'data-id':x.id,'data-key':kind==='lab'?M.groupKey(x):null},V.icon(kind==='lab'?'FlaskConical':kind==='document'?'FileText':'NotebookTabs',18),V.h('div',{},V.h('strong',{},x.name||x.title||x.type||'Запись'),V.h('small',{},V.date(x.date))),V.icon('ChevronRight',14)));
+      count++;results.append(V.h('button',{class:'data-row','data-action':kind==='document'?'file-preview':kind==='episode'?'open-episode':kind==='vital'?'open-vital':['medical','medication'].includes(kind)?'open-linked-medical':kind==='lab'?'open-group':'edit','data-kind':kind,'data-id':x.id,'data-key':kind==='lab'?M.groupKey(x):null},V.icon(kind==='lab'?'FlaskConical':kind==='document'?'FileText':'NotebookTabs',18),V.h('div',{},V.h('strong',{},x.name||x.title||x.medication_name||x.type||'Запись'),V.h('small',{},V.date(x.date))),V.icon('ChevronRight',14)));
     }
     if(!count)results.append(V.empty('По вашему запросу ничего не найдено.'));
     box.append(results);return box;
@@ -200,8 +204,8 @@
   }
   let renderedVaultId=null;
   function render(){
-    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
-    renderHeader();
+    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
     let view;
     if(state.globalSearch.length>=2)view=searchResults();
@@ -209,6 +213,7 @@
     else if(state.tab==='lab')view=V.labSection(state);
     else if(state.tab==='vital')view=window.HumanHealthView.page(state);
     else if(state.tab==='medical')view=window.HumanMedicalView.page(state);
+    else if(state.tab==='care')view=window.HumanCareView.page(state);
     else if(state.tab==='settings')view=settings();
     else view=V.listSection(state,state.tab);
     view.querySelectorAll('.health-heading').forEach((heading,index)=>{if(!index){heading.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('ЛИЧНЫЙ ЖУРНАЛ '),V.h('span',{},'/'),document.createTextNode(String(tabs.findIndex(([id])=>id===state.tab)+1).padStart(2,'0')));return;}heading.className='health-section-heading';heading.querySelector('.eyebrow')?.remove();const title=heading.querySelector('h1');if(title)title.replaceWith(V.h('h2',{},title.textContent));});
@@ -221,6 +226,26 @@
     }else {const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:'content'},view));}
   }
   const formSnapshots=new WeakMap();
+  function careDialog(title,content){document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();}
+  function careSnooze(el){const form=V.form('care-action',[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),V.field('На сколько отложить','minutes','60','select',[['15','На 15 минут'],['60','На час'],['180','На 3 часа']])],'Подтвердить отсрочку');form.dataset.id=el.dataset.id;form.dataset.version=el.dataset.version;form.dataset.mode='snooze';careDialog('Отложить напоминание',form);}
+  async function careAction(id,expected,action,minutes=0){
+    await mutate(data=>{const C=window.HumanCare,old=C.records(data,'reminder').find(r=>r.id===id);if(!old)throw Error('Напоминание удалено.');if(old.version!==Number(expected))throw Error('Напоминание изменилось. Обновите список.');const next=action==='toggle'?C.checkReminder({...old,enabled:!old.enabled},old,data):C.act(old,action,{minutes});version(data,'reminder',old,action);const list=data.reminders??=[],index=list.findIndex(r=>r.id===id);if(index<0)list.push(next);else list[index]=next;});
+  }
+  let notificationVault='',notificationSeen=new Set(),activeNotification=null;
+  function careDelivery(){
+    const vault=state.doc?.id||'';if(vault!==notificationVault){notificationSeen.clear();notificationVault=vault;activeNotification?.close();activeNotification=null;}
+    if(!state.doc||state.demo||!state.doc.carePreferences?.browser_enabled){activeNotification?.close();activeNotification=null;return;}
+    const first=window.HumanCare.records(state.doc,'reminder').find(r=>window.HumanCare.due(r));
+    if(!first){activeNotification?.close();activeNotification=null;return;}
+    if(!window.Notification||window.Notification.permission!=='granted')return;
+    const key=first.id+':'+first.scheduled_at+':'+first.next_due_at;if(notificationSeen.has(key))return;
+    try{const n=new window.Notification('HUMAN · Есть напоминания',{body:'Откройте центр напоминаний в HUMAN.',tag:'human-reminder'});activeNotification?.close();activeNotification=n;notificationSeen.add(key);if(notificationSeen.size>500)notificationSeen.delete(notificationSeen.values().next().value);n.onclick=()=>{window.focus();if(state.doc?.id===vault){state.tab='care';state.careView='reminders';state.careFilter='due';state.globalSearch='';render();}n.close();};}catch{/* In-app reminders remain available. */}
+  }
+  async function toggleCareNotifications(){
+    if(state.demo)throw Error('Браузерные уведомления доступны в личном журнале.');const id=state.doc.id,enable=!state.doc.carePreferences?.browser_enabled;
+    if(enable){if(!window.Notification||!window.isSecureContext)throw Error('На этом адресе браузерные уведомления недоступны. Напоминания остаются в HUMAN.');if(await window.Notification.requestPermission()!=='granted')throw Error('Уведомления браузером не разрешены. Напоминания остаются в HUMAN.');}
+    if(state.doc?.id!==id)throw Error('Журнал изменился. Повторите действие.');await mutate(data=>{data.carePreferences={...data.carePreferences,browser_enabled:enable};});
+  }
   function episodeReview(id,action){
     const item=window.HumanHealth.episodes(state.doc).find(x=>x.id===id);if(!item)throw Error('Эпизод не найден.');
     const captions={ongoing:'Подтвердить, что ещё болею',ended:'Подтвердить завершение',snooze:'Уточнить позже'};if(!captions[action])throw Error('Неизвестное действие.');
@@ -231,7 +256,7 @@
   }
   function modal(kind,id,initial={}){
     const collection=kinds[kind],existing=id&&collection?
-      (kind==='episode'?window.HumanHealth.episodes(state.doc):state.doc[collection]||[]).find(row=>row.id===id):null;
+      careRecords(state.doc,kind).find(row=>row.id===id):null;
     const x=kind==='profile'?state.doc.profile:(existing||initial),now=today(),f=V.field,r=V.row;
     let fields=[];
     if(kind==='lab')fields=[
@@ -245,6 +270,7 @@
     ];
     else if(kind==='vital')fields=window.HumanHealthView.vitalFields(x,state.doc);
     else if(kind==='episode')fields=window.HumanHealthView.episodeFields(x,state.doc);
+    else if(kind==='intake'||kind==='reminder')fields=window.HumanCareView.fields(kind,x,state.doc);
     else if(kind==='medical'||kind==='medication')fields=window.HumanMedicalView.fields(kind,x,state.doc);
     else if(kind==='diary')fields=[
       r(f('Дата','date',x.date||now,'date'),f('Тип','kind',x.kind||'wellbeing','select',
@@ -263,6 +289,7 @@
     const mode=kind==='profile'?'profile':'record';
     const form=V.form(mode,[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),...fields],'Сохранить');
     form.dataset.kind=kind;
+    if(kind==='intake'||kind==='reminder'){form.classList.add('care-form');window.HumanCareView.updateForm(form);form.querySelector(kind==='intake'?'[name=outcome]':'[name=frequency]')?.addEventListener('change',()=>window.HumanCareView.updateForm(form));}
     if(existing){form.dataset.id=existing.id;formSnapshots.set(form,JSON.stringify(existing));}
     if(kind==='vital'||kind==='episode'){if(kind==='vital')form.elements.namedItem('unit').dataset.original=x.unit||'';window.HumanHealthView.updateForm(form);form.querySelector(kind==='vital'?'[name=type]':'[name=status]')?.addEventListener('change',()=>window.HumanHealthView.updateForm(form,true));}
     if(kind==='medical'||kind==='medication'){window.HumanMedicalView.updateForm(form);form.querySelector('[name=category]')?.addEventListener('change',()=>window.HumanMedicalView.updateForm(form));}
@@ -305,7 +332,7 @@
   async function recordSubmit(form){
     const kind=form.dataset.kind,collection=kinds[kind];
     if(!collection)throw new Error('Неизвестная запись.');
-    const old=form.dataset.id?(kind==='episode'?window.HumanHealth.episodes(state.doc):state.doc[collection]||[]).find(x=>x.id===form.dataset.id):null;
+    const old=form.dataset.id?careRecords(state.doc,kind).find(x=>x.id===form.dataset.id):null;
     if(form.dataset.id&&!old)throw Error('Запись больше не существует.');if(old&&formSnapshots.has(form)&&formSnapshots.get(form)!==JSON.stringify(old))throw Error('Запись изменилась после открытия формы. Откройте редактор заново.');
     const input=Object.fromEntries(new FormData(form).entries());
     let record;
@@ -316,6 +343,8 @@
     if(kind==='medical')record=M.checkMedical(input,old);
     if(kind==='medication')record=M.checkMedication(input,old);
     if(kind==='diary')record=M.checkDiary(input,old);
+    if(kind==='intake'){const H=window.HumanHealth,zone=H.zoneName(state.doc.profile.timezone);input.occurred_at=old&&H.localInput(old.occurred_at,zone)===input.at&&!input.offset?old.occurred_at:H.timestamp(input.at,zone,input.offset||'');record=window.HumanCare.checkIntake({...input,dose:input.outcome==='skipped'?'':input.dose},old||{},state.doc);}
+    if(kind==='reminder')record=window.HumanCare.checkReminder(input,old||{},state.doc);
     if(kind==='document'){
       const file=form.elements.namedItem('file').files[0];
       if(!file||file.size>2*1024*1024)throw new Error('Размер файла ограничен 2 МиБ.');
@@ -331,14 +360,17 @@
     }
     if(kind==='medical'||kind==='medication'){const previous=M.clinical(old||{},kind);if(record.documentId&&!state.doc.documents.some(x=>x.id===record.documentId)&&record.documentId!==previous.documentId)throw Error('Документ не найден.');if(record.episodeId&&!window.HumanMedicalView.episodes(state.doc).some(x=>x.id===record.episodeId)&&record.episodeId!==previous.episodeId)throw Error('Эпизод не найден.');}
     await mutate(data=>{
-      const list=data[collection]??=[];if(old){const current=(kind==='episode'?window.HumanHealth.episodes(data):list).find(x=>x.id===old.id);if(!current||formSnapshots.has(form)&&formSnapshots.get(form)!==JSON.stringify(current))throw Error('Запись изменилась после открытия формы. Откройте редактор заново.');}
-      if(kind==='episode'&&old&&!list.some(x=>x.id===old.id)){version(data,kind,old,'edit');list.push(record);}
+      const list=data[collection]??=[];if(old){const current=careRecords(data,kind).find(x=>x.id===old.id);if(!current||formSnapshots.has(form)&&formSnapshots.get(form)!==JSON.stringify(current))throw Error('Запись изменилась после открытия формы. Откройте редактор заново.');}
+      if(kind==='intake')record=window.HumanCare.checkIntake({...input,dose:input.outcome==='skipped'?'':input.dose},old||{},data);
+      if(kind==='reminder')record=window.HumanCare.checkReminder(input,old||{},data);
+      if(['episode','intake','reminder'].includes(kind)&&old&&!list.some(x=>x.id===old.id)){version(data,kind,old,'edit');list.push(record);}
       else if(old){
         const idx=list.findIndex(x=>x.id===old.id);
         if(idx<0)throw new Error('Запись больше не существует.');
         version(data,kind,list[idx],'edit');list[idx]=record;
       }else list.push(record);
     });
+    if(kind==='intake'||kind==='reminder'){state.careMedication='';state.careOffset=0;render();}
     dialog.close();toast(state.demo?'Демо-запись изменена только в памяти.':'Запись сохранена в зашифрованном хранилище.');
   }
   async function profileSubmit(form){
@@ -357,11 +389,11 @@
   async function remove(kind,id){
     const collection=kinds[kind];
     if(!collection)throw new Error('Неизвестная категория.');
-    const existing=(kind==='episode'?window.HumanHealth.episodes(state.doc):state.doc[collection]||[]).find(x=>x.id===id);
+    const existing=careRecords(state.doc,kind).find(x=>x.id===id);
     if(!existing)throw new Error('Запись не найдена.');
     if(!confirm('Удалить запись? Существующие коммиты GitHub могут сохранять старую версию.'))return;
     await mutate(data=>{
-      const list=data[collection]??=[],idx=list.findIndex(x=>x.id===id);if(kind==='episode'?!window.HumanHealth.episodes(data).some(x=>x.id===id):idx<0)throw Error('Запись уже удалена.');version(data,kind,idx>=0?list[idx]:existing,'delete');if(idx>=0)list.splice(idx,1);if(kind==='episode'){data.episodeDeletions??=[];if(!data.episodeDeletions.includes(id))data.episodeDeletions.push(id);}
+      const list=data[collection]??=[],idx=list.findIndex(x=>x.id===id);if(!careRecords(data,kind).some(x=>x.id===id))throw Error('Запись уже удалена.');version(data,kind,idx>=0?list[idx]:existing,'delete');if(idx>=0)list.splice(idx,1);if(kind==='episode'){data.episodeDeletions??=[];if(!data.episodeDeletions.includes(id))data.episodeDeletions.push(id);}if(['intake','reminder'].includes(kind)){data.careDeletions??=[];if(!data.careDeletions.includes(id))data.careDeletions.push(id);}
     });
   }
   function download(name,bytes,mime){
@@ -530,6 +562,7 @@
         const id=form.dataset.id,expected=Number(form.dataset.version),input=Object.fromEntries(new FormData(form).entries()),H=window.HumanHealth;
         await mutate(data=>{const old=H.episodes(data).find(x=>x.id===id);if(!old)throw Error('Эпизод больше не существует.');if((old.version||0)!==expected)throw Error('Эпизод изменился. Откройте уточнение заново.');const next=H.answerEpisode(old,form.dataset.action,{days:input.days?Number(input.days):0,endDate:input.endDate||'',zone:H.zoneName(data.profile.timezone)});version(data,'episode',old,'episode_'+form.dataset.action);const list=data.episodes??=[],index=list.findIndex(x=>x.id===id);if(index<0)list.push(next);else list[index]=next;});dialog.close();
       }
+      else if(mode==='care-action'){await careAction(form.dataset.id,form.dataset.version,form.dataset.mode,Number(form.elements.minutes.value));dialog.close();}
       else if(mode==='record')await recordSubmit(form);
       else if(mode==='analyte-preferences'){const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous:structuredClone(old),changedAt:new Date().toISOString()});d.analytePreferences[key]=M.checkPreferences(input,old);});toast('Настройки показателя сохранены.');}
       else if(mode==='profile')await profileSubmit(form);
@@ -588,6 +621,15 @@
     try{
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
       else if(action==='close-menu')document.body.classList.remove('health-menu-open');
+      else if(action==='care-view'){state.careView=el.dataset.view;state.careOffset=0;render();}
+      else if(action==='care-page'){state.careOffset=Number(el.dataset.offset);render();}
+      else if(action==='care-all'){state.careMedication='';state.careOffset=0;render();}
+      else if(action==='care-center'){state.tab='care';state.careView='reminders';state.careMedication='';state.careFilter='due';state.careOffset=0;state.globalSearch='';render();}
+      else if(action==='care-medication'){state.tab='care';state.careView=el.dataset.view;state.careMedication=el.dataset.id;state.careOffset=0;state.globalSearch='';render();modal(el.dataset.view==='reminders'?'reminder':'intake',null,{medication_id:el.dataset.id});}
+      else if(action==='care-history')careDialog('История исправлений',window.HumanCareView.history(state.doc,el.dataset.kind,el.dataset.id));
+      else if(action==='care-notifications')await toggleCareNotifications();
+      else if(action==='care-toggle')await careAction(el.dataset.id,el.dataset.version,'toggle');
+      else if(action==='care-act'){if(el.dataset.mode==='snooze')careSnooze(el);else await careAction(el.dataset.id,el.dataset.version,el.dataset.mode);}
       else if(action==='quick-add'){dialog.querySelector('#health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},'Добавить запись'),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content health-quick-options'},[['Анализ','lab'],['Домашнее измерение','vital'],['Болезнь или самочувствие','episode'],['Медицинская запись','medical'],['Препарат','medication'],['Запись дневника','diary'],['Документ','document']].map(([title,kind])=>V.button(title,'new-'+kind))));dialog.showModal();}
       else if(action==='toggle-favorite'){const key=el.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.analytePreferences[key]={...old,favorite:!old.favorite};});}
       else if(action==='filter-favorites'){state.favoritesOnly=!state.favoritesOnly;render();}
@@ -597,7 +639,7 @@
       else if(action==='open-demo'||action==='reset-demo')openDemo();
       else if(action==='exit-demo')await exitDemo();
       else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;if(el.dataset.kind==='vital'){state.episodeId='';state.vitalId='';state.vitalUnit='';}if(el.dataset.kind==='medical'){state.medicalId='';state.medicalStatus='';}render();}
-      else if(action?.startsWith('new-')){modal(action.slice(4),null,action==='new-medical'?{category:state.filters.medical||'allergy'}:action==='new-vital'?{type:el.dataset.value&&el.dataset.value!=='illness'?el.dataset.value:'Давление',episodeId:el.dataset.episode||''}:{});}
+      else if(action?.startsWith('new-')){modal(action.slice(4),null,['new-intake','new-reminder'].includes(action)?{medication_id:el.dataset.medication||''}:action==='new-medical'?{category:state.filters.medical||'allergy'}:action==='new-vital'?{type:el.dataset.value&&el.dataset.value!=='illness'?el.dataset.value:'Давление',episodeId:el.dataset.episode||''}:{});}
       else if(action==='edit')modal(el.dataset.kind,el.dataset.id);
       else if(action==='edit-profile')modal('profile',null);
       else if(action==='remove')await remove(el.dataset.kind,el.dataset.id);
@@ -654,8 +696,13 @@
     }
   });
   document.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('circle[data-action]')){event.preventDefault();void onClick(event);return;}if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
-  document.addEventListener('change',event=>{if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
+  document.addEventListener('change',event=>{if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
+  function refreshCare(){
+    if(!state.doc)return;careDelivery();const count=window.HumanCare.records(state.doc,'reminder').filter(r=>window.HumanCare.due(r)).length,bell=document.getElementById('health-reminder-bell');if(bell){bell.setAttribute('aria-label','Центр напоминаний: '+count);bell.querySelector('span')?.remove();if(count)bell.append(V.h('span',{},count>99?'99+':count));}
+    if(state.tab==='care'&&!dialog.open&&!document.activeElement?.matches('input,textarea,select'))render();
+  }
+  window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});window.addEventListener?.('pagehide',()=>activeNotification?.close());
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
     clearTimeout(syncTimer);state.doc=null;state.key=null;G.disconnect();

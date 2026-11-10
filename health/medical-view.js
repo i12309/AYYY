@@ -35,6 +35,7 @@
   if(['condition','surgery','other'].includes(c.category))append('Описание',c.condition.description);
   append('Примечание',c.notes);
   const box=V.card(c.name,[facts,h('div',{class:'health-actions'},V.button('Редактировать','edit',{'data-kind':kind,'data-id':item.id}),V.button('Закрыть запись','close-medical'))]);box.classList.add('medical-detail');box.setAttribute('tabindex','-1');
+  if(kind==='medication')box.append(h('div',{class:'health-actions'},V.button('Записать приём','care-medication',{'data-id':item.id,'data-view':'intakes'}),V.button('Создать напоминание','care-medication',{'data-id':item.id,'data-view':'reminders'})));
   if(c.documentId){const doc=state.doc.documents.find(x=>x.id===c.documentId);box.append(doc?V.button('Документ: '+(doc.title||doc.name),'file-preview',{'data-id':doc.id}):h('p',{class:'health-note'},'Исходный документ недоступен; связь сохранена.'));}
   if(c.episodeId){const episode=episodes(state.doc).find(x=>x.id===c.episodeId);box.append(episode?V.button('Эпизод: '+episode.title,'open-episode',{'data-id':episode.id}):h('p',{class:'health-note'},'Связанный эпизод недоступен; ссылка сохранена.'));}
   const revisions=state.doc.revisions.filter(x=>x.recordId===item.id||x.human?.record_id===item.id);
