@@ -5,7 +5,7 @@
  */
 export type Document = {
   schema_version: number;
-  tree: {id: string; slug: string; name: string; description: string; revision: number; updated_at: string};
+  tree: {id: string; slug: string; name: string; description: string; revision: number; updated_at: string; is_demo?: boolean};
   persons: Record<string, any>[];
   families: Record<string, any>[];
   metadata: Record<string, any>;
@@ -29,9 +29,26 @@ export function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0,90) || 'family';
 }
 
+/** Legacy sample trees did not have a flag. Recognize only the exact
+ * fictional family shipped by the browser, never a tree merely containing
+ * the word "пример". Existing user edits and duplicates are never deleted.
+ */
+export function isDemoDocument(document: Document): boolean {
+  if(document.tree.is_demo===true)return true;
+  if(document.tree.name!=='Семья Волковых · пример' ||
+     document.tree.description!=='Учебное дерево. Все люди и события вымышлены.' ||
+     document.persons.length!==6 || document.families.length!==2)return false;
+  const has=(given:string,surname:string)=>
+    document.persons.some(p=>p.given_name===given&&p.surname===surname);
+  return has('Алексей','Смирнов') && has('Мария','Смирнова') &&
+         has('Иван','Смирнов') && has('Наталья','Смирнова') &&
+         has('Павел','Смирнов') && has('Анна','Смирнова');
+}
+
 export function summary(document: Document) {
   return {
     ...document.tree,
+    is_demo:isDemoDocument(document),
     person_count: document.persons.length,
     family_count: document.families.length
   };
