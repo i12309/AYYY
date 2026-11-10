@@ -27,7 +27,3 @@ test('daily schedules skip nonexistent times and use only the earlier repeated t
  assert.throws(()=>C.checkReminder({...base,frequency:'once',date:'2026-03-08',utc_offset:'-05:00'}, {},doc,now));
  assert.throws(()=>C.checkReminder({...base,until_date:'2026-03-07'}, {},doc,now));
 });
-test('legacy care records hydrate without rewriting source, overrides and deletions do not resurrect',()=>{
- const C=modules().HumanCare,raw={id:'synthetic-event',...intake,medication_name:'Original synthetic medication',version:1},d={humanMigration:{tables:{care_records:[{id:raw.id,kind:'intake',version:1,deleted:0,payload:JSON.stringify(raw)}]}}};
- assert.equal(C.records(d,'intake')[0].medication_name,raw.medication_name);d.intakes=[{...raw,notes:'Correction',version:2}];assert.equal(C.records(d,'intake').length,1);assert.equal(C.records(d,'intake')[0].notes,'Correction');d.careDeletions=[raw.id];assert.equal(C.records(d,'intake').length,0);assert.equal(JSON.parse(d.humanMigration.tables.care_records[0].payload).notes,'');
-});

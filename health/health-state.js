@@ -21,10 +21,7 @@
   return new Date(wall-resolvedOffset+((new Date(now).getTime()%60000+60000)%60000)).toISOString();
  }
  function checkedText(input,key,old='',max=4000){const value=String(input[key]??old).trim();if(Array.from(value).length>max&&value!==old)throw Error('Поле '+key+' слишком длинное.');return value;}
- function episodes(doc){const deleted=new Set(doc.episodeDeletions||[]),out=new Map((doc.episodes||[]).filter(x=>!deleted.has(x.id)).map(x=>[x.id,x]));const states=new Map((doc.humanMigration?.tables.health_episode_state||[]).map(x=>[x.episode_id,x]));
-  for(const row of doc.humanMigration?.tables.health_records||[]){if(row.kind!=='illness'||Number(row.deleted)||deleted.has(row.id)||out.has(row.id))continue;const o=JSON.parse(row.payload),s=states.get(row.id)||o.episode||{};out.set(row.id,{id:row.id,title:o.title,date:localInput(o.observed_at,doc.profile?.timezone).slice(0,10),observedAt:o.observed_at,symptoms:o.symptoms||'',treatments:o.treatments||'',diagnosisBasis:o.diagnosis_basis||'self_reported',context:o.context||'',notes:o.notes||'',endDate:o.end_date||'',status:s.status|| (o.end_date?'ended':'unknown'),confirmedAt:s.confirmed_at||'',confirmedUntil:s.confirmed_until||'',nextPromptAt:s.next_prompt_at||'',version:Number(row.version),createdAt:o.created_at||'',updatedAt:o.updated_at||'',human:o});}
-  return Array.from(out.values()).sort((a,b)=>timePoint(b)-timePoint(a));
- }
+ function episodes(doc){return doc.episodes.slice().sort((a,b)=>timePoint(b)-timePoint(a));}
  function episodeState(record,now=new Date()) {const status=record.status||(record.endDate?'ended':'unknown'),needsReview=status!=='ended'&&(status==='unknown'||!record.confirmedAt||!Number.isFinite(Date.parse(record.confirmedUntil))||Date.parse(record.confirmedUntil)<=new Date(now).getTime()),promptDue=needsReview&&(!Number.isFinite(Date.parse(record.nextPromptAt))||Date.parse(record.nextPromptAt)<=new Date(now).getTime());return {status,needsReview,promptDue};}
  function label(record,now){const s=episodeState(record,now);return s.needsReview?'Нужно уточнить':s.status==='ended'?'Завершён':'Ещё болею · подтверждено';}
  function checkEpisode(input,original={},now=new Date(),zone='UTC'){
@@ -43,9 +40,9 @@
   else if(action==='snooze'){if(episodeState(record,now).status==='ended'||endDate)throw Error('Завершённый эпизод нельзя отложить.');next.nextPromptAt=reviewTime(now,zone,Number(days||1));}
   else throw Error('Выберите ответ о состоянии эпизода.');return next;
  }
- function measurement(record){const at=record.observedAt||record.human?.observed_at||'';return {...record,version:Number(record.version??record.human?.version??0),observedAt:at,context:record.context??record.human?.context??'',episodeId:record.episodeId??record.human?.episode_id??''};}
- function timePoint(record){return Date.parse(record.observedAt||record.human?.observed_at||record.date+'T12:00:00Z');}
- function formInput(input,original,zone){const next={...input,timezone:zoneName(zone)};if(Object.hasOwn(input,'localTime')){const wall=input.date+'T'+input.localTime,at=original?.observedAt||original?.human?.observed_at;next.observedAt=input.localTime?(at&&localInput(at,zone)===wall&&!input.offset?at:timestamp(wall,zone,input.offset||'')):'';}return next;}
+ function measurement(record){return {...record,version:Number(record.version||0),observedAt:record.observedAt||'',context:record.context||'',episodeId:record.episodeId||''};}
+ function timePoint(record){return Date.parse(record.observedAt||record.date+'T12:00:00Z');}
+ function formInput(input,original,zone){const next={...input,timezone:zoneName(zone)};if(Object.hasOwn(input,'localTime')){const wall=input.date+'T'+input.localTime,at=original?.observedAt;next.observedAt=input.localTime?(at&&localInput(at,zone)===wall&&!input.offset?at:timestamp(wall,zone,input.offset||'')):'';}return next;}
  function checkVital(input,original){original=measurement(original||{});const type=checkedText(input,'type',original.type||''),definition=definitions[type];if(!definition)throw Error('Выберите вид показателя.');const value=checkedText(input,'value',original.value||'',90);let numbers;
   if(type==='Давление'){const match=/^\s*([\d.,]+)\s*\/\s*([\d.,]+)\s*$/.exec(value);numbers=match?[M.number(match[1]),M.number(match[2])]:[];if(numbers.length!==2||numbers.some(x=>x===null||x<=0||x>10000)||numbers[1]>numbers[0])throw Error('Давление: например 120/80; нижнее должно быть положительным и не выше верхнего.');}
   else {numbers=[M.number(value)];const n=numbers[0],allowZero=['Сон','Шаги'].includes(type);if(n===null||n<(allowZero?0:Number.MIN_VALUE)||n>(type==='Шаги'?200000:type==='Сон'?24:type==='Сатурация'?100:10000))throw Error('Проверьте числовое значение показателя.');}

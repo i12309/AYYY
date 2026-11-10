@@ -19,6 +19,9 @@ with sync_playwright() as pw:
  def page():
   p=ctx.new_page();p.on('pageerror',lambda e:errors.append(str(e)));p.on('dialog',lambda d:d.accept());return p
  p=page();p.goto(BASE+'health/');p.locator('[data-form=create] [name=password]').fill('synthetic-storage-passphrase');p.locator('[name=repeat]').fill('synthetic-storage-passphrase');p.locator('[data-form=create] [type=submit]').click();p.locator('.metric').first.wait_for()
+ before_create=p.evaluate('async()=>({count:(await HumanStore.list()).length,current:await HumanStore.current()})')
+ failed_create=p.evaluate("""async()=>{const created=await HumanCrypto.create('synthetic-atomic-profile'),put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(...args){if(this.name==='meta')throw new DOMException('Synthetic selection failure','QuotaExceededError');return put.apply(this,args);};try{await HumanStore.createSelected({id:created.doc.id,envelope:created.envelope,dirty:true});return false;}catch{return true;}finally{IDBObjectStore.prototype.put=put;}}""")
+ check('failed new-profile selection leaves no partial vault',failed_create and p.evaluate('async()=>({count:(await HumanStore.list()).length,current:await HumanStore.current()})')==before_create)
  def snapshot(p):return p.evaluate("""async()=>{const local=await HumanStore.get(await HumanStore.current());return (await HumanCrypto.unlock(local.envelope,'synthetic-storage-passphrase')).doc;}""")
  def unlock(p):
   p.locator('[name=passphrase]').fill('synthetic-storage-passphrase');p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for()

@@ -19,7 +19,7 @@ function makeModules(window,extras={}){
     crypto:{randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }
@@ -105,6 +105,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
   };
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
   vm.runInContext(read('health/health-view.js'),context,{filename:'health/health-view.js'});
+  vm.runInContext(read('health/diary-view.js'),context,{filename:'health/diary-view.js'});
   vm.runInContext(read('health/care-view.js'),context,{filename:'health/care-view.js'});
   vm.runInContext(read('health/medical-view.js'),context,{filename:'health/medical-view.js'});
   vm.runInContext(read('health/app.js'),context,{filename:'health/app.js'});
@@ -117,6 +118,8 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     ['vital','Домашние измерения'],
     ['medical','Сезонная реакция на пыльцу'],
     ['care','Фактические приёмы и пропуски'],
+    ['nutrition','Приёмы пищи'],
+    ['activity','Ритм дней'],
     ['diary','Пешая прогулка'],
     ['document','Бланк анализов'],
     ['settings','Настройки демо']

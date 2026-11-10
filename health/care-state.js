@@ -3,11 +3,7 @@
  'use strict';
  const M=window.HumanModel,H=window.HumanHealth;
  const collection=kind=>kind==='intake'?'intakes':'reminders';
- function records(doc,kind){
-  const deleted=new Set(doc.careDeletions||[]),out=new Map((doc[collection(kind)]||[]).filter(x=>!deleted.has(x.id)).map(x=>[x.id,x]));
-  for(const row of doc.humanMigration?.tables.care_records||[]){if(row.kind!==kind||Number(row.deleted)||deleted.has(row.id)||out.has(row.id))continue;const raw=JSON.parse(row.payload);out.set(row.id,{...raw,id:row.id,version:Number(row.version),human:raw});}
-  return Array.from(out.values()).sort((a,b)=>kind==='intake'?Date.parse(b.occurred_at)-Date.parse(a.occurred_at):((Date.parse(a.next_due_at)||Infinity)-(Date.parse(b.next_due_at)||Infinity))||a.title.localeCompare(b.title,'ru'));
- }
+ function records(doc,kind){return doc[collection(kind)].slice().sort((a,b)=>kind==='intake'?Date.parse(b.occurred_at)-Date.parse(a.occurred_at):((Date.parse(a.next_due_at)||Infinity)-(Date.parse(b.next_due_at)||Infinity))||a.title.localeCompare(b.title,'ru'));}
  function text(value,max=4000){const s=String(value??'').trim();if(Array.from(s).length>max)throw Error('Текст превышает допустимую длину: '+max+' символов.');return s;}
  function day(value){const d=M.isoDate(value);if(d<'1900-01-01'||d>'2200-12-31')throw Error('Проверьте календарную дату.');return d;}
  function medicine(doc,id,old={},optional=false){

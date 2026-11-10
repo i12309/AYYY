@@ -29,9 +29,9 @@
  }
  function rowActions(kind,r){return h('div',{class:'actions'},V.button('Исправить','edit',{'data-kind':kind,'data-id':r.id}),V.button('История','care-history',{'data-kind':kind,'data-id':r.id}),V.button('Удалить','remove',{'data-kind':kind,'data-id':r.id}));}
  function history(doc,kind,id){
-  const tz=zone(doc),out=h('div',{class:'care-history'}),rows=doc.revisions.filter(x=>x.recordId===id||x.human?.record_id===id).slice().reverse();
+  const tz=zone(doc),out=h('div',{class:'care-history'}),rows=doc.revisions.filter(x=>x.recordId===id).slice().reverse();
   if(!rows.length)out.append(V.empty('Исправлений пока нет.'));
-  for(const revision of rows){const r=revision.previous||{},action=revision.operation||revision.human?.action;out.append(h('div',{},h('strong',{},operations[action]||action||'Изменение'),h('small',{},at(revision.changedAt,tz)),h('p',{},kind==='intake'?[r.medication_name,outcome(r),r.dose,at(r.occurred_at,tz)].filter(Boolean).join(' · '):[r.title,r.enabled?'Включено':'Выключено',r.frequency==='daily'?'Ежедневно':'Один раз',r.time,r.timezone,at(r.next_due_at,r.timezone||tz)].join(' · ')),h('p',{class:'preserve'},r.notes||'')));}
+  for(const revision of rows){const r=revision.previous||{},action=revision.operation;out.append(h('div',{},h('strong',{},operations[action]||action||'Изменение'),h('small',{},at(revision.changedAt,tz)),h('p',{},kind==='intake'?[r.medication_name,outcome(r),r.dose,at(r.occurred_at,tz)].filter(Boolean).join(' · '):[r.title,r.enabled?'Включено':'Выключено',r.frequency==='daily'?'Ежедневно':'Один раз',r.time,r.timezone,at(r.next_due_at,r.timezone||tz)].join(' · ')),h('p',{class:'preserve'},r.notes||'')));}
   return out;
  }
  function page(state){

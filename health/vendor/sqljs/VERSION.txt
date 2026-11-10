@@ -1,3 +1,0 @@
-sql.js 1.16.0
-Repository: https://github.com/sql-js/sql.js
-NPM integrity: sha512-q/JOZuJfmVh8Zf8Eo+cMJvtxAWeWBqTfJ6AQYGXZmcaLGHMwhA2niH3fQYHrBtPeOss1ttzHec07K5+rHaMRMw==

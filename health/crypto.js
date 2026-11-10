@@ -31,12 +31,11 @@
     return {salt,iv,ciphertext};
   }
   function assertData(doc) {
+    if(doc?.humanMigration)throw new Error('Архив переноса старого HUMAN не поддерживается. Создайте новый журнал и загрузите данные заново.');
     if (!doc || typeof doc!=='object' || Array.isArray(doc) || doc.schema!==1 ||
         typeof doc.id!=='string' || !doc.profile || typeof doc.profile!=='object' ||
-        ['observations','vitals','medical','medications','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
+        ['observations','vitals','episodes','intakes','reminders','medical','medications','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
       throw new Error('Неизвестная структура медицинских данных.');
-    for(const key of ['intakes','reminders'])if(doc[key]!==undefined&&!Array.isArray(doc[key]))throw Error('Неизвестная структура приёмов и напоминаний.');
-    if(doc.episodes!==undefined&&!Array.isArray(doc.episodes))throw new Error('Неизвестная структура эпизодов.');
     return doc;
   }
   function requireCrypto() {

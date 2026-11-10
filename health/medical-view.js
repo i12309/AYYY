@@ -38,8 +38,8 @@
   if(kind==='medication')box.append(h('div',{class:'health-actions'},V.button('Записать приём','care-medication',{'data-id':item.id,'data-view':'intakes'}),V.button('Создать напоминание','care-medication',{'data-id':item.id,'data-view':'reminders'})));
   if(c.documentId){const doc=state.doc.documents.find(x=>x.id===c.documentId);box.append(doc?V.button('Документ: '+(doc.title||doc.name),'file-preview',{'data-id':doc.id}):h('p',{class:'health-note'},'Исходный документ недоступен; связь сохранена.'));}
   if(c.episodeId){const episode=episodes(state.doc).find(x=>x.id===c.episodeId);box.append(episode?V.button('Эпизод: '+episode.title,'open-episode',{'data-id':episode.id}):h('p',{class:'health-note'},'Связанный эпизод недоступен; ссылка сохранена.'));}
-  const revisions=state.doc.revisions.filter(x=>x.recordId===item.id||x.human?.record_id===item.id);
-  box.append(h('details',{},h('summary',{},'История исправлений · '+revisions.length),revisions.map(x=>{const old=x.previous||{},prior=M.clinical(old.kind&&!old.category?{human:old}:old,kind);return h('div',{class:'medical-revision'},h('small',{},'Исправлено: '+V.date(x.changedAt)),h('p',{},prior.name+' · '+statusName(prior)),h('p',{class:'health-note'},period(prior)),h('p',{class:'preserve'},[summary(prior),prior.notes].filter(Boolean).join('\n')));})));return box;
+  const revisions=state.doc.revisions.filter(x=>x.recordId===item.id);
+  box.append(h('details',{},h('summary',{},'История исправлений · '+revisions.length),revisions.map(x=>{const old=x.previous||{},prior=M.clinical(old,kind);return h('div',{class:'medical-revision'},h('small',{},'Исправлено: '+V.date(x.changedAt)),h('p',{},prior.name+' · '+statusName(prior)),h('p',{class:'health-note'},period(prior)),h('p',{class:'preserve'},[summary(prior),prior.notes].filter(Boolean).join('\n')));})));return box;
  }
  function page(state){
   const filter=state.filters.medical||'',query=(state.medicalSearch||'').toLocaleLowerCase('ru-RU'),status=state.medicalStatus||'';

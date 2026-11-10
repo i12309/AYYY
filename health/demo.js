@@ -100,6 +100,8 @@
       diary('11','food','Завтрак: йогурт, ягоды','2026-11-06','Вымышленный рацион.'),
       diary('12','wellbeing','Самочувствие: без жалоб','2026-11-07','Показатели из демонстрационного профиля.')
     ];
+    diaryRows.filter(x=>x.kind==='food').forEach((row,i)=>Object.assign(row,{description:row.title,eaten_at:row.date+'T'+(['05:45:00Z','10:00:00Z','15:30:00Z','06:30:00Z'][i]),calories_kcal:[320,610,null,0][i],protein_g:[18,32,null,null][i],fat_g:[14,19,null,null][i],carbs_g:[30,70,null,null][i],alcohol_g:null,estimated:i===1,version:1,origin:{type:'manual'}}));
+    diaryRows.filter(x=>x.kind==='activity').forEach((row,i)=>Object.assign(row,{daily:true,steps:[4200,null,6200][i],sleep_minutes:[450,480,null][i],exercise_minutes:[45,35,0][i],activity_type:row.title,version:1,origin:{type:'manual'}}));
     const documents=[
       attachment('one','demo-lab-results.csv','Бланк анализов · пример','2026-10-19','text/csv',
         'Дата;Показатель;Результат;Единица;Мин;Макс\n2026-10-19;Глюкоза натощак;5,1;ммоль/л;3,9;5,5\n2026-10-19;АЛТ;47;Ед/л;;35\n'),

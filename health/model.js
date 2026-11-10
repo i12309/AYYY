@@ -55,9 +55,9 @@
     return {value:result.date,precision:result.datePrecision};
   }
   function clinical(record={},kind='medical'){
-    record=record||{};const source=record.human||{},category=kind==='medication'?'medication':record.category||({vaccination:'vaccine'}[source.kind]||source.kind)||'allergy';
-    const oldDate=String(record.date||record.startDate||'');const start=record.start||source.start||{value:oldDate,precision:!oldDate?'unknown':/^\d{4}$/.test(oldDate)?'year':/^\d{4}-\d\d$/.test(oldDate)?'month':'day'},end=record.end||source.end||{value:'',precision:'unknown'};
-    return {category,name:kind==='medication'?record.name||source.name||'':record.title||source.name||'',status:record.status||source.status||(category==='vaccine'?'completed':'unknown'),basis:record.basis||source.basis||'self_reported',start,end,notes:record.notes??source.notes??'',documentId:record.documentId??source.document_id??'',episodeId:record.episodeId??source.episode_id??'',allergy:record.allergy||source.allergy||{reaction:'',severity:'unknown'},medication:record.medication||source.medication||{category:'medication',dose:record.dose||'',schedule:record.frequency||'',route:'',indication:''},vaccination:record.vaccination||source.vaccination||{against:'',dose_label:'',lot:'',place:''},condition:record.condition||source.condition||{description:''}};
+    record=record||{};const category=kind==='medication'?'medication':record.category||'allergy';
+    const oldDate=String(record.date||record.startDate||'');const start=record.start||{value:oldDate,precision:!oldDate?'unknown':/^\d{4}$/.test(oldDate)?'year':/^\d{4}-\d\d$/.test(oldDate)?'month':'day'},end=record.end||{value:'',precision:'unknown'};
+    return {category,name:kind==='medication'?record.name||'':record.title||'',status:record.status||(category==='vaccine'?'completed':'unknown'),basis:record.basis||'self_reported',start,end,notes:record.notes||'',documentId:record.documentId||'',episodeId:record.episodeId||'',allergy:record.allergy||{reaction:'',severity:'unknown'},medication:record.medication||{category:'medication',dose:record.dose||'',schedule:record.frequency||'',route:'',indication:''},vaccination:record.vaccination||{against:'',dose_label:'',lot:'',place:''},condition:record.condition||{description:''}};
   }
   function clinicalBounds(d){if(!d.value)return null;const first=d.precision==='year'?d.value+'-01-01':d.precision==='month'?d.value+'-01':d.value;const last=d.precision==='year'?d.value+'-12-31':d.precision==='month'?new Date(Date.UTC(Number(d.value.slice(0,4)),Number(d.value.slice(5,7)),0)).toISOString().slice(0,10):d.value;return {first,last};}
   function validateClinical(input,original,kind){
@@ -80,7 +80,7 @@
   function checkMedication(input,original){return validateClinical(input,original,'medication');}
   function checkDiary(input,original){
     const kind=text(input.kind,40),title=text(input.title,250);
-    if(!['food','activity','wellbeing','sleep'].includes(kind)||!title)
+    if(!['wellbeing','sleep'].includes(kind)||!title)
       throw new Error('Укажите вид и содержание записи.');
     return {...original,id:original?.id||id(),date:isoDate(input.date),kind,title,
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),

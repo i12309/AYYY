@@ -272,6 +272,17 @@ body{font-size:14px}
 .care-list .health-table{min-width:0}
 .care-page .care-list td,.care-page .care-list th{padding:10px 12px;vertical-align:top}
 .care-form .care-checkbox input{min-height:0;width:16px;height:16px}
+.diary-page .diary-editor,.diary-page .diary-list,.diary-page .diary-chart{padding:16px}
+.diary-editor .diary-check input{width:16px;height:16px;min-height:0}
+.diary-page .metadata dd{overflow-wrap:anywhere;white-space:pre-wrap}
+.diary-page .document-link{border:0;background:transparent;color:var(--blue,#2962e9);padding:0;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;text-align:left;max-width:100%;overflow-wrap:anywhere}
+.diary-page .document-link:hover{text-decoration:underline}
+@media(max-width:700px){
+ .diary-page .diary-editor,.diary-page .diary-list,.diary-page .diary-chart{padding:12px}
+ .diary-page .diary-toolbar input[type=date]{max-width:145px}
+ .diary-editor input,.diary-editor textarea{font-size:16px}
+ .diary-page .diary-table td:first-child{padding-right:78px}
+}
 @media(max-width:600px){
  .care-page .care-list td{padding:4px 6px;border:0}
  .care-list .health-table-wrap{overflow:visible}

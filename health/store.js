@@ -60,8 +60,8 @@
   async function createSelected(entry){
     if(!entry||entry.envelope?.vaultId!==entry.id)throw new Error('Несовпадение нового архива.');
     window.HumanCrypto.assertEnvelope(entry.envelope);
-    const record={id:entry.id,envelope:entry.envelope,repo:null,remoteSha:null,dirty:true,lastSyncAt:null},db=await open();
-    await new Promise((resolve,reject)=>{const tx=db.transaction(['vaults','meta'],'readwrite');tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Не удалось создать импортированный журнал.'));try{tx.objectStore('vaults').add(record);tx.objectStore('meta').put(record.id,'current');}catch(error){tx.abort();reject(error);}});
+    const record={id:entry.id,envelope:entry.envelope,repo:entry.repo||null,remoteSha:entry.remoteSha||null,dirty:!!entry.dirty,lastSyncAt:entry.lastSyncAt||null},db=await open();
+    await new Promise((resolve,reject)=>{const tx=db.transaction(['vaults','meta'],'readwrite');tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Не удалось создать новый журнал.'));try{tx.objectStore('vaults').add(record);tx.objectStore('meta').put(record.id,'current');}catch(error){tx.abort();reject(error);}});
     return record;
   }
   window.HumanStore={list,get,save,remove,current,select,createSelected,sameEnvelope};

@@ -121,13 +121,13 @@ test('medical partial dates validate uncertainty without inventing dates',()=>{
  assert.throws(()=>m.checkMedical({...base,start:'2020-01-01',startPrecision:'unknown'}));
  assert.throws(()=>m.checkMedical({...base,status:'paused'}));
  assert.throws(()=>m.checkMedical({...base,severity:'invented'}));
- assert.equal(m.checkMedical({category:'allergy',title:'Legacy synthetic',date:'2020-01-01'}).start.precision,'day');
+ assert.equal(m.checkMedical({category:'allergy',title:'Synthetic date',date:'2020-01-01'}).start.precision,'day');
 });
 
-test('clinical edits preserve migrated source fields while updating visible facts',()=>{
- const m=model(),original={id:'synthetic-id',category:'allergy',title:'Synthetic allergy',date:'2020',human:{kind:'allergy',name:'Synthetic allergy',status:'active',basis:'clinician',start:{value:'2020',precision:'year'},end:{value:'',precision:'unknown'},allergy:{reaction:'Old source reaction',severity:'moderate'}}};
+test('clinical edits preserve prior facts while updating the current record',()=>{
+ const m=model(),original=m.checkMedical({category:'allergy',title:'Synthetic allergy',start:'2020',startPrecision:'year',status:'active',basis:'clinician',reaction:'Previous reaction',severity:'moderate'});
  const result=m.checkMedical({title:'Synthetic revised allergy',reaction:'Revised reaction',severity:'mild',status:'inactive'},original);
- assert.equal(result.id,original.id);assert.equal(result.human.allergy.reaction,'Old source reaction');assert.equal(result.allergy.reaction,'Revised reaction');assert.equal(result.start.value,'2020');assert.equal(result.basis,'clinician');
+ assert.equal(result.id,original.id);assert.equal(original.allergy.reaction,'Previous reaction');assert.equal(result.allergy.reaction,'Revised reaction');assert.equal(result.start.value,'2020');assert.equal(result.basis,'clinician');
  const med=m.checkMedication({name:'Synthetic supplement',start:'',startPrecision:'unknown',status:'planned',basis:'self_reported',medicationCategory:'supplement',dose:'Synthetic amount',frequency:'Synthetic schedule',route:'Oral',indication:'Synthetic note'});
  assert.equal(med.medication.category,'supplement');assert.equal(med.frequency,'Synthetic schedule');assert.equal(med.startDate,'');
  assert.throws(()=>m.checkMedical({category:'vaccine',title:'Synthetic vaccine',status:'completed',end:'2020',endPrecision:'year'}));
@@ -162,11 +162,8 @@ test('measurements retain glucose units and reject invalid pressure or saturatio
  const input=m.health.formInput({date:'2026-11-01',localTime:'15:30',offset:''},null,'Europe/Moscow');assert.equal(input.observedAt,'2026-11-01T12:30:00.000Z');
 });
 
-test('legacy exported episodes can be overridden and deleted without resurrection',()=>{
- const h=model().health,doc={profile:{timezone:'UTC'},humanMigration:{tables:{health_records:[{id:'synthetic-id',kind:'illness',deleted:0,version:1,payload:JSON.stringify({title:'Synthetic source episode',observed_at:'2026-11-01T12:00:00Z',diagnosis_basis:'self_reported'})}],health_episode_state:[]}}};
- assert.equal(h.episodes(doc).length,1);assert.equal(h.episodeState(h.episodes(doc)[0]).status,'unknown');
- doc.episodes=[{...h.episodes(doc)[0],title:'Synthetic corrected episode'}];assert.equal(h.episodes(doc).length,1);assert.equal(h.episodes(doc)[0].title,'Synthetic corrected episode');
- doc.episodeDeletions=['synthetic-id'];assert.equal(h.episodes(doc).length,0);
+test('episode ending date respects the current profile zone',()=>{
+ const h=model().health;
  const record={id:'zone-case',date:'2026-11-01',observedAt:'2026-11-01T23:00:00Z',status:'unknown'};
  assert.throws(()=>h.answerEpisode(record,'ended',{endDate:'2026-11-01',now:new Date('2026-11-03T00:00:00Z'),zone:'Europe/Moscow'}));
 });
