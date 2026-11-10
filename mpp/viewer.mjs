@@ -163,6 +163,7 @@ export function mount(root, options={}) {
   if(!root) throw new Error('Project Viewer root not found');
   const app=options.app;
   const events=new AbortController();
+  let uiEvents=new AbortController();
   const prefs=(()=>{try{const x=JSON.parse(localStorage.getItem('ayyy:mpp:view')||'{}');return x&&typeof x==='object'?x:{};}catch{return {};}})();
   const allowedZoom=['day','week','month'],allowedSort=['id','name','start','finish','percent','duration'];
   const state={model:null,demo:false,filename:'',query:'',
@@ -241,7 +242,6 @@ export function mount(root, options={}) {
     if(!bounds)return;
     state.tableWidth=Math.max(bounds.min,Math.min(bounds.max,Math.round(width)));
     workspace.style.setProperty('--pv-table-width',state.tableWidth+'px');
-    savePrefs();
     updateSplitterA11y(workspace);
   }
   function installSplitter() {
@@ -257,20 +257,21 @@ export function mount(root, options={}) {
       splitter.setPointerCapture(event.pointerId);
       splitter.classList.add('is-dragging');
       event.preventDefault();
-    },{signal:events.signal});
+    },{signal:uiEvents.signal});
     splitter.addEventListener('pointermove',event=>{
       if(!pointer||event.pointerId!==pointer.id)return;
       resizeTable(pointer.width+event.clientX-pointer.x,workspace);
-    },{signal:events.signal});
+    },{signal:uiEvents.signal});
     const endResize=event=>{
       if(!pointer||event.pointerId!==pointer.id)return;
       if(splitter.hasPointerCapture(event.pointerId))splitter.releasePointerCapture(event.pointerId);
       pointer=null;
       splitter.classList.remove('is-dragging');
+      savePrefs();
     };
-    splitter.addEventListener('pointerup',endResize,{signal:events.signal});
-    splitter.addEventListener('pointercancel',endResize,{signal:events.signal});
-    splitter.addEventListener('lostpointercapture',()=>{pointer=null;splitter.classList.remove('is-dragging');},{signal:events.signal});
+    splitter.addEventListener('pointerup',endResize,{signal:uiEvents.signal});
+    splitter.addEventListener('pointercancel',endResize,{signal:uiEvents.signal});
+    splitter.addEventListener('lostpointercapture',()=>{pointer=null;splitter.classList.remove('is-dragging');},{signal:uiEvents.signal});
     splitter.addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)||!splitBounds(workspace))return;
       event.preventDefault();
@@ -278,11 +279,13 @@ export function mount(root, options={}) {
       const current=workspace.querySelector('.pv-list-scroll').getBoundingClientRect().width;
       const target=event.key==='Home'?bounds.min:event.key==='End'?bounds.max:current+(event.key==='ArrowRight'?24:-24);
       resizeTable(target,workspace);
-    },{signal:events.signal});
+      savePrefs();
+    },{signal:uiEvents.signal});
   }
 
   function render(resetScroll = false) {
     if(state.destroyed) return;
+    uiEvents.abort();uiEvents=new AbortController();
     const oldList=root.querySelector('#pv-list-scroll'), oldChart=root.querySelector('#pv-chart-scroll');
     if(!resetScroll && oldList && oldChart){
       state.scrollTop=oldList.scrollTop;
@@ -351,8 +354,8 @@ export function mount(root, options={}) {
           });
         }
       };
-      list.addEventListener('scroll',()=>sync(list,timeline),{signal:events.signal});
-      timeline.addEventListener('scroll',()=>sync(timeline,list),{signal:events.signal});
+      list.addEventListener('scroll',()=>sync(list,timeline),{signal:uiEvents.signal});
+      timeline.addEventListener('scroll',()=>sync(timeline,list),{signal:uiEvents.signal});
     }
     const controls=root.querySelector('.pv-chart-controls');
     if(controls)controls.hidden=state.tab!=='gantt';
@@ -581,5 +584,5 @@ export function mount(root, options={}) {
     openFile(event.dataTransfer.files[0]);
   },{signal:events.signal});
   render();
-  return {destroy(){state.destroyed=true;state.pending++;state.cancelParse?.();events.abort();root.replaceChildren();}};
+  return {destroy(){state.destroyed=true;state.pending++;state.cancelParse?.();uiEvents.abort();events.abort();root.replaceChildren();}};
 }
