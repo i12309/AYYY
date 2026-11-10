@@ -133,12 +133,19 @@ function cleanHours(hours) {
     .map(h=>({start:h.start,end:h.end}));
 }
 
+const calendarCache=new WeakMap();
+function calendarLookup(model) {
+  let index=calendarCache.get(model);
+  if(!index){index=new Map((model?.calendars||[]).map(c=>[c.uid,c]));calendarCache.set(model,index);}
+  return index;
+}
+
 /** Return read-only working hours, inheriting base calendar and overrides. Null means unknown. */
 export function workingHoursOnDate(model, date, calendarId = model?.calendar) {
   const value=dateValue(date);
   if(value===null || !Number.isFinite(value) || calendarId==null)return null;
   const day=Math.floor(value/DAY)*DAY;
-  const byId=new Map((model?.calendars||[]).map(c=>[c.uid,c]));
+  const byId=calendarLookup(model);
   const weekday=new Date(day).getUTCDay();
   let uid=String(calendarId),loops=0;
   const visited=new Set();
@@ -151,7 +158,8 @@ export function workingHoursOnDate(model, date, calendarId = model?.calendar) {
       if(matches)return ex.hours;
     }
     const activeWeek=(cal.weeks||[]).find(w=>w.from!==null && w.to!==null && day>=w.from && day<=w.to);
-    const entry=(activeWeek?.days?.[weekday]||cal.days?.[weekday])||null;
+    const weekOverride=activeWeek?.days?.[weekday];
+    const entry=weekOverride?.type && weekOverride.type!=='default'?weekOverride:(cal.days?.[weekday]||null);
     if(entry?.type==='working')return entry.hours;
     if(entry?.type==='nonworking')return [];
     uid=cal.parent;
@@ -220,7 +228,7 @@ export function criticalChain(model) {
     const uid=stack.pop();
     if(ids.has(uid))continue;
     ids.add(uid);
-    stack.push(...parents.get(uid));
+    for(const parent of parents.get(uid)||[])stack.push(parent);
   }
   return {mode:'estimate',uids:ids,reason:'Приблизительная самая длинная цепочка по фактическим датам, без пересчёта расписания, календарей и ограничений'};
 }
