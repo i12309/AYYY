@@ -33,8 +33,8 @@ try{
     const brand=frame.getByRole('link',{name:'AYYY, главная портала'});
     assert.equal(await brand.getAttribute('target'),'_top');
     assert.equal(await brand.getAttribute('href'),'../#home');
-    const logo=await geometry(frame,'.ayyy-brand-mark');
-    assert.ok(logo.x>=0&&logo.right<=width+1,'AYYY brand must fit the header at '+width);
+    const logo=await geometry(frame,'.ayyy-brand-name');
+    assert.ok(logo.x>=0&&logo.right<=width+1,'AYYY homepage wordmark must fit the header at '+width);
     assert.ok(await frame.getByRole('heading',{name:'Семейный архив принадлежит вам'}).isVisible());
     const header=await geometry(frame,'.library-top');
     assert.ok(header.height<=65,'Library top must remain compact at '+width);

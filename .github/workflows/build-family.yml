@@ -42,8 +42,10 @@ jobs:
         run: node family-app/e2e/responsive.mjs
       - name: Verify private GitHub sync and cross-device restore
         run: node family-app/e2e/github.mjs
-      - name: Verify GEDCOM 5.5.1/7 and two browser themes
+      - name: Verify GEDCOM 5.5.1/7 and Classic GEN theme
         run: node family-app/e2e/gedcom.mjs
+      - name: Verify browser ZIP restore and Python DEFLATE
+        run: node family-app/e2e/zip.mjs
       - name: Commit generated static files
         run: |
           # A concurrent commit can require a rebase before publishing assets.
