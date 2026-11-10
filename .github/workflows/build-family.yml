@@ -1,0 +1,66 @@
+name: Build browser GEN
+on:
+  push:
+    branches: [main, feat/gen-browser-portal]
+    paths:
+      - 'family-app/**'
+      - 'tests/family-*.test.cjs'
+      - '.github/workflows/build-family.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: family-build-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: family-app/package-lock.json
+      - name: Install and typecheck/build
+        run: |
+          npm ci --prefix family-app
+          npm run build --prefix family-app
+      - name: Rebuild AYYY portal index
+        run: python3 src/build.py
+      - name: Run portal and family unit checks
+        run: |
+          node tests/model.test.cjs --fixture
+          find tests -maxdepth 1 -name '*.test.cjs' -print0 | xargs -0 node --experimental-strip-types --test
+      - name: Install Chromium for browser smoke
+        run: |
+          cd family-app
+          npx playwright install --with-deps chromium
+      - name: Verify GEN in AYYY browser
+        run: node family-app/e2e/smoke.mjs
+      - name: Check compact Classic GEN at desktop, tablet and phone widths
+        run: node family-app/e2e/responsive.mjs
+      - name: Verify private GitHub sync and cross-device restore
+        run: node family-app/e2e/github.mjs
+      - name: Verify GEDCOM 5.5.1/7 and two browser themes
+        run: node family-app/e2e/gedcom.mjs
+      - name: Commit generated static files
+        run: |
+          # A concurrent commit can require a rebase before publishing assets.
+          # Configure identity for both 'git commit' and 'git rebase'.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add family/ index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "build(portal): refresh index and GEN assets [skip ci]"
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              # Keep all concurrent edits; never force push, abort on conflicting paths.
+              git rebase FETCH_HEAD
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+            done
+            echo "Branch advanced repeatedly; publishing generated files was not safe." >&2
+            exit 1
+          fi

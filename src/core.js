@@ -93,7 +93,7 @@
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
       document.body.dataset.page=app.route;
-      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games'].includes(app.route)?app.route:'service';
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family'].includes(app.route)?app.route:'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -108,7 +108,7 @@
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
     {id:'finance',name:'Валюты и рынки',desc:'Курсы, конвертер и индексы',icon:'chart',color:'green',group:'everyday',kind:'api',route:'finance'},
-    {id:'mpp',name:'Project Viewer',desc:'Диаграмма Ганта из MPP и Project XML',icon:'chart',color:'blue',group:'tools',kind:'local',route:'mpp'},
+    {id:'mpp',name:'Project Viewer',desc:'Гант из файлов MPP и Project XML',icon:'chart',color:'blue',group:'tools',kind:'local',route:'mpp'},
     {id:'calc',name:'Калькулятор',desc:'Посчитать быстро и точно',icon:'calculator',color:'blue',group:'tools',kind:'local',route:'tools',param:'calc'},
     {id:'percent',name:'Проценты',desc:'Скидки, доли и изменения',icon:'percent',color:'green',group:'tools',kind:'local',route:'tools',param:'percent'},
     {id:'converter',name:'Конвертер величин',desc:'Метры, градусы и мегабайты',icon:'ruler',color:'orange',group:'tools',kind:'local',route:'tools',param:'converter'},
@@ -117,6 +117,7 @@
     {id:'json',name:'JSON-редактор',desc:'Проверить и отформатировать',icon:'code',color:'purple',group:'tools',kind:'local',route:'tools',param:'json'},
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
+    {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
     {id:'focus',name:'Время фокуса',desc:'25 минут на одно важное дело',icon:'focus',color:'purple',group:'personal',kind:'local',route:'focus'},
     {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
     {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},

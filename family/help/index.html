@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Как GEN хранит семейное дерево на устройстве и в вашем приватном GitHub.">
+<title>Как работает GEN — Родословная AYYY</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#main">К основному содержимому</a>
+<header class="top">
+ <div class="top-inner">
+  <a class="brand" href="../../#home" target="_top" aria-label="AYYY, главная портала">
+   <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 9h4l3 13H7L10 9Z M8 6l4-4 4 4 M9 6h6v3H9V6Z M4 7 1 5 M20 7l3-2 M9 15h6 M6 22h12"/></svg></span>
+   <strong>ayyy<span class="dot">.</span></strong>
+  </a>
+  <span class="divider" aria-hidden="true"></span>
+  <strong class="section-title">Родословная <small>GEN</small></strong>
+  <a href="../" class="back">← Вернуться к деревьям</a>
+ </div>
+</header>
+<main id="main" class="content">
+ <nav class="quick-nav" aria-label="Разделы справки">
+  <a href="#overview">Как работает</a><a href="#github">Как создать GitHub</a><a href="#privacy">Конфиденциальность</a><a href="#faq">Вопросы</a>
+ </nav>
+ <section class="hero" id="overview">
+  <span class="eyebrow">GEN · БРАУЗЕРНЫЙ СЕМЕЙНЫЙ АРХИВ</span>
+  <h1>Ваш архив. Ваши правила.</h1>
+  <p>Создавайте и редактируйте семейное дерево без собственного сервера. Данные остаются в вашем браузере; по желанию вы сами сохраняете их в принадлежащий вам приватный репозиторий GitHub.</p>
+  <div class="actions"><a class="btn primary" href="../">Открыть семейные деревья</a><a class="btn outline" href="#github">Как создать репозиторий</a></div>
+ </section>
+ <section class="block">
+  <div class="heading"><span class="eyebrow">ГДЕ ХРАНЯТСЯ ДАННЫЕ</span><h2>Два варианта хранения</h2></div>
+  <div class="tiles">
+   <article class="tile"><span class="number">01 · ПО УМОЛЧАНИЮ</span><h3>В вашем браузере</h3><p>GEN хранит людей, связи и фотографии в IndexedDB на вашем устройстве. Для создания дерева не нужен аккаунт GitHub. Очистка данных браузера может удалить локальный архив.</p></article>
+   <article class="tile"><span class="number">02 · ПО ЖЕЛАНИЮ</span><h3>В вашем GitHub</h3><p>Вы выбираете собственный приватный репозиторий. После нажатия «Синхронизировать» браузер отправляет файлы непосредственно в GitHub. История версий остаётся в вашем репозитории.</p></article>
+  </div>
+  <p class="note">Сервер AYYY раздаёт только статический код сайта. Он не принимает и не хранит ваши семейные данные. При синхронизации файлы передаются в GitHub — это отдельный сервис.</p>
+ </section>
+ <section class="block" id="github">
+  <div class="heading"><span class="eyebrow">ПОШАГОВАЯ ИНСТРУКЦИЯ</span><h2>Создайте собственный GitHub-репозиторий</h2><p>Достаточно бесплатного аккаунта GitHub. Настройка выполняется один раз; сам GEN продолжает работать в браузере.</p></div>
+  <div class="steps">
+   <article class="step"><span class="step-num">1</span><div><h3>Создайте приватный репозиторий</h3><p>Откройте <a href="https://github.com/new" target="_blank" rel="noopener noreferrer">создание репозитория GitHub</a>. Введите название, например <code>my-family-tree</code>, выберите <strong>Private</strong> и включите <strong>Add a README file</strong>, чтобы появилась ветка <code>main</code>.</p></div></article>
+   <article class="step"><span class="step-num">2</span><div><h3>Создайте токен с ограниченными правами</h3><p>Откройте <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">Settings → Developer settings → Personal access tokens → Fine-grained tokens</a>. Разрешите доступ только к выбранному репозиторию и установите <strong>Contents: Read and write</strong>. Задайте срок действия. Токен никому не передавайте.</p></div></article>
+   <article class="step"><span class="step-num">3</span><div><h3>Сохраните дерево из GEN</h3><p>В редакторе нажмите <strong>«Локальное дерево»</strong>, введите <code>имя-пользователя/my-family-tree</code>, ветку <code>main</code> и токен. Затем нажмите <strong>«Синхронизировать»</strong>. Сохранение не выполняется автоматически.</p></div></article>
+   <article class="step"><span class="step-num">4</span><div><h3>Откройте архив на другом компьютере</h3><p>В GEN выберите <strong>«Открыть из GitHub»</strong>, укажите тот же репозиторий и токен, затем выберите дерево. После новых изменений снова нажмите «Синхронизировать».</p></div></article>
+  </div>
+  <div class="file-map">
+   <strong>Что хранится в GitHub</strong>
+   <pre>family-data/
+  trees/
+    название-дерева/
+      tree.json        Люди, связи и биографии
+      tree.ged         Текущий экспорт GEDCOM
+      original.ged     Оригинал импортированного GEDCOM (если есть)
+      media/           Фотографии и документы</pre>
+   <p>Папки и файлы генерируются при синхронизации. Не переводите семейный репозиторий в публичный режим.</p>
+  </div>
+ </section>
+ <section class="block" id="privacy">
+  <div class="heading"><span class="eyebrow">КОНФИДЕНЦИАЛЬНОСТЬ</span><h2>Что важно знать</h2></div>
+  <div class="tiles small-tiles">
+   <article class="tile"><h3>Нет базы на сервере AYYY</h3><p>В локальном режиме сведения о родственниках и фотографии остаются в браузере. AYYY не владеет вашим деревом.</p></article>
+   <article class="tile"><h3>GitHub — ваше облачное хранилище</h3><p>Если включена синхронизация, данные обрабатывает GitHub. Доступ определяется приватностью репозитория и выданными вами разрешениями.</p></article>
+   <article class="tile"><h3>Токен не сохраняется GEN</h3><p>Токен находится в памяти открытой вкладки, а не в IndexedDB или localStorage. После перезагрузки его может понадобиться ввести заново.</p></article>
+   <article class="tile"><h3>Нужны резервные копии</h3><p>Скачивайте JSON, GEDCOM или ZIP. При очистке браузера локальные данные могут исчезнуть; автоматической фоновой синхронизации пока нет.</p></article>
+  </div>
+ </section>
+ <section class="block faq" id="faq">
+  <div class="heading"><span class="eyebrow">ВОПРОСЫ</span><h2>Частые вопросы</h2></div>
+  <details><summary>GitHub обязателен?</summary><p>Нет. Можно работать локально. GitHub нужен для синхронизации и восстановления на другом устройстве.</p></details>
+  <details><summary>Данные могут увидеть другие?</summary><p>Локальный архив доступен пользователям этого браузера и устройства; приватный репозиторий — тем, кому вы разрешили доступ, а также в рамках правил GitHub. Не публикуйте сведения о родственниках в открытом репозитории.</p></details>
+  <details><summary>А если два компьютера изменили одно дерево?</summary><p>GEN обнаруживает несоответствие версии и не перезаписывает удалённое дерево молча. Сохраните локальную резервную копию и проверьте конфликт перед продолжением.</p></details>
+  <details><summary>Как перенести старый GEN?</summary><p>Импортируйте JSON или GEDCOM. Полный ZIP сейчас можно экспортировать, но импорт ZIP с фотографиями ещё находится в плане доработки.</p></details>
+ </section>
+ <footer class="foot"><span>Родословная остаётся под вашим контролем.</span><a class="btn primary" href="../">Вернуться к деревьям</a></footer>
+</main>
+</body>
+</html>
