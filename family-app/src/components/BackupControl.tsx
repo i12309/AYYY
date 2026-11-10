@@ -9,7 +9,8 @@ import {
   previewGitHubConflict,resolveGitHubConflict,verifyGitHubConnection,
   type GitHubConflictPreview
 } from '../lib/githubSync';
-import {getSync,type SyncRecord} from '../lib/browserStore';
+import {getSync,setAutoSync,type SyncRecord} from '../lib/browserStore';
+import {autoSyncStatus,autoSyncOpened,type AutoStatus} from '../lib/autoSync';
 import type {MergeChoice,Side} from '../lib/browserMerge';
 import type {TreeSummary} from '../types';
 import type {RegisterNavigationGuard} from '../lib/useUnsavedGuard';
@@ -37,6 +38,7 @@ export function BackupControl({
   const [choices,setChoices]=useState<MergeChoice>({});
   const [confirmed,setConfirmed]=useState(false);
   const [permission,setPermission]=useState('');
+  const [autoStatus,setAutoStatus]=useState<AutoStatus>(()=>autoSyncStatus(tree.id));
 
   const load=useCallback(async()=>{
     try{
@@ -46,9 +48,50 @@ export function BackupControl({
     }catch(cause){setError(cause instanceof Error?cause.message:'Не удалось прочитать параметры GitHub.');}
   },[tree.id]);
   useEffect(()=>{void load();},[load,tree.updated_at]);
+  useEffect(()=>{
+    const onSettings=(event:Event)=>{
+      if((event as CustomEvent<{treeId:string}>).detail?.treeId===tree.id)void load();
+    };
+    const onStatus=(event:Event)=>{
+      const status=(event as CustomEvent<AutoStatus>).detail;
+      if(status?.treeId===tree.id)setAutoStatus(status);
+    };
+    window.addEventListener('gen:sync-settings',onSettings);
+    window.addEventListener('gen:auto-status',onStatus);
+    return ()=>{
+      window.removeEventListener('gen:sync-settings',onSettings);
+      window.removeEventListener('gen:auto-status',onStatus);
+    };
+  },[tree.id,load]);
   const pending=Boolean(record && record.lastLocalSavedAt!==tree.updated_at);
+  const autoLabels:Partial<Record<AutoStatus['kind'],string>>={
+    'waiting-token':'GitHub: нужен токен',
+    queued:'GitHub: ожидает отправки',
+    checking:'GitHub: проверяем',
+    saving:'GitHub: отправляем',
+    updated:'GitHub: получена новая версия',
+    synced:'GitHub: автоматически',
+    conflict:'GitHub: конфликт',
+    offline:'GitHub: нет сети',
+    error:'GitHub: ошибка'
+  };
   const state=preview?'GitHub: конфликт'
-    :!record?'Локальное дерево':pending?'GitHub: есть новые изменения':'GitHub: синхронизировано';
+    :!record?'Локальное дерево'
+    :record.autoSync
+      ?(autoLabels[autoStatus.kind]|| (pending?'GitHub: есть изменения':'GitHub: автоматически'))
+      :pending?'GitHub: есть новые изменения':'GitHub: синхронизировано';
+  async function changeAuto(enabled:boolean){
+    setBusy(true);setError('');
+    try{
+      await setAutoSync(tree.id,enabled);
+      await load();
+      if(enabled)void autoSyncOpened(tree.id,true);
+      setMessage(enabled
+        ?'Автосинхронизация включена: после паузы изменения отправятся в GitHub. Если токен отключён, они останутся локально.'
+        :'Автосинхронизация отключена. Изменения остаются в браузере.');
+    }catch(cause){setError(cause instanceof Error?cause.message:'Не удалось изменить настройку.');}
+    finally{setBusy(false);}
+  }
 
   function connect():void{
     if(!token.trim())return;
@@ -146,8 +189,8 @@ export function BackupControl({
         </section>
         <section>
           <h3><Cloud size={18}/> Личный приватный GitHub</h3>
-          <p>Данные отправляются напрямую в выбранный репозиторий только по вашей команде.
-            Никаких принудительных перезаписей или передачи файлов на сервер AYYY.</p>
+          <p>Данные хранятся локально и отправляются напрямую в ваш приватный GitHub.
+            Автоматическую отправку можно включить или отключить. При конфликте GEN не перезаписывает дерево.</p>
           <label className="field">Репозиторий
             <input value={repository} onChange={e=>{setRepository(e.target.value);setPermission('');}}
               placeholder="username/family-archive" autoComplete="off" disabled={Boolean(record)||busy}/>
@@ -177,6 +220,15 @@ export function BackupControl({
               <CloudUpload size={17}/> {busy?'Выполняется…':'Синхронизировать'}
             </button>
           </div>
+          {record && <div className="gen-auto-settings">
+            <label className="checkbox-label" htmlFor="gen-auto-sync-toggle">
+              <input id="gen-auto-sync-toggle" type="checkbox" checked={record.autoSync===true}
+                disabled={busy} onChange={event=>void changeAuto(event.target.checked)}/>
+              <span><strong>Автоматическая синхронизация</strong>
+                <small>Через ~22 секунды без новых правок, пока вкладка открыта и токен подключён</small></span>
+            </label>
+            {record.autoSync && <p role="status" className="gen-auto-status">{autoStatus.message}</p>}
+          </div>}
           {permission && <p role="status" className="field-hint">{permission}</p>}
           {record && <>
             <p>Последняя синхронизация: {when(record.lastSync)}.

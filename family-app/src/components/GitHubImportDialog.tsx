@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {setAutoSync} from '../lib/browserStore';
 import {CloudDownload,KeyRound,LockKeyhole} from 'lucide-react';
 import type {TreeSummary} from '../types';
 import {Dialog} from './Dialog';
@@ -20,6 +21,7 @@ export function GitHubImportDialog({
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [authenticated,setAuthenticated]=useState(hasSessionToken());
+  const [autoSync,setAutoSyncEnabled]=useState(true);
   async function discover(event:React.FormEvent) {
     event.preventDefault();
     setBusy(true);setError('');
@@ -36,6 +38,7 @@ export function GitHubImportDialog({
     setBusy(true);setError('');
     try {
       const doc=await restoreFromGitHub(parseRepo(repository,branch),chosen);
+      if(autoSync)await setAutoSync(doc.tree.id,true);
       await onImported({...doc.tree,person_count:doc.persons.length,family_count:doc.families.length});
     }catch(cause){setError(cause instanceof Error?cause.message:'Не удалось загрузить дерево.');}
     finally{setBusy(false);}
@@ -78,6 +81,13 @@ export function GitHubImportDialog({
             </select>
           </label>
         )}
+        <label className="checkbox-label gen-storage-auto">
+          <input type="checkbox" checked={autoSync} disabled={busy}
+            onChange={event=>setAutoSyncEnabled(event.target.checked)}/>
+          <span><strong>Включить автоматическую синхронизацию</strong>
+            <small>При открытии проверять свежую версию; после правок отправлять через ~22 секунды</small></span>
+        </label>
+        <p className="field-hint">Токен хранится только в памяти текущей вкладки. После повторного входа потребуется ввести его снова.</p>
         {error && <p role="alert" className="error-banner">{error}</p>}
         <footer className="dialog-footer">
           <button className="button secondary" type="button" onClick={onClose}>Отмена</button>
