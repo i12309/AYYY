@@ -183,3 +183,68 @@ body[data-shell="mpp"] #view{padding:0;animation:none;outline:0}
 .pv-calendar-section .pv-resource-table td{font-size:11px}
 @media(max-width:900px){.pv-calendar-week{grid-template-columns:repeat(4,minmax(0,1fr))}.pv-chart-controls{justify-content:flex-start}}
 @media(max-width:520px){.pv-calendar-view{padding:12px}.pv-calendar-week{grid-template-columns:repeat(2,minmax(0,1fr))}.pv-jump input{width:120px}.pv-chart-controls{gap:6px}}
+
+
+/* Compact, full-viewport Project Viewer workspace.
+   The header owns project identity and actions; only the empty state shows the demo button. */
+.pv-header.pv-header-loaded{
+  height:auto;min-height:72px;padding:7px clamp(12px,1.5vw,26px);
+  display:grid;grid-template-columns:auto 1px minmax(200px,1fr) auto auto;
+  align-items:center;gap:clamp(8px,1.1vw,18px);
+}
+.pv-header-context{min-width:0;display:flex;flex-direction:column;gap:2px}
+.pv-header-section{font-size:9px;font-weight:750;letter-spacing:.15em;color:#65818b;white-space:nowrap}
+.pv-project-title{margin:0;font-size:18px;font-weight:700;line-height:1.18;letter-spacing:-.025em;color:#25434c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-header .pv-file-meta{gap:4px 12px;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;font-size:10px}
+.pv-header .pv-file-meta span{flex-shrink:0}
+.pv-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap}
+.pv-header-actions .pv-button{min-height:30px;padding:5px 9px;font-size:11px!important}
+.pv-header-links{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.pv-header-links .pv-private{font-size:10px;padding-left:12px;gap:6px}
+.pv-header-links .pv-back{font-size:11px}
+@media(min-width:801px){
+  .pv-root.pv-loaded{height:100svh;min-height:510px;display:flex;flex-direction:column;overflow:hidden}
+  .pv-loaded .pv-main{display:flex;flex-direction:column;flex:1;min-height:0;width:100%;max-width:none;margin:0;padding:7px clamp(9px,1vw,18px) 7px}
+  .pv-loaded .pv-body{display:flex;flex-direction:column;flex:1;min-height:0}
+  .pv-loaded .pv-workspace{height:auto;flex:1;min-height:0}
+  .pv-loaded .pv-resource-container,.pv-loaded .pv-calendar-view{flex:1;min-height:0;max-height:none}
+  .pv-loaded .pv-workspace.pv-with-details{grid-template-columns:minmax(340px,var(--pv-table-width,43%)) 8px minmax(240px,1fr) 320px}
+  .pv-loaded .pv-analysis-note{flex:none;padding:5px 10px}
+  .pv-loaded .pv-bottom{flex:none;padding:5px 10px}
+  .pv-loaded .pv-message:not(:empty){flex:none;padding:5px 9px;margin-top:4px}
+}
+.pv-loaded .pv-control-bar{min-height:0;padding:5px 7px;gap:5px 8px;border-radius:5px 5px 0 0;align-items:center}
+.pv-loaded .pv-tabs{gap:2px;padding:2px}
+.pv-loaded .pv-tabs button{padding:5px 8px}
+.pv-loaded .pv-chart-controls{flex:1;gap:5px 8px;justify-content:flex-start;min-width:0}
+.pv-loaded .pv-chart-controls select{padding:4px 18px 4px 5px}
+.pv-loaded .pv-text-button{padding:4px 1px;line-height:1.15}
+.pv-loaded .pv-toggle{padding:5px 7px;line-height:1.15}
+.pv-loaded .pv-search{order:3;margin-left:auto;height:28px;min-width:140px;max-width:205px}
+.pv-loaded .pv-chart-controls{order:2}
+.pv-loaded .pv-tabs{order:1}
+.pv-loaded .pv-jump input{min-height:26px}
+.pv-loaded .pv-workspace .pv-chart-scroll{min-width:0}
+.pv-loaded .pv-list-rows,.pv-loaded .pv-chart-rows{min-height:calc(100% - 44px)}
+.pv-loaded .pv-chart-rows{background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(var(--pv-week-width,56px) - 1px),#e1eaea calc(var(--pv-week-width,56px) - 1px),#e1eaea var(--pv-week-width,56px))}
+@media(min-width:801px) and (max-width:1120px){
+  .pv-loaded .pv-workspace.pv-with-details{height:auto;grid-template-columns:minmax(340px,var(--pv-table-width,43%)) 8px minmax(240px,1fr);grid-template-rows:minmax(170px,1fr) minmax(130px,185px)}
+  .pv-header.pv-header-loaded{grid-template-columns:auto 1px minmax(150px,1fr) auto}
+  .pv-header-loaded .pv-header-links{display:none}
+}
+@media(max-width:800px){
+  .pv-root.pv-loaded{height:auto;min-height:100svh;overflow:visible}
+  .pv-header.pv-header-loaded{height:auto;min-height:0;padding:8px 12px;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:6px}
+  .pv-header-loaded .pv-header-separator{display:none}
+  .pv-header-loaded .pv-header-context{min-width:0}
+  .pv-header-loaded .pv-header-actions{grid-column:1/-1;grid-row:2;justify-content:flex-start;max-width:100%;overflow-x:auto;padding:2px 0}
+  .pv-header-loaded .pv-header-links{justify-content:flex-end}
+  .pv-header-loaded .pv-project-title{font-size:15px}
+  .pv-header-loaded .pv-file-meta{font-size:9px}
+  .pv-header-loaded .pv-header-section{font-size:8px}
+  .pv-loaded .pv-main{max-width:none;margin:0;padding:7px 9px}
+  .pv-loaded .pv-control-bar{align-items:flex-start}
+  .pv-loaded .pv-chart-controls{order:3;flex:1 1 100%;border-top:1px solid #edf2f2;padding-top:5px}
+  .pv-loaded .pv-search{order:2;flex:1;min-width:125px}
+  .pv-loaded .pv-workspace .pv-chart-scroll{min-height:280px}
+}
