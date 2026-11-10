@@ -370,6 +370,19 @@
     if(bytes.length!==file.size)throw new Error('Документ повреждён.');
     download(file.name,bytes,file.mime);
   }
+  let previewURL=null;
+  function previewFile(id){
+    const file=state.doc.documents.find(x=>x.id===id);if(!file)return;
+    const bytes=C.unbase64(file.data);if(bytes.length!==file.size)throw new Error('Документ повреждён.');
+    if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}
+    const content=V.h('div',{class:'health-document-preview'});
+    if(['image/png','image/jpeg'].includes(file.mime)){previewURL=URL.createObjectURL(new Blob([bytes],{type:file.mime}));content.append(V.h('img',{src:previewURL,alt:file.title||file.name}));}
+    else if(['text/plain','text/csv'].includes(file.mime))content.append(V.h('pre',{},new TextDecoder().decode(bytes)));
+    else content.append(V.h('p',{},'Скачайте оригинал, чтобы открыть этот формат в программе просмотра.'));
+    content.append(V.h('p',{class:'health-muted'},file.name+' · '+V.date(file.date)+' · '+new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'),V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'}));
+    document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();
+  }
+  dialog.addEventListener('close',()=>{if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}});
   async function switchProfile(id){
     const chosen=await S.get(id);
     if(!chosen)throw new Error('Локальный профиль не найден.');
@@ -528,7 +541,7 @@
     state.doc=window.HumanDemo.create();
     state.local={id:state.doc.id,repo:null,dirty:false};
     state.key=null;
-    state.picker=false;state.tab='overview';state.globalSearch='';state.search='';state.groupKey='';state.filters={};
+    state.picker=false;state.tab='overview';state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.abnormalOnly=false;
     state.conflict=false;state.syncBusy=false;
     render();
   }
@@ -557,7 +570,9 @@
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
       else if(action==='close-menu')document.body.classList.remove('health-menu-open');
       else if(action==='quick-add'){dialog.querySelector('#health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},'Добавить запись'),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content health-quick-options'},[['Анализ','lab'],['Домашнее измерение','vital'],['Медицинская запись','medical'],['Препарат','medication'],['Запись дневника','diary'],['Документ','document']].map(([title,kind])=>V.button(title,'new-'+kind))));dialog.showModal();}
-      else if(action==='open-group'){state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
+      else if(action==='filter-abnormal'){state.abnormalOnly=!state.abnormalOnly;state.groupKey='';render();}
+      else if(action==='select-observation'){state.observationId=el.dataset.id;render();}
+      else if(action==='open-group'){state.abnormalOnly=false;state.observationId='';state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
       else if(action==='open-demo'||action==='reset-demo')openDemo();
       else if(action==='exit-demo')await exitDemo();
       else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;render();}
@@ -584,6 +599,7 @@
       else if(action==='backup')backup();
       else if(action==='delete-local')await deleteLocal();
       else if(action==='file-download')fileDownload(el.dataset.id);
+      else if(action==='file-preview')previewFile(el.dataset.id);
       else if(action==='close-dialog')dialog.close();
       else if(action==='csv'){
         const input=document.createElement('input');
@@ -606,7 +622,7 @@
       if(next){next.focus();try{next.setSelectionRange(position,position);}catch{}}
     }
   });
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
+  document.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('circle[data-action]')){event.preventDefault();void onClick(event);return;}if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
   document.addEventListener('change',event=>{if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
   if(channel)channel.onmessage=event=>{

@@ -1,4 +1,14 @@
 /* Browser-edition data/UI adapters over the original HUMAN design system. */
+.analyte-page .health-card{margin:0;min-width:0}
+.analyte-chart .health-chart-wrap svg{max-height:none;min-height:240px}
+.analyte-source .metadata{margin:16px 0;overflow-wrap:anywhere}
+.analyte-history [aria-pressed=true]{background:var(--blue-soft);border-color:var(--blue)}
+.analyte-history>.section-heading{padding:14px 16px 0}
+.analyte-history .health-pill{display:block;width:fit-content;margin-top:4px}
+.analyte-chart circle[role=button]{cursor:pointer}
+.analyte-chart circle:focus{outline:none;stroke-width:4}
+.health-document-preview img{display:block;max-width:100%;max-height:65vh;object-fit:contain;margin:auto}
+.health-document-preview pre{max-height:55vh;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:6px}
 :root{--ink:var(--text);--canvas:var(--bg);--line:var(--border);--shadow:none}
 body{font-size:14px}
 [hidden]{display:none!important}

@@ -116,11 +116,11 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     ['document','Бланк анализов'],
     ['settings','Настройки демо']
   ]){
-    handlers.click({target:{closest:()=>({dataset:{tab}})}});
+    handlers.click({preventDefault(){},target:{closest:()=>({dataset:{tab}})}});
     assert.ok(textOf(target).includes(expected),'Missing in '+tab+': '+expected);
     assert.match(textOf(target),/ДЕМО/);
   }
-  handlers.click({target:{closest:()=>({dataset:{action:'reset-demo'}})}});
+  handlers.click({preventDefault(){},target:{closest:()=>({dataset:{action:'reset-demo'}})}});
   assert.match(textOf(target),/Сохранённые результаты/);
   assert.equal(localCalls,0);
   assert.equal(remoteCalls,0);

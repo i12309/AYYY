@@ -180,7 +180,7 @@
       const rows=data.map(item=>{
         const extension=item.name.includes('.')?item.name.split('.').pop().slice(0,5).toUpperCase():'ФАЙЛ';
         const size=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(item.size/(item.size>=1048576?1048576:1024))+(item.size>=1048576?' МБ':' КБ');
-        return h('tr',{},h('td',{class:'document-main'},h('div',{class:'document-cell'},h('span',{class:'file-stamp tone-'+(extension==='PDF'?'red':'blue')},icon('FileText',21),h('span',{},extension)),h('div',{},h('button',{class:'table-name','data-action':'file-download','data-id':item.id},item.title||item.name),h('span',{class:'table-subline'},item.name),h('span',{class:'mobile-document-date'},date(item.date)+' · '+size)))),h('td',{class:'document-type'},h('span',{class:'badge info'},extension)),h('td',{class:'document-date'},date(item.date)),h('td',{class:'document-size'},size),h('td',{class:'document-actions'},button('Скачать','file-download',{class:'small','data-id':item.id}),buttons(kind,item,false)));
+        return h('tr',{},h('td',{class:'document-main'},h('div',{class:'document-cell'},h('span',{class:'file-stamp tone-'+(extension==='PDF'?'red':'blue')},icon('FileText',21),h('span',{},extension)),h('div',{},h('button',{class:'table-name','data-action':'file-preview','data-id':item.id},item.title||item.name),h('span',{class:'table-subline'},item.name),h('span',{class:'mobile-document-date'},date(item.date)+' · '+size)))),h('td',{class:'document-type'},h('span',{class:'badge info'},extension)),h('td',{class:'document-date'},date(item.date)),h('td',{class:'document-size'},size),h('td',{class:'document-actions'},button('Скачать','file-download',{class:'small','data-id':item.id}),buttons(kind,item,false)));
       });
       items.append(h('div',{class:'table-wrap'},h('table',{class:'documents-table'},h('thead',{},h('tr',{},['Документ','Формат','Добавлен','Размер','Действия'].map(label=>h('th',{scope:'col'},label)))),h('tbody',{},rows))));
     }else{
@@ -199,17 +199,17 @@
     const all=M.groups(state.doc.observations);
     const query=(state.search||'').toLocaleLowerCase('ru-RU');
     const filtered=all.filter(x=>(x.name+' '+x.unit+' '+x.latest.source)
-      .toLocaleLowerCase('ru-RU').includes(query));
+      .toLocaleLowerCase('ru-RU').includes(query)&&(!state.abnormalOnly||x.status==='abnormal'));
     const selected=filtered.find(x=>x.key===state.groupKey)||filtered[0];
     const section=h('div',{});
-    section.append(title(state.groupKey?'История показателя':'Анализы',
+    section.append(title(state.groupKey&&selected?selected.name:'Анализы',
       'История результатов с единицами, референсами и первоисточниками.',
       [button('Импорт CSV','csv'),button('Добавить','new-lab',{class:'primary'})]));
     section.append(h('input',{type:'search',class:'health-search','data-search':'labs',
       placeholder:'Найти показатель…',value:state.search||''}));
     if(!state.groupKey){
       const box=card(null);box.classList.add('health-labs-card');
-      const search=section.querySelector('[data-search=labs]');if(search){search.remove();box.append(h('div',{class:'filters'},icon('Search',15),search));}
+      const search=section.querySelector('[data-search=labs]');if(search){search.remove();box.append(h('div',{class:'filters'},icon('Search',15),search,button('Вне референса','filter-abnormal',{class:'abnormal-filter','aria-pressed':String(!!state.abnormalOnly)})));}
       const grouped=h('table',{class:'analyte-groups'},h('thead',{},h('tr',{},['Показатель','Последний результат','Среднее','Референс','Измерений','Дата последнего'].map(label=>h('th',{scope:'col'},label)))));
       const body=h('tbody',{});
       for(const g of filtered){const values=g.rows.map(x=>M.number(x.value)).filter(x=>x!==null);const average=values.length?new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(values.reduce((a,b)=>a+b,0)/values.length):'—';
@@ -219,45 +219,44 @@
       box.append(h('p',{class:'table-summary'},'Показателей: '+filtered.length+' · измерений: '+filtered.reduce((a,g)=>a+g.rows.length,0)),h('p',{class:'summary-footnote'},'Среднее — арифметическое числовых результатов сопоставимой группы. Разные единицы, материалы и методы не смешиваются. Референс в списке — из последней записи.'));
       section.append(box);return section;
     }
-    section.append(h('button',{class:'button text-link','data-tab':'lab'},'← Все анализы'));
-    const left=card('Показатели');
-    const groupList=h('div',{class:'health-group-list'});
-    filtered.forEach((group,index)=>{
-      groupList.append(h('button',{type:'button','data-action':'select-group','data-index':index,
-        class:'health-group-button '+(group===selected?'is-selected':'')},
-        h('span',{},h('strong',{},group.name),h('br'),
-          h('small',{},group.rows.length+' измер. · '+group.unit)),
-        h('span',{},group.latest.value,status(group.latest))));
-    });
-    if(!filtered.length)groupList.append(empty('Ничего не найдено'));
-    left.append(groupList);
-    const right=card(selected?selected.name:'История показателя');
-    if(selected){
-      right.append(h('div',{class:'health-row'},
-        h('span',{class:'health-muted health-small'},'Единица: '+(selected.unit||'не указана')),
-        status(selected.latest)));
-      right.append(chart(selected));
-      right.append(table(['Дата','Значение','Референс','Источник',''],selected.rows.map(x=>[
-        date(x.date),h('strong',{},x.value+' '+x.unit),
-        x.low||x.high?(x.low||'—')+' — '+(x.high||'—'):'—',
-        x.source||'—',buttons('lab',x)
-      ])));
-    }else right.append(empty('Нет показателей','new-lab'));
-    section.append(h('div',{class:'health-two-panel'},left,right));
+    section.querySelector('[data-search=labs]')?.remove();
+    section.append(h('p',{},h('button',{class:'button text-link','data-tab':'lab'},'← Все анализы')));
+    if(!selected){section.append(empty('Нет показателей','new-lab'));return section;}
+    const g=selected,current=g.rows.find(x=>x.id===state.observationId)||g.latest;
+    const numeric=M.chartRows(g.rows),average=numeric.length?numeric.reduce((sum,x)=>sum+M.number(x.value),0)/numeric.length:null;
+    const fmt=n=>n===null?'—':new Intl.NumberFormat('ru-RU',{maximumSignificantDigits:6}).format(n);
+    const reference=x=>(x.low||'—')+' — '+(x.high||'—');
+    const page=h('article',{class:'analyte-page','aria-label':'Страница показателя'});
+    page.append(h('section',{class:'analyte-statistics','aria-label':'Сводка показателя'},[
+      ['blue','Activity','Последний результат',g.latest.value+' '+g.unit,date(g.latest.date)],
+      ['green','TrendingUp','Среднее значение',fmt(average)+' '+g.unit,numeric.length+' из '+g.rows.length+' измерений'],
+      ['red','ShieldCheck','Референс последней записи',reference(g.latest),g.unit],
+      ['yellow','LayoutGrid','Всего измерений',g.rows.length,'Вся история показателя']
+    ].map(([tone,glyph,label,value,note])=>{const svg=icon(glyph,22);svg.classList.add('stat-icon');return h('div',{class:'analyte-stat stat-'+tone},svg,h('div',{},h('small',{},label),h('strong',{class:tone==='red'?'reference-summary':''},value),h('small',{},note)));})));
+    page.append(h('details',{class:'analyte-explanation'},h('summary',{},'Как читать эти данные'),h('p',{},'Среднее рассчитано по точным числовым результатам этой группы. Разные единицы, материалы и методы не смешиваются. Референсы сохранены у каждого измерения. Выберите точку или дату в таблице, чтобы увидеть её источник.')));
+    const plot=card('Динамика',[chart(g,{selected:current.id,interactive:true}),h('p',{class:'chart-reference-note'},'Среднее: '+fmt(average)+' '+g.unit+' · '+numeric.length+' измерений')]);plot.classList.add('analyte-chart');
+    const metadata=h('dl',{class:'metadata'});
+    for(const [label,value] of [['Дата',date(current.date)],['Результат',current.value+' '+current.unit],['Референс',reference(current)],['Источник',current.source],['Материал',current.material],['Метод',current.method],['Примечание',current.notes]])metadata.append(h('dt',{},label),h('dd',{},value||'Не указан'));
+    const source=card('Выбранное измерение',[status(current),metadata,button('Редактировать','edit',{'data-kind':'lab','data-id':current.id})]);source.classList.add('analyte-source');
+    page.append(h('div',{class:'analyte-chart-layout'},plot,source));
+    const history=card('История · '+g.rows.length,[table(['Дата','Значение','Референс','Источник','Действия'],g.rows.map(x=>[
+      button(date(x.date),'select-observation',{'data-id':x.id,'aria-pressed':String(x.id===current.id),class:'small'}),h('span',{},h('strong',{},x.value+' '+x.unit),status(x)),reference(x),x.source||'—',buttons('lab',x)
+    ]))]);history.classList.add('analyte-history');page.append(history);section.append(page);
     return section;
   }
-  function chart(group){
+  function chart(group,options={}){
     const points=M.chartRows(group.rows);
     if(!points.length)return empty('Для графика нужны числовые измерения');
     const values=points.map(x=>M.number(x.value));
     const refs=points.flatMap(x=>[M.number(x.low),M.number(x.high)]).filter(x=>x!==null);
     const min=Math.min(...values,...refs),max=Math.max(...values,...refs);
     const spread=max-min||Math.abs(max)*.1||1,lo=min-.12*spread,hi=max+.12*spread;
+    const times=points.map(x=>Date.parse(x.date+'T12:00:00Z')),span=times[times.length-1]-times[0];
     const coords=values.map((value,index)=>[
-      values.length===1?355:48+615*index/(values.length-1),169-135*(value-lo)/(hi-lo)]);
+      span?48+615*(times[index]-times[0])/span:355,169-135*(value-lo)/(hi-lo)]);
     const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
     svg.setAttribute('viewBox','0 0 720 200');svg.classList.add('health-spark');
-    svg.setAttribute('role','img');svg.setAttribute('aria-label','График '+group.name);
+    svg.setAttribute('role',options.interactive?'group':'img');svg.setAttribute('aria-label','График '+group.name);
     function svgNode(tag,attrs,text){
       const n=document.createElementNS(ns,tag);
       for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));
@@ -266,18 +265,22 @@
     }
     const yFor=n=>169-135*(n-lo)/(hi-lo);
     for(let i=0;i<points.length;i++){
-      const low=M.number(points[i].low),high=M.number(points[i].high);
-      if(low===null||high===null||low>high)continue;
+      const rawLow=M.number(points[i].low),rawHigh=M.number(points[i].high);
+      if(rawLow===null&&rawHigh===null)continue;
+      const low=rawLow??lo,high=rawHigh??hi;
+      if(low>high)continue;
       const left=points.length===1?48:i===0?48:(coords[i-1][0]+coords[i][0])/2;
       const right=points.length===1?665:i===points.length-1?665:(coords[i][0]+coords[i+1][0])/2;
       svgNode('rect',{x:left,y:yFor(high),width:right-left,height:yFor(low)-yFor(high),fill:'#edf8f2'});
     }
     [38,103,169].forEach(y=>{svgNode('line',{x1:48,x2:665,y1:y,y2:y,stroke:'#dce4ee','stroke-dasharray':'4 5'});svgNode('text',{x:37,y:y+4,'text-anchor':'end',fill:'#667080','font-size':11},new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(lo+(169-y)/135*(hi-lo)));});
+    if(options.interactive){const mean=values.reduce((a,b)=>a+b,0)/values.length;svgNode('line',{x1:48,x2:665,y1:yFor(mean),y2:yFor(mean),stroke:'#c29416','stroke-width':1.5,'stroke-dasharray':'6 4'});}
     svgNode('polyline',{points:coords.map(x=>x.join(',')).join(' '),
       fill:'none',stroke:'#2674ca','stroke-width':3,'stroke-linejoin':'round'});
     coords.forEach((xy,i)=>{
-      const dot=svgNode('circle',{cx:xy[0],cy:xy[1],r:4,fill:'white',
-        stroke:'#2674ca','stroke-width':2});
+      const color=M.status(points[i])==='abnormal'?'#c3263a':M.status(points[i])==='normal'?'#167346':'#2674ca';
+      const dot=svgNode('circle',{cx:xy[0],cy:xy[1],r:options.selected===points[i].id?7:4,fill:options.selected===points[i].id?color:'white',stroke:color,'stroke-width':2});
+      if(options.interactive){for(const [k,v] of Object.entries({'data-action':'select-observation','data-id':points[i].id,tabindex:'0',role:'button','aria-label':date(points[i].date)+' · '+points[i].value+' '+group.unit,'aria-pressed':String(options.selected===points[i].id)}))dot.setAttribute(k,v);}
       const hint=document.createElementNS(ns,'title');
       hint.textContent=date(points[i].date)+' · '+points[i].value;
       dot.append(hint);
