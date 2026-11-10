@@ -100,8 +100,8 @@ export function normalizeProject(project, fileName = '') {
   return {
     title:String(project.title||project.summary?.name||fileName||'Проект'),
     fileName, format:String(project.format||''), author:String(project.author||''),
-    start:projectStart ?? (validStarts.length ? Math.min(...validStarts) : null),
-    finish:projectFinish ?? (validFinishes.length ? Math.max(...validFinishes) : null),
+    start:projectStart ?? (validStarts.length ? validStarts.reduce((min,value)=>Math.min(min,value),Infinity) : null),
+    finish:projectFinish ?? (validFinishes.length ? validFinishes.reduce((max,value)=>Math.max(max,value),-Infinity) : null),
     tasks, resources, assignments, links, byUid,
     warnings:Array.isArray(project.warnings) ? project.warnings.map(String) : []
   };
@@ -136,8 +136,8 @@ export function visibleTasks(model, query = '', collapsed = new Set()) {
 export function timelineRange(model) {
   const dates = (model?.tasks || []).flatMap(t => [t.start,t.finish,t.baselineStart,t.baselineFinish]).filter(v=>v!==null && Number.isFinite(v));
   const today = Math.floor(Date.now() / DAY) * DAY;
-  const min = dates.length ? Math.min(...dates) : today;
-  const max = dates.length ? Math.max(...dates) : today + 28*DAY;
+  const min = dates.length ? dates.reduce((result,value)=>Math.min(result,value),Infinity) : today;
+  const max = dates.length ? dates.reduce((result,value)=>Math.max(result,value),-Infinity) : today + 28*DAY;
   const start = Math.floor(min / DAY) * DAY - 7 * DAY;
   const end = Math.floor(max / DAY) * DAY + 14 * DAY;
   return {start, days:Math.max(28,Math.min(10000,Math.ceil((end-start)/DAY)))};
