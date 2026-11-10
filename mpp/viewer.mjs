@@ -1,5 +1,5 @@
 /* AYYY Project Viewer — local-only Microsoft Project plan reader and Gantt UI. */
-import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, tasksCsv, demoProject} from './model.mjs';
+import {DAY, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const zoomWidths = {day:18,week:8,month:3.2};
@@ -10,12 +10,15 @@ const numberLabel = value => Number.isFinite(Number(value)) ? new Intl.NumberFor
 const dateAt = ms => new Date(ms);
 const monthName = date => new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
 const shortDay = date => new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(date);
-const className = task => task.milestone?'pv-milestone':task.summary?'pv-summary':task.critical?'pv-critical':'pv-ordinary';
+const className = (task,criticalIds) => task.milestone?'pv-milestone':task.summary?'pv-summary':criticalIds.has(task.uid)?'pv-critical':'pv-ordinary';
+const todayStamp=()=>{const now=new Date();return Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());};
 
-function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true, showBaseline = true) {
+function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true, showBaseline = true, options = {}) {
   const range = timelineRange(model), pixel = zoomWidths[zoom] || zoomWidths.week;
   const width = Math.round(range.days * pixel);
   const end = range.start + range.days * DAY;
+  const criticalIds=options.criticalIds||new Set();
+  const calendarId=options.calendarId||model.calendar;
   const months = [];
   let date = Date.UTC(new Date(range.start).getUTCFullYear(),new Date(range.start).getUTCMonth(),1);
   for (let safety=0;date<end && safety<400;safety++) {
@@ -59,7 +62,7 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
           bar='<span class="pv-task-diamond" style="left:'+Math.max(0,left)+'px" title="'+tooltip+'" aria-label="Веха: '+tooltip+'"></span>';
         }else{
           const size=Math.max(5,right-left+pixel);
-          bar='<span class="pv-task-bar '+className(task)+'" style="left:'+Math.max(0,left)+'px;width:'+size+'px" title="'+tooltip+'">'+
+          bar='<span class="pv-task-bar '+className(task,criticalIds)+'" style="left:'+Math.max(0,left)+'px;width:'+size+'px" title="'+tooltip+'">'+
             '<span class="pv-bar-progress" style="width:'+task.percent+'%"></span>'+
             (size>105?'<span class="pv-bar-title">'+escapeHtml(task.name)+'</span>':'')+'</span>';
         }
@@ -85,10 +88,23 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
         routes.map(route=>'<path class="pv-link'+(route.critical?' pv-link-critical':'')+'" d="'+route.d+'" marker-end="url(#pv-arrow)"/>').join('')+'</svg>';
     }
   }
+  let overlays='';
+  if(options.showCalendar && model.calendars?.length && calendarId && range.days<=900) {
+    const offdays=[];
+    for(let n=0;n<range.days;n++){
+      const hours=workingHoursOnDate(model,range.start+n*DAY,calendarId);
+      if(hours && !hours.length)offdays.push('<span class="pv-nonwork" style="left:'+Math.round(n*pixel)+'px;width:'+Math.max(1,Math.ceil(pixel))+'px"></span>');
+    }
+    if(offdays.length)overlays='<div class="pv-calendar-overlay" aria-hidden="true">'+offdays.join('')+'</div>';
+  }
+  if(options.showToday){
+    const t=todayStamp();
+    if(t>=range.start && t<end)overlays+='<span class="pv-today-line" style="left:'+Math.round((t-range.start)/DAY*pixel)+'px" title="Сегодня"></span>';
+  }
   return {
     left:'<div class="pv-list-head"><span>Задача / WBS</span><span>Начало</span><span>Окончание</span><span>Длит.</span><span>Готово</span></div><div class="pv-list-rows">'+before+leftRows.join('')+after+'</div>',
     right:'<div class="pv-chart-head" style="width:'+width+'px"><div class="pv-months">'+months.join('')+'</div><div class="pv-ticks">'+ticks.join('')+'</div></div>'+
-      '<div class="pv-chart-rows" style="width:'+width+'px">'+before+rightRows.join('')+after+connectors+'</div>'
+      '<div class="pv-chart-rows" style="width:'+width+'px">'+before+rightRows.join('')+after+overlays+connectors+'</div>'
   };
 }
 
@@ -107,6 +123,33 @@ function resourceMarkup(model, query) {
     return '<tr><td><strong>'+escapeHtml(r.name)+'</strong></td><td>'+escapeHtml(r.type)+'</td><td>'+escapeHtml(r.group||'—')+'</td><td>'+escapeHtml(r.initials||'—')+'</td><td>'+escapeHtml(numberLabel(r.work))+'</td><td>'+escapeHtml(numberLabel(r.cost))+'</td><td title="'+escapeHtml(names.join(', '))+'">'+names.length+'</td></tr>';
   }).join('');
   return '<div class="pv-resource-container"><table class="pv-resource-table"><thead><tr><th>Ресурс</th><th>Тип</th><th>Группа</th><th>Инициалы</th><th>Работа</th><th>Стоимость</th><th>Назначений</th></tr></thead><tbody>'+rows+'</tbody></table>'+(rows?'':'<div class="pv-no-data">По вашему запросу ресурсов не найдено.</div>')+'</div>';
+}
+
+function calendarMarkup(model, selectedUid) {
+  const calendars=model.calendars||[];
+  if(!calendars.length)return '<div class="pv-calendar-empty">В исходном файле нет доступного описания рабочих календарей. Даты задач показаны такими, какими их сохранил Microsoft Project; пересчёта расписания нет.</div>';
+  const selected=calendars.find(c=>c.uid===selectedUid)||calendars.find(c=>c.uid===model.calendar)||calendars[0];
+  const dayNames=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const base=Date.UTC(2026,0,4); // Sunday; avoid local timezone ambiguity
+  const showTime=minutes=>String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
+  const week=dayNames.map((name,index)=>{
+    const hours=workingHoursOnDate(model,base+index*DAY,selected.uid);
+    const label=hours===null?'Неизвестно':hours.length?hours.map(h=>showTime(h.start)+'–'+showTime(h.end)).join(', '):'Выходной';
+    return '<div class="pv-calendar-day"><strong>'+name+'</strong><span>'+escapeHtml(label)+'</span></div>';
+  }).join('');
+  const exceptions=(selected.exceptions||[]).slice(0,80).map(ex=>'<tr><td>'+escapeHtml(ex.name||'Исключение')+'</td><td>'+
+    escapeHtml(ex.from===null?'—':dateText(ex.from))+'</td><td>'+escapeHtml(ex.to===null?'—':dateText(ex.to))+'</td><td>'+
+    escapeHtml(ex.hours.length?ex.hours.map(h=>showTime(h.start)+'–'+showTime(h.end)).join(', '):'Нерабочее время')+
+    (ex.recurrence?' · Повторение':'')+'</td></tr>').join('');
+  const weeks=(selected.weeks||[]).slice(0,40).map(w=>'<tr><td>'+escapeHtml(w.name||'Особая рабочая неделя')+'</td><td>'+
+    dateText(w.from)+'</td><td>'+dateText(w.to)+'</td></tr>').join('');
+  return '<div class="pv-calendar-view"><div class="pv-calendar-intro"><strong>Рабочие календари из файла</strong><p>Информация приведена для просмотра: сроки задач не пересчитываются. Для специальных недель и исключений ориентируйтесь на таблицы ниже.</p></div>'+
+    '<div class="pv-calendar-choices">'+calendars.map(c=>'<button type="button" class="pv-calendar-choice" data-pv-calendar="'+escapeHtml(c.uid)+'" aria-pressed="'+(c.uid===selected.uid)+'">'+escapeHtml(c.name)+(c.uid===model.calendar?' · проект':'')+'</button>').join('')+'</div>'+
+    '<div class="pv-calendar-summary"><strong>'+escapeHtml(selected.name)+'</strong><span>'+(selected.parent?'Наследует базовый календарь · ':'')+
+    (selected.exceptions||[]).length+' исключений · '+(selected.weeks||[]).length+' особых недель</span></div>'+
+    '<div class="pv-calendar-week">'+week+'</div>'+
+    '<div class="pv-calendar-section"><h3>Исключения и праздники</h3>'+(exceptions?'<table class="pv-resource-table"><thead><tr><th>Название</th><th>Начало</th><th>Окончание</th><th>Время</th></tr></thead><tbody>'+exceptions+'</tbody></table>':'<p>Нет исключений в этом календаре.</p>')+'</div>'+
+    '<div class="pv-calendar-section"><h3>Особые рабочие недели</h3>'+(weeks?'<table class="pv-resource-table"><thead><tr><th>Название</th><th>С</th><th>По</th></tr></thead><tbody>'+weeks+'</tbody></table>':'<p>Нет специальных рабочих недель.</p>')+'</div></div>';
 }
 
 export function mount(root, options={}) {
