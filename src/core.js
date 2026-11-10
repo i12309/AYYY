@@ -60,6 +60,7 @@
     menu:'M3 6h18 M3 12h18 M3 18h18',
     laptop:'M5 3h14v12H5z M2 15h20l1 5H1l1-5Z',
     bell:'M5 17V9a7 7 0 1 1 14 0v8l2 2H3l2-2Z M10 22h4',
+    pulse:'M2 12h4l3-6 4 12 3-6h6',
     heart:'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z',
     volume:'M3 9h4l5-5v16l-5-5H3V9Z M16 8a6 6 0 0 1 0 8 M19 5a10 10 0 0 1 0 14',
     link:'m10 13 4-4 M8 16l-2 2a4 4 0 0 1-6-6l6-6a4 4 0 0 1 6 0 M16 8l2-2a4 4 0 0 1 6 6l-6 6a4 4 0 0 1-6 0',
@@ -93,7 +94,7 @@
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
       document.body.dataset.page=app.route;
-      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family'].includes(app.route)?app.route:'service';
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family','health'].includes(app.route)?app.route:'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -118,6 +119,7 @@
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
     {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
+    {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики и демонстрационный профиль',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
     {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
     {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},
     {id:'math',name:'Математика в игре',desc:'Считать становится интересно',icon:'plus',color:'green',group:'games',kind:'local',route:'games',param:'math'},
