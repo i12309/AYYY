@@ -3,7 +3,7 @@
  * ZIP_DEFLATED archives; no network, third-party ZIP code or server required.
  * All checks run before a single IndexedDB transaction installs the document.
  */
-import {type Document,validate} from './browserModel.ts';
+import {type Document,normalizeDocument,validate} from './browserModel.ts';
 
 const MAX_ARCHIVE = 150*1024*1024;
 const MAX_EXPANDED = 350*1024*1024;
@@ -126,6 +126,7 @@ export async function readArchive(file:Blob):Promise<ParsedBackup> {
   let document:Document;
   try{document=JSON.parse(text.decode(json));}
   catch{throw new Error('ZIP: tree.json повреждён или не является JSON в UTF-8.');}
+  normalizeDocument(document);
   validate(document);
   const required=new Map<string,string>();
   for(const person of document.persons){

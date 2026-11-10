@@ -1,6 +1,6 @@
 import {
   addRelative, checkRevision, createFamily, createPerson, newTree, now, slugify,
-  summary, uid, updateFamily, updatePerson, validate, type Document
+  summary, uid, updateFamily, updatePerson, validate, normalizeDocument, type Document
 } from './browserModel';
 import {
   getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot, importNewTreeSnapshot
@@ -93,6 +93,7 @@ async function importDocument(body: FormData) {
   let archive: Document;
   try {archive = JSON.parse(await file.text()) as Document;}
   catch {throw new BackendError('Не удалось прочитать JSON-файл.',422);}
+  normalizeDocument(archive);
   validate(archive);
   const existing = await listTrees();
   // Never overwrite a local tree just because an imported archive has the same ID.
