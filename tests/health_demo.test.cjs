@@ -19,7 +19,7 @@ function makeModules(window,extras={}){
     crypto:{randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/genetics-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }
@@ -33,7 +33,7 @@ test('fictional dataset is complete, valid and independently regenerated',()=>{
   assert.equal(first.medical.length,4);
   assert.equal(first.medications.length,2);
   assert.equal(first.diary.length,12);
-  assert.equal(first.documents.length,3);
+  assert.equal(first.documents.length,3);assert.equal(first.findings.length,2);assert.equal(first.findings[0].test_date,'2025');assert.equal(first.findings[1].date_precision,'unknown');
   assert.equal(window.HumanModel.groups(first.observations).length,12);
   assert.equal(window.HumanModel.status(first.observations.find(x=>x.id==='demo-lab-alt-5')),'abnormal');
   assert.equal(window.HumanModel.status(first.observations.find(x=>x.id==='demo-lab-ldl-6')),'normal');
@@ -105,6 +105,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
   };
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
   vm.runInContext(read('health/health-view.js'),context,{filename:'health/health-view.js'});
+  vm.runInContext(read('health/genetics-view.js'),context,{filename:'health/genetics-view.js'});
   vm.runInContext(read('health/diary-view.js'),context,{filename:'health/diary-view.js'});
   vm.runInContext(read('health/care-view.js'),context,{filename:'health/care-view.js'});
   vm.runInContext(read('health/medical-view.js'),context,{filename:'health/medical-view.js'});
@@ -120,6 +121,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     ['care','Фактические приёмы и пропуски'],
     ['nutrition','Приёмы пищи'],
     ['activity','Ритм дней'],
+    ['genetics','Результаты из ваших отчётов'],
     ['diary','Пешая прогулка'],
     ['document','Бланк анализов'],
     ['settings','Настройки демо']

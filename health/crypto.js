@@ -34,7 +34,7 @@
     if(doc?.humanMigration)throw new Error('Архив переноса старого HUMAN не поддерживается. Создайте новый журнал и загрузите данные заново.');
     if (!doc || typeof doc!=='object' || Array.isArray(doc) || doc.schema!==1 ||
         typeof doc.id!=='string' || !doc.profile || typeof doc.profile!=='object' ||
-        ['observations','vitals','episodes','intakes','reminders','medical','medications','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
+        ['observations','vitals','episodes','intakes','reminders','medical','medications','findings','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
       throw new Error('Неизвестная структура медицинских данных.');
     return doc;
   }
@@ -85,7 +85,7 @@
     requireCrypto();
     const id=crypto.randomUUID();
     const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'',notes:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'},
-      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],diary:[],documents:[],revisions:[]};
+      observations:[],vitals:[],episodes:[],intakes:[],reminders:[],carePreferences:{browser_enabled:false},medical:[],medications:[],findings:[],diary:[],documents:[],revisions:[]};
     const salt=crypto.getRandomValues(new Uint8Array(16));
     const key=await derive(passphrase,salt);
     const envelope=await seal(doc,key,{format:FORMAT,vaultId:id,kdf:'PBKDF2-SHA256',iterations:ITERATIONS,

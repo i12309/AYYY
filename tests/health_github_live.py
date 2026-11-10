@@ -51,13 +51,15 @@ try:
    const created=await C.create(p.passphrase);created.doc.profile.name='Synthetic roundtrip';
    const record=M.checkLab({name:'Synthetic marker',date:'2026',datePrecision:'year',value:'< 0,1',unit:'mg'});
    created.doc.observations.push(record);created.doc.analytePreferences={[M.groupKey(record)]:{favorite:true}};
+   created.doc.findings.push(HumanGenetics.checkFinding({title:'Synthetic reported finding',result:'Synthetic report only',category:'other',test_date:'2025',date_precision:'year',genes:'demoGene',variants:'SYNTHETIC:./.'},{},created.doc));
    window.testVault={...created,envelope:await C.seal(created.doc,created.key,created.envelope)};
    return await G.write(p.repo,testVault.envelope,null);
   }''',params)
   print('PASS first browser wrote encrypted vault',result,flush=True)
-  restored=pb.evaluate('''async p=>{HumanGithub.token(p.token);const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);window.testRemote=r;window.testOpened=v;return {name:v.doc.profile.name,value:v.doc.observations[0].value,date:v.doc.observations[0].date,favorite:Object.values(v.doc.analytePreferences)[0].favorite};}''',params)
-  assert restored=={'name':'Synthetic roundtrip','value':'< 0,1','date':'2026','favorite':True}
+  restored=pb.evaluate('''async p=>{HumanGithub.token(p.token);const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);window.testRemote=r;window.testOpened=v;return {name:v.doc.profile.name,value:v.doc.observations[0].value,date:v.doc.observations[0].date,favorite:Object.values(v.doc.analytePreferences)[0].favorite,findingDate:v.doc.findings[0].test_date,variants:v.doc.findings[0].variants,genes:v.doc.findings[0].genes};}''',params)
+  assert restored=={'name':'Synthetic roundtrip','value':'< 0,1','date':'2026','favorite':True,'findingDate':'2025','variants':'SYNTHETIC:./.','genes':['demoGene']}
   print('PASS second browser restored dates, source values and favorites',flush=True)
+  print('PASS second browser restored reported finding without an inferred genotype',flush=True)
   await_update=pb.evaluate('''async p=>{testOpened.doc.profile.notes='Synthetic second device update';const env=await HumanCrypto.seal(testOpened.doc,testOpened.key,testRemote.envelope);return HumanGithub.write(p.repo,env,testRemote.sha);}''',params)
   conflict=pa.evaluate('''async p=>{try{await HumanGithub.write(p.repo,testVault.envelope,p.sha);return false;}catch(e){return e.message.includes('Конфликт');}}''',{**params,'sha':result})
   assert conflict,'Stale SHA must not overwrite the other browser'
