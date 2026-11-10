@@ -20,6 +20,7 @@ class MppBuildTests(unittest.TestCase):
             for relative in (
                 "src/mpp-route.js",
                 "mpp/viewer.mjs",
+                "mpp/reader-worker.mjs",
                 "mpp/model.mjs",
                 "mpp/style.css",
                 "mpp/vendor/mpxj-ts/mpxj.mjs",
