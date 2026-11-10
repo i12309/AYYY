@@ -50,27 +50,35 @@ class FakeNode {
   constructor(tag){
     this.tagName=tag;this.children=[];this.dataset={};this.attributes={};
     this.className='';this.textContent='';this.value='';this.isConnected=true;
-    this.classList={add:x=>{this.className+=' '+x},remove:()=>{}};
+    this.classList={add:(...xs)=>{this.className+=' '+xs.join(' ')},remove:x=>{this.className=this.className.split(' ').filter(v=>v!==x).join(' ')},contains:x=>this.className.split(' ').includes(x),toggle:(x,value)=>{const on=value??!this.classList.contains(x);if(on)this.classList.add(x);else this.classList.remove(x);return on;}};
   }
   append(...items){items.forEach(x=>this.appendChild(x));}
-  appendChild(item){this.children.push(item);return item;}
+  appendChild(item){if(item){this.children.push(item);item.parentNode=this;}return item;}
   replaceChildren(...items){this.children=[];this.append(...items);}
   setAttribute(key,value){
     this.attributes[key]=value;
     if(key.startsWith('data-'))this.dataset[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
   }
   addEventListener(){}
-  querySelector(){return null;}
+  querySelector(selector){
+    const matches=n=>selector.startsWith('.')?n.className.split(' ').includes(selector.slice(1)):selector==='[data-search=labs]'?n.dataset.search==='labs':n.tagName===selector;
+    for(const child of this.children){if(matches(child))return child;const found=child.querySelector(selector);if(found)return found;}return null;
+  }
+  querySelectorAll(selector){let found=[];for(const child of this.children){if(selector.startsWith('.')&&child.className.split(' ').includes(selector.slice(1)))found.push(child);found.push(...child.querySelectorAll(selector));}return found;}
+  remove(){if(this.parentNode)this.parentNode.children=this.parentNode.children.filter(n=>n!==this);}
+  replaceWith(node){if(this.parentNode){const i=this.parentNode.children.indexOf(this);this.parentNode.children.splice(i,1,node);node.parentNode=this.parentNode;}}
+  focus(){}
 }
 function textOf(node){
   return [node.textContent,...(node.children||[]).map(textOf)].join(' ');
 }
 test('deep-linked demo renders all tabs without reading personal vault or GitHub',()=>{
-  const window={location:{search:'?demo=1'}};
+  const window={location:{search:'?demo=1'},scrollTo(){}};
   const nodes=new Map(),handlers={};
-  for(const id of ['health-root','health-header','health-dialog','health-notice','health-dialog-body'])
+  for(const id of ['health-root','health-header','health-sidebar','health-bottom','health-footer','health-dialog','health-notice','health-dialog-body'])
     nodes.set(id,new FakeNode(id));
   const document={
+    body:new FakeNode('body'),
     createElement:tag=>new FakeNode(tag),
     createElementNS:(ns,tag)=>new FakeNode(tag),
     createTextNode:value=>{const node=new FakeNode('#text');node.textContent=String(value);return node;},
@@ -98,11 +106,11 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
   vm.runInContext(read('health/app.js'),context,{filename:'health/app.js'});
   const target=nodes.get('health-root');
   assert.match(textOf(target),/ДЕМО/);
-  assert.match(textOf(target),/Анна Примерова/);
-  assert.match(textOf(target),/Виды анализов/);
+  assert.match(textOf(nodes.get('health-sidebar')),/Анна Примерова/);
+  assert.match(textOf(target),/Сохранённые результаты/);
   for(const [tab,expected] of [
     ['lab','Холестерин ЛПНП'],
-    ['vital','Домашние показатели'],
+    ['vital','Домашние измерения'],
     ['medical','Сезонная реакция на пыльцу'],
     ['diary','Пешая прогулка'],
     ['document','Бланк анализов'],
@@ -113,7 +121,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     assert.match(textOf(target),/ДЕМО/);
   }
   handlers.click({target:{closest:()=>({dataset:{action:'reset-demo'}})}});
-  assert.match(textOf(target),/Виды анализов/);
+  assert.match(textOf(target),/Сохранённые результаты/);
   assert.equal(localCalls,0);
   assert.equal(remoteCalls,0);
 });

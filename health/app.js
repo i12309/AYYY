@@ -8,7 +8,7 @@
   const dialog=document.getElementById('health-dialog');
   const notice=document.getElementById('health-notice');
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
-    search:'',groupKey:'',syncBusy:false,conflict:false,demo:false};
+    globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false};
   const kinds={lab:'observations',vital:'vitals',medical:'medical',medication:'medications',
     diary:'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
@@ -25,11 +25,8 @@
   }
   function error(e){toast(e instanceof Error?e.message:String(e));}
   async function profileList(){state.profiles=await S.list();}
-  function nav(){
-    return V.h('nav',{class:'health-tabs','aria-label':'Разделы журнала'},tabs.map(([id,label])=>
-      V.h('button',{type:'button',class:'health-tab','data-tab':id,
-        'aria-current':state.tab===id?'page':'false'},label)));
-  }
+  const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.'],settings:['Settings','neutral','Профиль, безопасность и синхронизация.']};
+  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
     if(state.local&&!state.picker){
@@ -45,8 +42,8 @@
       ]));
       return outer;
     }
-    outer.append(V.h('span',{class:'health-overline'},'AYYY · HUMAN'),
-      V.h('h1',{},'Здоровье. Личный журнал.'),
+    outer.append(V.brand(),V.h('span',{class:'health-overline'},'ЛИЧНОЕ ПРОСТРАНСТВО'),
+      V.h('h1',{},'Ваш журнал ',V.h('span',{class:'title-underline'},'здоровья')),
       V.h('p',{},'Локальное зашифрованное хранилище с возможностью синхронизации в ваш приватный GitHub.'));
     const sample=V.card(null,[
       V.h('div',{class:'health-demo-card-body'},
@@ -101,21 +98,30 @@
     return state.local.dirty?'Ожидает отправки':'Синхронизировано';
   }
   function renderHeader(){
-    const top=V.h('div',{class:'health-header-inner'});
-    top.append(V.h('a',{class:'health-brand',href:'../#home',target:'_top'},'ayyy',V.h('i',{},'.')),
-      V.h('span',{class:'health-divider'}),
-      V.h('div',{class:'health-brand-note'},
-        V.h('strong',{},'Здоровье'),V.h('small',{},'HUMAN · журнал')));
-    const buttons=V.h('div',{class:'health-header-actions'},
-      V.h('span',{class:'health-status','data-state':state.conflict?'problem':
-        state.doc&&state.local.repo&&!state.local.dirty&&G.hasToken()?'ok':'pending'},
-        V.h('span',{},status())));
-    if(state.doc&&!state.demo&&state.local.repo)buttons.append(V.button('Синхронизировать','sync',
-      {class:'small',disabled:state.syncBusy}));
-    if(state.demo)buttons.append(V.button('Выйти из демо','exit-demo',{class:'small'}));
-    else if(state.doc)buttons.append(V.button('Закрыть доступ','lock',{class:'small'}));
-    top.append(buttons);
+    const unlocked=!!state.doc;document.body.classList.toggle('health-locked',!unlocked);
+    const sidebar=document.getElementById('health-sidebar'),bottom=document.getElementById('health-bottom'),footer=document.getElementById('health-footer');
+    sidebar.hidden=bottom.hidden=footer.hidden=!unlocked;
+    if(!unlocked){document.body.classList.remove('health-menu-open');header.replaceChildren();return;}
+    const profile=state.doc.profile.name||'Мой профиль';
+    sidebar.replaceChildren(V.brand(),V.h('button',{class:'workspace profile-entry','data-action':'edit-profile','aria-label':'Мой профиль'},V.h('span',{class:'avatar'},profile.slice(0,1).toUpperCase()),V.h('div',{},V.h('strong',{},profile),V.h('small',{},'Личное пространство'))),V.h('p',{class:'nav-caption'},'МОЙ ЖУРНАЛ'),nav(),V.h('div',{class:'sidebar-footer'},V.icon('ShieldCheck',16),V.h('span',{},state.demo?'Демонстрационный журнал':'Данные на вашем устройстве'),V.h('button',{'data-action':state.demo?'exit-demo':'lock','aria-label':state.demo?'Выйти из демо':'Закрыть доступ'},V.icon('LogOut',17))));
+    const label=tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
+    const search=V.h('div',{class:'global-search'},V.icon('Search',15),V.h('input',{type:'search',id:'health-global-search','aria-label':'Поиск по всем данным',placeholder:'Найти в журнале',value:state.globalSearch||'','data-search':'global'}),V.h('kbd',{},'/'));
+    const top=V.h('div',{class:'health-topbar-content'},V.h('div',{class:'breadcrumb'},V.h('span',{},'Личное пространство'),V.icon('ChevronRight',13),V.h('strong',{},label)),search,V.h('span',{class:'health-status',role:'status','aria-label':status(),'data-state':state.conflict?'problem':'ok',title:status()},V.icon('ShieldCheck',15)),V.button('Добавить','quick-add',{class:'primary desktop-add'}));
     header.replaceChildren(top);
+    bottom.replaceChildren(...[['overview','Обзор','LayoutGrid'],['lab','Анализы','FlaskConical'],['add','Добавить','Plus'],['vital','Показатели','HeartPulse'],['more','Ещё','Menu']].map(([id,title,glyph])=>V.h('button',{type:'button',...(id==='add'?{'data-action':'quick-add',class:'mobile-add'}:id==='more'?{'data-action':'toggle-menu','aria-expanded':String(document.body.classList.contains('health-menu-open')),'aria-controls':'health-sidebar'}:{'data-tab':id,'aria-current':state.tab===id?'page':null})},V.icon(glyph,20),id==='add'?V.h('span',{class:'sr-only'},title):title)));
+    footer.replaceChildren(V.h('span',{},V.icon('Activity',13),'HUMAN · ваш журнал здоровья'),V.h('a',{href:'../#home',target:'_top'},'AYYY · Все сервисы'));
+  }
+  function searchResults(){
+    const q=state.globalSearch.toLocaleLowerCase('ru-RU'),box=V.h('div',{});
+    box.append(V.title('Результаты поиска','По всем данным текущего журнала.'));
+    const results=V.card(null);let count=0;
+    for(const [kind,key] of Object.entries(kinds))for(const x of state.doc[key]){
+      const text=[x.name,x.title,x.type,x.value,x.notes,x.source].filter(Boolean).join(' ');
+      if(!text.toLocaleLowerCase('ru-RU').includes(q))continue;
+      count++;results.append(V.h('button',{class:'data-row','data-action':kind==='document'?'file-download':'edit','data-kind':kind,'data-id':x.id},V.icon(kind==='lab'?'FlaskConical':kind==='document'?'FileText':'NotebookTabs',18),V.h('div',{},V.h('strong',{},x.name||x.title||x.type||'Запись'),V.h('small',{},V.date(x.date))),V.icon('ChevronRight',14)));
+    }
+    if(!count)results.append(V.empty('По вашему запросу ничего не найдено.'));
+    box.append(results);return box;
   }
   function settings(){
     const doc=state.doc,local=state.local,repo=local.repo;
@@ -181,19 +187,21 @@
     renderHeader();
     if(!state.doc){root.replaceChildren(locked());return;}
     let view;
-    if(state.tab==='overview')view=V.stats(state);
+    if(state.globalSearch.length>=2)view=searchResults();
+    else if(state.tab==='overview')view=V.stats(state);
     else if(state.tab==='lab')view=V.labSection(state);
     else if(state.tab==='medical')view=V.h('div',{},V.listSection(state,'medical'),
       V.listSection(state,'medication'));
     else if(state.tab==='settings')view=settings();
     else view=V.listSection(state,state.tab);
+    view.querySelectorAll('.health-heading').forEach((heading,index)=>{if(!index){heading.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('ЛИЧНЫЙ ЖУРНАЛ '),V.h('span',{},'/'),document.createTextNode(String(tabs.findIndex(([id])=>id===state.tab)+1).padStart(2,'0')));return;}heading.className='health-section-heading';heading.querySelector('.eyebrow')?.remove();const title=heading.querySelector('h1');if(title)title.replaceWith(V.h('h2',{},title.textContent));});
     if(state.demo){
       const label=V.h('div',{class:'health-demo-strip',role:'note'},
         V.h('span',{class:'health-demo-tag'},'ДЕМО'),
         V.h('span',{},'Все сведения вымышлены · изменения не сохраняются'),
         V.button('Сбросить пример','reset-demo',{class:'small'}));
-      root.replaceChildren(nav(),label,view);
-    }else root.replaceChildren(nav(),view);
+      const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:'content'},label,view));
+    }else {const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:'content'},view));}
   }
   function modal(kind,id){
     const collection=kinds[kind],existing=id&&collection?
@@ -360,7 +368,7 @@
     const chosen=await S.get(id);
     if(!chosen)throw new Error('Локальный профиль не найден.');
     await S.select(id);G.disconnect();state.demo=false;state.local=chosen;state.key=null;state.doc=null;
-    state.picker=false;state.conflict=false;state.tab='overview';render();
+    state.picker=false;state.conflict=false;state.tab='overview';state.filters={};render();
   }
   function scheduleSync(){
     clearTimeout(syncTimer);
@@ -514,7 +522,7 @@
     state.doc=window.HumanDemo.create();
     state.local={id:state.doc.id,repo:null,dirty:false};
     state.key=null;
-    state.picker=false;state.tab='overview';state.search='';state.groupKey='';
+    state.picker=false;state.tab='overview';state.globalSearch='';state.search='';state.groupKey='';state.filters={};
     state.conflict=false;state.syncBusy=false;
     render();
   }
@@ -537,12 +545,17 @@
   async function onClick(event){
     const el=event.target.closest('[data-action],[data-tab]');
     if(!el)return;
-    if(el.dataset.tab){state.tab=el.dataset.tab;state.search='';state.groupKey='';render();return;}
+    if(el.dataset.tab){state.tab=el.dataset.tab;state.globalSearch='';state.search='';state.groupKey='';document.body.classList.remove('health-menu-open');render();root.focus({preventScroll:true});window.scrollTo(0,0);return;}
     const action=el.dataset.action;
     try{
-      if(action==='open-demo'||action==='reset-demo')openDemo();
+      if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
+      else if(action==='close-menu')document.body.classList.remove('health-menu-open');
+      else if(action==='quick-add'){dialog.querySelector('#health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},'Добавить запись'),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content health-quick-options'},[['Анализ','lab'],['Домашнее измерение','vital'],['Медицинская запись','medical'],['Препарат','medication'],['Запись дневника','diary'],['Документ','document']].map(([title,kind])=>V.button(title,'new-'+kind))));dialog.showModal();}
+      else if(action==='open-group'){state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
+      else if(action==='open-demo'||action==='reset-demo')openDemo();
       else if(action==='exit-demo')await exitDemo();
-      else if(action?.startsWith('new-'))modal(action.slice(4));
+      else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;render();}
+      else if(action?.startsWith('new-')){modal(action.slice(4));if(action==='new-vital'&&el.dataset.value)dialog.querySelector('[name=type]').value=el.dataset.value;}
       else if(action==='edit')modal(el.dataset.kind,el.dataset.id);
       else if(action==='edit-profile')modal('profile',null);
       else if(action==='remove')await remove(el.dataset.kind,el.dataset.id);
@@ -579,13 +592,16 @@
   document.addEventListener('submit',event=>{void onSubmit(event);});
   document.addEventListener('click',event=>{void onClick(event);});
   document.addEventListener('input',event=>{
-    if(event.target?.dataset?.search==='labs'){
+    if(event.target?.dataset?.search==='global'){const pos=event.target.selectionStart||0;state.globalSearch=event.target.value;render();const next=document.getElementById('health-global-search');next.focus();try{next.setSelectionRange(pos,pos);}catch{}
+    }else if(event.target?.dataset?.search==='labs'){
       const position=event.target.selectionStart||0;
       state.search=event.target.value;state.groupKey='';render();
       const next=root.querySelector('[data-search=labs]');
       if(next){next.focus();try{next.setSelectionRange(position,position);}catch{}}
     }
   });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
+  document.addEventListener('change',event=>{if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
