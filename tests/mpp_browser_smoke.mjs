@@ -26,13 +26,41 @@ try{
   const response=await page.goto(url,{waitUntil:'domcontentloaded'});
   assert.equal(response.status(),200,'portal should be served by the local server');
   await page.waitForSelector('.pv-empty [data-pv-action="demo"]',{timeout:20000});
-  assert.equal(await page.locator('.pv-root .pv-brand').count(),1);
+  assert.equal(await page.locator('.pv-header .shore-brand').count(),1,'viewer must reuse the home-page AYYY wordmark');
+  const brandStyle=await page.locator('.pv-header .shore-brand').evaluate(el=>({
+    font:getComputedStyle(el).fontFamily,
+    transform:getComputedStyle(el).transform,
+    accent:getComputedStyle(el.querySelector('span')).color
+  }));
+  assert.match(brandStyle.font,/Trebuchet/);
+  assert.notEqual(brandStyle.transform,'none');
+  assert.equal(brandStyle.accent,'rgb(231, 125, 54)');
   await page.locator('.pv-empty [data-pv-action="demo"]').click();
   await page.waitForSelector('.pv-file-banner');
   assert.match(await page.locator('.pv-file-banner h1').innerText(),/Пример проекта/);
   assert.equal(await page.locator('.pv-list-row').count(),9);
   assert.ok(await page.locator('.pv-task-bar').count()>4);
   assert.ok(await page.locator('.pv-task-diamond').count()>0);
+  const headerHeight=await page.locator('.pv-chart-head').evaluate(el=>el.getBoundingClientRect().height);
+  assert.equal(headerHeight,44,'Gantt header should be compact');
+  const ticks=await page.locator('.pv-tick').evaluateAll(nodes=>nodes.slice(0,2).map(n=>parseFloat(n.style.left)));
+  assert.ok(ticks.length===2 && ticks[1]-ticks[0]<70,'timeline should show denser weekly ticks');
+
+  // Drag the table/Gantt divider; keyboard resizing must work as well.
+  const splitter=page.locator('.pv-splitter');
+  assert.equal(await splitter.getAttribute('role'),'separator');
+  const widthBefore=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  const handle=await splitter.boundingBox();
+  await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+  await page.mouse.down();
+  await page.mouse.move(handle.x+handle.width/2+95,handle.y+handle.height/2,{steps:5});
+  await page.mouse.up();
+  const widthAfterDrag=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  assert.ok(widthAfterDrag>=widthBefore+60,'drag must make the task table wider');
+  await splitter.focus();
+  await page.keyboard.press('ArrowLeft');
+  const widthAfterKey=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  assert.ok(widthAfterKey<widthAfterDrag,'keyboard arrow must resize table');
   assert.ok(await page.locator('.pv-link').count()>=2,'demo links must be drawn');
   assert.equal(await page.locator('.pv-baseline').count(),2,'demo baseline must be visible');
   await page.locator('[data-pv-action="toggle-links"]').click();
@@ -56,8 +84,23 @@ try{
   await page.locator('[data-pv-task="6"]').first().click();
   await page.waitForSelector('#pv-details');
   assert.match(await page.locator('#pv-details').innerText(),/Реализация интерфейса/);
+  assert.equal(await page.locator('.pv-workspace > #pv-details').count(),1,'task details must be docked inside workspace');
+  const inspector=await page.locator('#pv-details').boundingBox();
+  const chart=await page.locator('#pv-chart-scroll').boundingBox();
+  assert.ok(inspector.x>=chart.x+chart.width-2,'details pane must not cover the Gantt chart');
+  const splitWithDetails=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  assert.ok(splitWithDetails>=335,'table must remain usable while inspector is open');
+  await page.locator('[data-pv-task="7"]').first().click();
+  assert.match(await page.locator('#pv-details h2').innerText(),/Интеграции/,'clicking another task refreshes the dock');
+  await page.setViewportSize({width:1024,height:800});
+  const tabletInspector=await page.locator('#pv-details').boundingBox();
+  const tabletChart=await page.locator('#pv-chart-scroll').boundingBox();
+  assert.ok(tabletInspector.y>=tabletChart.y+tabletChart.height-2,'on tablets task details move below the Gantt');
+  await page.setViewportSize({width:1440,height:900});
   await page.locator('[data-pv-action="close-details"]').click();
   assert.equal(await page.locator('#pv-details').count(),0);
+  const restoredTable=(await page.locator('#pv-list-scroll').boundingBox()).width;
+  assert.ok(restoredTable>=splitWithDetails-2,'table split survives inspector close');
   await page.locator('[data-pv-tab="resources"]').click();
   assert.equal(await page.locator('.pv-resource-table tbody tr').count(),2);
   await page.locator('[data-pv-tab="gantt"]').click();
@@ -87,6 +130,12 @@ try{
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.locator('.pv-task-bar').count()>0);
   assert.equal(await page.locator('.pv-private-dot').count(),1);
+  await page.locator('[data-pv-task]').first().click();
+  const mobileInspector=await page.locator('#pv-details').boundingBox();
+  const mobileChart=await page.locator('#pv-chart-scroll').boundingBox();
+  assert.ok(mobileInspector.y>=mobileChart.y+mobileChart.height-2,'on mobile details must appear below the chart, not overlay it');
+  assert.equal(await page.locator('.pv-splitter').isVisible(),false,'drag handle is hidden on stacked mobile layout');
+  await page.locator('[data-pv-action="close-details"]').click();
   await page.setViewportSize({width:1440,height:900});
   const manyTasks=Array.from({length:2200},(_,i)=>'<Task><UID>'+(i+1)+'</UID><ID>'+(i+1)+'</ID><Name>Задача '+(i+1)+'</Name><OutlineLevel>1</OutlineLevel><Start>2026-11-10T09:00:00</Start><Finish>2026-11-13T18:00:00</Finish><Duration>PT32H0M0S</Duration></Task>').join('');
   const largeXml='<?xml version="1.0" encoding="utf-8"?><Project xmlns="http://schemas.microsoft.com/project"><Title>Большой тестовый проект</Title><Tasks>'+manyTasks+'</Tasks></Project>';
@@ -99,7 +148,7 @@ try{
   assert.ok(await page.locator('.pv-list-row').count()<100);
   assert.ok(await page.locator('.pv-task-bar').count()<100);
   assert.deepEqual(errors,[],'browser must not emit uncaught errors');
-  console.log('MPP browser smoke: PASS (demo, dependency arrows, baseline, hierarchy, search, resources, CSV, worker XML, real binary MPP, mobile, virtualization)');
+  console.log('MPP browser smoke: PASS (wordmark, docked task pane, resize drag/keyboard, compact timeline, responsive, demo, dependencies, baseline, CSV, worker XML, real MPP, virtual rows)');
 }finally{
   await browser.close();
 }
