@@ -83,7 +83,7 @@
     }).sort((a,b)=>b.latest.date.localeCompare(a.latest.date)||a.name.localeCompare(b.name,'ru'));
   }
   function status(row){
-    if(!row)return 'unknown';
+    if(!row || !text(row.unit))return 'unknown';
     const v=number(row.value),low=number(row.low),high=number(row.high);
     if(v===null||(low===null&&high===null))return 'unknown';
     if((low!==null&&v<low)||(high!==null&&v>high))return 'abnormal';
