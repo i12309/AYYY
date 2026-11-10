@@ -81,6 +81,9 @@ export function BackupControl({
       ?(autoLabels[autoStatus.kind]|| (pending?'GitHub: есть изменения':'GitHub: автоматически'))
       :pending?'GitHub: есть новые изменения':'GitHub: синхронизировано';
   async function changeAuto(enabled:boolean){
+    const previous=record;
+    // Controlled checkbox must respond immediately; IndexedDB commits later.
+    setRecord(current=>current?{...current,autoSync:enabled}:current);
     setBusy(true);setError('');
     try{
       await setAutoSync(tree.id,enabled);
@@ -89,7 +92,10 @@ export function BackupControl({
       setMessage(enabled
         ?'Автосинхронизация включена: после паузы изменения отправятся в GitHub. Если токен отключён, они останутся локально.'
         :'Автосинхронизация отключена. Изменения остаются в браузере.');
-    }catch(cause){setError(cause instanceof Error?cause.message:'Не удалось изменить настройку.');}
+    }catch(cause){
+      setRecord(previous);
+      setError(cause instanceof Error?cause.message:'Не удалось изменить настройку.');
+    }
     finally{setBusy(false);}
   }
 
