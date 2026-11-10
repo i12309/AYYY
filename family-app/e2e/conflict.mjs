@@ -102,7 +102,7 @@ try{
   console.log('PASS: Browser checked token against repo and Git Data write permission.');
   await d.getByRole('button',{name:'Синхронизировать'}).click();
   await d.getByText(/сохранены в приватном репозитории/).waitFor();
-  await d.getByRole('button',{name:'Закрыть'}).click();
+  await d.getByRole('button',{name:'Закрыть'}).last().click();
   console.log('PASS: First profile pushed synthetic family.');
 
   const b=await newBrowser();
@@ -117,7 +117,7 @@ try{
   await rename(b.page,'Версия GitHub');
   const bpanel=await sync(b.page);
   await bpanel.getByText(/сохранены в приватном репозитории/).waitFor();
-  await bpanel.getByRole('button',{name:'Закрыть'}).click();
+  await bpanel.getByRole('button',{name:'Закрыть'}).last().click();
   assert.equal(remoteName(),'Версия GitHub');
 
   const apanel=await sync(a.page);
