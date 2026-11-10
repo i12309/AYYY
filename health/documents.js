@@ -38,36 +38,64 @@
   const sheets=nodes(book,'sheet');if(sheets.length>32)throw Error('Больше 32 листов XLSX.');let total=0;const tables=[];
   for(const sheet of sheets){const rid=sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'),target=relations.get(rid);if(!target)continue;
    const path=target.startsWith('/')?target.slice(1):'xl/'+target;if(!/^xl\/worksheets\/[^/]+\.xml$/.test(path))throw Error('Неподдерживаемый путь листа XLSX.');
-   const doc=await get(path);if(!doc)throw Error('Не найден лист XLSX.');const rows=[],provenance=[];
+   const doc=await get(path);if(!doc)throw Error('Не найден лист XLSX.');const rows=[],provenance=[],rowNumbers=[];
    for(const row of nodes(doc,'row')){const values=[],raw=[];
-    for(const c of nodes(row,'c')){const index=column(c.getAttribute('r')),type=c.getAttribute('t'),v=nodes(c,'v')[0]?.textContent||'',formula=nodes(c,'f')[0]?.textContent;let text=v;
+    for(const c of nodes(row,'c')){const index=column(c.getAttribute('r')),type=c.getAttribute('t'),v=nodes(c,'v')[0]?.textContent||'',formula=nodes(c,'f')[0]?.textContent;let text=v,isDate=type==='d';
      if(type==='s'){if(!/^\d+$/.test(v)||Number(v)>=strings.length)throw Error('Неверный индекс sharedStrings.');text=strings[Number(v)];}
      else if(type==='inlineStr')text=nodes(c,'t').map(t=>t.textContent).join('');
      else if(type==='b')text=v==='1'?'TRUE':'FALSE';
-     else if(type!=='str'&&type!=='e'&&v){const f=Number(xfs[Number(c.getAttribute('s')||0)]?.getAttribute('numFmtId')),format=formats.get(f)||'';if((f>=14&&f<=22)||(/[dy]/i.test(format.replace(/"[^"]*"|\[[^\]]*\]/g,'')))){const serial=Number(v),base=epoch1904?Date.UTC(1904,0,1):Date.UTC(1899,11,30);if(Number.isFinite(serial)&&serial>=0&&serial<2958465){text=serial===60&&!epoch1904?'Неопределённая дата Excel (60)':new Date(base+Math.floor(serial)*86400000+(base===Date.UTC(1899,11,30)&&serial<60?86400000:0)).toISOString().slice(0,10);}}}
-     values[index]=text;raw.push({address:c.getAttribute('r'),type,raw:v,formula:formula??null});
+     else if((!type||type==='n')&&v){const f=Number(xfs[Number(c.getAttribute('s')||0)]?.getAttribute('numFmtId')),format=formats.get(f)||'';if((f>=14&&f<=22)||(/[dy]/i.test(format.replace(/"[^"]*"|\[[^\]]*\]/g,'')))){isDate=true;const serial=Number(v),base=epoch1904?Date.UTC(1904,0,1):Date.UTC(1899,11,30);if(Number.isFinite(serial)&&serial>=0&&serial<2958465){text=serial===60&&!epoch1904?'Неопределённая дата Excel (60)':new Date(base+Math.floor(serial)*86400000+(base===Date.UTC(1899,11,30)&&serial<60?86400000:0)).toISOString().slice(0,10);}}}
+     const kind=type==='e'?'error':isDate?(formula===undefined?'date':'date_formula'):formula===undefined?'cell':'formula';
+     values[index]=text;raw.push({column:index,address:c.getAttribute('r'),type,raw:v,formula:formula??null,kind});
     }
-    if(values.some(x=>x?.trim())){if(++total>5000)throw Error('Не больше 5000 строк за импорт.');rows.push(Array.from({length:values.length},(_,i)=>values[i]||''));provenance.push(raw);}
+    if(values.some(x=>x?.trim())){if(++total>5000)throw Error('Не больше 5000 строк за импорт.');rows.push(Array.from({length:values.length},(_,i)=>values[i]||''));provenance.push(raw);rowNumbers.push(Number(row.getAttribute('r'))||Number(/\d+$/.exec(raw[0]?.address)?.[0])||rowNumbers.length+1);}
    }
-   tables.push({name:sheet.getAttribute('name')||path,rows,provenance});
+   tables.push({name:sheet.getAttribute('name')||path,rows,provenance,rowNumbers});
   }
   return tables;
  }
  let pdfModule;
  async function pdf(bytes){
   pdfModule??=import('./vendor/pdfjs/pdf.min.mjs');const lib=await pdfModule;lib.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.min.mjs',location.href).href;
-  const task=lib.getDocument({data:bytes.slice(),isEvalSupported:false,enableXfa:false,disableAutoFetch:true,useSystemFonts:true,cMapUrl:new URL('./vendor/pdfjs/cmaps/',location.href).href,cMapPacked:true,standardFontDataUrl:new URL('./vendor/pdfjs/standard_fonts/',location.href).href,wasmUrl:new URL('./vendor/pdfjs/wasm/',location.href).href});try{const document=await task.promise;return {document,close:()=>task.destroy()};}catch(e){await task.destroy();throw e;}
+  const task=lib.getDocument({data:bytes.slice(),isEvalSupported:false,enableXfa:false,disableAutoFetch:true,maxImageSize:20_000_000,useSystemFonts:true,cMapUrl:new URL('./vendor/pdfjs/cmaps/',location.href).href,cMapPacked:true,standardFontDataUrl:new URL('./vendor/pdfjs/standard_fonts/',location.href).href,wasmUrl:new URL('./vendor/pdfjs/wasm/',location.href).href});try{const document=await task.promise;return {document,ops:lib.OPS,close:()=>task.destroy()};}catch(e){await task.destroy();throw e;}
  }
- async function pdfTables(bytes){const {document:d,close}=await pdf(bytes);try{if(d.numPages>100)throw Error('Не больше 100 страниц за импорт.');const tables=[];let count=0;for(let n=1;n<=d.numPages;n++){
+ async function pageCanvas(page,{signal,ocr=false}={}){
+  signal?.throwIfAborted();
+  const base=page.getViewport({scale:1}),scale=Math.min(ocr?3:1.5,(ocr?2600:1500)/base.width,(ocr?3200:2000)/base.height);
+  const viewport=page.getViewport({scale}),canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.ceil(viewport.width));canvas.height=Math.max(1,Math.ceil(viewport.height));
+  const render=page.render({canvasContext:canvas.getContext('2d'),viewport,background:'#fff'});
+  const abort=()=>render.cancel();signal?.addEventListener('abort',abort,{once:true});
+  try{await render.promise;signal?.throwIfAborted();return canvas;}
+  finally{signal?.removeEventListener('abort',abort);}
+ }
+ async function scanPage(page,n,options){
+  const canvas=await pageCanvas(page,{signal:options.signal,ocr:true});
+  return HumanOCR.recognize(canvas,'Страница '+n,options);
+ }
+ async function pdfTables(bytes,{signal,onProgress}={}){const {document:d,ops,close}=await pdf(bytes);try{if(d.numPages>100)throw Error('Не больше 100 страниц за импорт.');const tables=[];let count=0,scanned=0;
+  const imageOps=new Set(Object.keys(ops).filter(key=>/^paint(?:Image|InlineImage)/.test(key)).map(key=>ops[key]));
+  for(let n=1;n<=d.numPages;n++){
+   signal?.throwIfAborted();
    const p=await d.getPage(n),items=(await p.getTextContent()).items.filter(x=>x.str?.trim()),lines=[];if(items.length>20000||items.reduce((n,x)=>n+x.str.length,0)>2000000)throw Error('Слишком много текста на странице PDF.');
    for(const item of items){const y=item.transform[5];let line=lines.find(l=>Math.abs(l.y-y)<3);if(!line){line={y,items:[]};lines.push(line);}line.items.push(item);}
-   const rows=lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(x=>x.str));if(rows.some(r=>r.length>100))throw Error('На странице PDF больше 100 колонок.');count+=rows.length;if(count>5000)throw Error('Не больше 5000 строк PDF.');tables.push({name:'Страница '+n,rows});
+   const rows=lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(x=>x.str));if(rows.some(r=>r.length>100))throw Error('На странице PDF больше 100 колонок.');
+   let table={name:'Страница '+n,rows};
+   if(!rows.length&&scanned<10&&(await p.getOperatorList()).fnArray.some(op=>imageOps.has(op))){
+    scanned++;
+    try{table=await scanPage(p,n,{signal,onProgress:status=>onProgress?.(`Страница ${n} из ${d.numPages} · ${status}`)});}
+    catch(error){signal?.throwIfAborted();table.ocrError=error.message||'Не удалось распознать страницу.';}
+   }
+   count+=table.rows.length;if(count>5000)throw Error('Не больше 5000 строк PDF.');tables.push(table);
   }return tables;}finally{await close();}}
- async function renderPDF(bytes,pageNumber=1){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');const p=await d.getPage(pageNumber),base=p.getViewport({scale:1}),scale=Math.min(1.5,1500/base.width,2000/base.height),viewport=p.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);canvas.setAttribute('aria-label','Страница '+pageNumber+' из '+d.numPages);await p.render({canvasContext:canvas.getContext('2d'),viewport}).promise;return {canvas,pages:d.numPages};}finally{await close();}}
+ async function renderPDF(bytes,pageNumber=1){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');const canvas=await pageCanvas(await d.getPage(pageNumber));canvas.setAttribute('aria-label','Страница '+pageNumber+' из '+d.numPages);return {canvas,pages:d.numPages};}finally{await close();}}
+ async function recognizePDFPage(bytes,pageNumber,options){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');return await scanPage(await d.getPage(pageNumber),pageNumber,options);}finally{await close();}}
  function csvTable(text){const counts={';':0,',':0,'\t':0};let inQuote=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(inQuote&&text[i+1]==='"')i++;else inQuote=!inQuote;}else if(!inQuote){if(c==='\n'||c==='\r')break;if(c in counts)counts[c]++;}}const sep=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];const rows=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){field+='"';i++;}else quoted=!quoted;}else if(c===sep&&!quoted){row.push(field);if(row.length>100)throw Error('Не больше 100 колонок CSV.');field='';}else if(/[\r\n]/.test(c)&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(x=>x.trim()))rows.push(row);row=[];field='';}else field+=c;}if(quoted)throw Error('Незакрытая кавычка CSV.');row.push(field);if(row.some(x=>x.trim()))rows.push(row);if(rows.length>5001)throw Error('Не больше 5000 строк за импорт.');return [{name:'CSV',rows}];}
- async function read(file){if(file.size>2*1024*1024)throw Error('Не больше 2 МиБ на файл.');const bytes=new Uint8Array(await file.arrayBuffer()),extension=file.name.split('.').pop().toLowerCase();let tables;
-  if(extension==='xlsx')tables=await xlsx(bytes);else if(extension==='pdf')tables=await pdfTables(bytes);else if(extension==='csv')tables=csvTable(decoder.decode(bytes).replace(/^\uFEFF/,''));else throw Error('Выберите PDF, XLSX или CSV.');
+ async function read(file,options={}){if(file.size>MAX)throw Error('Не больше 32 МиБ на файл.');const bytes=new Uint8Array(await file.arrayBuffer()),extension=file.name.split('.').pop().toLowerCase();let tables;
+  options.signal?.throwIfAborted();
+  if(extension==='xlsx')tables=await xlsx(bytes);else if(extension==='pdf')tables=await pdfTables(bytes,options);else if(extension==='csv')tables=csvTable(decoder.decode(bytes).replace(/^\uFEFF/,''));else if(['png','jpg','jpeg'].includes(extension))tables=[await HumanOCR.image(bytes,extension,options)];else throw Error('Выберите PDF, XLSX, CSV, PNG или JPEG.');
+  options.signal?.throwIfAborted();
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');return {bytes,tables,hash,name:file.name,extension};
  }
- window.HumanDocuments={unzip,read,renderPDF,xlsx,csvTable};
+ window.HumanDocuments={unzip,read,renderPDF,recognizePDFPage,xlsx,csvTable};
 })();

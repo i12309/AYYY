@@ -78,7 +78,9 @@
     const match=A.classify(row,doc.analyteAliases);
     const entries=[['Сопоставление',match.name+' · '+names[match.basis]]];
     if(file){
-      entries.push(['Строка источника',[file.filename,file.sheet,file.row?'строка '+file.row:''].filter(Boolean).join(' · ')]);
+      entries.push(['Источник',[file.filename,file.sheet,file.row?'строка '+file.row:'',file.column?'колонка '+file.column:''].filter(Boolean).join(' · ')]);
+      if(file.sourceDate)entries.push(['Дата в источнике',file.sourceDate]);
+      if(file.method==='ocr-tesseract')entries.push(['Способ импорта','Распознавание скана']);
       if(file.classification)entries.push(['При импорте',file.classification.name+' · '+names[file.classification.basis]]);
     }
     if(row.unitHistory){

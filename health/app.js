@@ -939,10 +939,10 @@
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
   let importGeneration=0;
-  async function importCSV(file){
-    if(!file)return;
+  async function importDocuments(files){
+    if(!files.length)return;
     const generation=++importGeneration,tab=state.tab,active=sessionFence();
-    await HumanImport.open(file,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
+    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
   }
   async function deleteLocal(){
     if(state.demo)throw new Error('Демо удаляется при выходе.');
@@ -1094,10 +1094,13 @@
       else if(action==='close-dialog')dialog.close();
       else if(action==='csv'){
         const input=document.createElement('input');
-        input.type='file';input.accept='.csv,.xlsx,.pdf';input.hidden=true;
+        input.type='file';input.accept='.csv,.xlsx,.pdf,.png,.jpg,.jpeg';input.hidden=true;input.multiple=true;
+        input.addEventListener('cancel',()=>input.remove(),{once:true});
         input.addEventListener('change',()=>{
-          void importCSV(input.files[0]).catch(error).finally(()=>input.remove());
-        });
+          const files=Array.from(input.files);
+          input.remove();
+          void importDocuments(files).catch(error);
+        },{once:true});
         document.body.append(input);input.click();
       }
     }catch(e){error(e);}

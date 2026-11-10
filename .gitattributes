@@ -1,2 +1,4 @@
 
 prototypes/weather-tree-v5/reference.html -text
+health/vendor/ocr/** -text
+health/vendor/ocr/LICENSE-core whitespace=-blank-at-eof

@@ -1,4 +1,4 @@
-"""Synthetic local PDF/XLSX/CSV import, preview and provenance regression tests."""
+"""Synthetic local document import, OCR, queue and provenance regression tests."""
 import io, zipfile, mimetypes, base64
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -24,10 +24,22 @@ def pdf():
  stream='\n'.join(commands).encode();objects.append(b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream')
  objects.append(b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 4 0 R >> >> /Contents 7 0 R >>')
  objects.append(b'<< /Length 0 >>\nstream\n\nendstream')
+ return pdf_objects(objects)
+def pdf_objects(objects):
  output=b'%PDF-1.4\n';offsets=[]
  for i,obj in enumerate(objects):offsets.append(len(output));output+=f'{i+1} 0 obj\n'.encode()+obj+b'\nendobj\n'
  at=len(output);output+=f'xref\n0 {len(objects)+1}\n0000000000 65535 f \n'.encode()+b''.join(f'{o:010} 00000 n \n'.encode() for o in offsets)+f'trailer << /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{at}\n%%EOF'.encode()
  return output
+def scan_pdf(jpeg):
+ commands=b'q 600 0 0 210 0 0 cm /Scan Do Q'
+ def stream(attributes,data):
+  return b'<< '+attributes+b' /Length '+str(len(data)).encode()+b' >>\nstream\n'+data+b'\nendstream'
+ return pdf_objects([
+  b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+  b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 210] /Resources << /XObject << /Scan 4 0 R >> >> /Contents 5 0 R >>',
+  stream(b'/Type /XObject /Subtype /Image /Width 1200 /Height 420 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode',jpeg),
+  stream(b'',commands),
+ ])
 with sync_playwright() as pw:
  browser=launch_browser(pw);ctx=browser.new_context(viewport={'width':1440,'height':1000});errors=[];remote=[]
  def serve(route):
@@ -44,7 +56,9 @@ with sync_playwright() as pw:
   p.wait_for_function("()=>document.querySelector('[data-form=document-mapping]')||document.querySelector('#health-notice.show')");assert p.locator('[data-form=document-mapping]').count(),p.locator('#health-notice').inner_text()
   p.set_viewport_size({'width':360,'height':900});check('mapping fits phone',p.evaluate('document.documentElement.scrollWidth<=innerWidth'));p.set_viewport_size({'width':1440,'height':1000})
  def draft():
-  p.locator('[data-form=document-mapping] [type=submit]').click();p.locator('[data-form=document-review]').wait_for()
+  p.locator('[data-form=document-mapping] [type=submit]').click()
+  p.wait_for_function('''()=>document.querySelector('[data-form=document-review]')||document.querySelector('[data-form=document-mapping] [role=alert]:not([hidden])')''')
+  assert p.locator('[data-form=document-review]').count(),p.locator('[data-form=document-mapping]').inner_text()
  def save():
   p.locator('[data-form=document-review] [type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
  baseline=p.locator('.analyte-groups tbody tr').count();payload=workbook();upload('synthetic.xlsx',payload,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -67,6 +81,59 @@ with sync_playwright() as pw:
  check('corrupt XLSX rejected',p.evaluate("async b=>{try{await HumanDocuments.xlsx(Uint8Array.from(atob(b),c=>c.charCodeAt(0)));return false;}catch{return true;}}",base64.b64encode(corrupted).decode()))
  for width in [360,768,1440]:
   p.set_viewport_size({'width':width,'height':900});check('detail fits '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+ p.locator('.sidebar button[data-tab=lab]').click()
+ wide=b'name;unit;05/06/2026;2026-06-08\nSynthetic wide;mg;12;15\nSynthetic sparse;mg;;8'
+ with p.expect_file_chooser() as chooser:p.locator('[data-action=csv]').click()
+ chooser.value.set_files([
+  {'name':'wide.csv','mimeType':'text/csv','buffer':wide},
+  {'name':'broken.csv','mimeType':'text/csv','buffer':b'name;value\n"unfinished'},
+  {'name':'wide-copy.csv','mimeType':'text/csv','buffer':wide},
+ ])
+ queue=p.locator('.health-import-queue');queue.wait_for()
+ p.set_viewport_size({'width':360,'height':900})
+ check('batch queue fits phone',p.locator('#health-dialog').evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
+ p.set_viewport_size({'width':1440,'height':1000})
+ def queue_entry(name):return queue.locator('li').filter(has=p.get_by_text(name,exact=True))
+ def open_entry(name):queue_entry(name).locator('[data-action=import-open-file]').click()
+ open_entry('wide.csv')
+ mapping=p.locator('[data-form=document-mapping]')
+ check('date headers are auto-detected',mapping.locator('[name=layout]').input_value()=='dates_in_columns')
+ mapping.locator('[type=submit]').click()
+ check('slash dates require explicit order',mapping.get_by_role('alert').is_visible())
+ mapping.locator('[name=dateOrder]').select_option('dmy');draft()
+ check('wide dates expand source cells and skip blanks',p.locator('[name=selected]:checked').count()==3 and
+       [p.locator(f'[name="{i}:date"]').input_value() for i in range(3)]==['2026-06-05','2026-06-08','2026-06-08'])
+ p.locator('[name="0:value"]').fill('12.25');p.locator('[data-action=import-queue]').click()
+ open_entry('broken.csv');queue.wait_for()
+ check('invalid file is isolated in the queue','Незакрытая кавычка CSV' in queue_entry('broken.csv').inner_text())
+ queue_entry('broken.csv').locator('[data-action=import-skip-file]').click()
+ open_entry('wide.csv')
+ check('batch retains unsaved edits',p.locator('[name="0:value"]').input_value()=='12.25')
+ p.locator('[data-form=document-review] [type=submit]').click();queue.wait_for()
+ check('batch marks confirmed results per file','Сохранено результатов: 3' in queue_entry('wide.csv').inner_text())
+ open_entry('wide-copy.csv');mapping.locator('[name=dateOrder]').select_option('dmy');draft()
+ check('wide results are deduplicated by source cell',p.locator('[name=selected]:disabled').count()==3)
+ p.locator('#health-dialog [data-action=close-dialog]').click()
+ encoded=p.evaluate('''()=>{
+  const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=420;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,1200,420);
+  ctx.font='44px Arial';ctx.fillStyle='black';
+  [['name','value','date'],['Глюкоза','54','2026-11-01']].forEach((row,y)=>row.forEach((text,x)=>ctx.fillText(text,[65,570,820][x],120+y*130)));
+  return [canvas.toDataURL('image/png'),canvas.toDataURL('image/jpeg',.95)].map(url=>url.split(',')[1]);
+ }''')
+ png,jpeg=[base64.b64decode(value) for value in encoded]
+ upload('synthetic.png',png,'image/png');mapping.locator('[name=name]').select_option('0');draft()
+ check('local PNG OCR recognizes Russian and a result',p.locator('[name="0:name"]').input_value()=='Глюкоза' and p.locator('[name="0:value"]').input_value()=='54')
+ check('OCR requires explicit per-result selection',p.locator('[name=selected]:checked').count()==0)
+ p.locator('[name=selected]').first.check();save()
+ check('standalone JPEG is recognized',p.evaluate('''async encoded=>{
+  const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+  const table=(await HumanDocuments.read(new File([bytes],'local.jpeg',{type:'image/jpeg'}))).tables[0];
+  return table.ocr&&table.rows[1][1]==='54'&&table.provenance[1][1].kind==='ocr';
+ }''',encoded[1]))
+ upload('synthetic-scan.pdf',scan_pdf(jpeg),'application/pdf');mapping.locator('[name=name]').select_option('0');draft()
+ check('image-only PDF is recognized with the same confirmation gate',p.locator('[name="0:value"]').input_value()=='54' and p.locator('[name=selected]:checked').count()==0)
+ p.locator('#health-dialog [data-action=close-dialog]').click()
  # The same import runs against an actual encrypted IndexedDB vault.
  v=ctx.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/')
  v.locator('[data-form=create] [name=password]').fill('synthetic-document-password');v.locator('[name=repeat]').fill('synthetic-document-password');v.locator('[data-form=create] [type=submit]').click();v.locator('.metric').first.wait_for();v.locator('.sidebar button[data-tab=lab]').click()
