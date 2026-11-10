@@ -47,6 +47,12 @@ export function normalizeProject(project, fileName = '') {
   const assignments = (Array.isArray(project.assignments) ? project.assignments : []).filter(x => x && x.task !== null && x.resource !== null).map(x => ({
     task:String(x.task), resource:String(x.resource), units:x.units, work:x.work, cost:x.cost
   }));
+  const assignedResources = new Map();
+  for (const assignment of assignments) {
+    if (!assignedResources.has(assignment.task)) assignedResources.set(assignment.task, []);
+    const name = resourceMap.get(assignment.resource)?.name;
+    if (name) assignedResources.get(assignment.task).push(name);
+  }
   const tasks = sorted.map(t => ({
     uid:String(t.uniqueId), id:Number(t.id)||0, name:String(t.name||'Без названия'),
     wbs:String(t.wbs||t.outlineNumber||''), level:Math.max(1,Math.min(50,Number(t.outlineLevel)||1)),
@@ -84,7 +90,7 @@ export function normalizeProject(project, fileName = '') {
       const from = byUid.get(l.from);
       return String(from.id) + (l.type === 'FS' ? '' : l.type) + (l.lag ? ' + ' + l.lag : '');
     }).join(', ');
-    if (!task.resourceNames) task.resourceNames = assignments.filter(a => a.task === task.uid).map(a => resourceMap.get(a.resource)?.name || '').filter(Boolean).join(', ');
+    if (!task.resourceNames) task.resourceNames = (assignedResources.get(task.uid) || []).join(', ');
     if (task.children) task.summary = true;
   }
   const validStarts = tasks.map(t=>t.start).filter(t=>t!==null);
@@ -128,13 +134,46 @@ export function visibleTasks(model, query = '', collapsed = new Set()) {
 }
 
 export function timelineRange(model) {
-  const dates = (model?.tasks || []).flatMap(t => [t.start,t.finish]).filter(v=>v!==null && Number.isFinite(v));
+  const dates = (model?.tasks || []).flatMap(t => [t.start,t.finish,t.baselineStart,t.baselineFinish]).filter(v=>v!==null && Number.isFinite(v));
   const today = Math.floor(Date.now() / DAY) * DAY;
   const min = dates.length ? Math.min(...dates) : today;
   const max = dates.length ? Math.max(...dates) : today + 28*DAY;
   const start = Math.floor(min / DAY) * DAY - 7 * DAY;
   const end = Math.floor(max / DAY) * DAY + 14 * DAY;
   return {start, days:Math.max(28,Math.min(10000,Math.ceil((end-start)/DAY)))};
+}
+
+/** Keep the DOM bounded even when a project contains thousands of tasks. */
+export function rowWindow(total, scrollTop = 0, viewportHeight = 500, size = 34, overscan = 14) {
+  const count = Math.max(0, Math.trunc(total) || 0);
+  if (count <= 160) return {start:0,end:count,top:0,bottom:0};
+  const first = Math.max(0, Math.floor(Math.max(0, scrollTop) / size));
+  const visible = Math.max(1, Math.ceil(Math.max(size, viewportHeight) / size));
+  const start = Math.max(0, Math.min(count, first) - overscan);
+  const end = Math.min(count, first + visible + overscan);
+  return {start,end,top:start*size,bottom:(count-end)*size};
+}
+
+/** SVG routes for visible dependency links (FS, SS, FF and SF). */
+export function dependencyLines(tasks, links, timelineStart, pixelsPerDay, size = 34) {
+  const rows = new Map(tasks.map((task, index) => [task.uid, {task,index}]));
+  const routes = [];
+  for (const link of links) {
+    const source = rows.get(link.from), target = rows.get(link.to);
+    if (!source || !target) continue;
+    const fromFinish = link.type === 'FS' || link.type === 'FF';
+    const toFinish = link.type === 'FF' || link.type === 'SF';
+    const fromDate = source.task[fromFinish ? 'finish' : 'start'];
+    const toDate = target.task[toFinish ? 'finish' : 'start'];
+    if (fromDate === null || toDate === null || !Number.isFinite(fromDate) || !Number.isFinite(toDate)) continue;
+    const x1 = Math.round((fromDate-timelineStart)/DAY*pixelsPerDay + (fromFinish ? pixelsPerDay : 0));
+    const x2 = Math.round((toDate-timelineStart)/DAY*pixelsPerDay + (toFinish ? pixelsPerDay : 0));
+    const y1 = Math.round((source.index+.5)*size), y2 = Math.round((target.index+.5)*size);
+    const elbow = x2 >= x1+24 ? Math.round((x1+x2)/2) : Math.max(x1,x2)+16;
+    routes.push({d:`M${x1} ${y1} H${elbow} V${y2} H${x2}`,from:link.from,to:link.to,
+      critical:source.task.critical && target.task.critical});
+  }
+  return routes;
 }
 
 export function csvCell(value) {
@@ -165,7 +204,8 @@ export function demoProject() {
   ];
   const tasks=names.map(([id,name,level,s,e,percent,summary])=>({
     id,uniqueId:id,name,outlineLevel:level,outlineNumber:String(id),wbs:String(id),
-    start:d(s),finish:d(e),duration:{value:e-s,units:'d'},percentComplete:percent,
+    start:d(s),finish:d(e),baselineStart:id===6?d(18):id===7?d(27):null,baselineFinish:id===6?d(33):id===7?d(40):null,
+    duration:{value:e-s,units:'d'},percentComplete:percent,
     summary,milestone:s===e,predecessors:id===8?[{task:7,type:'FS'}]:id===9?[{task:8,type:'FS'}]:[]
   }));
   return normalizeProject({format:'Демонстрационный план',title:'Пример проекта · AYYY',tasks,resources:[
