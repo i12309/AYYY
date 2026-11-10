@@ -49,6 +49,7 @@ import { BackupControl } from './components/BackupControl';
 import { PortalBrand } from './components/PortalBrand';
 import { CircleHelp } from 'lucide-react';
 import { GitHubImportDialog } from './components/GitHubImportDialog';
+import {startAutoSync,autoSyncOpened,autoSyncSetActiveTree} from './lib/autoSync';
 
 const FamilyGraph = lazy(() =>
   import('./components/FamilyGraph').then((module) => ({ default: module.FamilyGraph })),
@@ -173,6 +174,18 @@ export default function App() {
     removeFamily,
     updateTreeSummary,
   } = useTree(treeId);
+  // The in-tab worker persists after navigating back to the tree library.
+  useEffect(() => startAutoSync(), []);
+  useEffect(() => {
+    if(!treeId){autoSyncSetActiveTree(null);return;}
+    void autoSyncOpened(treeId);
+    const onRemoteUpdate=(event:Event)=>{
+      if((event as CustomEvent<{treeId:string}>).detail?.treeId===treeId)
+        void refresh();
+    };
+    window.addEventListener('gen:remote-updated',onRemoteUpdate);
+    return ()=>window.removeEventListener('gen:remote-updated',onRemoteUpdate);
+  },[treeId,refresh]);
   const familyIndex = useMemo(
     () => buildFamilyIndex(data?.persons ?? [], data?.families ?? []),
     [data],
@@ -473,12 +486,13 @@ export default function App() {
     setModal(null);
     setNotice({ text: 'Семейные связи сохранены' });
   }
-  async function afterTreeSaved(tree: TreeSummary) {
+  async function afterTreeSaved(tree: TreeSummary, warning?:string) {
     await loadTrees();
     if (modal?.kind === 'tree' && modal.tree) {
       if (tree.id === treeId) updateTreeSummary(tree);
       setModal(null);
     } else openTree(tree.id);
+    if(warning) setNotice({text:warning,error:true});
   }
   const editorPerson =
     modal?.kind === 'person' ? data?.persons.find((p) => p.id === modal.id) : undefined;
