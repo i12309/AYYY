@@ -1,5 +1,5 @@
 /* AYYY Project Viewer — local-only Microsoft Project plan reader and Gantt UI. */
-import {DAY, dateValue, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
+import {DAY, dateValue, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
 
 import {ganttSvg} from './export-svg.mjs';
 
@@ -83,11 +83,12 @@ function ganttMarkup(tasks, model, zoom, selectedUid, viewport, showLinks = true
   const after='<div class="pv-row-space" style="height:'+viewport.bottom+'px"></div>';
   let connectors='';
   if(showLinks && model.links.length && items.length){
-    const routes=dependencyLines(items,model.links,range.start,pixel).filter(x=>!/[Nn]a[Nn]/.test(x.d));
+    const routes=viewportDependencyLines(tasks,model.links,range.start,pixel,viewport.start,viewport.end,rowHeight,criticalIds);
     if(routes.length){
       connectors='<svg class="pv-links" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+(items.length*rowHeight)+'" style="top:'+viewport.top+'px" viewBox="0 0 '+width+' '+(items.length*rowHeight)+'">'+
         '<defs><marker id="pv-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8" fill="#73949c"/></marker></defs>'+
-        routes.map(route=>'<path class="pv-link'+(route.critical?' pv-link-critical':'')+'" d="'+route.d+'" marker-end="url(#pv-arrow)"/>').join('')+'</svg>';
+        routes.map(route=>'<path class="pv-link'+(route.critical?' pv-link-critical':'')+(route.partial?' pv-link-partial':'')+'" d="'+route.d+'" marker-end="url(#pv-arrow)"/>'+
+          (route.label?'<text class="pv-link-label" x="'+route.labelX+'" y="'+route.labelY+'">'+escapeHtml(route.label)+'</text>':'')).join('')+'</svg>';
     }
   }
   let overlays='';
