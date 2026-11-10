@@ -422,7 +422,7 @@
         const local=await S.save({id:data.envelope.vaultId,envelope:data.envelope,
           repo,remoteSha:data.sha,dirty:false});
         await S.select(local.id);await profileList();
-        G.disconnect();state.local=local;state.doc=null;state.key=null;state.picker=false;render();
+        state.local=local;state.doc=null;state.key=null;state.picker=false;render();
         toast('Архив загружен. Введите вашу фразу доступа.');
       }else if(mode==='import-vault'){
         const file=form.elements.namedItem('file').files[0];
