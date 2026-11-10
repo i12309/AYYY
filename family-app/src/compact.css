@@ -3,10 +3,10 @@
  * Keep layout geometries synchronized with FamilyGraph CARD_WIDTH/cardHeight.
  * No global zoom: text stays crisp and graph hit targets remain correct.
  */
-.ayyy-brand{display:inline-flex;align-items:center;flex-shrink:0;gap:8px;white-space:nowrap;color:#243a36;text-decoration:none;font-size:19px;font-weight:800;letter-spacing:-.65px}
-.ayyy-brand:hover{color:#243a36}
-.ayyy-brand-mark{width:36px;height:36px;display:grid;place-items:center;flex-shrink:0;border-radius:10px;background:#ff7200;color:#fff;box-shadow:0 3px 7px #ff72001c}
-.ayyy-brand-dot{color:#ff7200}
+.ayyy-brand{display:inline-flex;align-items:center;flex-shrink:0;white-space:nowrap;text-decoration:none;color:#203640;line-height:1;padding:3px 5px 5px 0}
+.ayyy-brand:hover{color:#203640}
+.ayyy-brand-name{font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:30px;font-weight:800;letter-spacing:-2.6px;line-height:1;transform:rotate(-3deg);display:block}
+.ayyy-brand-dot{color:#e77d36}
 .family-brand{display:flex;align-items:center;gap:13px;min-width:0}
 .family-brand-divider{display:inline-block;height:25px;width:1px;flex-shrink:0;background:#dfe7e1}
 .family-brand-label{font-size:15px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:10px}

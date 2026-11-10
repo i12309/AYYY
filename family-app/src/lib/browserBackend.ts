@@ -1,13 +1,14 @@
 import {
   addRelative, checkRevision, createFamily, createPerson, newTree, now, slugify,
-  summary, uid, updateFamily, updatePerson, validate, type Document
+  summary, uid, updateFamily, updatePerson, validate, normalizeDocument, type Document
 } from './browserModel';
 import {
-  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot
+  getSync, listTrees, mutateTree, publicTree, putTree, readTree, removeTree, installTreeSnapshot, importNewTreeSnapshot
 } from './browserStore';
 
 import {parseGedcom} from './gedcomParse';
 import {exportGedcom} from './gedcomExport';
+import {readArchive} from './browserZipImport';
 
 export class BackendError extends Error {
   constructor(message: string, public status = 400) {super(message);}
@@ -61,8 +62,16 @@ function sampleTree(document: Document) {
 
 async function importDocument(body: FormData) {
   const file = body.get('file');
-  if (!(file instanceof File) || file.size > 25*1024*1024 || !file.size) {
-    throw new BackendError('Выберите JSON или GEDCOM размером до 25 МБ.',422);
+  const isZip=file instanceof File && /\.zip$/i.test(file.name);
+  if (!(file instanceof File) || file.size > (isZip?150:25)*1024*1024 || !file.size) {
+    throw new BackendError('Выберите ZIP (до 150 МБ) или JSON/GEDCOM (до 25 МБ).',422);
+  }
+  if(isZip) {
+    const {document,files,warnings}=await readArchive(file);
+    const name=String(body.get('name')||'').trim();
+    if(name)document.tree.name=name.slice(0,150);
+    const created=await importNewTreeSnapshot(document,files);
+    return {tree:summary(created),warnings};
   }
   if (/\.(ged|gedcom)$/i.test(file.name)) {
     const original=new Uint8Array(await file.arrayBuffer());
@@ -79,11 +88,12 @@ async function importDocument(body: FormData) {
     return {tree:summary(document),warnings:parsed.warnings};
   }
   if (!/\.json$/i.test(file.name)) {
-    throw new BackendError('Выберите tree.json из GEN или GEDCOM (.ged, .gedcom).',422);
+    throw new BackendError('Выберите ZIP, tree.json, .ged или .gedcom.',422);
   }
   let archive: Document;
   try {archive = JSON.parse(await file.text()) as Document;}
   catch {throw new BackendError('Не удалось прочитать JSON-файл.',422);}
+  normalizeDocument(archive);
   validate(archive);
   const existing = await listTrees();
   // Never overwrite a local tree just because an imported archive has the same ID.

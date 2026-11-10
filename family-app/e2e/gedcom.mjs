@@ -26,7 +26,7 @@ try{
   const frame=page.frameLocator('iframe#ayyy-family-frame');
   await frame.getByRole('heading',{name:'Семейные деревья'}).waitFor({timeout:15000});
 
-  await frame.getByRole('button',{name:/Импорт GEDCOM/}).first().click();
+  await frame.getByRole('button',{name:/Импорт ZIP/}).first().click();
   const ged=[
     '0 HEAD','1 SOUR GEN-TEST','1 GEDC','2 VERS 5.5.1',
     '2 FORM LINEAGE-LINKED','1 CHAR UTF-8',
@@ -38,7 +38,7 @@ try{
     '2 DATE 12 MAY 2001','0 @S1@ SOUR','1 TITL Синтетическая запись',
     '0 TRLR',''
   ].join('\r\n');
-  await frame.getByLabel('Файл GEDCOM или JSON').setInputFiles({
+  await frame.getByLabel('Файл ZIP, GEDCOM или JSON').setInputFiles({
     name:'synthetic.ged',mimeType:'text/plain',buffer:Buffer.from(ged,'utf8')
   });
   await frame.getByRole('button',{name:'Импортировать'}).click();

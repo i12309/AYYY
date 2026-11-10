@@ -7,6 +7,7 @@ type MediaRecord = {key: string; blob: Blob};
 type SyncRecord = {
   treeId: string; owner: string; repo: string; branch: string; path: string;
   blobSha?: string; lastCommit?: string; lastSync?: string; lastLocalSavedAt?: string;
+  baseline?: Document;
 };
 let opening: Promise<IDBDatabase> | null = null;
 const urls = new Map<string, {blob: Blob; url: string}>();
@@ -201,5 +202,87 @@ export async function installTreeSnapshot(
       tx.objectStore('files').put({key:document.tree.id+'/'+file.filename,blob:file.blob});
     }
     tx.objectStore('trees').put({id:document.tree.id,document});
+  });
+}
+
+
+/** A ZIP import is always a new local copy, never an overwrite.
+ * ID and slug collision checks, tree and all media share one IDB transaction.
+ */
+export async function importNewTreeSnapshot(
+  original:Document, files:Array<{filename:string;blob:Blob}>
+):Promise<Document> {
+  validate(original);
+  const db=await openDatabase();
+  return new Promise<Document>((resolve,reject)=>{
+    const tx=db.transaction(['trees','files'],'readwrite');
+    const trees=tx.objectStore('trees');
+    const media=tx.objectStore('files');
+    let result:Document|null=null;
+    let failure:Error|null=null;
+    tx.oncomplete=()=>result?resolve(result):reject(new Error('Архив не был сохранён.'));
+    tx.onabort=()=>reject(failure||tx.error||new Error('Не удалось восстановить архив.'));
+    const lookup=trees.getAll();
+    lookup.onerror=()=>{failure=lookup.error||new Error('Ошибка чтения каталога деревьев.');tx.abort();};
+    lookup.onsuccess=()=>{
+      try{
+        const doc=structuredClone(original) as Document;
+        const existing=new Set((lookup.result as TreeRecord[]).map(x=>x.id));
+        const slugs=new Set((lookup.result as TreeRecord[]).map(x=>x.document.tree.slug));
+        const idChanged=existing.has(doc.tree.id);
+        if(idChanged) {
+          do{doc.tree.id=crypto.randomUUID().replace(/-/g,'');}while(existing.has(doc.tree.id));
+        }
+        if(idChanged||slugs.has(doc.tree.slug)) {
+          const stem=(doc.tree.slug||'family').slice(0,85).replace(/-+$/,'');
+          do{doc.tree.slug=stem+'-'+crypto.randomUUID().slice(0,8);}while(slugs.has(doc.tree.slug));
+        }
+        doc.tree.updated_at=now();
+        validate(doc);
+        for(const {filename,blob} of files)
+          media.put({key:doc.tree.id+'/'+filename,blob});
+        trees.put({id:doc.tree.id,document:doc});
+        result=doc;
+      }catch(error){
+        failure=error instanceof Error?error:new Error('Некорректный семейный архив.');
+        tx.abort();
+      }
+    };
+  });
+}
+
+
+/**
+ * Conflict resolution commits to GitHub first. Atomically update this device
+ * only if no other tab has changed the local copy during the network request.
+ * Even if a concurrent edit is detected, save the new remote baseline without
+ * replacing the user's local version.
+ */
+export async function installResolvedSnapshot(
+  expected:Document,
+  merged:Document,
+  entries:Array<{filename:string;blob:Blob}>,
+  sync:SyncRecord,
+):Promise<boolean>{
+  validate(merged);
+  const db=await openDatabase();
+  return new Promise<boolean>((resolve,reject)=>{
+    const tx=db.transaction(['trees','files','sync'],'readwrite');
+    const trees=tx.objectStore('trees'),files=tx.objectStore('files'),synced=tx.objectStore('sync');
+    let installed=false;
+    tx.oncomplete=()=>resolve(installed);
+    tx.onabort=()=>reject(tx.error||new Error('Не удалось завершить объединение дерева.'));
+    const lookup=trees.get(expected.tree.id);
+    lookup.onerror=()=>tx.abort();
+    lookup.onsuccess=()=>{
+      if(!lookup.result){tx.abort();return;}
+      const actual=(lookup.result as TreeRecord).document;
+      installed=JSON.stringify(actual)===JSON.stringify(expected);
+      if(installed){
+        trees.put({id:merged.tree.id,document:merged});
+        for(const item of entries)files.put({key:merged.tree.id+'/'+item.filename,blob:item.blob});
+      }
+      synced.put(sync);
+    };
   });
 }

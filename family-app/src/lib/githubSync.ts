@@ -4,8 +4,9 @@
  */
 import {type Document,validate,now} from './browserModel';
 import {exportGedcom} from './gedcomExport';
+import {mergeDocuments,type MergeChoice,type MergeConflict} from './browserMerge';
 import {
-  getSync,setSync,listTrees,readTree,readFiles,installTreeSnapshot,type SyncRecord
+  getSync,setSync,listTrees,readTree,readFiles,installTreeSnapshot,installResolvedSnapshot,type SyncRecord
 } from './browserStore';
 
 let bearer = '';
@@ -138,7 +139,7 @@ export async function restoreFromGitHub(repo:RemoteRepo,slug:string):Promise<Doc
   }
   await installTreeSnapshot(document,files);
   await setSync({treeId:document.tree.id,...repo,path,blobSha:file.sha,lastCommit:head,
-    lastSync:now(),lastLocalSavedAt:document.tree.updated_at});
+    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document)});
   return document;
 }
 export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
@@ -201,8 +202,182 @@ export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
     sha:next.sha,force:false
   });
   const sync:SyncRecord={treeId,...repo,path,blobSha:jsonBlob.sha,lastCommit:next.sha,
-    lastSync:now(),lastLocalSavedAt:document.tree.updated_at};
+    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document)};
   await setSync(sync);
   const pending=(await readTree(treeId)).tree.updated_at!==document.tree.updated_at;
   return {sha:next.sha,pending};
+}
+
+
+/** Validate an entered personal access token against *this exact* private repo.
+ * Write check creates an unreferenced Git blob, not a commit or branch edit.
+ * Works for fine-grained PATs and ephemeral GitHub Actions tokens.
+ */
+export async function verifyGitHubConnection(repo:RemoteRepo,write=false):Promise<{
+  repository:string;branch:string;canWrite:boolean
+}>{
+  await verifyPrivate(repo);
+  await branchHead(repo);
+  if(write){
+    const proof=new TextEncoder().encode('GEN token permissions check; no family data.\n');
+    await api(root(repo)+'/git/blobs','POST',{content:b64(proof),encoding:'base64'});
+  }
+  return {repository:repo.owner+'/'+repo.repo,branch:repo.branch,canWrite:write};
+}
+
+export type GitHubConflictPreview={
+  treeId:string;
+  repo:RemoteRepo;
+  path:string;
+  head:string;
+  remoteSha:string;
+  local:Document;
+  remote:Document;
+  base:Document|null;
+  conflicts:MergeConflict[];
+  autoChanges:number;
+};
+
+/** Collect both versions for a read-only preview. Never changes the local
+ * archive, even when the remote tree conflicts with earlier sync state.
+ */
+export async function previewGitHubConflict(treeId:string,repo:RemoteRepo):Promise<GitHubConflictPreview>{
+  await verifyPrivate(repo);
+  const local=await readTree(treeId);
+  const link=await getSync(treeId);
+  if(!link||link.owner!==repo.owner||link.repo!==repo.repo||link.branch!==repo.branch)
+    throw new Error('Сначала привяжите дерево к выбранному GitHub-репозиторию.');
+  const path=archivePath(local.tree.slug);
+  if(link.path!==path)throw new Error('Каталог дерева изменён; сначала сохраните локальный ZIP.');
+  const head=await branchHead(repo);
+  const entry=await treeFile(repo,path,head);
+  if(!entry?.sha)throw new Error('Удалённый tree.json отсутствует. Отправка блокирована.');
+  let remote:Document;
+  try{remote=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBlob(repo,entry.sha)));}
+  catch{throw new Error('GitHub содержит повреждённый JSON; локальные данные не изменены.');}
+  validate(remote);
+  let baseline:Document|null=link.baseline||null;
+  if(!baseline&&link.blobSha) {
+    try{
+      const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBlob(repo,link.blobSha))) as Document;
+      validate(parsed);
+      baseline=parsed;
+    }catch{
+      baseline=null; // Never guess a baseline or silently merge unrelated data.
+    }
+  }
+  const result=mergeDocuments(baseline,local,remote);
+  return {treeId,repo,path,head,remoteSha:entry.sha,
+    local,remote,base:baseline,conflicts:result.conflicts,autoChanges:result.autoChanges};
+}
+
+function requiredMedia(doc:Document):Map<string,string>{
+  return usedMedia(doc);
+}
+function sameBytes(a:Uint8Array,b:Uint8Array):boolean{
+  return a.length===b.length&&a.every((value,index)=>value===b[index]);
+}
+/** Load only remote media missing from this browser. Existing media filenames
+ * are immutable by GEN design; an original.ged mismatch is explicitly rejected.
+ */
+async function collectResolutionMedia(
+  preview:GitHubConflictPreview,merged:Document
+):Promise<Map<string,Blob>>{
+  const files=await readFiles(preview.treeId);
+  const required=requiredMedia(merged);
+  for(const [name,mime] of required){
+    if(files.has(name))continue;
+    const entry=await treeFile(preview.repo,mediaPath(preview.path,name),preview.head);
+    if(!entry?.sha)throw new Error('Отсутствует медиафайл '+name+' в локальном архиве и GitHub.');
+    const data=await readBlob(preview.repo,entry.sha);
+    const raw=data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength) as ArrayBuffer;
+    files.set(name,new Blob([raw],{type:mime}));
+  }
+  const path=preview.path.replace(/tree\.json$/,'original.ged');
+  const original=await treeFile(preview.repo,path,preview.head);
+  if(original?.sha){
+    const bytes=await readBlob(preview.repo,original.sha);
+    const current=files.get('original.ged');
+    if(current){
+      if(!sameBytes(new Uint8Array(await current.arrayBuffer()),bytes))
+        throw new Error('Исходные original.ged различаются. Сохраните обе версии отдельно перед слиянием.');
+    }else{
+      const raw=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;
+      files.set('original.ged',new Blob([raw],{type:'text/plain'}));
+    }
+  }
+  return files;
+}
+/** Commit a fully validated resolved snapshot without replacing local data first.
+ * Any concurrent branch movement is rejected by the non-forced ref update.
+ */
+async function publishResolvedSnapshot(
+  preview:GitHubConflictPreview,doc:Document,files:Map<string,Blob>
+):Promise<{head:string;sha:string}>{
+  const repo=preview.repo,path=preview.path;
+  if(await branchHead(repo)!==preview.head)
+    throw new Error('GitHub изменился после просмотра конфликта. Проверьте версии ещё раз.');
+  const check=await treeFile(repo,path,preview.head);
+  if(!check||check.sha!==preview.remoteSha)
+    throw new Error('Удалённая версия дерева больше не совпадает с просмотренной.');
+  const originalCommit=await api(root(repo)+'/git/commits/'+preview.head);
+  const encoded=new TextEncoder().encode(JSON.stringify(doc,null,2)+'\n');
+  const record=await api(root(repo)+'/git/blobs','POST',{content:b64(encoded),encoding:'base64'});
+  const ged=exportGedcom(doc.persons,doc.families,doc.metadata);
+  const gedBlob=await api(root(repo)+'/git/blobs','POST',{content:b64(ged),encoding:'base64'});
+  const entries:Array<{path:string;mode:string;type:string;sha:string}>=[
+    {path,mode:'100644',type:'blob',sha:record.sha},
+    {path:path.replace(/tree\.json$/,'tree.ged'),mode:'100644',type:'blob',sha:gedBlob.sha}
+  ];
+  const original=files.get('original.ged');
+  if(original){
+    const bytes=new Uint8Array(await original.arrayBuffer());
+    const blob=await api(root(repo)+'/git/blobs','POST',{content:b64(bytes),encoding:'base64'});
+    entries.push({path:path.replace(/tree\.json$/,'original.ged'),mode:'100644',type:'blob',sha:blob.sha});
+  }
+  const required=[...requiredMedia(doc)];
+  for(let i=0;i<required.length;i+=4){
+    const batch=await Promise.all(required.slice(i,i+4).map(async([name])=>{
+      const file=files.get(name);
+      if(!file)throw new Error('Отсутствует файл '+name+'.');
+      const data=new Uint8Array(await file.arrayBuffer());
+      const blob=await api(root(repo)+'/git/blobs','POST',{content:b64(data),encoding:'base64'});
+      return {path:mediaPath(path,name),mode:'100644',type:'blob',sha:blob.sha};
+    }));
+    entries.push(...batch);
+  }
+  const gitTree=await api(root(repo)+'/git/trees','POST',{base_tree:originalCommit.tree.sha,tree:entries});
+  const commit=await api(root(repo)+'/git/commits','POST',{
+    message:'gen: resolve family archive '+doc.tree.slug,tree:gitTree.sha,parents:[preview.head]
+  });
+  await api(root(repo)+'/git/refs/heads/'+encodeURIComponent(repo.branch),'PATCH',{
+    sha:commit.sha,force:false
+  });
+  return {head:commit.sha,sha:record.sha};
+}
+
+/** Resolve user-selected fields. Existing local data is not discarded before
+ * GitHub accepts the result. A simultaneous browser edit is never overwritten.
+ */
+export async function resolveGitHubConflict(
+  preview:GitHubConflictPreview,
+  choices:MergeChoice
+):Promise<{sha:string;pending:boolean;autoChanges:number}> {
+  await verifyPrivate(preview.repo);
+  const actual=await readTree(preview.treeId);
+  if(JSON.stringify(actual)!==JSON.stringify(preview.local))
+    throw new Error('Локальное дерево изменилось. Откройте сравнение заново.');
+  const proposed=mergeDocuments(preview.base,preview.local,preview.remote,choices);
+  if(proposed.unresolved.length)
+    throw new Error('Не выбран источник для '+proposed.unresolved.length+' спорных изменений.');
+  validate(proposed.document);
+  const media=await collectResolutionMedia(preview,proposed.document);
+  const published=await publishResolvedSnapshot(preview,proposed.document,media);
+  const record:SyncRecord={treeId:preview.treeId,...preview.repo,path:preview.path,
+    blobSha:published.sha,lastCommit:published.head,lastSync:now(),
+    lastLocalSavedAt:proposed.document.tree.updated_at,
+    baseline:structuredClone(proposed.document)};
+  const installed=await installResolvedSnapshot(preview.local,proposed.document,
+    [...media].map(([filename,blob])=>({filename,blob})),record);
+  return {sha:published.head,pending:!installed,autoChanges:proposed.autoChanges};
 }

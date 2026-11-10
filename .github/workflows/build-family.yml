@@ -1,7 +1,7 @@
 name: Build browser GEN
 on:
   push:
-    branches: [main, feat/gen-browser-portal]
+    branches: [main, feat/gen-browser-portal, feat/gen-zip-conflict-hardening]
     paths:
       - 'family-app/**'
       - 'tests/family-*.test.cjs'
@@ -42,8 +42,12 @@ jobs:
         run: node family-app/e2e/responsive.mjs
       - name: Verify private GitHub sync and cross-device restore
         run: node family-app/e2e/github.mjs
-      - name: Verify GEDCOM 5.5.1/7 and two browser themes
+      - name: Verify GEDCOM 5.5.1/7 and Classic GEN theme
         run: node family-app/e2e/gedcom.mjs
+      - name: Verify browser ZIP restore and Python DEFLATE
+        run: node family-app/e2e/zip.mjs
+      - name: Verify PAT permissions and two-device conflict resolution
+        run: node family-app/e2e/conflict.mjs
       - name: Commit generated static files
         run: |
           # A concurrent commit can require a rebase before publishing assets.

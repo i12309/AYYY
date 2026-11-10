@@ -99,7 +99,7 @@ try {
   await page.getByRole('button',{name:'Локальное дерево'}).click();
   await connect(page,'tester/family-archive');
   await page.getByRole('button',{name:'Синхронизировать'}).click();
-  await page.getByText('Дерево и фотографии сохранены в приватном GitHub-репозитории.').waitFor();
+  await page.getByText('Дерево, GEDCOM и фотографии сохранены в приватном репозитории.').waitFor();
   assert.ok(writes>=4);
   assert.ok(remoteSlug && payload);
   assert.ok(!JSON.stringify(await page.evaluate(()=>Object.values(localStorage))).includes(fakeToken));
