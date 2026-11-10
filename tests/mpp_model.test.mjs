@@ -140,8 +140,9 @@ test('calendar inheritance, holidays, work weeks and unknown dates are safe',()=
   const child={uniqueId:2,name:'Team',parent:1,days:Array.from({length:7},()=>({type:'default',hours:[]})),
     weeks:[{name:'Short week',from:mon,to:mon+6*DAY,days:Array.from({length:7},(_,i)=>({type:i===2?'working':'default',hours:i===2?[{start:600,end:720}]:[]}))}],
     exceptions:[{name:'Tuesday special',from:tue,to:tue,hours:[{start:630,end:660}],dates:null,recurrence:''}]};
+  child.days[1]={type:'working',hours:[{start:450,end:510}]};
   const model=normalizeProject({title:'Calendar',tasks:[{id:1,uniqueId:1,name:'Task',start:mon,finish:tue}],calendars:[base,child],calendar:2});
-  assert.deepEqual(workingHoursOnDate(model,mon),base.days[1].hours);
+  assert.deepEqual(workingHoursOnDate(model,mon),child.days[1].hours,'special workweek defaults inherit their own calendar weekday');
   assert.deepEqual(workingHoursOnDate(model,tue),[{start:630,end:660}], 'exception overrides workweek');
   assert.deepEqual(workingHoursOnDate(model,holiday),[], 'inherited holiday must be nonworking');
   assert.equal(workingHoursOnDate(model,null),null, 'null date must not become Unix epoch');
