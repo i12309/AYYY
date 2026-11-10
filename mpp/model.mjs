@@ -135,8 +135,9 @@ function cleanHours(hours) {
 
 /** Return read-only working hours, inheriting base calendar and overrides. Null means unknown. */
 export function workingHoursOnDate(model, date, calendarId = model?.calendar) {
-  const day=Math.floor(dateValue(date)/DAY)*DAY;
-  if (!Number.isFinite(day) || calendarId==null)return null;
+  const value=dateValue(date);
+  if(value===null || !Number.isFinite(value) || calendarId==null)return null;
+  const day=Math.floor(value/DAY)*DAY;
   const byId=new Map((model?.calendars||[]).map(c=>[c.uid,c]));
   const weekday=new Date(day).getUTCDay();
   let uid=String(calendarId),loops=0;
