@@ -10,9 +10,9 @@ import {
 } from './browserStore';
 
 let bearer = '';
-export function setSessionToken(value: string) {bearer=value.trim();}
+export function setSessionToken(value: string) {bearer=value.trim();window.dispatchEvent(new Event('gen:token-changed'));}
 export function hasSessionToken() {return Boolean(bearer);}
-export function disconnectToken() {bearer='';}
+export function disconnectToken() {bearer='';window.dispatchEvent(new Event('gen:token-changed'));}
 export type RemoteRepo = {owner:string;repo:string;branch:string};
 export function parseRepo(value: string,branch='main'): RemoteRepo {
   const match=value.trim().match(/^([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)$/);
@@ -139,7 +139,7 @@ export async function restoreFromGitHub(repo:RemoteRepo,slug:string):Promise<Doc
   }
   await installTreeSnapshot(document,files);
   await setSync({treeId:document.tree.id,...repo,path,blobSha:file.sha,lastCommit:head,
-    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document)});
+    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document),autoSync:false});
   return document;
 }
 export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
@@ -202,7 +202,7 @@ export async function pushToGitHub(treeId:string,repo:RemoteRepo) {
     sha:next.sha,force:false
   });
   const sync:SyncRecord={treeId,...repo,path,blobSha:jsonBlob.sha,lastCommit:next.sha,
-    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document)};
+    lastSync:now(),lastLocalSavedAt:document.tree.updated_at,baseline:structuredClone(document),autoSync:link?.autoSync??false};
   await setSync(sync);
   const pending=(await readTree(treeId)).tree.updated_at!==document.tree.updated_at;
   return {sha:next.sha,pending};
@@ -376,7 +376,7 @@ export async function resolveGitHubConflict(
   const record:SyncRecord={treeId:preview.treeId,...preview.repo,path:preview.path,
     blobSha:published.sha,lastCommit:published.head,lastSync:now(),
     lastLocalSavedAt:proposed.document.tree.updated_at,
-    baseline:structuredClone(proposed.document)};
+    baseline:structuredClone(proposed.document),autoSync:(await getSync(preview.treeId))?.autoSync??false};
   const installed=await installResolvedSnapshot(preview.local,proposed.document,
     [...media].map(([filename,blob])=>({filename,blob})),record);
   return {sha:published.head,pending:!installed,autoChanges:proposed.autoChanges};

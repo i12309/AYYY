@@ -8,6 +8,8 @@ type SyncRecord = {
   treeId: string; owner: string; repo: string; branch: string; path: string;
   blobSha?: string; lastCommit?: string; lastSync?: string; lastLocalSavedAt?: string;
   baseline?: Document;
+  /** Explicit opt-in; legacy repositories remain manual until enabled. */
+  autoSync?: boolean;
 };
 let opening: Promise<IDBDatabase> | null = null;
 const urls = new Map<string, {blob: Blob; url: string}>();
@@ -60,7 +62,7 @@ export async function putTree(document: Document) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction('trees','readwrite');
-    transaction.oncomplete = () => resolve();
+    transaction.oncomplete = () => {window.dispatchEvent(new CustomEvent('gen:tree-saved',{detail:{treeId:document.tree.id}}));resolve();};
     transaction.onabort = () => reject(transaction.error || new Error('Не удалось сохранить дерево.'));
     transaction.onerror = () => reject(transaction.error || new Error('Не удалось сохранить дерево.'));
     transaction.objectStore('trees').put({id:document.tree.id, document});
@@ -79,7 +81,7 @@ export async function mutateTree<T>(
     const files = tx.objectStore('files');
     let result: T;
     let failure: Error | null = null;
-    tx.oncomplete = () => resolve(result);
+    tx.oncomplete = () => {window.dispatchEvent(new CustomEvent('gen:tree-saved',{detail:{treeId}}));resolve(result);};
     tx.onabort = () => reject(failure || tx.error || new Error('Не удалось изменить дерево.'));
     const lookup = trees.get(treeId);
     lookup.onerror = () => {failure = lookup.error || new Error('Не удалось прочитать дерево.'); tx.abort();};
@@ -179,7 +181,7 @@ export async function setSync(record: SyncRecord) {
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction('sync','readwrite');
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {window.dispatchEvent(new CustomEvent('gen:sync-settings',{detail:{treeId:record.treeId}}));resolve();};
     tx.onabort = () => reject(tx.error || new Error('Не удалось сохранить параметры GitHub.'));
     tx.objectStore('sync').put(record);
   });
@@ -270,7 +272,7 @@ export async function installResolvedSnapshot(
     const tx=db.transaction(['trees','files','sync'],'readwrite');
     const trees=tx.objectStore('trees'),files=tx.objectStore('files'),synced=tx.objectStore('sync');
     let installed=false;
-    tx.oncomplete=()=>resolve(installed);
+    tx.oncomplete=()=>{window.dispatchEvent(new CustomEvent('gen:sync-settings',{detail:{treeId:sync.treeId}}));resolve(installed);};
     tx.onabort=()=>reject(tx.error||new Error('Не удалось завершить объединение дерева.'));
     const lookup=trees.get(expected.tree.id);
     lookup.onerror=()=>tx.abort();
@@ -285,4 +287,33 @@ export async function installResolvedSnapshot(
       synced.put(sync);
     };
   });
+}
+
+
+/** The auto flag is stored without any credentials. Changes in other tabs are
+ * serialized with the repository sync metadata in one IndexedDB transaction.
+ */
+export async function setAutoSync(treeId:string,enabled:boolean):Promise<void>{
+  const db=await openDatabase();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('sync','readwrite');
+    const table=tx.objectStore('sync');
+    let failure:Error|null=null;
+    tx.oncomplete=()=>{
+      window.dispatchEvent(new CustomEvent('gen:sync-settings',{detail:{treeId}}));
+      resolve();
+    };
+    tx.onabort=()=>reject(failure||tx.error||new Error('Не удалось изменить автосинхронизацию.'));
+    const request=table.get(treeId);
+    request.onsuccess=()=>{
+      if(!request.result){failure=new Error('Сначала сохраните дерево в GitHub.');tx.abort();return;}
+      table.put({...request.result,autoSync:enabled});
+    };
+    request.onerror=()=>tx.abort();
+  });
+}
+export async function listAutoSyncedTrees():Promise<string[]>{
+  const db=await openDatabase();
+  const rows=await requestValue<SyncRecord[]>(db.transaction('sync','readonly').objectStore('sync').getAll());
+  return rows.filter(x=>x.autoSync===true).map(x=>x.treeId);
 }
