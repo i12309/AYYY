@@ -212,7 +212,7 @@ export function criticalChain(model) {
     }
   }
   if(visited!==tasks.length)return {mode:'none',uids:new Set(),reason:'Циклические зависимости: оценка недоступна'};
-  const longest=Math.max(...length.values());
+  const longest=[...length.values()].reduce((best,value)=>Math.max(best,value),0);
   if(!Number.isFinite(longest) || longest<=0)return {mode:'none',uids:new Set(),reason:'Недостаточно сведений о длительностях'};
   const ids=new Set();
   const stack=tasks.filter(t=>Math.abs(length.get(t.uid)-longest)<=eps).map(t=>t.uid);
