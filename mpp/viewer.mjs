@@ -8,7 +8,7 @@ const zoomWidths = {day:18,week:8,month:3.2};
 const rowHeight = 34;
 let parserPromise = null;
 const loadParser = () => parserPromise ||= import('./vendor/mpxj-ts/mpxj.mjs').catch(error => {parserPromise = null; throw error;});
-const numberLabel = value => Number.isFinite(Number(value)) ? new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(value) : '—';
+const numberLabel = value => value===null || value===undefined || value===''?'—':Number.isFinite(Number(value)) ? new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(value) : '—';
 const dateAt = ms => new Date(ms);
 const monthName = date => new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
 const shortDay = date => new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(date);
