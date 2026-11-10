@@ -130,6 +130,13 @@ try{
   assert.ok(restoredTable>=splitWithDetails-2,'table split survives inspector close');
   await page.locator('[data-pv-tab="resources"]').click();
   assert.equal(await page.locator('.pv-resource-table tbody tr').count(),2);
+  assert.equal(await page.locator('.pv-assign-table tbody tr').count(),3,'demo assignments are visible');
+  assert.match(await page.locator('.pv-assign-table').innerText(),/Разработчик/);
+  const [assignmentDownload]=await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('[data-pv-action="export-assignments"]').click()
+  ]);
+  assert.match(assignmentDownload.suggestedFilename(),/-assignments\.csv$/);
   await page.locator('[data-pv-tab="gantt"]').click();
   const [download]=await Promise.all([
     page.waitForEvent('download'),
@@ -154,6 +161,9 @@ try{
   assert.match(await page.locator('.pv-calendar-view').innerText(),/Стандартный/);
   assert.match(await page.locator('.pv-calendar-view').innerText(),/Тестовый праздник/);
   assert.match(await page.locator('.pv-calendar-view').innerText(),/09:00–13:00/);
+  await page.locator('[data-pv-tab="resources"]').click();
+  assert.equal(await page.locator('.pv-assign-table tbody tr').count(),1);
+  assert.match(await page.locator('.pv-assign-table').innerText(),/10\.11\.2026/);
   await page.locator('[data-pv-tab="gantt"]').click();
   assert.ok(await page.evaluate(()=>window.__mppWorkers>=1),'local XML must parse inside Web Worker');
   if(process.env.MPP_FIXTURES_DIR){
