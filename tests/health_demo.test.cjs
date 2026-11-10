@@ -103,6 +103,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     write:async()=>{remoteCalls++;throw Error('demo accessed GitHub');}
   };
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
+  vm.runInContext(read('health/medical-view.js'),context,{filename:'health/medical-view.js'});
   vm.runInContext(read('health/app.js'),context,{filename:'health/app.js'});
   const target=nodes.get('health-root');
   assert.match(textOf(target),/ДЕМО/);

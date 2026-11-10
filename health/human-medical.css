@@ -1,0 +1,283 @@
+.medical-page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.medical-page > .card {
+  margin: 0;
+}
+.medical-list {
+  padding: 0;
+}
+.medical-editor .form {
+  padding: 0;
+  gap: 10px;
+}
+.medical-editor .form-grid {
+  gap: 10px 12px;
+  align-items: start;
+}
+.medical-editor .form footer {
+  position: static;
+  justify-content: flex-start;
+  padding-bottom: 0;
+}
+.medical-tabs [aria-pressed="true"] {
+  background: #edf4ff;
+  color: #235ce1;
+  border-color: #9bb7f4;
+}
+.medical-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.medical-tabs svg {
+  color: #24857b;
+}
+.medical-page .button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.medical-page h2 {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.medical-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.medical-section-heading .actions {
+  flex-wrap: wrap;
+}
+.medical-editor,
+.medical-detail {
+  padding: 16px;
+  min-width: 0;
+}
+.medical-editor h2 {
+  margin-bottom: 14px;
+}
+.medical-editor .field {
+  font-size: 12px;
+}
+.medical-editor input,
+.medical-editor textarea,
+.medical-editor select,
+.medical-filters input,
+.medical-filters select {
+  font-size: 13px;
+  padding: 7px 9px;
+  min-height: 34px;
+}
+.medical-date {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+.medical-relations {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 650px;
+}
+.medical-editor details {
+  margin: 12px 0;
+}
+.medical-editor footer {
+  margin-top: 14px;
+}
+.medical-filters {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  align-items: end;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e3e8ef;
+}
+.medical-filters > .field:first-child {
+  flex: 1;
+  min-width: 200px;
+}
+.medical-filters small {
+  padding-bottom: 8px;
+}
+.medical-table-wrap {
+  overflow: auto;
+}
+.medical-list table {
+  width: 100%;
+  font-size: 13px;
+}
+.medical-list th,
+.medical-list td {
+  padding: 10px 12px;
+  vertical-align: top;
+}
+.medical-list td {
+  overflow-wrap: anywhere;
+}
+.medical-list .selected {
+  background: #eef4ff;
+}
+.medical-name {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: #203b58;
+  text-align: left;
+  padding: 0;
+}
+.medical-name:focus-visible {
+  outline: 2px solid #2861df;
+  outline-offset: 3px;
+}
+.medical-file-name {
+  display: block;
+  color: #748096;
+  font-size: 11px;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+.medical-summary {
+  max-width: 320px;
+  white-space: pre-wrap;
+}
+.medical-status {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  background: #f1f4f8;
+  color: #52657b;
+}
+.medical-status.status-active,
+.medical-status.status-completed {
+  background: #ebf7f1;
+  color: #287b65;
+}
+.medical-status.status-paused,
+.medical-status.status-planned {
+  background: #fff7e3;
+  color: #97701a;
+}
+.medical-delete {
+  margin: 12px;
+  padding: 12px;
+  border: 1px solid #edc9cd;
+  border-radius: 6px;
+}
+.medical-pagination {
+  padding: 12px;
+}
+.medical-facts {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.medical-facts dt {
+  color: #748096;
+}
+.medical-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.medical-description {
+  font-size: 13px;
+}
+.medical-detail > details {
+  border-top: 1px solid #e3e8ef;
+  padding-top: 12px;
+  margin-top: 14px;
+  font-size: 12px;
+}
+.medical-revision {
+  padding: 10px;
+  border: 1px solid #e3e8ef;
+  border-radius: 5px;
+  margin-top: 8px;
+}
+.medical-detail .section-heading {
+  margin-bottom: 8px;
+}
+@media (max-width: 600px) {
+  .medical-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .medical-page h2 {
+    font-size: 16px;
+  }
+  .medical-filters {
+    gap: 10px;
+  }
+  .medical-filters > .field {
+    width: 100%;
+  }
+  .medical-list thead {
+    display: none;
+  }
+  .medical-list table,
+  .medical-list tbody,
+  .medical-list tr,
+  .medical-list td {
+    display: block;
+    width: 100%;
+  }
+  .medical-list tr {
+    padding: 8px;
+    border-bottom: 1px solid #e3e8ef;
+  }
+  .medical-list td {
+    padding: 4px 6px;
+    border: 0;
+  }
+  .medical-list td[data-label]::before {
+    content: attr(data-label) ": ";
+    color: #748096;
+    font-size: 11px;
+  }
+  .medical-summary {
+    max-width: none;
+  }
+  .medical-file-name {
+    max-width: 250px;
+  }
+  .medical-facts {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .medical-facts dd {
+    margin-bottom: 8px;
+  }
+  .medical-editor .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .medical-date {
+    grid-template-columns: 1fr 1fr;
+  }
+  .medical-editor,
+  .medical-detail {
+    padding: 14px;
+  }
+}
+
+.medical-detail {
+  scroll-margin-top: 75px;
+  outline: none;
+}
+.medical-detail:focus-visible {
+  outline: 2px solid #a9c2f4;
+  outline-offset: 2px;
+}

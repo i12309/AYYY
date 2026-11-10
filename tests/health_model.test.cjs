@@ -113,3 +113,22 @@ test('latest exact measurement is ordered by instant across timezone offsets',()
  const a=m.checkLab({...base,date:'2026-11-01T15:00:00+03:00'}),b=m.checkLab({...base,date:'2026-11-01T14:00:00Z'});
  assert.equal(m.groups([a,b])[0].latest.id,b.id);assert.equal(m.recent([a,b])[0].id,b.id);
 });
+
+test('medical partial dates validate uncertainty without inventing dates',()=>{
+ const m=model(),base={category:'allergy',title:'Synthetic allergy',start:'2020',startPrecision:'year',end:'2020-02',endPrecision:'month',status:'active',basis:'self_reported',reaction:'Synthetic rash',severity:'mild'};
+ const r=m.checkMedical(base,null);assert.equal(r.start.value,'2020');assert.equal(r.start.precision,'year');assert.equal(r.end.value,'2020-02');
+ assert.throws(()=>m.checkMedical({...base,end:'2019',endPrecision:'year'}));
+ assert.throws(()=>m.checkMedical({...base,start:'2020-01-01',startPrecision:'unknown'}));
+ assert.throws(()=>m.checkMedical({...base,status:'paused'}));
+ assert.throws(()=>m.checkMedical({...base,severity:'invented'}));
+ assert.equal(m.checkMedical({category:'allergy',title:'Legacy synthetic',date:'2020-01-01'}).start.precision,'day');
+});
+
+test('clinical edits preserve migrated source fields while updating visible facts',()=>{
+ const m=model(),original={id:'synthetic-id',category:'allergy',title:'Synthetic allergy',date:'2020',human:{kind:'allergy',name:'Synthetic allergy',status:'active',basis:'clinician',start:{value:'2020',precision:'year'},end:{value:'',precision:'unknown'},allergy:{reaction:'Old source reaction',severity:'moderate'}}};
+ const result=m.checkMedical({title:'Synthetic revised allergy',reaction:'Revised reaction',severity:'mild',status:'inactive'},original);
+ assert.equal(result.id,original.id);assert.equal(result.human.allergy.reaction,'Old source reaction');assert.equal(result.allergy.reaction,'Revised reaction');assert.equal(result.start.value,'2020');assert.equal(result.basis,'clinician');
+ const med=m.checkMedication({name:'Synthetic supplement',start:'',startPrecision:'unknown',status:'planned',basis:'self_reported',medicationCategory:'supplement',dose:'Synthetic amount',frequency:'Synthetic schedule',route:'Oral',indication:'Synthetic note'});
+ assert.equal(med.medication.category,'supplement');assert.equal(med.frequency,'Synthetic schedule');assert.equal(med.startDate,'');
+ assert.throws(()=>m.checkMedical({category:'vaccine',title:'Synthetic vaccine',status:'completed',end:'2020',endPrecision:'year'}));
+});

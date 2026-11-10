@@ -1,4 +1,13 @@
 /* Browser-edition data/UI adapters over the original HUMAN design system. */
+.medical-page .health-card{margin:0;min-width:0}
+.medical-list .health-table-wrap{width:100%;margin:0}
+.medical-filters .field{min-width:0}
+.medical-filters .field:first-child input{width:100%}
+.medical-detail pre{max-height:220px;overflow:auto}
+.medical-facts{margin-bottom:18px}
+.medical-detail .health-actions{margin-bottom:12px}
+.health-clinical-fields{display:grid;gap:12px}
+.medical-list .health-table{min-width:720px}
 .analyte-page .health-card{margin:0;min-width:0}
 .analyte-chart .health-chart-wrap svg{max-height:none;min-height:240px}
 .analyte-source .metadata{margin:16px 0;overflow-wrap:anywhere}
@@ -248,3 +257,6 @@ body{font-size:14px}
 }
 
 .health-modal-head h2{min-width:0;overflow-wrap:anywhere}
+
+.medical-page .medical-list{padding:0}
+.medical-detail{scroll-margin-top:80px}

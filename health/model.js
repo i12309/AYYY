@@ -58,22 +58,36 @@
       unit:units[type]||text(input.unit,50),notes:text(input.notes,1000),
       createdAt:original?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   }
-  function checkMedical(input,original){
-    const category=text(input.category,40),title=text(input.title,200);
-    if(!['allergy','condition','vaccine','surgery','other'].includes(category)||!title)
-      throw new Error('Выберите категорию и укажите название.');
-    return {...original,id:original?.id||id(),category,title,date:input.date?isoDate(input.date):'',
-      notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
-      updatedAt:new Date().toISOString()};
+  const clinicalStatuses={allergy:['unknown','active','inactive'],medication:['unknown','planned','active','paused','completed'],vaccine:['completed'],condition:['unknown','active','remission','resolved'],surgery:['unknown','planned','completed'],other:['unknown','active','resolved']};
+  function partialDate(value,precision){
+    const raw=String(value??'').trim(),inferred=!raw?'unknown':/^\d{4}$/.test(raw)?'year':/^\d{4}-\d\d$/.test(raw)?'month':'day';
+    const result=observationDate(raw,precision||inferred);if(result.datePrecision==='exact'||(raw&&(Number(raw.slice(0,4))<1850||Number(raw.slice(0,4))>2200)))throw Error('Дата медкарты должна быть между 1850 и 2200 годами.');
+    return {value:result.date,precision:result.datePrecision};
   }
-  function checkMedication(input,original){
-    const name=text(input.name,180);
-    if(!name)throw new Error('Укажите название препарата.');
-    return {...original,id:original?.id||id(),name,dose:text(input.dose,100),frequency:text(input.frequency,150),
-      startDate:input.startDate?isoDate(input.startDate):'',notes:text(input.notes,3000),
-      createdAt:original?.createdAt||new Date().toISOString(),
-      updatedAt:new Date().toISOString()};
+  function clinical(record={},kind='medical'){
+    record=record||{};const source=record.human||{},category=kind==='medication'?'medication':record.category||({vaccination:'vaccine'}[source.kind]||source.kind)||'allergy';
+    const oldDate=String(record.date||record.startDate||'');const start=record.start||source.start||{value:oldDate,precision:!oldDate?'unknown':/^\d{4}$/.test(oldDate)?'year':/^\d{4}-\d\d$/.test(oldDate)?'month':'day'},end=record.end||source.end||{value:'',precision:'unknown'};
+    return {category,name:kind==='medication'?record.name||source.name||'':record.title||source.name||'',status:record.status||source.status||(category==='vaccine'?'completed':'unknown'),basis:record.basis||source.basis||'self_reported',start,end,notes:record.notes??source.notes??'',documentId:record.documentId??source.document_id??'',episodeId:record.episodeId??source.episode_id??'',allergy:record.allergy||source.allergy||{reaction:'',severity:'unknown'},medication:record.medication||source.medication||{category:'medication',dose:record.dose||'',schedule:record.frequency||'',route:'',indication:''},vaccination:record.vaccination||source.vaccination||{against:'',dose_label:'',lot:'',place:''},condition:record.condition||source.condition||{description:''}};
   }
+  function clinicalBounds(d){if(!d.value)return null;const first=d.precision==='year'?d.value+'-01-01':d.precision==='month'?d.value+'-01':d.value;const last=d.precision==='year'?d.value+'-12-31':d.precision==='month'?new Date(Date.UTC(Number(d.value.slice(0,4)),Number(d.value.slice(5,7)),0)).toISOString().slice(0,10):d.value;return {first,last};}
+  function validateClinical(input,original,kind){
+    const previous=clinical(original,kind),category=kind==='medication'?'medication':String(input.category||previous.category),name=String(kind==='medication'?input.name??previous.name:input.title??previous.name).trim();
+    if(!clinicalStatuses[category]||!name||Array.from(name).length>200)throw Error('Выберите категорию и название до 200 символов.');
+    const status=String(input.status??(category===previous.category?previous.status:clinicalStatuses[category][0])),basis=String(input.basis??previous.basis);
+    if(!clinicalStatuses[category].includes(status))throw Error('Статус не соответствует категории записи.');if(!['self_reported','clinician'].includes(basis))throw Error('Укажите источник сведений.');
+    const start=partialDate(input.start??input.date??input.startDate??previous.start.value,input.startPrecision??(['start','date','startDate'].some(key=>Object.hasOwn(input,key))?undefined:previous.start.precision)),end=category==='vaccine'&&!Object.hasOwn(input,'end')?{value:'',precision:'unknown'}:partialDate(input.end??previous.end.value,input.endPrecision??(Object.hasOwn(input,'end')?undefined:previous.end.precision)),a=clinicalBounds(start),b=clinicalBounds(end);
+    if(a&&b&&b.last<a.first)throw Error('Окончание не может быть раньше начала.');if(category==='vaccine'&&end.precision!=='unknown')throw Error('У прививки должна быть одна дата введения.');
+    function field(key,fallback=''){const value=String(input[key]??fallback).trim();if(Array.from(value).length>4000&&value!==String(fallback).trim())throw Error('Поле '+key+' превышает 4000 символов.');return value;}
+    let allergy=null,medication=null,vaccination=null,condition=null;
+    if(category==='allergy'){const severity=field('severity',previous.allergy.severity);if(!['unknown','mild','moderate','severe'].includes(severity))throw Error('Проверьте тяжесть реакции.');allergy={reaction:field('reaction',previous.allergy.reaction),severity};}
+    if(category==='medication'){const type=field('medicationCategory',previous.medication.category);if(!['medication','supplement'].includes(type))throw Error('Укажите лекарство или добавку.');medication={category:type,dose:field('dose',previous.medication.dose),schedule:field('frequency',previous.medication.schedule),route:field('route',previous.medication.route),indication:field('indication',previous.medication.indication)};}
+    if(category==='vaccine')vaccination={against:field('against',previous.vaccination.against),dose_label:field('doseLabel',previous.vaccination.dose_label),lot:field('lot',previous.vaccination.lot),place:field('place',previous.vaccination.place)};
+    if(['condition','surgery','other'].includes(category))condition={description:field('description',previous.condition.description)};
+    const common={...original,id:original?.id||id(),status,basis,start,end,date:start.value,notes:field('notes',previous.notes),documentId:field('documentId',previous.documentId),episodeId:field('episodeId',previous.episodeId),allergy,medication,vaccination,condition,createdAt:original?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    return kind==='medication'?{...common,name,dose:medication.dose,frequency:medication.schedule,startDate:start.value}:{...common,category,title:name};
+  }
+  function checkMedical(input,original){return validateClinical(input,original,'medical');}
+  function checkMedication(input,original){return validateClinical(input,original,'medication');}
   function checkDiary(input,original){
     const kind=text(input.kind,40),title=text(input.title,250);
     if(!['food','activity','wellbeing','sleep'].includes(kind)||!title)
@@ -161,6 +175,6 @@
     });
     return {records,errors};
   }
-  window.HumanModel={id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
+  window.HumanModel={clinical,clinicalStatuses,partialDate,id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
     checkDiary,groupKey,groups,status,chartRows,recent,parseCSV};
 })();
