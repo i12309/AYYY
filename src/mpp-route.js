@@ -4,7 +4,7 @@
   const app=window.AYYY;
   if(!app)return;
   const base=new URL('mpp/',document.baseURI);
-  const version='mpp-v1';
+  const version='mpp-v2';
   let pending=null;
   let stylesheet=null;
   const escape=value=>app.escape(value);
