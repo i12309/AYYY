@@ -55,18 +55,20 @@
 
     const doc = {schema:local.schema, id:local.id};
     for (const name of collections) doc[name] = mergeRecords(name);
-    const known = new Set(['schema', 'id', 'analytePreferences', ...collections]);
+    const maps=['analytePreferences','analyteAliases'];
+    const known = new Set(['schema', 'id', ...maps, ...collections]);
     for (const name of new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)])) {
       if (known.has(name)) continue;
       const values = [base, local, remote].map(version => Object.hasOwn(version, name) ? version[name] : undefined);
       const value = select('settings', name, ...values);
       if (value !== undefined) Object.defineProperty(doc, name, {value, enumerable:true, writable:true, configurable:true});
     }
-    const preferences = [base, local, remote].map(value => value.analytePreferences || {});
-    if (preferences.some(value => Object.keys(value).length)) {
-      const keys = new Set(preferences.flatMap(Object.keys));
-      doc.analytePreferences = Object.fromEntries([...keys].flatMap(key => {
-        const value = select('analytePreferences', key, ...preferences.map(p => Object.hasOwn(p, key) ? p[key] : undefined));
+    for(const field of maps){
+      const versions=[base,local,remote].map(doc=>doc[field]||{});
+      const keys=new Set(versions.flatMap(Object.keys));
+      if(!keys.size)continue;
+      doc[field]=Object.fromEntries([...keys].flatMap(key=>{
+        const value=select(field,key,...versions.map(map=>Object.hasOwn(map,key)?map[key]:undefined));
         return value === undefined ? [] : [[key, value]];
       }));
     }

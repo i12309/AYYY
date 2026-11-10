@@ -1,6 +1,7 @@
 /* Reviewable, local-only document import. Commit is atomic through the vault controller. */
 (() => {
  'use strict';
+ const A=window.HumanAnalytes;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
  function dateInput(raw){const value=raw.trim(),m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);return m?`${m[3]}-${m[2]}-${m[1]}`:value;}
@@ -37,7 +38,27 @@
   }
   function review(){
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
-   const rows=drafts.map((d,i)=>[V.h('input',{type:'checkbox',name:'selected',value:String(i),checked:!d.problem&&!d.duplicate,disabled:d.duplicate,'aria-label':'Сохранить строку '+d.row}),V.h('span',{},d.row,V.h('small',{},d.duplicate?'Уже импортирована':d.problem)),...fields.map(([key,label])=>V.h('input',{name:i+':'+key,value:d.item[key],'aria-label':label+' · строка '+d.row}))]);
+   const doc=getDoc(),documentId=doc.documents.find(file=>file.sha256===original.hash)?.id;
+   const rows=drafts.map((draft,index)=>{
+    const controls=new Map(fields.map(([key,label])=>[key,V.h('input',{
+      name:index+':'+key,value:draft.item[key],'aria-label':label+' · строка '+draft.row,
+    })]));
+    const caption=V.h('small',{class:'import-classification'});
+    function showClassification(){
+     const name=controls.get('name').value,unit=controls.get('unit').value;
+     const match=A.classify({name,unit,documentId},doc.analyteAliases);
+     caption.textContent=!name.trim()?'':match.basis==='source'?'Название из бланка':match.name;
+    }
+    controls.get('name').addEventListener('input',showClassification);
+    controls.get('unit').addEventListener('input',showClassification);
+    showClassification();
+    return [
+     V.h('input',{type:'checkbox',name:'selected',value:String(index),checked:!draft.problem&&!draft.duplicate,
+      disabled:draft.duplicate,'aria-label':'Сохранить строку '+draft.row}),
+     V.h('span',{},draft.row,V.h('small',{},draft.duplicate?'Уже импортирована':draft.problem)),
+     ...fields.map(([key])=>key==='name'?V.h('div',{},controls.get(key),caption):controls.get(key)),
+    ];
+   });
    const form=V.form('document-review',[
     V.h('p',{class:'health-note'},original.name+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
     V.h('div',{class:'health-import-review'},V.table(['Сохранить','Строка',...fields.map(x=>x[1])],rows)),error
@@ -60,7 +81,11 @@
       saved=await stageDocument(attachment,original.bytes);
       doc.documents.push(saved);
      }
-     for(const r of records){r.documentId=saved.id;doc.observations.push(r);}
+     for(const record of records){
+      record.documentId=saved.id;
+      record.provenance.classification=A.classify(record,doc.analyteAliases);
+      doc.observations.push(record);
+     }
     });
     dialog.close();
    }catch(err){error.hidden=false;error.textContent=err.message;}finally{busy=false;if(submit.isConnected)submit.disabled=false;}});

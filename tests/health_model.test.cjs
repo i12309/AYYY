@@ -9,12 +9,14 @@ const root=path.join(__dirname,'..');
 const script=name=>fs.readFileSync(path.join(root,name),'utf8');
 function model(){
   const w={},ctx={window:w,crypto:{randomUUID:()=>String(Math.random()).slice(2)}};
-  vm.runInNewContext(script('health/model.js'),ctx);vm.runInNewContext(script('health/health-state.js'),ctx);
-  return Object.assign(w.HumanModel,{health:w.HumanHealth});
+  for(const file of ['analyte-catalog','analytes','model','health-state'])
+    vm.runInNewContext(script('health/'+file+'.js'),ctx);
+  return Object.assign(w.HumanModel,{health:w.HumanHealth,analytes:w.HumanAnalytes});
 }
 test('all static HUMAN scripts parse',()=>{
   for(const path of ['health/crypto.js','health/store.js','health/github.js',
-    'health/model.js','health/view.js','health/app.js','src/health-route.js']){
+    'health/analyte-catalog.js','health/analytes.js','health/model.js','health/view.js',
+    'health/analyte-view.js','health/app.js','src/health-route.js']){
     assert.doesNotThrow(()=>new vm.Script(script(path)),path);
   }
 });
@@ -28,6 +30,45 @@ test('measurements group only when type, unit, specimen and method match',()=>{
   const d=m.checkLab({...base,unit:'мг/дл'});
   assert.equal(m.groups([a,b,c,d]).length,3);
   assert.equal(m.groups([a,b])[0].rows.length,2);
+});
+
+test('catalogue identifies method-qualified values and retains percent/absolute separation',()=>{
+  const M=model(),A=M.analytes;
+  const raw={date:'2026-11-11',value:'2',unit:'ммоль/л'};
+  const direct=M.checkLab({...raw,name:'Холестерин ЛПНП прямой'});
+  const calculated=M.checkLab({...raw,name:'Холестерин ЛПНП по Фридвальду'});
+  assert.equal(A.classify(direct).id,'ldl-cholesterol');
+  assert.equal(A.classify(direct).technique,'direct');
+  assert.equal(A.classify(calculated).technique,'friedewald');
+  assert.notEqual(M.groupKey(direct),M.groupKey(calculated));
+  assert.equal(A.classify({name:'basophils %',unit:'%'}).id,'basophils-percent');
+  assert.equal(A.classify({name:'basophils %',unit:'г/л'}).basis,'source');
+  assert.notEqual(A.classify({name:'Моча: Глюкоза'}).id,A.classify({name:'Глюкоза'}).id);
+  assert.equal(A.normalize('Ca²⁺'),'ca2+');
+});
+
+test('unit history cannot be reused after a change of context or inferred from another assignment',()=>{
+  const M=model(),A=M.analytes;
+  const input={name:'ALT',date:'2026-11-11',value:'2',material:'serum',method:'one'};
+  const anchor=M.checkLab(input);
+  const exact=M.checkLab({...input,unit:'U/L'});
+  const other=M.checkLab({...input,unit:'kU/L',method:'two'});
+  const derived=M.checkLab({...input,unit:'IU/L'});
+  derived.unitHistory={unit:'IU/L'};
+  const doc={observations:[anchor,exact,other,derived],documents:[]};
+  const [choice]=A.unitOptions(doc,anchor);
+  assert.equal(A.unitOptions(doc,anchor).length,1);
+  assert.equal(choice.observationId,exact.id);
+  const censored=M.checkLab({...input,value:'<2'});
+  assert.equal(A.unitOptions(doc,censored)[0].unit,'U/L');
+  assert.equal(M.chartRows([{...censored,unit:'U/L'}]).length,0);
+  anchor.unitHistory={...choice,context:A.context(anchor)};
+  assert.equal(A.effectiveUnit(anchor),'U/L');
+  const {key}=A.applyAlias(doc,anchor,{scope:'name',target:'ast',reason:'Synthetic change',expected:0});
+  assert.throws(()=>A.applyAlias(doc,anchor,{scope:'name',target:'alt',reason:'Stale edit',expected:0}));
+  assert.equal(doc.analyteAliases[key].version,1);
+  assert.equal(A.effectiveUnit(anchor,doc.analyteAliases),'');
+  assert.equal(anchor.unit,'');
 });
 test('reference rules handle zero, partial bounds and qualitative results',()=>{
   const m=model();

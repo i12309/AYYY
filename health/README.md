@@ -7,6 +7,7 @@
 ## Что работает
 
 - Анализы: группировка, графики, точность даты, исходные результаты, референсы, классификация и избранное.
+- Каталог HUMAN содержит 125 показателей. Правило названия может действовать на один файл или на весь журнал. Для строки импорта сохраняются её исходные поля и сопоставление на момент загрузки. Если в бланке пропущена единица, пользователь может выбрать её из настроек или из истории измерений с тем же материалом и методом.
 - Новые CSV/XLSX/PDF с текстовым слоем: локальный разбор, сопоставление колонок, редактирование и подтверждение. PDF, изображения и текст открываются внутри журнала.
 - Показатели: два поля давления, точное или неизвестное время, отдельные единицы глюкозы, адаптивный график и страницы по 200 записей. Рост взрослого — в профиле, прежние измерения доступны для исправления. Явные эпизоды болезни и связи с медкартой.
 - Медкарта с частичными датами, статусами и подробностями.
@@ -35,6 +36,7 @@
 node --test tests/health_model.test.cjs tests/health_demo.test.cjs tests/health_care.test.cjs tests/health_diary.test.cjs tests/health_genetics.test.cjs tests/health_journal.test.cjs tests/health_recommendations.test.cjs
 python -X utf8 tests/run_health_browsers.py
 python -X utf8 tests/health_measurements_browser.py
+python -X utf8 tests/health_analytes_browser.py
 python -X utf8 tests/health_diary_browser.py
 python -X utf8 tests/health_genetics_browser.py
 python -X utf8 tests/health_journal_browser.py

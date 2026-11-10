@@ -47,10 +47,14 @@ try:
   repo={'owner':'i12309','repo':'TEST_TREE','branch':branch}
   params={'token':credential,'repo':repo,'passphrase':'synthetic-roundtrip-passphrase'}
   result=pa.evaluate('''async p=>{
-   const C=HumanCrypto,G=HumanGithub,M=HumanModel;G.token(p.token);await G.verify(p.repo);
+   const C=HumanCrypto,G=HumanGithub,M=HumanModel,A=HumanAnalytes;G.token(p.token);await G.verify(p.repo);
    const created=await C.create(p.passphrase);created.doc.profile.name='Synthetic roundtrip';
    const record=M.checkLab({name:'Synthetic marker',date:'2026',datePrecision:'year',value:'< 0,1',unit:'mg'});
-   created.doc.observations.push(record);created.doc.analytePreferences={[M.groupKey(record)]:{favorite:true}};
+   created.doc.observations.push(record);
+   A.applyAlias(created.doc,record,{scope:'name',target:'alt',reason:'Synthetic alias',expected:0});
+   const match=A.classify(record,created.doc.analyteAliases);
+   created.doc.analytePreferences={[A.favoriteKey(match)]:{favorite:true}};
+   A.setDefault(created.doc,record,'mg','Synthetic unit preference',0);
    created.doc.findings.push(HumanGenetics.checkFinding({title:'Synthetic reported finding',result:'Synthetic report only',category:'other',test_date:'2025',date_precision:'year',genes:'demoGene',variants:'SYNTHETIC:./.'},{},created.doc));
    HumanRecommendations.saveIntake(created.doc,{smoking:'Synthetic unknown'},0);
    const snapshot=await HumanRecommendations.snapshot(created.doc,'Synthetic review packet');
@@ -59,9 +63,19 @@ try:
    return await G.write(p.repo,testVault.envelope,null);
   }''',params)
   print('PASS first browser wrote encrypted vault',result,flush=True)
-  restored=pb.evaluate('''async p=>{HumanGithub.token(p.token);const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);window.testRemote=r;window.testOpened=v;return {name:v.doc.profile.name,value:v.doc.observations[0].value,date:v.doc.observations[0].date,favorite:Object.values(v.doc.analytePreferences)[0].favorite,findingDate:v.doc.findings[0].test_date,variants:v.doc.findings[0].variants,genes:v.doc.findings[0].genes,questionnaire:v.doc.recommendationIntakes[0].answers.smoking,review:v.doc.recommendationReports[0].title,snapshot:v.doc.recommendationReports[0].context_hash===v.doc.recommendationContexts[0].hash};}''',params)
-  assert restored=={'name':'Synthetic roundtrip','value':'< 0,1','date':'2026','favorite':True,'findingDate':'2025','variants':'SYNTHETIC:./.','genes':['demoGene'],'questionnaire':'Synthetic unknown','review':'Synthetic saved review','snapshot':True}
-  print('PASS second browser restored dates, source values and favorites',flush=True)
+  restored=pb.evaluate('''async p=>{
+   HumanGithub.token(p.token);
+   const r=await HumanGithub.read(p.repo),v=await HumanCrypto.unlock(r.envelope,p.passphrase);
+   window.testRemote=r;window.testOpened=v;
+   const A=HumanAnalytes,d=v.doc,row=d.observations[0],group=HumanModel.groups(d.observations,d.analytePreferences,d.analyteAliases)[0];
+   return {name:d.profile.name,value:row.value,date:row.date,favorite:group.preferences.favorite,
+    alias:group.match.id,unit:d.analytePreferences[A.defaultKey(row,d.analyteAliases)].unit,
+    findingDate:d.findings[0].test_date,variants:d.findings[0].variants,genes:d.findings[0].genes,
+    questionnaire:d.recommendationIntakes[0].answers.smoking,review:d.recommendationReports[0].title,
+    snapshot:d.recommendationReports[0].context_hash===d.recommendationContexts[0].hash};
+  }''',params)
+  assert restored=={'name':'Synthetic roundtrip','value':'< 0,1','date':'2026','favorite':True,'alias':'alt','unit':'mg','findingDate':'2025','variants':'SYNTHETIC:./.','genes':['demoGene'],'questionnaire':'Synthetic unknown','review':'Synthetic saved review','snapshot':True}
+  print('PASS second browser restored source values, catalogue mapping, settings and favorite',flush=True)
   print('PASS second browser restored reported finding without an inferred genotype',flush=True)
   print('PASS second browser restored questionnaire, immutable snapshot and review',flush=True)
   await_update=pb.evaluate('''async p=>{testOpened.doc.profile.notes='Synthetic second device update';const env=await HumanCrypto.seal(testOpened.doc,testOpened.key,testRemote.envelope);return HumanGithub.write(p.repo,env,testRemote.sha);}''',params)

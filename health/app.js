@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const V=window.HumanView,M=window.HumanModel,C=window.HumanCrypto;
+  const A=window.HumanAnalytes;
   const S=window.HumanStore,G=window.HumanGithub,Merge=window.HumanSyncMerge;
   const root=document.getElementById('health-root');
   const header=document.getElementById('health-header');
@@ -133,8 +134,10 @@
     for(const [kind,key] of Object.entries(kinds))for(const x of recordsFor(state.doc,kind)){
       if(kind==='diary'&&(x.kind==='food'||window.HumanDiary.isDaily(x)))continue;
       const extra=['medical','medication'].includes(kind)?M.clinical(x,kind):{};const text=[x.name,x.title,x.result,x.provider,x.test_name,x.genes?.join(', '),x.variants,x.provider_text,x.type,x.value,x.notes,x.medication_name,x.description,x.activity_type,x.steps,x.sleep_minutes,x.exercise_minutes,x.dose,x.source,x.symptoms,x.treatments,x.context,extra.allergy?.reaction,extra.medication?.dose,extra.medication?.schedule,extra.medication?.route,extra.medication?.indication,extra.vaccination?.against,extra.vaccination?.dose_label,extra.vaccination?.lot,extra.vaccination?.place,extra.condition?.description].filter(Boolean).join(' ');
-      if(!text.toLocaleLowerCase('ru-RU').includes(q))continue;
-      count++;results.append(V.h('button',{class:'data-row','data-action':kind==='genetic'?'open-finding':kind==='document'?'file-preview':kind==='episode'?'open-episode':kind==='vital'?'open-vital':['medical','medication'].includes(kind)?'open-linked-medical':kind==='lab'?'open-group':'edit','data-kind':kind,'data-id':x.id,'data-key':kind==='lab'?M.groupKey(x):null},V.icon(kind==='lab'?'FlaskConical':kind==='document'?'FileText':'NotebookTabs',18),V.h('div',{},V.h('strong',{},x.name||x.title||x.medication_name||x.type||'Запись'),V.h('small',{},V.date(kind==='genetic'?x.test_date:x.date))),V.icon('ChevronRight',14)));
+      const rules=state.doc.analyteAliases,labQuery=kind==='lab'&&A.normalize(q);
+      if(!text.toLocaleLowerCase('ru-RU').includes(q)&&
+         !(labQuery&&A.searchText(x,rules).includes(labQuery)))continue;
+      count++;results.append(V.h('button',{class:'data-row','data-action':kind==='genetic'?'open-finding':kind==='document'?'file-preview':kind==='episode'?'open-episode':kind==='vital'?'open-vital':['medical','medication'].includes(kind)?'open-linked-medical':kind==='lab'?'open-group':'edit','data-kind':kind,'data-id':x.id,'data-key':kind==='lab'?M.groupKey(x,rules):null},V.icon(kind==='lab'?'FlaskConical':kind==='document'?'FileText':'NotebookTabs',18),V.h('div',{},V.h('strong',{},x.name||x.title||x.medication_name||x.type||'Запись'),V.h('small',{},V.date(kind==='genetic'?x.test_date:x.date))),V.icon('ChevronRight',14)));
     }
     if(!count)results.append(V.empty('По вашему запросу ничего не найдено.'));
     box.append(results);return box;
@@ -264,7 +267,7 @@
     if(!row){careDialog('Событие журнала',V.h('div',{},V.h('p',{},event.title),V.h('p',{class:'health-note'},'Запись удалена. Событие сохранено в истории.'),V.h('p',{class:'health-note'},V.date(event.happenedAt))));return;}
     if(kind==='profile'){state.tab='profile';render();return;}
     if(kind.startsWith('review-')){state.tab='recommendations';state.reviewSelected=kind==='review-report'?row.id:'';state.reviewOffset=kind==='review-report'?Math.floor(window.HumanRecommendations.reports(state.doc).findIndex(r=>r.id===row.id)/10)*10:0;render();if(kind==='review-intake')careDialog('Сохранённая версия анкеты',window.HumanRecommendationsView.intakeVersionView(row));if(kind==='review-context')reviewContext(row.id);return;}
-    if(kind==='lab'){state.tab='lab';state.search='';state.abnormalOnly=false;state.favoritesOnly=false;state.groupKey=M.groupKey(row);state.observationId=row.id;render();return;}
+    if(kind==='lab'){state.tab='lab';state.search='';state.abnormalOnly=false;state.favoritesOnly=false;state.groupKey=M.groupKey(row,state.doc.analyteAliases);state.observationId=row.id;render();return;}
     if(kind==='genetic'){openFinding(row.id);return;}
     if(kind==='document'){await previewFile(row.id);return;}
     if(kind==='meal'||kind==='activity-day'){openDiaryEditor(kind,row.id);return;}
@@ -373,7 +376,7 @@
     if(kind==='lab')fields=[
       r(f('Дата (ГГГГ-ММ-ДД, ГГГГ-ММ или ГГГГ)','date',existing?x.date:now),f('Точность даты','datePrecision',x.datePrecision||'day','select',[['day','День'],['exact','Точное время с часовым поясом'],['month','Месяц'],['year','Год'],['unknown','Неизвестна']])),
       f('Результат как в бланке','value',x.value||''),
-      f('Показатель в бланке','name',x.name||''),f('Показатель в каталоге (необязательно)','canonicalName',x.canonicalName||''),
+      f('Показатель в бланке','name',x.name||''),f('Имя для группировки (необязательно)','canonicalName',x.canonicalName||''),
       r(f('Единица','unit',x.unit||''),f('Лаборатория','source',x.source||'')),
       r(f('Референс от','low',x.low||''),f('Референс до','high',x.high||'')),
       r(f('Материал','material',x.material||''),f('Метод','method',x.method||'')),
@@ -604,7 +607,7 @@
     medications:'Препарат',findings:'Генетическая запись',diary:'Дневник',documents:'Документ',
     intakes:'Приём',reminders:'Напоминание',recommendationIntakes:'Версия анкеты',
     recommendationContexts:'Снимок для рекомендаций',recommendationReports:'Рецензия',
-    currentQuestionnaire:'Текущая анкета',analytePreferences:'Настройки показателя',
+    currentQuestionnaire:'Текущая анкета',analytePreferences:'Настройки показателя',analyteAliases:'Сопоставление показателя',
     settings:'Настройки журнала',revisions:'История записи',timeline:'Событие',
   };
   function syncConflictCard(conflict){
@@ -817,6 +820,38 @@
     channel?.postMessage({client:clientId,vaultId:snapshot.id});if(!active())return;
     state.local=updated;state.key=null;state.doc=null;state.conflict=false;G.disconnect();render();toast('Архив заменён; откройте его фразой доступа.');
   }
+  function labFormRow(doc,form){
+    const row=doc.observations.find(item=>item.id===form.dataset.id);
+    if(!row||(row.updatedAt||'')!==form.dataset.updated)throw Error('Измерение изменилось. Откройте его заново.');
+    return row;
+  }
+  async function submitAnalyte(form){
+    const input=Object.fromEntries(new FormData(form).entries()),mode=form.dataset.form;
+    await mutate(doc=>{
+      const row=labFormRow(doc,form),rules=doc.analyteAliases;
+      if(mode==='analyte-alias'){
+        const expected=input.scope==='document'?form.dataset.documentVersion:form.dataset.nameVersion;
+        const {key,previous}=A.applyAlias(doc,row,{...input,expected});
+        doc.revisions.push({id:M.id(),kind:'analyte-alias',recordId:key,operation:'edit',previous,
+          changedAt:new Date().toISOString()});
+        doc.timeline.push({id:M.id(),kind:'classification',recordKind:'lab',entityId:row.id,
+          operation:'edit',title:'Сопоставление показателя: '+row.name,happenedAt:new Date().toISOString()});
+      }else if(mode==='analyte-default-unit'){
+        if(A.defaultKey(row,rules)!==form.dataset.key)throw Error('Группа показателя изменилась.');
+        const {key,previous}=A.setDefault(doc,row,input.unit,input.reason,form.dataset.version);
+        doc.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous,
+          changedAt:new Date().toISOString()});
+      }else{
+        const context=A.context(row,rules);
+        const choice=A.unitOptions(doc,row).find(item=>item.unit===input.unit);
+        if(context!==form.dataset.context||!choice)throw Error('Список единиц изменился. Откройте измерение заново.');
+        version(doc,'lab',row,'unit-history');
+        row.unitHistory={...choice,context,assignedAt:new Date().toISOString()};
+        row.updatedAt=new Date().toISOString();
+      }
+    });
+    toast('Настройки показателя сохранены.');
+  }
   async function connect(form){
     if(state.demo)throw new Error('Демо не подключается к GitHub.');
     const values=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(values.repo,values.branch),active=sessionFence();
@@ -882,7 +917,21 @@
       }
       else if(mode==='care-action'){await careAction(form.dataset.id,form.dataset.version,form.dataset.mode,Number(form.elements.minutes.value));if(form.isConnected)dialog.close();}
       else if(mode==='record')await recordSubmit(form);
-      else if(mode==='analyte-preferences'){const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous:structuredClone(old),changedAt:new Date().toISOString()});d.analytePreferences[key]=M.checkPreferences(input,old);});toast('Настройки показателя сохранены.');}
+      else if(['analyte-alias','analyte-default-unit','analyte-unit'].includes(mode))await submitAnalyte(form);
+      else if(mode==='analyte-preferences'){
+        const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;
+        await mutate(doc=>{
+          const row=labFormRow(doc,form);
+          if(M.groupKey(row,doc.analyteAliases)!==key||A.effectiveUnit(row,doc.analyteAliases)!==input.unit)
+            throw Error('Группа показателя изменилась. Откройте настройки заново.');
+          doc.analytePreferences??={};
+          const previous=doc.analytePreferences[key]||{};
+          doc.analytePreferences[key]=M.checkPreferences(input,previous);
+          doc.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,
+            operation:'edit',previous,changedAt:new Date().toISOString()});
+        });
+        toast('Настройки показателя сохранены.');
+      }
       else if(mode==='review-intake'){const answers=Object.fromEntries(new FormData(form).entries());await mutate(d=>window.HumanRecommendations.saveIntake(d,answers,form.dataset.version));if(form.isConnected)dialog.close();toast('Ответы сохранены со слов пользователя. Для их учёта нужна новая рецензия.');}
       else if(mode==='profile')await profileSubmit(form);
       else if(mode==='connect')await connect(form);
@@ -980,7 +1029,24 @@
       else if(action==='care-toggle')await careAction(el.dataset.id,el.dataset.version,'toggle');
       else if(action==='care-act'){if(el.dataset.mode==='snooze')careSnooze(el);else await careAction(el.dataset.id,el.dataset.version,el.dataset.mode);}
       else if(action==='quick-add'){dialog.querySelector('#health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},'Добавить запись'),V.button('×','close-dialog',{'aria-label':'Закрыть окно'})),V.h('div',{class:'health-modal-content health-quick-options'},[['Анализ','lab'],['Домашнее измерение','vital'],['Болезнь или самочувствие','episode'],['Медицинская запись','medical'],['Препарат','medication'],['Приём пищи','meal'],['Активность за день','activity-day'],['Запись дневника','diary'],['Генетический результат','genetic'],['Документ','document']].map(([title,kind])=>V.button(title,'new-'+kind))));dialog.showModal();}
-      else if(action==='toggle-favorite'){const key=el.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.analytePreferences[key]={...old,favorite:!old.favorite};});}
+      else if(action==='toggle-favorite'){
+        const key=el.dataset.key,group=el.dataset.group;
+        await mutate(d=>{
+          d.analytePreferences??={};
+          const old=d.analytePreferences[key]||{};
+          d.analytePreferences[key]={...old,favorite:!(old.favorite??d.analytePreferences[group]?.favorite)};
+        });
+      }
+      else if(action==='clear-history-unit'){
+        const id=el.dataset.id;
+        await mutate(doc=>{
+          const row=doc.observations.find(item=>item.id===id);
+          if(!row?.unitHistory)throw Error('Подстановка уже снята.');
+          version(doc,'lab',row,'clear-unit-history');
+          delete row.unitHistory;
+          row.updatedAt=new Date().toISOString();
+        });
+      }
       else if(action==='filter-favorites'){state.favoritesOnly=!state.favoritesOnly;render();}
       else if(action==='filter-abnormal'){state.abnormalOnly=!state.abnormalOnly;state.groupKey='';render();}
       else if(action==='select-observation'){state.observationId=el.dataset.id;render();}
@@ -994,9 +1060,9 @@
       else if(action==='edit-profile')modal('profile',null);
       else if(action==='remove'){let kind=el.dataset.kind;if(kind==='diary'){const row=state.doc.diary.find(r=>r.id===el.dataset.id);if(row?.kind==='food')kind='meal';else if(row&&window.HumanDiary.isDaily(row))kind='activity-day';}const removed=await remove(kind,el.dataset.id);if(removed&&kind==='genetic'&&dialog.open)dialog.close();}
       else if(action==='select-group'){
-        const query=state.search.toLocaleLowerCase('ru-RU');
-        const all=M.groups(state.doc.observations,state.doc.analytePreferences).filter(x=>
-          (x.name+' '+x.unit+' '+x.latest.source).toLocaleLowerCase('ru-RU').includes(query));
+        const query=A.normalize(state.search),rules=state.doc.analyteAliases;
+        const all=M.groups(state.doc.observations,state.doc.analytePreferences,rules).filter(group=>
+          !query||group.rows.some(row=>A.searchText(row,rules).includes(query)));
         state.groupKey=all[Number(el.dataset.index)]?.key||'';
         render();
       }else if(action==='picker'){

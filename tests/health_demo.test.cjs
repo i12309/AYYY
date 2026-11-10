@@ -19,7 +19,7 @@ function makeModules(window,extras={}){
     crypto:{subtle:require('node:crypto').webcrypto.subtle,randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/genetics-state.js','health/journal-state.js','health/recommendations-state.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/analyte-catalog.js','health/analytes.js','health/model.js','health/health-state.js','health/care-state.js','health/diary-state.js','health/genetics-state.js','health/journal-state.js','health/recommendations-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }

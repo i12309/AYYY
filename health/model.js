@@ -1,6 +1,7 @@
 /* HUMAN model: explicit source values, reference ranges and non-destructive grouping. */
 (() => {
   'use strict';
+  const A=window.HumanAnalytes;
   function id(){return crypto.randomUUID();}
   function text(value,max=300){return String(value??'').trim().slice(0,max);}
   function isoDate(value){
@@ -40,12 +41,15 @@
     if((low && number(low)===null)||(high && number(high)===null))
       throw new Error('Референсы должны содержать числа или оставаться пустыми.');
     if(low&&high&&number(low)>number(high))throw new Error('Нижняя граница больше верхней.');
-    return {...original,id:original?.id||id(),...observationDate(input.date,input.datePrecision),name,value,
+    const row={...original,id:original?.id||id(),...observationDate(input.date,input.datePrecision),name,value,
       canonicalName:text(input.canonicalName,200),reviewStatus:'confirmed_manual',valueKind:number(value)!==null?'quantity':/^[<>≤≥]/.test(value)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(value)?'range':'qualitative',
       unit:text(input.unit,100),low,high,source:text(input.source,1000),
       material:text(input.material,1000),method:text(input.method,1000),
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
+    if(row.unitHistory&&(row.unit||!A.unitEligible(row)||
+       ['name','canonicalName','material','method'].some(key=>row[key]!==original?.[key])))delete row.unitHistory;
+    return row;
   }
   function checkVital(input,original){return window.HumanHealth.checkVital(input,original);}
   const clinicalStatuses={allergy:['unknown','active','inactive'],medication:['unknown','planned','active','paused','completed'],vaccine:['completed'],condition:['unknown','active','remission','resolved'],surgery:['unknown','planned','completed'],other:['unknown','active','resolved']};
@@ -86,20 +90,22 @@
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
   }
-  function groupKey(r){
-    return [r.canonicalName||r.name,r.unit,r.material,r.method].map(s=>String(s??'').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')).join('\u001f');
+  function groupKey(row,rules={}){
+    return JSON.stringify([A.context(row,rules),A.effectiveUnit(row,rules)]);
   }
-  function groups(records,preferences={}){
+  function groups(records,preferences={},rules={}){
     const map=new Map();
     for(const row of records){
-      const key=groupKey(row);
-      if(!map.has(key))map.set(key,{key,name:row.canonicalName||row.name,unit:row.unit,rows:[]});
-      map.get(key).rows.push(row);
+      const match=A.classify(row,rules),unit=A.effectiveUnit(row,rules);
+      const key=JSON.stringify([A.context(row,rules,match),unit]);
+      if(!map.has(key))map.set(key,{key,name:match.name,unit,match,favoriteKey:A.favoriteKey(match),rows:[]});
+      map.get(key).rows.push(unit!==row.unit?{...row,unit,reportedUnit:row.unit||''}:row);
     }
     return [...map.values()].map(group=>{
       group.rows.sort((a,b)=>sortKey(b).localeCompare(sortKey(a))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
       group.latest=group.rows[0];
-      group.preferences=preferences[group.key]||{};
+      const local=preferences[group.key]||{};
+      group.preferences={...local,favorite:preferences[group.favoriteKey]?.favorite??local.favorite};
       group.effectiveLatest=referenceRow(group.latest,group.preferences);
       group.status=status(group.effectiveLatest);
       return group;

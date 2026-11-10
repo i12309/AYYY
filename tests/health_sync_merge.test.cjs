@@ -70,10 +70,11 @@ test('a split questionnaire history keeps both versions and explicitly selects t
 
 test('independent analyte settings and identical edits do not create conflicts', () => {
   const base = empty();
-  const local = {...empty(),profile:{timezone:'UTC',name:'Synthetic'},analytePreferences:{one:{favorite:true}}};
-  const remote = {...empty(),profile:{name:'Synthetic',timezone:'UTC'},analytePreferences:{two:{favorite:true}}};
+  const local = {...empty(),profile:{timezone:'UTC',name:'Synthetic'},analytePreferences:{one:{favorite:true}},analyteAliases:{lab1:{target:'alt'}}};
+  const remote = {...empty(),profile:{name:'Synthetic',timezone:'UTC'},analytePreferences:{two:{favorite:true}},analyteAliases:{lab2:{target:'ast'}}};
   const {doc, conflicts} = plan(base, local, remote);
   assert.equal(conflicts.length, 0);
   assert.deepEqual(normalized(doc.analytePreferences), {one:{favorite:true},two:{favorite:true}});
+  assert.deepEqual(normalized(doc.analyteAliases), {lab1:{target:'alt'},lab2:{target:'ast'}});
   assert.throws(() => plan(base, local, {...remote,id:'unrelated'}));
 });

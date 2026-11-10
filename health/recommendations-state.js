@@ -33,7 +33,7 @@
  const observationKeys=['id','name','canonicalName','date','datePrecision','value','valueKind','unit','low','high','source','material','method','notes','reviewStatus','unitHistory'];
  function page(items,limit,clean){return {items:items.slice(0,limit).map(clean),total:items.length,limit,offset:0};}
  function data(doc,now=new Date()){
-  const current=intake(doc),all=M.groups(doc.observations,doc.analytePreferences),observations=M.recent(doc.observations,1000).map(r=>pick(r,observationKeys));
+  const current=intake(doc),all=M.groups(doc.observations,doc.analytePreferences,doc.analyteAliases),observations=M.recent(doc.observations,1000).map(r=>pick(r,observationKeys));
   const groups=page(all,200,g=>({key:g.key,name:g.name,unit:g.unit,total:g.rows.length,latest:pick(g.latest,observationKeys),settings:pick(g.preferences,['favorite','unit','low','high','useReference','note'])}));
   const health=[...doc.vitals.map(r=>({...r,record_kind:'measurement'})),...doc.episodes.map(r=>({...r,record_kind:'episode'}))].sort((a,b)=>window.HumanHealth.timePoint(b)-window.HumanHealth.timePoint(a)||a.id.localeCompare(b.id));
   const medical=M.recent([...doc.medical.map(r=>({...r,record_kind:'medical'})),...doc.medications.map(r=>({...r,record_kind:'medication'}))],doc.medical.length+doc.medications.length);

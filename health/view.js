@@ -1,7 +1,7 @@
 /* HUMAN UI primitives: all user-supplied text is rendered as DOM text, never HTML. */
 (() => {
   'use strict';
-  const M=window.HumanModel;
+  const M=window.HumanModel,A=window.HumanAnalytes;
   function icon(name,size=18){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),use=document.createElementNS(ns,'use');svg.setAttribute('width',size);svg.setAttribute('height',size);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');use.setAttribute('href','./icons.svg?v=3434fab979f5#'+name);svg.append(use);return svg;}
   function brand(mode='pair'){
     const portal=h('a',{class:'ayyy-wordmark',href:'../#home',target:'_top','aria-label':'AYYY · на главную портала'},'ayyy',h('span',{},'.'));
@@ -96,7 +96,7 @@
       button('Удалить','remove',{class:'small danger','data-kind':kind,'data-id':item.id}));
   }
   function stats(state){
-    const d=state.doc,groups=M.groups(d.observations,d.analytePreferences);
+    const d=state.doc,groups=M.groups(d.observations,d.analytePreferences,d.analyteAliases);
     const overview=h('div',{});
     overview.append(title('Обзор здоровья','Показатели, документы и события — всё под рукой.'));
     overview.append(h('div',{class:'diary-overview'},
@@ -199,11 +199,13 @@
     return section;
   }
   function labSection(state){
-    const all=M.groups(state.doc.observations,state.doc.analytePreferences);
-    const query=(state.search||'').toLocaleLowerCase('ru-RU');
-    const filtered=all.filter(x=>(x.name+' '+x.unit+' '+x.latest.source)
-      .toLocaleLowerCase('ru-RU').includes(query)&&(!state.abnormalOnly||x.status==='abnormal')&&(!state.favoritesOnly||x.preferences.favorite));
-    const selected=filtered.find(x=>x.key===state.groupKey)||filtered[0];
+    const doc=state.doc,rules=doc.analyteAliases,AV=window.HumanAnalyteView;
+    const all=M.groups(doc.observations,doc.analytePreferences,rules);
+    const query=A.normalize(state.search);
+    const filtered=all.filter(group=>(!query||group.rows.some(row=>A.searchText(row,rules).includes(query)))&&
+      (!state.abnormalOnly||group.status==='abnormal')&&(!state.favoritesOnly||group.preferences.favorite));
+    const selected=all.find(group=>group.rows.some(row=>row.id===state.observationId))||
+      all.find(group=>group.key===state.groupKey)||filtered[0];
     const section=h('div',{});
     section.append(title(state.groupKey&&selected?selected.name:'Анализы',
       'История результатов с единицами, референсами и первоисточниками.',
@@ -215,8 +217,23 @@
       const search=section.querySelector('[data-search=labs]');if(search){search.remove();box.append(h('div',{class:'filters'},icon('Search',15),search,button('★ Избранное','filter-favorites',{class:'favorites-filter','aria-pressed':String(!!state.favoritesOnly)}),button('Вне референса','filter-abnormal',{class:'abnormal-filter','aria-pressed':String(!!state.abnormalOnly)})));}
       const grouped=h('table',{class:'analyte-groups'},h('thead',{},h('tr',{},['Показатель','Последний результат','Среднее','Референс','Измерений','Дата последнего'].map(label=>h('th',{scope:'col'},label)))));
       const body=h('tbody',{});
-      for(const g of filtered){const values=M.chartRows(g.rows).map(x=>M.number(x.value));const average=values.length?new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(values.reduce((a,b)=>a+b,0)/values.length):'—';
-        body.append(h('tr',{},h('td',{},h('div',{class:'group-name-cell'},button(g.preferences.favorite?'★':'☆','toggle-favorite',{'data-key':g.key,class:'favorite-toggle'+(g.preferences.favorite?' is-favorite':''),'aria-label':'Избранное: '+g.name,'aria-pressed':String(!!g.preferences.favorite)}),h('button',{class:'group-name','data-action':'open-group','data-key':g.key},h('strong',{},g.name),icon('ChevronRight',14)))),h('td',{},h('strong',{},g.latest.value),h('span',{class:'unit'},g.unit),h('div',{},status(g.effectiveLatest))),h('td',{},h('strong',{},average),h('small',{},values.length+' из '+g.rows.length)),h('td',{},g.effectiveLatest.low||g.effectiveLatest.high?(g.effectiveLatest.low||'—')+' — '+(g.effectiveLatest.high||'—'):'—'),h('td',{},h('span',{class:'measurement-count'},g.rows.length)),h('td',{},date(g.latest.date))));
+      for(const g of filtered){
+        const values=M.chartRows(g.rows).map(x=>M.number(x.value));
+        const average=values.length?new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(values.reduce((a,b)=>a+b,0)/values.length):'—';
+        const technique={direct:'Прямой',friedewald:'По Фридевальду'}[g.match.technique];
+        const context=[g.latest.material,g.latest.method,technique].filter(Boolean).join(' · ');
+        const favorite=button(g.preferences.favorite?'★':'☆','toggle-favorite',{
+          'data-key':g.favoriteKey,'data-group':g.key,class:'favorite-toggle'+(g.preferences.favorite?' is-favorite':''),
+          'aria-label':'Избранное: '+g.name,'aria-pressed':String(!!g.preferences.favorite),
+        });
+        const open=h('button',{class:'group-name','data-action':'open-group','data-key':g.key},
+          h('strong',{},g.name),icon('ChevronRight',14));
+        body.append(h('tr',{},
+          h('td',{},h('div',{class:'group-name-cell'},favorite,open),context?h('small',{},context):null),
+          h('td',{},h('strong',{},g.latest.value),h('span',{class:'unit'},g.unit),h('div',{},status(g.effectiveLatest))),
+          h('td',{},h('strong',{},average),h('small',{},values.length+' из '+g.rows.length)),
+          h('td',{},g.effectiveLatest.low||g.effectiveLatest.high?(g.effectiveLatest.low||'—')+' — '+(g.effectiveLatest.high||'—'):'—'),
+          h('td',{},h('span',{class:'measurement-count'},g.rows.length)),h('td',{},date(g.latest.date))));
       }
       grouped.append(body);box.append(filtered.length?h('div',{class:'table-wrap'},grouped):empty('Показателей по этим условиям нет.'));
       box.append(h('p',{class:'table-summary'},'Показателей: '+filtered.length+' · измерений: '+filtered.reduce((a,g)=>a+g.rows.length,0)),h('p',{class:'summary-footnote'},'Среднее — арифметическое числовых результатов сопоставимой группы. Разные единицы, материалы и методы не смешиваются. Референс в списке — из последней записи.'));
@@ -226,6 +243,7 @@
     section.append(h('p',{},h('button',{class:'button text-link','data-tab':'lab'},'← Все анализы')));
     if(!selected){section.append(empty('Нет показателей','new-lab'));return section;}
     const g=selected,current=g.rows.find(x=>x.id===state.observationId)||g.latest;
+    const raw=doc.observations.find(row=>row.id===current.id);
     const numeric=M.chartRows(g.rows),average=numeric.length?numeric.reduce((sum,x)=>sum+M.number(x.value),0)/numeric.length:null;
     const fmt=n=>n===null?'—':new Intl.NumberFormat('ru-RU',{maximumSignificantDigits:6}).format(n);
     const reference=x=>(x.low||'—')+' — '+(x.high||'—');
@@ -241,14 +259,24 @@
       field('Единица','unit',g.unit,'select',[[g.unit,g.unit||'Не указана']]),
       row(field('Нижняя граница','low',preferences.low??g.latest.low??''),field('Верхняя граница','high',preferences.high??g.latest.high??'')),
       field('Референс графика','useReference',preferences.useReference?'yes':'no','select',[['no','Использовать исходные нормы каждой записи'],['yes','Применить общий референс к этой единице']]),
-      field('Пояснение','note',preferences.note||''),h('p',{class:'health-note'},'Исходные значения и нормы лабораторий сохраняются. Разные единицы, материалы и методы остаются отдельными группами.')
-    ],'Применить ко всей истории');settings.dataset.key=g.key;
-    page.append(h('details',{class:'analyte-settings'},h('summary',{},'Общие настройки показателя'),settings));
+      field('Пояснение','note',preferences.note||''),
+      h('p',{class:'health-note'},'Исходные значения и нормы лабораторий сохраняются. Разные единицы, материалы и методы остаются отдельными группами.'),
+      h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),
+    ],'Применить ко всей истории');
+    settings.dataset.key=g.key;
+    settings.dataset.id=raw.id;
+    settings.dataset.updated=raw.updatedAt||'';
+    page.append(h('details',{class:'analyte-settings'},h('summary',{},'Общие настройки показателя'),settings,AV.preferredUnit(doc,raw)));
     const plot=card('Динамика',[chart(g,{selected:current.id,interactive:true}),h('p',{class:'chart-reference-note'},'Среднее: '+fmt(average)+' '+g.unit+' · '+numeric.length+' измерений')]);plot.classList.add('analyte-chart');
     const metadata=h('dl',{class:'metadata'});
-    for(const [label,value] of [['Показатель в бланке',current.name],['Дата',date(current.date)],['Результат',current.value+' '+current.unit],['Референс',reference(current)],['Источник',current.source],['Материал',current.material],['Метод',current.method],['Примечание',current.notes]])metadata.append(h('dt',{},label),h('dd',{},value||'Не указан'));
-    const source=card('Выбранное измерение',[status(current),metadata,button('Редактировать','edit',{'data-kind':'lab','data-id':current.id})]);source.classList.add('analyte-source');if(current.documentId)source.append(button('Открыть источник','file-preview',{'data-id':current.documentId}));
+    for(const [label,value] of [['Показатель в бланке',current.name],['Дата',date(current.date)],['Результат',raw.value+' '+raw.unit],['Референс',reference(current)],['Источник',current.source],['Материал',current.material],['Метод',current.method],['Примечание',current.notes]])metadata.append(h('dt',{},label),h('dd',{},value||'Не указан'));
+    const source=card('Выбранное измерение',[status(current),metadata,AV.origin(doc,raw),AV.unitChoice(doc,raw),
+      button('Редактировать','edit',{'data-kind':'lab','data-id':current.id})]);
+    source.classList.add('analyte-source');
+    if(doc.documents.some(file=>file.id===current.documentId))
+      source.append(button('Открыть источник','file-preview',{'data-id':current.documentId}));
     page.append(h('div',{class:'analyte-chart-layout'},plot,source));
+    page.append(AV.classification(doc,raw));
     const history=card('История · '+g.rows.length,[table(['Дата','Значение','Референс','Источник','Действия'],g.rows.map(x=>[
       button(date(x.date),'select-observation',{'data-id':x.id,'aria-pressed':String(x.id===current.id),class:'small'}),h('span',{},h('strong',{},x.value+' '+x.unit),status(x)),reference(x),x.source||'—',buttons('lab',x)
     ]))]);history.classList.add('analyte-history');page.append(history);section.append(page);

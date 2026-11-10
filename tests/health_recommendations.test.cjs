@@ -1,6 +1,6 @@
 // New review packets and immutable reports; synthetic data only, no provider calls.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),{webcrypto}=require('node:crypto');
-function modules(){const window={},ctx=vm.createContext({window,crypto:webcrypto,isSecureContext:true,TextEncoder,TextDecoder,btoa,atob,URL,structuredClone});for(const name of ['crypto','model','health-state','diary-state','journal-state','recommendations-state'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../health',name+'.js'),'utf8'),ctx);return window;}
+function modules(){const window={},ctx=vm.createContext({window,crypto:webcrypto,isSecureContext:true,TextEncoder,TextDecoder,btoa,atob,URL,structuredClone});for(const name of ['crypto','analyte-catalog','analytes','model','health-state','diary-state','journal-state','recommendations-state'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../health',name+'.js'),'utf8'),ctx);return window;}
 const now=new Date('2026-11-10T12:00:00Z');
 const report=(R,c)=>({context_id:c.id,request_id:webcrypto.randomUUID(),title:'Synthetic review',author:'Synthetic author',model:'synthetic/1',prompt_version:R.promptVersion,sections:[{kind:'assessment',title:'Synthetic assessment',body:'Synthetic text only, no medical advice.',observation_ids:[],evidence_urls:['https://example.org/evidence']}],limitations:['Synthetic limited context'],evidence:[{title:'Synthetic source',url:'https://example.org/evidence',accessed_on:'2026-01-01'}]});
 
