@@ -1,4 +1,4 @@
-import {type Document, now, summary, validate} from './browserModel';
+import {type Document, now, summary, validate, isDemoDocument} from './browserModel';
 
 const DATABASE = 'ayyy-family-v1';
 const VERSION = 1;
@@ -47,6 +47,50 @@ export async function listTrees() {
   const db = await openDatabase();
   const rows = await requestValue<TreeRecord[]>(db.transaction('trees','readonly').objectStore('trees').getAll());
   return rows.map(row => summary(row.document)).sort((a,b) => b.updated_at.localeCompare(a.updated_at));
+}
+
+/** Open the existing tutorial tree (including legacy samples), or create
+ * exactly one in a serialized IDB read/write transaction. Rapid clicks and
+ * separate tabs cannot create duplicates by racing a list+create sequence.
+ * Already-existing duplicate examples are preserved and labelled, never deleted.
+ */
+export async function getOrCreateDemoTree(create:()=>Document):Promise<Document>{
+  const db=await openDatabase();
+  return new Promise<Document>((resolve,reject)=>{
+    const tx=db.transaction('trees','readwrite'),table=tx.objectStore('trees');
+    let chosen:Document|null=null,reason:Error|null=null;
+    tx.oncomplete=()=>chosen?resolve(chosen):reject(new Error('Не удалось открыть пример.'));
+    tx.onabort=()=>reject(reason||tx.error||new Error('Не удалось создать учебное дерево.'));
+    const request=table.getAll();
+    request.onerror=()=>{reason=request.error||new Error('Не удалось проверить учебные деревья.');tx.abort();};
+    request.onsuccess=()=>{
+      try {
+        const matches=(request.result as TreeRecord[])
+          .map(row=>row.document).filter(isDemoDocument)
+          .sort((a,b)=>b.tree.updated_at.localeCompare(a.tree.updated_at));
+        // Mark all recognized legacy samples so a subsequent title edit
+        // cannot strip the teaching label. Do not touch records' timestamps.
+        for(const old of matches){
+          if(old.tree.is_demo!==true){
+            old.tree.is_demo=true;
+            table.put({id:old.tree.id,document:old});
+          }
+        }
+        if(matches.length){
+          chosen=matches[0];
+        }else{
+          const fresh=create();
+          fresh.tree.is_demo=true;
+          validate(fresh);
+          table.put({id:fresh.tree.id,document:fresh});
+          chosen=fresh;
+        }
+      }catch(error){
+        reason=error instanceof Error?error:new Error('Не удалось открыть учебное дерево.');
+        tx.abort();
+      }
+    };
+  });
 }
 
 export async function readTree(id: string): Promise<Document> {
