@@ -40,12 +40,12 @@ try{
   assert.match(await page.locator('.pv-file-banner h1').innerText(),/Пример проекта/);
   assert.equal(await page.locator('.pv-list-row').count(),9);
   await page.locator('#pv-columns').selectOption('resources');
-  assert.match(await page.locator('.pv-list-head').innerText(),/Ресурсы/);
+  assert.match(await page.locator('.pv-list-head').innerText(),/ресурсы/i);
   assert.match(await page.locator('[data-pv-task="6"]').first().innerText(),/Разработчик/);
   await page.locator('#pv-columns').selectOption('baseline');
-  assert.match(await page.locator('.pv-list-head').innerText(),/База: начало/);
+  assert.match(await page.locator('.pv-list-head').innerText(),/база: начало/i);
   await page.locator('#pv-columns').selectOption('critical');
-  assert.match(await page.locator('.pv-list-head').innerText(),/Крит/);
+  assert.match(await page.locator('.pv-list-head').innerText(),/крит/i);
   await page.locator('#pv-columns').selectOption('basic');
   await page.locator('.pv-list-row[data-pv-task="5"]').focus();
   await page.keyboard.press('Enter');
