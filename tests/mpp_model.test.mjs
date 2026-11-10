@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {dateValue, dateText, durationText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
+import {dateValue, dateText, durationText, normalizeProject, visibleTasks, workingHoursOnDate, calendarStats, orderedTasks, criticalChain, timelineRange, rowWindow, dependencyLines, csvCell, tasksCsv, demoProject, DAY} from '../mpp/model.mjs';
 import {readProject} from '../mpp/vendor/mpxj-ts/mpxj.mjs';
 
 test('synthetic demo has stable tasks, groups, assignments, and links', () => {
@@ -123,4 +123,53 @@ test('dependency geometry supports all four Microsoft Project link types', () =>
   assert.notEqual(paths[0].d,paths[1].d);
   assert.notEqual(paths[1].d,paths[2].d);
   assert.equal(dependencyLines(tasks,[{from:'missing',to:'2',type:'FS'}],begin,12).length,0);
+});
+
+
+test('calendar inheritance, holidays, work weeks and unknown dates are safe',()=>{
+  const mon=Date.UTC(2026,10,9), tue=mon+DAY, holiday=mon+7*DAY;
+  const base={uniqueId:1,name:'Base',parent:null,days:Array.from({length:7},(_,i)=>
+    ({type:i===0||i===6?'nonworking':'working',hours:i===0||i===6?[]:[{start:540,end:780},{start:840,end:1080}]})),
+    weeks:[],exceptions:[{name:'Holiday',from:holiday,to:holiday,hours:[],dates:null,recurrence:''}]};
+  const child={uniqueId:2,name:'Team',parent:1,days:Array.from({length:7},()=>({type:'default',hours:[]})),
+    weeks:[{name:'Short week',from:mon,to:mon+6*DAY,days:Array.from({length:7},(_,i)=>({type:i===2?'working':'default',hours:i===2?[{start:600,end:720}]:[]}))}],
+    exceptions:[{name:'Tuesday special',from:tue,to:tue,hours:[{start:630,end:660}],dates:null,recurrence:''}]};
+  const model=normalizeProject({title:'Calendar',tasks:[{id:1,uniqueId:1,name:'Task',start:mon,finish:tue}],calendars:[base,child],calendar:2});
+  assert.deepEqual(workingHoursOnDate(model,mon),base.days[1].hours);
+  assert.deepEqual(workingHoursOnDate(model,tue),[{start:630,end:660}], 'exception overrides workweek');
+  assert.deepEqual(workingHoursOnDate(model,holiday),[], 'inherited holiday must be nonworking');
+  assert.equal(workingHoursOnDate(model,null),null, 'null date must not become Unix epoch');
+  assert.equal(workingHoursOnDate(model,mon,'999'),null);
+  assert.equal(calendarStats(model,2).exceptions,1);
+  assert.equal(model.calendars.length,2);
+});
+
+test('hierarchy-aware sorting only reorders siblings',()=>{
+  const model=normalizeProject({tasks:[
+    {uniqueId:1,id:1,name:'B group',outlineLevel:1},
+    {uniqueId:2,id:2,name:'Z child',outlineLevel:2},
+    {uniqueId:3,id:3,name:'A child',outlineLevel:2},
+    {uniqueId:4,id:4,name:'A group',outlineLevel:1},
+    {uniqueId:5,id:5,name:'Child',outlineLevel:2}
+  ]});
+  assert.deepEqual(orderedTasks(model,'name').map(x=>x.uid),['4','5','1','3','2']);
+  assert.deepEqual(visibleTasks(model,'',new Set(),'name').map(x=>x.uid),['4','5','1','3','2']);
+  assert.deepEqual(visibleTasks(model,'',new Set(['1']),'name').map(x=>x.uid),['4','5','1']);
+});
+
+test('critical path flags are never silently substituted by approximation',()=>{
+  const d=Date.UTC(2026,0,1), t=(id,s,e,preds=[],extra={})=>({id,uniqueId:id,name:'Task '+id,outlineLevel:1,start:d+s*DAY,finish:d+e*DAY,
+    predecessors:preds.map(task=>({task,type:'FS'})),...extra});
+  const source=normalizeProject({tasks:[t(1,0,3,[],{critical:true}),t(2,3,5,[1]),t(3,0,8)]});
+  assert.equal(criticalChain(source).mode,'source');
+  assert.deepEqual([...criticalChain(source).uids],['1']);
+  const simple=normalizeProject({tasks:[t(1,0,5),t(2,5,10,[1]),t(3,0,4)]});
+  assert.equal(criticalChain(simple).mode,'estimate');
+  assert.deepEqual([...criticalChain(simple).uids].sort(),['1','2']);
+  simple.links[0].type='FF';
+  assert.equal(criticalChain(simple).mode,'none','unsupported link types must not give false CPM');
+  simple.links[0].type='FS';simple.links[0].lag='2 д';
+  assert.equal(criticalChain(simple).mode,'none','lagged links need full scheduler');
+  simple.links[0].lag='';simple.links.push({from:'2',to:'1',type:'FS',lag:''});
+  assert.equal(criticalChain(simple).mode,'none','cycles must disable path estimate');
 });
