@@ -101,6 +101,7 @@
       document.querySelectorAll('.nav-count').forEach(el=>el.textContent=String(app.services.length));
       document.querySelector('#view').innerHTML=view.render();
       const result=view.mount?.();if(typeof result==='function')app.cleanup=result;
+      window.AYYYVisits?.route(app.route,app.param);
       document.body.classList.remove('nav-open');document.querySelector('[data-action=menu]')?.setAttribute('aria-expanded','false');window.scrollTo({top:0,behavior:'instant'});
     }
   };

@@ -152,7 +152,7 @@
         setHeading(g);const prior=state.last?.id===id?state.last:{};
         state.last={id,param,path:url.pathname+url.search,label:label||prior.label||'Вы недавно играли',at:Date.now()};persist();
       }else if(id==='works')setHeading({id:'works',category:'Мастерская',title:'Мои работы',short:'Рисунки, фигуры и трассы, придуманные вами.'});
-      if(param){const hash='#games/'+encodeURIComponent(param);if(location.hash!==hash)history.replaceState(history.state,'',location.pathname+location.search+hash);app.param=param;}
+      if(param){const hash='#games/'+encodeURIComponent(param);if(location.hash!==hash)history.replaceState(history.state,'',location.pathname+location.search+hash);app.param=param;window.AYYYVisits?.route('games',param);}
     }
     function resizeFrame(value){if(!frame||!Number.isFinite(value)||value<0)return;frame.style.height=Math.round(Math.min(24000,Math.max(360,value)))+'px';}
     function frameReady(data){
