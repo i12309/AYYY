@@ -42,8 +42,22 @@ async function inflate(source:Uint8Array,expected:number):Promise<Uint8Array> {
     const copy=source.buffer.slice(source.byteOffset,source.byteOffset+source.byteLength) as ArrayBuffer;
     const stream=new Blob([copy]).stream().pipeThrough(
       new DecompressionStream('deflate-raw' as CompressionFormat));
-    const buffer=await new Response(stream).arrayBuffer();
-    result=new Uint8Array(buffer);
+    const reader=stream.getReader();
+    const chunks:Uint8Array[]=[];
+    let length=0;
+    while(true){
+      const item=await reader.read();
+      if(item.done)break;
+      length+=item.value.byteLength;
+      if(length>expected||length>MAX_SINGLE){
+        await reader.cancel().catch(()=>{});
+        throw new Error('Превышен допустимый размер распакованного файла.');
+      }
+      chunks.push(item.value);
+    }
+    result=new Uint8Array(length);
+    let offset=0;
+    for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length;}
   }catch {
     throw new Error('ZIP: Не удалось распаковать файл DEFLATE. Архив может быть повреждён.');
   }
