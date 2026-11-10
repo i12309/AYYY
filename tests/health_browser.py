@@ -23,8 +23,10 @@ with sync_playwright() as pw:
  p.add_init_script('''(()=>{if(location.search.includes('demo=1'))Object.defineProperty(window,'indexedDB',{get(){throw new Error('Demo accessed personal IndexedDB')}})})()''')
  p.goto(BASE+'health/?demo=1');p.wait_for_selector('.metric')
  check('HUMAN brand and original icon',p.locator('.sidebar .brand-copy>span').inner_text()=='HUMAN')
- check('AYYY brand is separate portal link',p.locator('.sidebar .ayyy-wordmark').count()==1 and p.locator('.sidebar .ayyy-wordmark').get_attribute('href')=='../#home')
- check('AYYY sits left of HUMAN in sidebar',p.locator('.sidebar .ayyy-wordmark').bounding_box()['x']<p.locator('.sidebar .brand').bounding_box()['x'])
+ check('AYYY moved from sidebar to topbar',p.locator('.sidebar .ayyy-wordmark').count()==0 and p.locator('#health-header .ayyy-wordmark').count()==1)
+ check('AYYY topbar link targets portal',p.locator('#health-header .ayyy-wordmark').get_attribute('href')=='../#home')
+ check('AYYY is before workspace breadcrumb',p.locator('#health-header .ayyy-wordmark').bounding_box()['x']<p.locator('#health-header .breadcrumb').bounding_box()['x'])
+ check('HUMAN stays in sidebar',p.locator('.sidebar>.brand').count()==1)
  p.locator('.sidebar [data-tab=lab]').click();p.locator('.sidebar .brand').click()
  check('HUMAN logo returns to journal overview without leaving page',p.url==BASE+'health/?demo=1' and p.locator('.metric').count()==4)
  check('original sidebar width',p.locator('.sidebar').bounding_box()['width']==208)
@@ -61,6 +63,7 @@ with sync_playwright() as pw:
  OUT.mkdir(parents=True,exist_ok=True);p.screenshot(path=str(OUT/'overview-1440.png'),full_page=True)
  for width in [360,390,768,1024,1440,1920]:
   p.set_viewport_size({'width':width,'height':844})
+  check('topbar fits width '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   if width<768:
    p.locator('[data-action=toggle-menu]').click();check('mobile drawer '+str(width),p.locator('.sidebar').is_visible());p.keyboard.press('Escape')
   for tab in ['overview','lab','vital','medical','diary','document','settings']:

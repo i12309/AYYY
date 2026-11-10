@@ -113,14 +113,12 @@ body{font-size:14px}
 .ayyy-wordmark{display:inline-flex;align-items:baseline;flex:none;padding:3px 4px 3px 0;color:#203640;font-family:"Trebuchet MS","Segoe UI",sans-serif;font-size:36px;font-weight:800;letter-spacing:-3.1px;line-height:1;transform:rotate(-3deg);text-decoration:none}
 .ayyy-wordmark span{color:#e77d36}
 .ayyy-wordmark:hover{color:#203640;text-decoration:none}
-.sidebar .health-brand-pair{width:100%;height:79px;gap:6px;justify-content:space-between}
-.sidebar .health-brand-pair .brand{gap:6px;padding-left:0;flex-shrink:1}
-.sidebar .health-brand-pair .brand img{width:26px;height:26px}
-.sidebar .health-brand-pair .brand-copy{gap:5px}
-.sidebar .health-brand-pair .brand-copy>span{font-size:17px;letter-spacing:1.1px}
-.sidebar .health-brand-pair .brand-copy>small{font-size:6px;letter-spacing:.45px}
-.sidebar .health-brand-divider{height:24px}
-.sidebar .ayyy-wordmark{font-size:21px;letter-spacing:-1.7px;padding:2px 0}
+/* The workspace keeps HUMAN in the sidebar; the portal link belongs in the topbar. */
+.sidebar>.brand{height:79px;padding:0 10px;color:var(--text);text-decoration:none}
+.sidebar>.brand:is(:hover,:focus-visible),.sidebar>.brand:is(:hover,:focus-visible) .brand-copy>span{color:var(--text);text-decoration:none}
+.health-topbar-content>.ayyy-wordmark{font-size:24px;letter-spacing:-2px;line-height:1.1;padding:2px 15px 3px 0;border-right:1px solid var(--border);margin-right:2px}
+.health-topbar-content>.breadcrumb{min-width:0}
+.health-topbar-content>.breadcrumb strong{overflow:hidden;text-overflow:ellipsis}
 
 .health-intro{width:100%;max-width:1220px;margin:24px auto 38px;padding:0 30px}
 .health-intro-top{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:clamp(32px,4vw,70px);min-height:79px;margin-bottom:16px}
@@ -166,11 +164,9 @@ body{font-size:14px}
 .health-intro-unlock .health-intro-panel .health-security{margin-top:16px}
 
 @media(max-width:1180px){
-  .sidebar .health-brand-pair{gap:5px}
-  .sidebar .health-brand-pair .brand img{width:24px;height:24px}
-  .sidebar .health-brand-pair .brand-copy>span{font-size:15px;letter-spacing:1px}
-  .sidebar .health-brand-pair .brand-copy>small{font-size:6px;letter-spacing:.25px}
-  .sidebar .ayyy-wordmark{font-size:19px;letter-spacing:-1.6px}
+  .sidebar>.brand{gap:9px;padding-inline:7px}
+  .sidebar>.brand .brand-copy>span{font-size:20px;letter-spacing:1.6px}
+  .health-topbar-content>.ayyy-wordmark{font-size:22px}
 }
 @media(max-width:900px){
   .health-intro{max-width:780px;padding:0 24px;margin-top:23px}
@@ -187,6 +183,17 @@ body{font-size:14px}
   .health-intro-top{display:flex;align-items:flex-start;flex-direction:column;gap:15px}
   .health-intro-heading{width:100%}
   .health-intro-heading h1{font-size:27px}
+}
+@media(max-width:767px){
+  .health-topbar-content>.ayyy-wordmark{font-size:21px;letter-spacing:-1.8px;padding-right:10px;margin-right:0}
+  .health-topbar-content .breadcrumb{flex:0 1 auto;min-width:0}
+  .health-topbar-content .breadcrumb strong{display:block;min-width:0;max-width:95px;overflow:hidden;text-overflow:ellipsis}
+  .health-topbar-content .global-search{flex:0 1 180px;min-width:95px;width:clamp(95px,34vw,180px);max-width:40vw}
+}
+@media(max-width:390px){
+  .health-topbar-content{gap:7px}
+  .health-topbar-content>.ayyy-wordmark{font-size:19px;letter-spacing:-1.6px;padding-right:8px}
+  .health-topbar-content .breadcrumb strong{max-width:78px}
 }
 @media(max-width:640px){
   .health-intro{margin:18px auto 28px;padding:0 16px}

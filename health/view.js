@@ -3,13 +3,15 @@
   'use strict';
   const M=window.HumanModel;
   function icon(name,size=18){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),use=document.createElementNS(ns,'use');svg.setAttribute('width',size);svg.setAttribute('height',size);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');use.setAttribute('href','./icons.svg#'+name);svg.append(use);return svg;}
-  function brand(){
-    return h('div',{class:'health-brand-pair'},
-      h('a',{class:'ayyy-wordmark',href:'../#home',target:'_top','aria-label':'AYYY · на главную портала'},'ayyy',h('span',{},'.')),
-      h('span',{class:'health-brand-divider','aria-hidden':'true'}),
-      h('a',{class:'brand',href:'./','data-tab':'overview','aria-label':'HUMAN · обзор журнала здоровья'},
-        h('img',{src:'./icon.svg',width:32,height:32,alt:''}),
-        h('span',{class:'brand-copy'},h('span',{},'HUMAN'),h('small',{},'ЖУРНАЛ ЗДОРОВЬЯ'))));
+  function brand(mode='pair'){
+    const portal=h('a',{class:'ayyy-wordmark',href:'../#home',target:'_top','aria-label':'AYYY · на главную портала'},'ayyy',h('span',{},'.'));
+    const human=h('a',{class:'brand',href:'./','data-tab':'overview','aria-label':'HUMAN · обзор журнала здоровья'},
+      h('img',{src:'./icon.svg',width:32,height:32,alt:''}),
+      h('span',{class:'brand-copy'},h('span',{},'HUMAN'),h('small',{},'ЖУРНАЛ ЗДОРОВЬЯ')));
+    if(mode==='human')return human;
+    if(mode==='ayyy')return portal;
+    return h('div',{class:'health-brand-pair'},portal,
+      h('span',{class:'health-brand-divider','aria-hidden':'true'}),human);
   }
   function h(tag,attrs={},...children) {
     const node=document.createElement(tag);
