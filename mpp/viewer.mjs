@@ -234,7 +234,7 @@ export function mount(root, options={}) {
         event.preventDefault();
         fail('Ошибка загрузки браузерного парсера.','worker');
       };
-      timer=setTimeout(()=>fail('Чтение превысило 45 секунд.','worker'),45000);
+      timer=setTimeout(()=>fail('Чтение превысило 45 секунд.','timeout'),45000);
       try {worker.postMessage({bytes,filename},[bytes]);}
       catch(error){fail(error?.message||'Ошибка запуска чтения.','worker');}
     });
@@ -274,7 +274,7 @@ export function mount(root, options={}) {
     }catch(error){
       if(state.destroyed||ticket!==state.pending)return;
       const kind=error?.code;
-      const hint=kind==='password'?'Файл защищён паролем. Снимите защиту в Microsoft Project или экспортируйте в XML.':kind==='version'?'Эта версия MPP не поддержана парсером. Попробуйте экспорт Project XML.':'Проверьте файл. Если формат MPP не поддерживается, попробуйте экспорт в Project XML.';
+      const hint=kind==='timeout'?'Время чтения истекло: попробуйте экспортировать Project XML или открыть проект меньшего размера.':kind==='password'?'Файл защищён паролем. Снимите защиту в Microsoft Project или экспортируйте в XML.':kind==='version'?'Эта версия MPP не поддержана парсером. Попробуйте экспорт Project XML.':'Проверьте файл. Если формат MPP не поддерживается, попробуйте экспорт в Project XML.';
       sendStatus('Не удалось открыть '+file.name+': '+String(error?.message||error)+'. '+hint,'error');
       console.warn('AYYY Project Viewer: parse failed',error);
     }finally{
