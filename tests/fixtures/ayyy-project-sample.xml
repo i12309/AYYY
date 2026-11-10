@@ -7,6 +7,22 @@
   <DaysPerMonth>20</DaysPerMonth>
   <StartDate>2026-11-10T09:00:00</StartDate>
   <FinishDate>2026-12-04T18:00:00</FinishDate>
+  <CalendarUID>1</CalendarUID>
+  <Calendars>
+    <Calendar>
+      <UID>1</UID><Name>Стандартный</Name><IsBaseCalendar>1</IsBaseCalendar><BaseCalendarUID>-1</BaseCalendarUID>
+      <WeekDays>
+        <WeekDay><DayType>1</DayType><DayWorking>0</DayWorking></WeekDay>
+        <WeekDay><DayType>2</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>13:00:00</ToTime></WorkingTime><WorkingTime><FromTime>14:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>3</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>4</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>5</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>6</DayType><DayWorking>1</DayWorking><WorkingTimes><WorkingTime><FromTime>09:00:00</FromTime><ToTime>18:00:00</ToTime></WorkingTime></WorkingTimes></WeekDay>
+        <WeekDay><DayType>7</DayType><DayWorking>0</DayWorking></WeekDay>
+      </WeekDays>
+      <Exceptions><Exception><Name>Тестовый праздник</Name><TimePeriod><FromDate>2026-11-17T00:00:00</FromDate><ToDate>2026-11-17T00:00:00</ToDate></TimePeriod><DayWorking>0</DayWorking></Exception></Exceptions>
+    </Calendar>
+  </Calendars>
   <Tasks>
     <Task>
       <UID>0</UID><ID>0</ID><Name>Project Summary</Name><OutlineLevel>0</OutlineLevel><Summary>1</Summary>
