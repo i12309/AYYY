@@ -135,10 +135,10 @@ export function mount(root, options={}) {
     ];
     return '<aside class="pv-details" id="pv-details" aria-label="Сведения о задаче"><div class="pv-details-head"><strong>Сведения о задаче</strong><button type="button" data-pv-action="close-details" aria-label="Закрыть сведения">×</button></div><h2>'+escapeHtml(t.name)+'</h2><dl>'+fields.map(([k,v])=>'<div><dt>'+escapeHtml(k)+'</dt><dd>'+escapeHtml(v)+'</dd></div>').join('')+'</dl>'+(t.notes?'<div class="pv-notes"><strong>Примечание</strong><p>'+escapeHtml(t.notes.slice(0,6000))+'</p></div>':'')+'</aside>';
   };
-  function render() {
+  function render(resetScroll = false) {
     if(state.destroyed) return;
     const oldList=root.querySelector('#pv-list-scroll'), oldChart=root.querySelector('#pv-chart-scroll');
-    if(oldList && oldChart){
+    if(!resetScroll && oldList && oldChart){
       state.scrollTop=oldList.scrollTop;
       state.scrollLeft=oldChart.scrollLeft;
     }
@@ -269,7 +269,7 @@ export function mount(root, options={}) {
       const normalized=await parseLocalFile(file,ticket);
       if(state.destroyed||ticket!==state.pending)return;
       state.model=normalized;state.demo=false;state.filename=file.name;state.query='';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();
-      render();
+      render(true);
       sendStatus('Файл прочитан локально. Ничего не отправлено на сервер.','success');
     }catch(error){
       if(state.destroyed||ticket!==state.pending)return;
@@ -296,7 +296,7 @@ export function mount(root, options={}) {
     ++state.pending;
     state.cancelParse?.();
     state.model=demoProject();state.filename='Пример (вымышленный)';state.demo=true;
-    state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render();
+    state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render(true);
   }
   function exportCsv() {
     if(!state.model || !app?.download)return;
