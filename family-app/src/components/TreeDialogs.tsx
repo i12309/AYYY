@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { FileUp, FolderHeart, Github, HardDrive, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { FileUp, FolderHeart, Cloud, HardDrive, LockKeyhole, ShieldCheck } from 'lucide-react';
 import type { TreeSummary } from '../types';
 import { api, errorMessage } from '../lib/api';
 import { Dialog } from './Dialog';
@@ -113,7 +113,7 @@ export function TreeDialog({
               <label className={`gen-storage-choice ${storage==='github'?'selected':''}`}>
                 <input type="radio" name="gen-storage" checked={storage==='github'}
                   onChange={()=>setStorage('github')} disabled={busy}/>
-                <Github size={21} aria-hidden="true"/>
+                <Cloud size={21} aria-hidden="true"/>
                 <span><strong>Мой GitHub · рекомендуем</strong>
                   <small>Приватный репозиторий и синхронизация между устройствами</small></span>
               </label>
