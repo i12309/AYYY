@@ -5,7 +5,9 @@
   function text(value,max=300){return String(value??'').trim().slice(0,max);}
   function isoDate(value){
     const s=text(value,20);
-    if(!/^\d{4}-\d\d-\d\d$/.test(s) || Number.isNaN(Date.parse(s+'T12:00:00Z')))
+    if(!/^\d{4}-\d\d-\d\d$/.test(s))throw new Error('Укажите корректную дату.');
+    const parsed=new Date(s+'T12:00:00Z');
+    if(Number.isNaN(+parsed)||parsed.toISOString().slice(0,10)!==s)
       throw new Error('Укажите корректную дату.');
     return s;
   }
