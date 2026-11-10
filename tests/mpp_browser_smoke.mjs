@@ -56,6 +56,22 @@ try{
     'the Gantt grid should extend to the bottom of its viewport');
   assert.ok(initialFit.top<220 && initialFit.bottom>750,
     'dense header allows the table/Gantt workspace to use almost the full desktop height');
+  await page.setViewportSize({width:1920,height:900});
+  await page.waitForFunction(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),rows=pane?.querySelector('.pv-chart-rows');
+    return !!rows && rows.getBoundingClientRect().width>=pane.clientWidth-1;
+  });
+  const wideFit=await page.locator('#pv-chart-scroll').evaluate(pane=>({
+    width:pane.clientWidth,grid:pane.querySelector('.pv-chart-rows')?.getBoundingClientRect().width
+  }));
+  assert.ok(wideFit.width>initialFit.width+100,'wider desktop must give more space to the Gantt');
+  assert.ok(wideFit.grid>=wideFit.width-1,'Gantt redraws the calendar grid on viewport resize');
+  await page.setViewportSize({width:1440,height:900});
+  await page.waitForFunction(()=>{
+    const pane=document.querySelector('#pv-chart-scroll'),rows=pane?.querySelector('.pv-chart-rows');
+    return !!rows && rows.getBoundingClientRect().width>=pane.clientWidth-1;
+  });
+
 
   assert.equal(await page.locator('.pv-list-row').count(),9);
   await page.locator('#pv-columns').selectOption('resources');
@@ -141,6 +157,8 @@ try{
   const inspector=await page.locator('#pv-details').boundingBox();
   const chart=await page.locator('#pv-chart-scroll').boundingBox();
   assert.ok(inspector.x>=chart.x+chart.width-2,'details pane must not cover the Gantt chart');
+  assert.ok(chart.width<initialFit.width-200,'the docked inspector takes width from the Gantt, not overlaid space');
+
   await page.waitForFunction(()=>{
     const pane=document.querySelector('#pv-chart-scroll'),rows=pane?.querySelector('.pv-chart-rows');
     return !!rows && rows.getBoundingClientRect().width>=pane.clientWidth-1;
