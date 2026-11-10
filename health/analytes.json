@@ -1,0 +1,840 @@
+{
+  "version": "human-analytes/2",
+  "definitions": [
+    {
+      "id": "ldl-cholesterol",
+      "name": "Холестерин ЛПНП",
+      "aliases": [
+        "холестерин-лпнп",
+        "холестерин лпнп по фридвальду",
+        "холестерин лпнп по фридвальду расчетный",
+        "холестерин липопротеинов низкой плотности",
+        "лпнп холестерин",
+        "холестерол лпнп",
+        "ldl cholesterol",
+        "ldl-c",
+        "холестерин лпнп прямой"
+      ]
+    },
+    {
+      "id": "hdl-cholesterol",
+      "name": "Холестерин ЛПВП",
+      "aliases": [
+        "холестерин-лпвп",
+        "холестерин липопротеинов высокой плотности",
+        "лпвп холестерин",
+        "холестерол лпвп",
+        "hdl cholesterol",
+        "hdl-c"
+      ]
+    },
+    {
+      "id": "total-cholesterol",
+      "name": "Общий холестерин",
+      "aliases": [
+        "холестерин",
+        "холестерин общий",
+        "холестерол общий",
+        "total cholesterol",
+        "cholesterol total"
+      ]
+    },
+    {
+      "id": "triglycerides",
+      "name": "Триглицериды",
+      "aliases": [
+        "триглицериды общие",
+        "триглицеридов общих",
+        "triglycerides"
+      ]
+    },
+    {
+      "id": "creatinine",
+      "name": "Креатинин",
+      "aliases": [
+        "creatinine"
+      ]
+    },
+    {
+      "id": "glucose",
+      "name": "Глюкоза",
+      "aliases": [
+        "glucose"
+      ]
+    },
+    {
+      "id": "hba1c",
+      "name": "Гликированный гемоглобин HbA1c",
+      "aliases": [
+        "hba1c",
+        "hba1c гликированный hb",
+        "гликированный гемоглобин",
+        "гликированный гемоглобин hba1c",
+        "glycated hemoglobin"
+      ]
+    },
+    {
+      "id": "vitamin-d-25oh",
+      "name": "Витамин D, 25(OH)",
+      "aliases": [
+        "витамин 25 oh d",
+        "витамин d 25 oh",
+        "25 oh витамин d",
+        "25 oh d",
+        "25 гидроксивитамин d",
+        "25 oh vitamin d"
+      ]
+    },
+    {
+      "id": "vitamin-d-125oh",
+      "name": "Витамин D, 1,25(OH)₂",
+      "aliases": [
+        "1 25 дигидроксивитамин d",
+        "витамин 1 25 oh 2 d",
+        "1 25 oh 2 d"
+      ]
+    },
+    {
+      "id": "ferritin",
+      "name": "Ферритин",
+      "aliases": [
+        "ferritin"
+      ]
+    },
+    {
+      "id": "iron",
+      "name": "Железо",
+      "aliases": [
+        "железо сывороточное",
+        "сывороточное железо",
+        "iron"
+      ]
+    },
+    {
+      "id": "transferrin",
+      "name": "Трансферрин",
+      "aliases": [
+        "transferrin"
+      ]
+    },
+    {
+      "id": "tsh",
+      "name": "ТТГ",
+      "aliases": [
+        "тиреотропный гормон",
+        "ттг тиреотропный гормон",
+        "tsh"
+      ]
+    },
+    {
+      "id": "free-t4",
+      "name": "Т4 свободный",
+      "aliases": [
+        "т4 св",
+        "свободный т4",
+        "тироксин свободный",
+        "free t4",
+        "ft4"
+      ]
+    },
+    {
+      "id": "total-t4",
+      "name": "Т4 общий",
+      "aliases": [
+        "тироксин общий",
+        "общий т4",
+        "total t4"
+      ]
+    },
+    {
+      "id": "free-t3",
+      "name": "Т3 свободный",
+      "aliases": [
+        "т3 св",
+        "трийодтиронин свободный",
+        "free t3",
+        "ft3"
+      ]
+    },
+    {
+      "id": "total-t3",
+      "name": "Т3 общий",
+      "aliases": [
+        "трийодтиронин общий",
+        "total t3"
+      ]
+    },
+    {
+      "id": "alt",
+      "name": "АЛТ",
+      "aliases": [
+        "алт аланинаминотрансфераза",
+        "аланинаминотрансфераза",
+        "alt",
+        "alat"
+      ]
+    },
+    {
+      "id": "ast",
+      "name": "АСТ",
+      "aliases": [
+        "аст аспартатаминотрансфераза",
+        "аспартатаминотрансфераза",
+        "ast",
+        "asat"
+      ]
+    },
+    {
+      "id": "ggt",
+      "name": "ГГТ",
+      "aliases": [
+        "гамма глутамилтрансфераза",
+        "гамма гт",
+        "ggt"
+      ]
+    },
+    {
+      "id": "alkaline-phosphatase",
+      "name": "Щелочная фосфатаза",
+      "aliases": [
+        "alp",
+        "щф"
+      ]
+    },
+    {
+      "id": "bilirubin-total",
+      "name": "Билирубин общий",
+      "aliases": [
+        "общий билирубин",
+        "total bilirubin"
+      ]
+    },
+    {
+      "id": "bilirubin-direct",
+      "name": "Билирубин прямой",
+      "aliases": [
+        "прямой билирубин",
+        "direct bilirubin"
+      ]
+    },
+    {
+      "id": "bilirubin-indirect",
+      "name": "Билирубин непрямой",
+      "aliases": [
+        "непрямой билирубин",
+        "indirect bilirubin"
+      ]
+    },
+    {
+      "id": "albumin",
+      "name": "Альбумин",
+      "aliases": [
+        "albumin"
+      ]
+    },
+    {
+      "id": "protein-total",
+      "name": "Общий белок",
+      "aliases": [
+        "белок общий",
+        "total protein"
+      ]
+    },
+    {
+      "id": "urea",
+      "name": "Мочевина",
+      "aliases": [
+        "urea"
+      ]
+    },
+    {
+      "id": "uric-acid",
+      "name": "Мочевая кислота",
+      "aliases": [
+        "uric acid"
+      ]
+    },
+    {
+      "id": "calcium-total",
+      "name": "Кальций общий",
+      "aliases": [
+        "общий кальций",
+        "calcium total"
+      ]
+    },
+    {
+      "id": "calcium-ionized",
+      "name": "Кальций ионизированный",
+      "aliases": [
+        "ионизированный кальций",
+        "ionized calcium"
+      ]
+    },
+    {
+      "id": "sodium",
+      "name": "Натрий",
+      "aliases": [
+        "sodium"
+      ]
+    },
+    {
+      "id": "potassium",
+      "name": "Калий",
+      "aliases": [
+        "potassium"
+      ]
+    },
+    {
+      "id": "magnesium",
+      "name": "Магний",
+      "aliases": [
+        "magnesium"
+      ]
+    },
+    {
+      "id": "crp",
+      "name": "С-реактивный белок",
+      "aliases": [
+        "с реактивный белок срб",
+        "срб",
+        "crp",
+        "c reactive protein"
+      ]
+    },
+    {
+      "id": "hs-crp",
+      "name": "С-реактивный белок высокочувствительный",
+      "aliases": [
+        "hs crp",
+        "высокочувствительный с реактивный белок"
+      ]
+    },
+    {
+      "id": "wbc",
+      "name": "Лейкоциты",
+      "aliases": [
+        "wbc",
+        "leukocytes"
+      ]
+    },
+    {
+      "id": "rbc",
+      "name": "Эритроциты",
+      "aliases": [
+        "rbc",
+        "erythrocytes"
+      ]
+    },
+    {
+      "id": "hemoglobin",
+      "name": "Гемоглобин",
+      "aliases": [
+        "hgb",
+        "hb",
+        "hemoglobin"
+      ]
+    },
+    {
+      "id": "hematocrit",
+      "name": "Гематокрит",
+      "aliases": [
+        "hct",
+        "hematocrit"
+      ]
+    },
+    {
+      "id": "mcv",
+      "name": "MCV — средний объём эритроцита",
+      "aliases": [
+        "mcv",
+        "mcv ср объем эритр",
+        "средний объем эритроцита"
+      ]
+    },
+    {
+      "id": "mch",
+      "name": "MCH — содержание гемоглобина в эритроците",
+      "aliases": [
+        "mch",
+        "mch ср содерж hb в эр",
+        "среднее содержание гемоглобина в эритроците"
+      ]
+    },
+    {
+      "id": "mchc",
+      "name": "MCHC — концентрация гемоглобина в эритроцитах",
+      "aliases": [
+        "mchc",
+        "mchc ср конц hb в эр",
+        "средняя концентрация гемоглобина в эритроцитах"
+      ]
+    },
+    {
+      "id": "rdw-cv",
+      "name": "RDW-CV — распределение эритроцитов",
+      "aliases": [
+        "rdw cv"
+      ]
+    },
+    {
+      "id": "rdw-sd",
+      "name": "RDW-SD — распределение эритроцитов",
+      "aliases": [
+        "rdw sd"
+      ]
+    },
+    {
+      "id": "platelets",
+      "name": "Тромбоциты",
+      "aliases": [
+        "plt",
+        "platelets"
+      ]
+    },
+    {
+      "id": "esr",
+      "name": "СОЭ",
+      "aliases": [
+        "скорость оседания эритроцитов",
+        "esr"
+      ]
+    },
+    {
+      "id": "neutrophils-percent",
+      "name": "Нейтрофилы, %",
+      "aliases": [
+        "нейтрофилы общ число %",
+        "нейтрофилы %",
+        "neutrophils %"
+      ]
+    },
+    {
+      "id": "neutrophils-absolute",
+      "name": "Нейтрофилы, абсолютное число",
+      "aliases": [
+        "нейтрофилы абс",
+        "нейтрофилы абсолютное число",
+        "neutrophils absolute"
+      ]
+    },
+    {
+      "id": "lymphocytes-percent",
+      "name": "Лимфоциты, %",
+      "aliases": [
+        "lymphocytes %"
+      ]
+    },
+    {
+      "id": "lymphocytes-absolute",
+      "name": "Лимфоциты, абсолютное число",
+      "aliases": [
+        "лимфоциты абс",
+        "lymphocytes absolute"
+      ]
+    },
+    {
+      "id": "monocytes-percent",
+      "name": "Моноциты, %",
+      "aliases": [
+        "monocytes %"
+      ]
+    },
+    {
+      "id": "monocytes-absolute",
+      "name": "Моноциты, абсолютное число",
+      "aliases": [
+        "моноциты абс",
+        "monocytes absolute"
+      ]
+    },
+    {
+      "id": "eosinophils-percent",
+      "name": "Эозинофилы, %",
+      "aliases": [
+        "eosinophils %"
+      ]
+    },
+    {
+      "id": "eosinophils-absolute",
+      "name": "Эозинофилы, абсолютное число",
+      "aliases": [
+        "эозинофилы абс",
+        "eosinophils absolute"
+      ]
+    },
+    {
+      "id": "basophils-percent",
+      "name": "Базофилы, %",
+      "aliases": [
+        "basophils %"
+      ]
+    },
+    {
+      "id": "basophils-absolute",
+      "name": "Базофилы, абсолютное число",
+      "aliases": [
+        "базофилы абс",
+        "basophils absolute"
+      ]
+    },
+    {
+      "id": "non-hdl-cholesterol",
+      "name": "Холестерин не-ЛПВП",
+      "aliases": [
+        "non hdl cholesterol"
+      ]
+    },
+    {
+      "id": "vldl-cholesterol",
+      "name": "Холестерин ЛПОНП",
+      "aliases": [
+        "vldl cholesterol"
+      ]
+    },
+    {
+      "id": "homocysteine",
+      "name": "Гомоцистеин",
+      "aliases": []
+    },
+    {
+      "id": "testosterone-total",
+      "name": "Тестостерон общий",
+      "aliases": [
+        "total testosterone"
+      ]
+    },
+    {
+      "id": "egfr",
+      "name": "Скорость клубочковой фильтрации (СКФ)",
+      "aliases": [
+        "egfr"
+      ]
+    },
+    {
+      "id": "aptt",
+      "name": "АЧТВ — активированное частичное тромбопластиновое время",
+      "aliases": [
+        "aptt"
+      ]
+    },
+    {
+      "id": "prothrombin-quick",
+      "name": "Протромбин по Квику",
+      "aliases": []
+    },
+    {
+      "id": "prothrombin-time",
+      "name": "Протромбиновое время",
+      "aliases": []
+    },
+    {
+      "id": "thrombin-time",
+      "name": "Тромбиновое время",
+      "aliases": []
+    },
+    {
+      "id": "fibrinogen",
+      "name": "Фибриноген",
+      "aliases": []
+    },
+    {
+      "id": "inr",
+      "name": "МНО — международное нормализованное отношение",
+      "aliases": [
+        "inr"
+      ]
+    },
+    {
+      "id": "afp",
+      "name": "Альфа-фетопротеин (АФП)",
+      "aliases": [
+        "alpha fetoprotein"
+      ]
+    },
+    {
+      "id": "h-pylori-igm",
+      "name": "Антитела IgM к Helicobacter pylori",
+      "aliases": []
+    },
+    {
+      "id": "h-pylori-igg",
+      "name": "Антитела IgG к Helicobacter pylori",
+      "aliases": []
+    },
+    {
+      "id": "measles-igg",
+      "name": "Антитела IgG к вирусу кори",
+      "aliases": []
+    },
+    {
+      "id": "urine-color",
+      "name": "Моча: Цвет",
+      "aliases": []
+    },
+    {
+      "id": "urine-clarity",
+      "name": "Моча: Прозрачность",
+      "aliases": []
+    },
+    {
+      "id": "urine-specific-gravity",
+      "name": "Моча: Относительная плотность",
+      "aliases": []
+    },
+    {
+      "id": "urine-ph",
+      "name": "Моча: pH",
+      "aliases": []
+    },
+    {
+      "id": "urine-protein",
+      "name": "Моча: Белок",
+      "aliases": []
+    },
+    {
+      "id": "urine-glucose",
+      "name": "Моча: Глюкоза",
+      "aliases": []
+    },
+    {
+      "id": "urine-ketones",
+      "name": "Моча: Кетоновые тела",
+      "aliases": []
+    },
+    {
+      "id": "urine-urobilinogen",
+      "name": "Моча: Уробилиноген",
+      "aliases": []
+    },
+    {
+      "id": "urine-bilirubin",
+      "name": "Моча: Билирубин",
+      "aliases": []
+    },
+    {
+      "id": "urine-leukocyte-esterase",
+      "name": "Моча: Лейкоцитарная эстераза",
+      "aliases": []
+    },
+    {
+      "id": "urine-hemoglobin",
+      "name": "Моча: Гемоглобин",
+      "aliases": []
+    },
+    {
+      "id": "urine-nitrites",
+      "name": "Моча: Нитриты",
+      "aliases": []
+    },
+    {
+      "id": "urine-squamous-epithelium",
+      "name": "Моча: Плоский эпителий",
+      "aliases": []
+    },
+    {
+      "id": "urine-transitional-epithelium",
+      "name": "Моча: Переходный эпителий",
+      "aliases": []
+    },
+    {
+      "id": "urine-renal-epithelium",
+      "name": "Моча: Почечный эпителий",
+      "aliases": []
+    },
+    {
+      "id": "urine-wbc-microscopy",
+      "name": "Моча: Лейкоциты, микроскопия",
+      "aliases": []
+    },
+    {
+      "id": "urine-rbc-microscopy",
+      "name": "Моча: Эритроциты, микроскопия",
+      "aliases": []
+    },
+    {
+      "id": "urine-casts",
+      "name": "Моча: Цилиндры",
+      "aliases": []
+    },
+    {
+      "id": "urine-salts",
+      "name": "Моча: Соли",
+      "aliases": []
+    },
+    {
+      "id": "urine-mucus",
+      "name": "Моча: Слизь",
+      "aliases": []
+    },
+    {
+      "id": "urine-bacteria",
+      "name": "Моча: Бактерии",
+      "aliases": []
+    },
+    {
+      "id": "urine-yeast",
+      "name": "Моча: Дрожжевые грибы",
+      "aliases": []
+    },
+    {
+      "id": "stool-color",
+      "name": "Кал: Цвет",
+      "aliases": []
+    },
+    {
+      "id": "stool-consistency",
+      "name": "Кал: Консистенция",
+      "aliases": []
+    },
+    {
+      "id": "stool-form",
+      "name": "Кал: Форма",
+      "aliases": []
+    },
+    {
+      "id": "stool-odor",
+      "name": "Кал: Запах",
+      "aliases": []
+    },
+    {
+      "id": "stool-ph",
+      "name": "Кал: pH",
+      "aliases": []
+    },
+    {
+      "id": "stool-yeast",
+      "name": "Кал: Дрожжевые грибы",
+      "aliases": []
+    },
+    {
+      "id": "stool-connective-tissue",
+      "name": "Кал: Соединительная ткань",
+      "aliases": []
+    },
+    {
+      "id": "stool-occult-blood",
+      "name": "Кал: Реакция на скрытую кровь",
+      "aliases": []
+    },
+    {
+      "id": "stool-undigested-food",
+      "name": "Кал: Остатки непереваренной пищи",
+      "aliases": []
+    },
+    {
+      "id": "stool-striated-muscle-fibers",
+      "name": "Кал: Мышечные волокна с исчерченностью",
+      "aliases": []
+    },
+    {
+      "id": "stool-non-striated-muscle-fibers",
+      "name": "Кал: Мышечные волокна без исчерченности",
+      "aliases": []
+    },
+    {
+      "id": "stool-visible-blood",
+      "name": "Кал: Кровь, макроскопически",
+      "aliases": []
+    },
+    {
+      "id": "stool-columnar-epithelium",
+      "name": "Кал: Цилиндрический эпителий",
+      "aliases": []
+    },
+    {
+      "id": "stool-protein-reaction",
+      "name": "Кал: Реакция на белок",
+      "aliases": []
+    },
+    {
+      "id": "stool-wbc-microscopy",
+      "name": "Кал: Лейкоциты, микроскопия",
+      "aliases": []
+    },
+    {
+      "id": "stool-rbc-microscopy",
+      "name": "Кал: Эритроциты, микроскопия",
+      "aliases": []
+    },
+    {
+      "id": "stool-neutral-fat",
+      "name": "Кал: Нейтральный жир",
+      "aliases": []
+    },
+    {
+      "id": "stool-stercobilin-reaction",
+      "name": "Кал: Реакция на стеркобилин",
+      "aliases": []
+    },
+    {
+      "id": "stool-helminth-eggs",
+      "name": "Кал: Яйца гельминтов",
+      "aliases": []
+    },
+    {
+      "id": "stool-extracellular-starch",
+      "name": "Кал: Крахмал внеклеточный",
+      "aliases": []
+    },
+    {
+      "id": "stool-intracellular-starch",
+      "name": "Кал: Крахмал внутриклеточный",
+      "aliases": []
+    },
+    {
+      "id": "stool-crystals",
+      "name": "Кал: Кристаллы",
+      "aliases": []
+    },
+    {
+      "id": "stool-mucus",
+      "name": "Кал: Слизь",
+      "aliases": []
+    },
+    {
+      "id": "stool-fatty-acid-salts",
+      "name": "Кал: Соли жирных кислот",
+      "aliases": []
+    },
+    {
+      "id": "stool-fatty-acids",
+      "name": "Кал: Жирные кислоты",
+      "aliases": []
+    },
+    {
+      "id": "stool-bilirubin-reaction",
+      "name": "Кал: Реакция на билирубин",
+      "aliases": []
+    },
+    {
+      "id": "stool-digestible-fiber",
+      "name": "Кал: Перевариваемая растительная клетчатка",
+      "aliases": []
+    },
+    {
+      "id": "stool-indigestible-fiber",
+      "name": "Кал: Неперевариваемая растительная клетчатка",
+      "aliases": []
+    },
+    {
+      "id": "stool-normal-iodophilic-flora",
+      "name": "Кал: Йодофильная флора, нормальная",
+      "aliases": []
+    },
+    {
+      "id": "stool-pathological-iodophilic-flora",
+      "name": "Кал: Йодофильная флора, патологическая",
+      "aliases": []
+    },
+    {
+      "id": "stool-protozoa",
+      "name": "Кал: Простейшие",
+      "aliases": []
+    },
+    {
+      "id": "stool-squamous-epithelium",
+      "name": "Кал: Плоский эпителий",
+      "aliases": []
+    }
+  ]
+}

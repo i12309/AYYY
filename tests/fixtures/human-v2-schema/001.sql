@@ -1,0 +1,17 @@
+CREATE TABLE profile (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE sources (id TEXT PRIMARY KEY, type TEXT NOT NULL CHECK(type IN ('manual','document','photo','device','provider','import','calculation','system')), payload TEXT NOT NULL);
+CREATE TABLE documents (id TEXT PRIMARY KEY, original_filename TEXT NOT NULL, mime_type TEXT NOT NULL, size INTEGER NOT NULL, sha256 TEXT NOT NULL UNIQUE, received_at TEXT NOT NULL, source_id TEXT NOT NULL REFERENCES sources(id), status TEXT NOT NULL CHECK(status IN ('ready','deleting')), payload TEXT NOT NULL);
+CREATE INDEX documents_date ON documents(received_at DESC,id);
+CREATE TABLE observations (id TEXT PRIMARY KEY, code TEXT NOT NULL, name TEXT NOT NULL, observed_at TEXT NOT NULL, unit TEXT NOT NULL, specimen TEXT NOT NULL, method TEXT NOT NULL, laboratory TEXT NOT NULL, value_kind TEXT NOT NULL, value REAL, review_status TEXT NOT NULL, version INTEGER NOT NULL, source_id TEXT NOT NULL REFERENCES sources(id), payload TEXT NOT NULL);
+CREATE INDEX observations_date ON observations(observed_at DESC,id);
+CREATE INDEX observations_series ON observations(code,unit,specimen,method,laboratory,observed_at DESC);
+CREATE TABLE observation_revisions (id TEXT PRIMARY KEY, observation_id TEXT NOT NULL REFERENCES observations(id) ON DELETE CASCADE, version INTEGER NOT NULL, snapshot TEXT NOT NULL, reason TEXT NOT NULL, changed_at TEXT NOT NULL, UNIQUE(observation_id,version));
+CREATE TABLE genetic_findings (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL, provider TEXT NOT NULL, source_id TEXT NOT NULL REFERENCES sources(id), created_at TEXT NOT NULL, payload TEXT NOT NULL);
+CREATE INDEX genetics_date ON genetic_findings(created_at DESC,id);
+CREATE INDEX genetics_category ON genetic_findings(category,created_at DESC);
+CREATE TABLE timeline (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, entity_id TEXT NOT NULL, happened_at TEXT NOT NULL, title TEXT NOT NULL, source_id TEXT REFERENCES sources(id));
+CREATE INDEX timeline_date ON timeline(happened_at DESC,id DESC);
+CREATE INDEX timeline_kind_date ON timeline(kind,happened_at DESC,id DESC);
+CREATE TABLE legacy_imports (id TEXT PRIMARY KEY, sha256 TEXT NOT NULL UNIQUE, schema_version TEXT NOT NULL, original_profile_id TEXT NOT NULL UNIQUE, imported_at TEXT NOT NULL, counts TEXT NOT NULL);
+CREATE TABLE legacy_records (import_id TEXT NOT NULL REFERENCES legacy_imports(id), kind TEXT NOT NULL, sequence INTEGER NOT NULL, original_id TEXT, payload TEXT NOT NULL, PRIMARY KEY(import_id,kind,sequence));
+CREATE INDEX legacy_kind ON legacy_records(kind,original_id);

@@ -182,6 +182,15 @@
       V.h('p',{class:'health-note'},
         'Токен не сохраняется на диск. Синхронизация выполняется только пока эта страница открыта.')
     ]));
+    box.append(V.card('Перенос из HUMAN',[
+      V.h('p',{class:'health-note'},'Выберите пользовательский экспорт HUMAN v2. Контрольные суммы будут проверены, а перенос создаст отдельный журнал с новой фразой доступа.'),
+      V.form('human-migration-file',[V.field('Пользовательский экспорт ZIP (до 16 МиБ)','file','','file')],'Проверить экспорт')
+    ]));
+    if(doc.humanMigration)box.append(V.card('Исходный экспорт HUMAN',[
+      V.h('p',{},'Архив: '+doc.humanMigration.archiveName),
+      V.h('p',{class:'health-note'},'Скачать можно исходный снимок до изменений в AYYY. Новые изменения входят в зашифрованный архив журнала.'),
+      V.button('Просмотреть исходные записи','human-raw'),V.button('Скачать исходный экспорт','human-original')
+    ]));
     box.append(V.card('Резервирование и удаление',[
       V.h('p',{class:'health-note'},'Держите отдельную зашифрованную резервную копию вне GitHub.'),
       V.button('Экспортировать vault.json','backup'),
@@ -215,7 +224,7 @@
     const x=kind==='profile'?state.doc.profile:(existing||{}),now=today(),f=V.field,r=V.row;
     let fields=[];
     if(kind==='lab')fields=[
-      r(f('Дата (ГГГГ-ММ-ДД, ГГГГ-ММ или ГГГГ)','date',existing?x.date:now),f('Точность даты','datePrecision',x.datePrecision||'day','select',[['day','День'],['month','Месяц'],['year','Год'],['unknown','Неизвестна']])),
+      r(f('Дата (ГГГГ-ММ-ДД, ГГГГ-ММ или ГГГГ)','date',existing?x.date:now),f('Точность даты','datePrecision',x.datePrecision||'day','select',[['day','День'],['exact','Точное время с часовым поясом'],['month','Месяц'],['year','Год'],['unknown','Неизвестна']])),
       f('Результат как в бланке','value',x.value||''),
       f('Показатель в бланке','name',x.name||''),f('Показатель в каталоге (необязательно)','canonicalName',x.canonicalName||''),
       r(f('Единица','unit',x.unit||''),f('Лаборатория','source',x.source||'')),
@@ -252,7 +261,7 @@
     ];
     else if(kind==='profile')fields=[
       f('Имя','name',x.name||''),r(f('Дата рождения','birthDate',x.birthDate||'','date'),
-        f('Пол','sex',x.sex||'','select',[['','Не указан'],['male','Мужской'],['female','Женский']])),
+        f('Пол','sex',x.sex||'','select',[['','Не указан'],['unknown','Неизвестен'],['male','Мужской'],['female','Женский'],['intersex','Интерсекс']])),
       f('Дополнительно','notes',x.notes||'','textarea')
     ];
     const mode=kind==='profile'?'profile':'record';
@@ -331,8 +340,8 @@
   }
   async function profileSubmit(form){
     const input=Object.fromEntries(new FormData(form).entries());
-    const next={name:M.text(input.name,150),birthDate:input.birthDate?M.isoDate(input.birthDate):'',
-      sex:['male','female'].includes(input.sex)?input.sex:'',
+    const next={...state.doc.profile,name:M.text(input.name,150),birthDate:input.birthDate?M.isoDate(input.birthDate):'',
+      sex:['male','female','intersex','unknown'].includes(input.sex)?input.sex:'',
       notes:M.text(input.notes,3000)};
     await mutate(data=>{
       data.revisions.push({id:M.id(),kind:'profile',operation:'edit',
@@ -514,7 +523,8 @@
         const local=await S.save({id:envelope.vaultId,envelope,dirty:true});
         await S.select(local.id);await profileList();
         state.local=local;state.doc=null;state.key=null;state.picker=false;render();
-      }else if(mode==='record')await recordSubmit(form);
+      }else if(mode==='human-migration-file'){if(state.demo)throw Error('Перенос доступен в личном журнале.');const file=form.elements.namedItem('file').files[0];await HumanMigrationUI.open(file,{V,C,S,dialog,getDoc:()=>state.doc,onCreated:async next=>{clearTimeout(syncTimer);G.disconnect();state.local=next.local;state.doc=next.doc;state.key=next.key;state.demo=false;state.picker=false;state.tab='overview';state.filters={};state.search='';state.globalSearch='';state.groupKey='';state.conflict=false;await profileList();render();toast('Создан отдельный журнал из экспорта HUMAN.');}});}
+      else if(mode==='record')await recordSubmit(form);
       else if(mode==='analyte-preferences'){const input=Object.fromEntries(new FormData(form).entries()),key=form.dataset.key;await mutate(d=>{d.analytePreferences??={};const old=d.analytePreferences[key]||{};d.revisions.push({id:M.id(),kind:'analyte-preferences',recordId:key,operation:'edit',previous:structuredClone(old),changedAt:new Date().toISOString()});d.analytePreferences[key]=M.checkPreferences(input,old);});toast('Настройки показателя сохранены.');}
       else if(mode==='profile')await profileSubmit(form);
       else if(mode==='connect')await connect(form);
@@ -601,6 +611,8 @@
       }else if(action==='sync')await syncNow();
       else if(action==='disconnect-token'){G.disconnect();render();}
       else if(action==='restore-remote')await restoreRemote();
+      else if(action==='human-raw')HumanMigrationUI.raw(state.doc,{V,dialog});
+      else if(action==='human-original'){const data=state.doc.humanMigration;if(data)download(data.archiveName,C.unbase64(data.originalArchive),'application/zip');}
       else if(action==='backup')backup();
       else if(action==='delete-local')await deleteLocal();
       else if(action==='file-download')await fileDownload(el.dataset.id);

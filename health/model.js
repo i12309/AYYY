@@ -18,32 +18,33 @@
     return Number.isFinite(n)?n:null;
   }
   function observationDate(value,precision){
-    const raw=text(value,20),kind=precision||(/^\d{4}$/.test(raw)?'year':/^\d{4}-\d{2}$/.test(raw)?'month':'day');
+    const raw=text(value,64),kind=precision||(/^\d{4}$/.test(raw)?'year':/^\d{4}-\d{2}$/.test(raw)?'month':'day');
     if(kind==='unknown'){if(raw)throw new Error('Для неизвестной даты оставьте поле пустым.');return {date:'',datePrecision:kind};}
     if(kind==='year'&&/^\d{4}$/.test(raw)&&Number(raw)>0)return {date:raw,datePrecision:kind};
     if(kind==='month'&&/^\d{4}-\d{2}$/.test(raw)){isoDate(raw+'-01');return {date:raw,datePrecision:kind};}
+    if(kind==='exact'){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)||!Number.isFinite(Date.parse(raw)))throw new Error('Точное время должно включать часовой пояс.');isoDate(raw.slice(0,10));return {date:raw,datePrecision:kind};}
     if(kind==='day')return {date:isoDate(raw),datePrecision:kind};
     throw new Error('Дата не соответствует выбранной точности.');
   }
   function checkPreferences(input,original={}){
-    const low=text(input.low,50),high=text(input.high,50);
+    const low=text(input.low,100),high=text(input.high,100);
     if((low&&number(low)===null)||(high&&number(high)===null)||(low&&high&&number(low)>number(high)))throw new Error('Проверьте числовые границы референса.');
-    return {...original,low,high,unit:text(input.unit,50),note:text(input.note,2000),useReference:input.useReference==='yes',updatedAt:new Date().toISOString()};
+    return {...original,low,high,unit:text(input.unit,100),note:text(input.note,2000),useReference:input.useReference==='yes',updatedAt:new Date().toISOString()};
   }
   function referenceRow(row,preferences){return preferences?.useReference&&preferences.unit===row.unit?{...row,low:preferences.low,high:preferences.high}:row;}
   function checkLab(input,original){
-    for(const [key,max] of Object.entries({name:180,value:100,canonicalName:180,unit:50,low:50,high:50,source:180,material:90,method:90,notes:3000}))if(String(input[key]??'').trim().length>max)throw new Error('Поле '+key+' превышает '+max+' символов. Сократите его перед сохранением.');
-    const name=text(input.name,180),value=text(input.value,100);
+    for(const [key,max] of Object.entries({name:200,value:8000,canonicalName:200,unit:100,low:100,high:100,source:1000,material:1000,method:1000,notes:8000}))if(String(input[key]??'').trim().length>max)throw new Error('Поле '+key+' превышает '+max+' символов. Сократите его перед сохранением.');
+    const name=text(input.name,200),value=text(input.value,8000);
     if(!name || !value)throw new Error('Название показателя и результат обязательны.');
-    const low=text(input.low,50),high=text(input.high,50);
+    const low=text(input.low,100),high=text(input.high,100);
     if((low && number(low)===null)||(high && number(high)===null))
       throw new Error('Референсы должны содержать числа или оставаться пустыми.');
     if(low&&high&&number(low)>number(high))throw new Error('Нижняя граница больше верхней.');
     return {...original,id:original?.id||id(),...observationDate(input.date,input.datePrecision),name,value,
-      canonicalName:text(input.canonicalName,180),valueKind:number(value)!==null?'quantity':/^[<>≤≥]/.test(value)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(value)?'range':'qualitative',
-      unit:text(input.unit,50),low,high,source:text(input.source,180),
-      material:text(input.material,90),method:text(input.method,90),
-      notes:text(input.notes,3000),createdAt:original?.createdAt||new Date().toISOString(),
+      canonicalName:text(input.canonicalName,200),reviewStatus:'confirmed_manual',valueKind:number(value)!==null?'quantity':/^[<>≤≥]/.test(value)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(value)?'range':'qualitative',
+      unit:text(input.unit,100),low,high,source:text(input.source,1000),
+      material:text(input.material,1000),method:text(input.method,1000),
+      notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
   }
   function checkVital(input,original){
@@ -53,7 +54,7 @@
     if(!valid)throw new Error(type==='Давление'?'Формат давления: 120/80.':'Введите числовое значение.');
     const units={'Давление':'мм рт. ст.','Пульс':'уд/мин','Масса':'кг','Температура':'°C',
       'Глюкоза':'ммоль/л','Сон':'ч','Шаги':'шагов','Рост':'см'};
-    return {id:original?.id||id(),date:isoDate(input.date),type,value,
+    return {...original,id:original?.id||id(),date:isoDate(input.date),type,value,
       unit:units[type]||text(input.unit,50),notes:text(input.notes,1000),
       createdAt:original?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   }
@@ -61,14 +62,14 @@
     const category=text(input.category,40),title=text(input.title,200);
     if(!['allergy','condition','vaccine','surgery','other'].includes(category)||!title)
       throw new Error('Выберите категорию и укажите название.');
-    return {id:original?.id||id(),category,title,date:input.date?isoDate(input.date):'',
-      notes:text(input.notes,3000),createdAt:original?.createdAt||new Date().toISOString(),
+    return {...original,id:original?.id||id(),category,title,date:input.date?isoDate(input.date):'',
+      notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
   }
   function checkMedication(input,original){
     const name=text(input.name,180);
     if(!name)throw new Error('Укажите название препарата.');
-    return {id:original?.id||id(),name,dose:text(input.dose,100),frequency:text(input.frequency,150),
+    return {...original,id:original?.id||id(),name,dose:text(input.dose,100),frequency:text(input.frequency,150),
       startDate:input.startDate?isoDate(input.startDate):'',notes:text(input.notes,3000),
       createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
@@ -77,12 +78,12 @@
     const kind=text(input.kind,40),title=text(input.title,250);
     if(!['food','activity','wellbeing','sleep'].includes(kind)||!title)
       throw new Error('Укажите вид и содержание записи.');
-    return {id:original?.id||id(),date:isoDate(input.date),kind,title,
-      notes:text(input.notes,3000),createdAt:original?.createdAt||new Date().toISOString(),
+    return {...original,id:original?.id||id(),date:isoDate(input.date),kind,title,
+      notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
   }
   function groupKey(r){
-    return [r.canonicalName||r.name,r.unit,r.material,r.method].map(s=>text(s).toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')).join('\u001f');
+    return [r.canonicalName||r.name,r.unit,r.material,r.method].map(s=>String(s??'').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')).join('\u001f');
   }
   function groups(records,preferences={}){
     const map=new Map();
@@ -92,7 +93,7 @@
       map.get(key).rows.push(row);
     }
     return [...map.values()].map(group=>{
-      group.rows.sort((a,b)=>b.date.localeCompare(a.date)||b.updatedAt.localeCompare(a.updatedAt));
+      group.rows.sort((a,b)=>sortKey(b).localeCompare(sortKey(a))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
       group.latest=group.rows[0];
       group.preferences=preferences[group.key]||{};
       group.effectiveLatest=referenceRow(group.latest,group.preferences);
@@ -101,19 +102,20 @@
     }).sort((a,b)=>b.latest.date.localeCompare(a.latest.date)||a.name.localeCompare(b.name,'ru'));
   }
   function status(row){
-    if(!row || !text(row.unit))return 'unknown';
+    if(!row || row.reviewStatus==='draft' || !text(row.unit))return 'unknown';
     const v=number(row.value),low=number(row.low),high=number(row.high);
     if(v===null||(low===null&&high===null))return 'unknown';
     if((low!==null&&v<low)||(high!==null&&v>high))return 'abnormal';
     return 'normal';
   }
+  function timestamp(row){return Date.parse(row.datePrecision==='exact'?row.date:row.date+'T12:00:00Z');}
   function chartRows(rows){
-    return rows.filter(row=>text(row.unit)&&number(row.value)!==null&&/^\d{4}-\d\d-\d\d$/.test(row.date))
-      .slice().sort((a,b)=>a.date.localeCompare(b.date));
+    return rows.filter(row=>row.reviewStatus!=='draft'&&text(row.unit)&&number(row.value)!==null&&((row.datePrecision==='exact'&&Number.isFinite(timestamp(row)))||/^\d{4}-\d\d-\d\d$/.test(row.date)))
+      .slice().sort((a,b)=>timestamp(a)-timestamp(b));
   }
+  function sortKey(row){return row.datePrecision==='exact'&&Number.isFinite(timestamp(row))?new Date(timestamp(row)).toISOString():row.date||row.startDate||row.createdAt||'';}
   function recent(items,limit=6){
-    return items.slice().sort((a,b)=>(b.date||b.startDate||b.createdAt||'').localeCompare(
-      a.date||a.startDate||a.createdAt||'')).slice(0,limit);
+    return items.slice().sort((a,b)=>sortKey(b).localeCompare(sortKey(a))).slice(0,limit);
   }
   function parseCSV(raw){
     if(typeof raw!=='string'||raw.length>2*1024*1024)throw new Error('CSV слишком большой (максимум 2 МиБ).');
@@ -159,6 +161,6 @@
     });
     return {records,errors};
   }
-  window.HumanModel={id,text,isoDate,number,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
+  window.HumanModel={id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
     checkDiary,groupKey,groups,status,chartRows,recent,parseCSV};
 })();

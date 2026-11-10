@@ -5,24 +5,24 @@
  function xml(text){if(/<!DOCTYPE|<!ENTITY/i.test(text))throw Error('XML с внешними сущностями не поддерживается.');const d=new DOMParser().parseFromString(text,'application/xml');if(d.querySelector('parsererror'))throw Error('Повреждённый XML в таблице.');return d;}
  const nodes=(d,name)=>Array.from(d.getElementsByTagNameNS('*',name));
  function crc32(bytes){let crc=-1;for(const b of bytes){crc^=b;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^-1)>>>0;}
- async function unzip(bytes){
+ async function unzip(bytes,{raw=false}={}){
   const v=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),files=new Map();let e=-1;
   for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(v.getUint32(i,true)===0x06054b50&&i+22+v.getUint16(i+20,true)===bytes.length){e=i;break;}
-  if(e<0||v.getUint16(e+4,true)||v.getUint16(e+6,true))throw Error('Неверный ZIP/XLSX.');
+  if(e<0||v.getUint16(e+4,true)||v.getUint16(e+6,true))throw Error('Неверный ZIP.');
   const count=v.getUint16(e+10,true),end=v.getUint32(e+16,true)+v.getUint32(e+12,true);let pos=v.getUint32(e+16,true),total=0;
-  if(count>2048||end>e)throw Error('Слишком большой каталог XLSX.');
+  if(count>2048||end>e)throw Error('Слишком большой каталог ZIP.');
   for(let i=0;i<count;i++){
-   if(pos+46>end||v.getUint32(pos,true)!==0x02014b50)throw Error('Повреждённый каталог XLSX.');
+   if(pos+46>end||v.getUint32(pos,true)!==0x02014b50)throw Error('Повреждённый каталог ZIP.');
    const flags=v.getUint16(pos+8,true),method=v.getUint16(pos+10,true),crc=v.getUint32(pos+16,true),packed=v.getUint32(pos+20,true),size=v.getUint32(pos+24,true),n=v.getUint16(pos+28,true),extra=v.getUint16(pos+30,true),comment=v.getUint16(pos+32,true),offset=v.getUint32(pos+42,true);
-   if(pos+46+n+extra+comment>end)throw Error('Обрезанный каталог XLSX.');
+   if(pos+46+n+extra+comment>end)throw Error('Обрезанный каталог ZIP.');
    const name=decoder.decode(bytes.subarray(pos+46,pos+46+n));pos+=46+n+extra+comment;total+=size;
-   if(flags&1||![0,8].includes(method)||total>MAX||size>MAX||offset+30>bytes.length||/\\|(^|\/)\.\.(\/|$)|^\//.test(name)||files.has(name))throw Error('Неподдерживаемый или слишком большой XLSX.');
+   if(flags&1||![0,8].includes(method)||total>MAX||size>MAX||offset+30>bytes.length||/\\|(^|\/)\.\.(\/|$)|^\//.test(name)||files.has(name))throw Error('Неподдерживаемый или слишком большой ZIP.');
    files.set(name,async()=>{
-    if(v.getUint32(offset,true)!==0x04034b50)throw Error('Повреждённый файл XLSX.');
-    const start=offset+30+v.getUint16(offset+26,true)+v.getUint16(offset+28,true);if(start+packed>bytes.length)throw Error('Обрезанный XLSX.');
+    if(v.getUint32(offset,true)!==0x04034b50)throw Error('Повреждённый файл ZIP.');
+    const start=offset+30+v.getUint16(offset+26,true)+v.getUint16(offset+28,true);if(start+packed>bytes.length)throw Error('Обрезанный ZIP.');
     let data=bytes.slice(start,start+packed);
-    if(method===8){const reader=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader(),chunks=[];let length=0;try{for(;;){const r=await reader.read();if(r.done)break;length+=r.value.length;if(length>size||length>MAX)throw Error('Превышен размер распаковки XLSX.');chunks.push(r.value);}}catch(e){await reader.cancel().catch(()=>{});throw e;}data=new Uint8Array(length);let at=0;for(const c of chunks){data.set(c,at);at+=c.length;}}
-    if(data.length!==size||crc32(data)!==crc)throw Error('Не совпадает контрольная сумма XLSX.');return xml(decoder.decode(data));
+    if(method===8){const reader=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader(),chunks=[];let length=0;try{for(;;){const r=await reader.read();if(r.done)break;length+=r.value.length;if(length>size||length>MAX)throw Error('Превышен размер распаковки ZIP.');chunks.push(r.value);}}catch(e){await reader.cancel().catch(()=>{});throw e;}data=new Uint8Array(length);let at=0;for(const c of chunks){data.set(c,at);at+=c.length;}}
+    if(data.length!==size||crc32(data)!==crc)throw Error('Не совпадает контрольная сумма ZIP.');return raw?data:xml(decoder.decode(data));
    });
   }
   return files;
@@ -69,5 +69,5 @@
   if(extension==='xlsx')tables=await xlsx(bytes);else if(extension==='pdf')tables=await pdfTables(bytes);else if(extension==='csv')tables=csvTable(decoder.decode(bytes).replace(/^\uFEFF/,''));else throw Error('Выберите PDF, XLSX или CSV.');
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');return {bytes,tables,hash,name:file.name,extension};
  }
- window.HumanDocuments={read,renderPDF,xlsx,csvTable};
+ window.HumanDocuments={unzip,read,renderPDF,xlsx,csvTable};
 })();

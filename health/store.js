@@ -47,5 +47,12 @@
   function remove(id){return request('vaults','readwrite',s=>s.delete(id));}
   function current(){return request('meta','readonly',s=>s.get('current'));}
   function select(id){return request('meta','readwrite',s=>s.put(id,'current'));}
-  window.HumanStore={list,get,save,remove,current,select};
+  async function createSelected(entry){
+    if(!entry||entry.envelope?.vaultId!==entry.id)throw new Error('Несовпадение нового архива.');
+    window.HumanCrypto.assertEnvelope(entry.envelope);
+    const record={id:entry.id,envelope:entry.envelope,repo:null,remoteSha:null,dirty:true,lastSyncAt:null},db=await open();
+    await new Promise((resolve,reject)=>{const tx=db.transaction(['vaults','meta'],'readwrite');tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Не удалось создать импортированный журнал.'));try{tx.objectStore('vaults').add(record);tx.objectStore('meta').put(record.id,'current');}catch(error){tx.abort();reject(error);}});
+    return record;
+  }
+  window.HumanStore={list,get,save,remove,current,select,createSelected};
 })();

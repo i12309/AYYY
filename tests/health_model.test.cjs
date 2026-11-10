@@ -97,5 +97,19 @@ test('private GitHub storage uses isolated health-data path and in-memory token'
 });
 
 test('lab results are never silently truncated during import',()=>{
- const m=model();assert.throws(()=>m.checkLab({name:'Synthetic marker',value:'x'.repeat(101),date:'2026-11-01'}));
+ const m=model();assert.throws(()=>m.checkLab({name:'Synthetic marker',value:'x'.repeat(8001),date:'2026-11-01'}));
+});
+
+test('exact timestamps keep their timezone and drafts stay out of numerical charts',()=>{
+ const m=model(),base={name:'Synthetic time marker',value:'3',unit:'mg',date:'2026-11-01T15:00:00.123456789+03:00',datePrecision:'exact'};
+ const row=m.checkLab(base);assert.equal(row.date,base.date);assert.equal(row.datePrecision,'exact');assert.equal(m.chartRows([row]).length,1);
+ assert.equal(m.chartRows([{...row,reviewStatus:'draft'}]).length,0);
+ assert.throws(()=>m.checkLab({...base,date:'2026-11-01T15:00:00'}));
+ assert.throws(()=>m.checkLab({...base,date:'2026-02-30T15:00:00Z'}));
+});
+
+test('latest exact measurement is ordered by instant across timezone offsets',()=>{
+ const m=model(),base={name:'Synthetic time marker',value:'3',unit:'mg',datePrecision:'exact'};
+ const a=m.checkLab({...base,date:'2026-11-01T15:00:00+03:00'}),b=m.checkLab({...base,date:'2026-11-01T14:00:00Z'});
+ assert.equal(m.groups([a,b])[0].latest.id,b.id);assert.equal(m.recent([a,b])[0].id,b.id);
 });

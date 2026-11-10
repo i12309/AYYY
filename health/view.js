@@ -55,10 +55,11 @@
   function status(row){
     const kind=M.status(row);
     return h('span',{class:'health-pill badge '+(kind==='normal'?'ok success':kind==='abnormal'?'bad danger':'')},
-      kind==='normal'?'В референсе':kind==='abnormal'?'Вне референса':'Без оценки');
+      row.reviewStatus==='draft'?'Черновик':kind==='normal'?'В референсе':kind==='abnormal'?'Вне референса':'Без оценки');
   }
   function date(value){
     if(!value)return 'Дата неизвестна';
+    if(/^\d{4}-\d\d-\d\dT/.test(value)&&Number.isFinite(Date.parse(value)))return new Date(value).toLocaleString('ru-RU',{timeZone:'UTC'})+' UTC';
     if(/^\d{4}$/.test(value))return value+' г.';
     if(/^\d{4}-\d{2}$/.test(value))return value.slice(5)+'.'+value.slice(0,4);
     if(!/^\d{4}-\d\d-\d\d$/.test(value))return value;
@@ -260,7 +261,7 @@
     const refs=points.flatMap(x=>[M.number(x.low),M.number(x.high)]).filter(x=>x!==null);
     const min=Math.min(...values,...refs),max=Math.max(...values,...refs);
     const spread=max-min||Math.abs(max)*.1||1,lo=min-.12*spread,hi=max+.12*spread;
-    const times=points.map(x=>Date.parse(x.date+'T12:00:00Z')),span=times[times.length-1]-times[0];
+    const times=points.map(M.timestamp),span=times[times.length-1]-times[0];
     const coords=values.map((value,index)=>[
       span?48+615*(times[index]-times[0])/span:355,169-135*(value-lo)/(hi-lo)]);
     const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');

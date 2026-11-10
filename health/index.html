@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; connect-src https://api.github.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
   <meta name="theme-color" content="#f7f8fa">
   <link rel="icon" href="./icon.svg">
   <title>Здоровье · AYYY</title>
@@ -27,13 +27,16 @@
   </dialog>
   <div id="health-notice" role="status" aria-live="polite"></div>
   <script src="./crypto.js?v=6c86ad1f417f" defer></script>
-  <script src="./store.js?v=5f54801cba79" defer></script>
+  <script src="./store.js?v=8dcac5b0c2af" defer></script>
   <script src="./github.js?v=f8d34d46f0a8" defer></script>
-  <script src="./model.js?v=ab619167827b" defer></script>
-  <script src="./view.js?v=2f38a3e47822" defer></script>
+  <script src="./model.js?v=adc1b41727f6" defer></script>
+  <script src="./view.js?v=36f0e894b4bd" defer></script>
   <script src="./demo.js?v=785a1ed83c9f" defer></script>
-  <script src="./documents.js?v=4ee4616aac83" defer></script>
+  <script src="./documents.js?v=16074f00785d" defer></script>
   <script src="./import.js?v=7dbaf77b4bd0" defer></script>
-  <script src="./app.js?v=4e67f1856e5b" defer></script>
+  <script src="./vendor/sqljs/sql-wasm.js" defer></script>
+  <script src="./migration.js?v=d3627e579295" defer></script>
+  <script src="./migration-ui.js?v=cac8d5e7d98c" defer></script>
+  <script src="./app.js?v=c76724c1df15" defer></script>
 </body>
 </html>
