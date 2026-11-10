@@ -323,7 +323,8 @@ export async function listAutoSyncedTrees():Promise<string[]>{
  * Unlike a resolved publish, a failed pull MUST NOT move the local SHA baseline.
  */
 export async function installRemoteIfUnchanged(
-  expected:Document,remote:Document,files:Array<{filename:string;blob:Blob}>,sync:SyncRecord
+  expected:Document,remote:Document,files:Array<{filename:string;blob:Blob}>,
+  sync:SyncRecord,expectedSync:SyncRecord
 ):Promise<boolean>{
   validate(remote);
   const db=await openDatabase();
@@ -341,11 +342,21 @@ export async function installRemoteIfUnchanged(
     query.onsuccess=()=>{
       const actual=(query.result as TreeRecord|undefined)?.document;
       if(!actual||JSON.stringify(actual)!==JSON.stringify(expected))return;
-      trees.put({id:remote.tree.id,document:remote});
-      for(const {filename,blob} of files)
-        tx.objectStore('files').put({key:remote.tree.id+'/'+filename,blob});
-      tx.objectStore('sync').put(sync);
-      installed=true;
+      const status=tx.objectStore('sync').get(expected.tree.id);
+      status.onerror=()=>tx.abort();
+      status.onsuccess=()=>{
+        const current=status.result as SyncRecord|undefined;
+        if(!current||current.autoSync!==true||
+          current.blobSha!==expectedSync.blobSha||
+          current.owner!==expectedSync.owner||
+          current.repo!==expectedSync.repo||
+          current.branch!==expectedSync.branch)return;
+        trees.put({id:remote.tree.id,document:remote});
+        for(const {filename,blob} of files)
+          tx.objectStore('files').put({key:remote.tree.id+'/'+filename,blob});
+        tx.objectStore('sync').put(sync);
+        installed=true;
+      };
     };
   });
 }
