@@ -46,6 +46,8 @@ jobs:
         run: node family-app/e2e/gedcom.mjs
       - name: Verify browser ZIP restore and Python DEFLATE
         run: node family-app/e2e/zip.mjs
+      - name: Verify PAT permissions and two-device conflict resolution
+        run: node family-app/e2e/conflict.mjs
       - name: Commit generated static files
         run: |
           # A concurrent commit can require a rebase before publishing assets.
