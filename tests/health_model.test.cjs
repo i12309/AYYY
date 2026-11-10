@@ -95,3 +95,7 @@ test('private GitHub storage uses isolated health-data path and in-memory token'
   assert.match(builder,/health-route\.js/);
   assert.match(builder,/'health'/);
 });
+
+test('lab results are never silently truncated during import',()=>{
+ const m=model();assert.throws(()=>m.checkLab({name:'Synthetic marker',value:'x'.repeat(101),date:'2026-11-01'}));
+});

@@ -1,0 +1,2 @@
+pdfjs-dist 6.4.299
+Copied from installed HUMAN dependency; Apache-2.0.

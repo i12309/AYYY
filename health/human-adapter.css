@@ -8,6 +8,17 @@
 .analyte-chart circle[role=button]{cursor:pointer}
 .analyte-chart circle:focus{outline:none;stroke-width:4}
 .health-document-preview img{display:block;max-width:100%;max-height:65vh;object-fit:contain;margin:auto}
+.health-pdf-pages canvas{display:block;max-width:100%;height:auto;margin:12px auto;border:1px solid var(--border)}
+.health-dialog.health-import-dialog{width:min(1200px,calc(100vw - 24px))}
+.health-import-dialog .health-form{min-width:0}
+.health-import-dialog .health-form>*{min-width:0}
+.health-import-dialog .health-table-wrap{width:100%;max-width:100%;max-height:50vh;overflow:auto}
+.health-import-dialog .health-form-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.health-import-review{min-width:0;max-width:100%}
+.health-import-review input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:0}
+.health-import-review input:not([type=checkbox]){min-width:150px}
+.health-import-review td>span>small{display:block;min-width:160px;color:var(--red-ink)}
+.health-dialog:has(.health-pdf-pages){width:min(720px,calc(100vw - 24px))}
 .health-document-preview pre{max-height:55vh;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:6px}
 :root{--ink:var(--text);--canvas:var(--bg);--line:var(--border);--shadow:none}
 body{font-size:14px}
@@ -235,3 +246,5 @@ body{font-size:14px}
   .health-intro-top .health-brand-pair{gap:9px}
   .health-intro-top .ayyy-wordmark{font-size:25px}
 }
+
+.health-modal-head h2{min-width:0;overflow-wrap:anywhere}

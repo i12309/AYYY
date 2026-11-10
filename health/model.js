@@ -32,6 +32,7 @@
   }
   function referenceRow(row,preferences){return preferences?.useReference&&preferences.unit===row.unit?{...row,low:preferences.low,high:preferences.high}:row;}
   function checkLab(input,original){
+    for(const [key,max] of Object.entries({name:180,value:100,canonicalName:180,unit:50,low:50,high:50,source:180,material:90,method:90,notes:3000}))if(String(input[key]??'').trim().length>max)throw new Error('Поле '+key+' превышает '+max+' символов. Сократите его перед сохранением.');
     const name=text(input.name,180),value=text(input.value,100);
     if(!name || !value)throw new Error('Название показателя и результат обязательны.');
     const low=text(input.low,50),high=text(input.high,50);

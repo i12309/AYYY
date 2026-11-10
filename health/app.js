@@ -311,11 +311,12 @@
       if(!file||file.size>2*1024*1024)throw new Error('Размер файла ограничен 2 МиБ.');
       const ext=file.name.toLowerCase().split('.').pop();
       const mimes={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',
-        png:'image/png',txt:'text/plain',csv:'text/csv'};
-      if(!mimes[ext])throw new Error('Разрешены PDF, JPG, PNG, TXT и CSV.');
-      record={id:M.id(),name:M.text(file.name,255),title:M.text(input.title,255)||file.name,
+        png:'image/png',txt:'text/plain',csv:'text/csv',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
+      if(!mimes[ext])throw new Error('Разрешены PDF, JPG, PNG, TXT, XLSX и CSV.');
+      const bytes=new Uint8Array(await file.arrayBuffer()),sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+      record={id:M.id(),sha256,name:M.text(file.name,255),title:M.text(input.title,255)||file.name,
         date:M.isoDate(input.date),mime:mimes[ext],size:file.size,
-        data:C.base64(new Uint8Array(await file.arrayBuffer())),
+        data:C.base64(bytes),
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     }
     await mutate(data=>{
@@ -364,24 +365,29 @@
     const bytes=new TextEncoder().encode(JSON.stringify(state.local.envelope,null,2)+'\n');
     download('ayyy-health-'+today()+'.encrypted.json',bytes,'application/json');
   }
-  function fileDownload(id){
+  async function fileDownload(id){
     const file=state.doc.documents.find(d=>d.id===id);
     if(!file)throw new Error('Файл не найден.');
     const bytes=C.unbase64(file.data);
     if(bytes.length!==file.size)throw new Error('Документ повреждён.');
+    if(file.sha256){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');if(hash!==file.sha256)throw new Error('Не совпадает контрольная сумма документа.');}
     download(file.name,bytes,file.mime);
   }
   let previewURL=null;
-  function previewFile(id){
+  async function previewFile(id){
     const file=state.doc.documents.find(x=>x.id===id);if(!file)return;
     const bytes=C.unbase64(file.data);if(bytes.length!==file.size)throw new Error('Документ повреждён.');
     if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}
-    const content=V.h('div',{class:'health-document-preview'});
-    if(['image/png','image/jpeg'].includes(file.mime)){previewURL=URL.createObjectURL(new Blob([bytes],{type:file.mime}));content.append(V.h('img',{src:previewURL,alt:file.title||file.name}));}
+    const content=V.h('div',{class:'health-document-preview'});let renderFirst;
+    if(file.mime==='application/pdf'){const pages=V.h('div',{class:'health-pdf-pages'}),note=V.h('p',{role:'status'},'Открываю PDF…'),prev=V.h('button',{type:'button',class:'button'},'← Назад'),next=V.h('button',{type:'button',class:'button'},'Вперёд →');let page=1,total=1,busy=false;
+      async function render(){if(busy)return;busy=true;prev.disabled=next.disabled=true;try{const result=await HumanDocuments.renderPDF(bytes,page);if(!pages.isConnected||!dialog.open)return;total=result.pages;pages.replaceChildren(result.canvas);note.textContent='Страница '+page+' из '+total;}catch(e){note.textContent=e.message;}finally{busy=false;prev.disabled=page<=1;next.disabled=page>=total;}}
+      prev.addEventListener('click',()=>{if(!busy&&page>1){page--;void render();}});next.addEventListener('click',()=>{if(!busy&&page<total){page++;void render();}});content.append(V.h('div',{class:'health-toolbar'},prev,note,next),pages);renderFirst=render;
+    }
+    else if(['image/png','image/jpeg'].includes(file.mime)){previewURL=URL.createObjectURL(new Blob([bytes],{type:file.mime}));content.append(V.h('img',{src:previewURL,alt:file.title||file.name}));}
     else if(['text/plain','text/csv'].includes(file.mime))content.append(V.h('pre',{},new TextDecoder().decode(bytes)));
     else content.append(V.h('p',{},'Скачайте оригинал, чтобы открыть этот формат в программе просмотра.'));
     content.append(V.h('p',{class:'health-muted'},file.name+' · '+V.date(file.date)+' · '+new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'),V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'}));
-    document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();
+    document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();if(renderFirst)await renderFirst();
   }
   dialog.addEventListener('close',()=>{if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null;}});
   async function switchProfile(id){
@@ -515,16 +521,11 @@
     }catch(e){error(e);}
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
+  let importGeneration=0;
   async function importCSV(file){
     if(!file)return;
-    if(file.size>2*1024*1024)throw new Error('Максимум 2 МиБ CSV.');
-    const parsed=M.parseCSV(await file.text());
-    if(!parsed.records.length)throw new Error('Нет подходящих строк для импорта.');
-    const prompt='Сохранить '+parsed.records.length+' анализов?'+
-      (parsed.errors.length?' Ошибок строк: '+parsed.errors.length+'.':'');
-    if(!confirm(prompt))return;
-    await mutate(d=>d.observations.push(...parsed.records));
-    toast('Импортировано '+parsed.records.length+' записей. Ошибок: '+parsed.errors.length+'.');
+    const generation=++importGeneration,tab=state.tab;
+    await HumanImport.open(file,{V,M,C,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>generation===importGeneration&&state.tab===tab});
   }
   async function deleteLocal(){
     if(state.demo)throw new Error('Демо удаляется при выходе.');
@@ -602,12 +603,12 @@
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='backup')backup();
       else if(action==='delete-local')await deleteLocal();
-      else if(action==='file-download')fileDownload(el.dataset.id);
-      else if(action==='file-preview')previewFile(el.dataset.id);
+      else if(action==='file-download')await fileDownload(el.dataset.id);
+      else if(action==='file-preview')await previewFile(el.dataset.id);
       else if(action==='close-dialog')dialog.close();
       else if(action==='csv'){
         const input=document.createElement('input');
-        input.type='file';input.accept='.csv,text/csv';input.hidden=true;
+        input.type='file';input.accept='.csv,.xlsx,.pdf';input.hidden=true;
         input.addEventListener('change',()=>{
           void importCSV(input.files[0]).catch(error).finally(()=>input.remove());
         });
