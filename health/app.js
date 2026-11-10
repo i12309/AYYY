@@ -163,7 +163,7 @@
   function modal(kind,id){
     const collection=kinds[kind],existing=id&&collection?
       state.doc[collection].find(row=>row.id===id):null;
-    const x=existing||{},now=today(),f=V.field,r=V.row;
+    const x=kind==='profile'?state.doc.profile:(existing||{}),now=today(),f=V.field,r=V.row;
     let fields=[];
     if(kind==='lab')fields=[
       r(f('Дата','date',x.date||now,'date'),f('Результат','value',x.value||'')),
