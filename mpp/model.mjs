@@ -383,6 +383,17 @@ export function tasksCsv(model) {
   return '\uFEFF' + lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
 }
 
+export function assignmentsCsv(model) {
+  const byResource=new Map((model?.resources||[]).map(r=>[r.uid,r]));
+  const lines=[['ID задачи','WBS','Задача','Ресурс','Загрузка, %','Начало','Окончание','Работа','Стоимость']];
+  for(const a of model?.assignments||[]){
+    const task=model.byUid?.get(a.task);
+    lines.push([task?.id??'',task?.wbs??'',task?.name??'',byResource.get(a.resource)?.name??'',
+      a.units==null?'':Math.round(a.units*10000)/100,dateText(a.start),dateText(a.finish),a.work??'',a.cost??'']);
+  }
+  return '\uFEFF'+lines.map(row=>row.map(csvCell).join(';')).join('\r\n');
+}
+
 export function demoProject() {
   const day = Math.floor(Date.now()/DAY)*DAY;
   const d = n => day+n*DAY;
