@@ -173,6 +173,58 @@ export function criticalReport(model) {
   return {flagged,total:model?.tasks?.length||0,sourceOnly:true};
 }
 
+/**
+ * A READ-ONLY longest-chain indicator, NOT Microsoft Project CPM.
+ * When the file supplies critical flags those always take precedence.
+ * Otherwise estimate only for an acyclic FS network with no lag; do not
+ * silently produce a misleading path for FF/SS/SF, lead/lag or invalid dates.
+ */
+export function criticalChain(model) {
+  const source=new Set((model?.tasks||[]).filter(t=>t.critical).map(t=>t.uid));
+  if(source.size)return {mode:'source',uids:source,reason:'Признаки критичности предоставлены исходным файлом'};
+  const tasks=(model?.tasks||[]).filter(t=>!t.summary && t.active!==false && t.start!==null && t.finish!==null && t.finish>=t.start);
+  if(!tasks.length)return {mode:'none',uids:new Set(),reason:'Нет задач с корректными датами'};
+  if(tasks.some(t=>t.manual))return {mode:'none',uids:new Set(),reason:'Есть задачи с ручным планированием'};
+  const byUid=new Map(tasks.map(t=>[t.uid,t])),edges=new Map(),degree=new Map();
+  for(const task of tasks){edges.set(task.uid,[]);degree.set(task.uid,0);}
+  for(const link of model.links||[]) {
+    if(!byUid.has(link.from)||!byUid.has(link.to))continue;
+    if(link.type!=='FS'||(link.lag && link.lag!=='0 д' && link.lag!=='0 ч' && link.lag!=='0 мин'))
+      return {mode:'none',uids:new Set(),reason:'В зависимостях есть типы кроме FS либо опережения/задержки'};
+    edges.get(link.from).push(link.to);
+    degree.set(link.to,degree.get(link.to)+1);
+  }
+  const queue=tasks.filter(t=>degree.get(t.uid)===0).map(t=>t.uid);
+  const length=new Map(tasks.map(t=>[t.uid,Math.max(0,(t.finish-t.start)/DAY)]));
+  const parents=new Map(tasks.map(t=>[t.uid,[]]));
+  const eps=1e-7;
+  let visited=0;
+  for(let index=0;index<queue.length;index++) {
+    const uid=queue[index];visited++;
+    for(const child of edges.get(uid)) {
+      const weight=Math.max(0,(byUid.get(child).finish-byUid.get(child).start)/DAY);
+      const candidate=length.get(uid)+weight;
+      if(candidate>length.get(child)+eps) {
+        length.set(child,candidate);parents.set(child,[uid]);
+      } else if(Math.abs(candidate-length.get(child))<=eps)parents.get(child).push(uid);
+      degree.set(child,degree.get(child)-1);
+      if(degree.get(child)===0)queue.push(child);
+    }
+  }
+  if(visited!==tasks.length)return {mode:'none',uids:new Set(),reason:'Циклические зависимости: оценка недоступна'};
+  const longest=Math.max(...length.values());
+  if(!Number.isFinite(longest) || longest<=0)return {mode:'none',uids:new Set(),reason:'Недостаточно сведений о длительностях'};
+  const ids=new Set();
+  const stack=tasks.filter(t=>Math.abs(length.get(t.uid)-longest)<=eps).map(t=>t.uid);
+  while(stack.length) {
+    const uid=stack.pop();
+    if(ids.has(uid))continue;
+    ids.add(uid);
+    stack.push(...parents.get(uid));
+  }
+  return {mode:'estimate',uids:ids,reason:'Приблизительная самая длинная цепочка по фактическим датам, без пересчёта расписания, календарей и ограничений'};
+}
+
 /** Stable hierarchy-aware sibling sorting preserves the parent-before-child invariant. */
 export function orderedTasks(model, sort='id') {
   const list=model?.tasks||[];
