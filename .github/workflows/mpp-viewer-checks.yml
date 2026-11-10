@@ -44,6 +44,7 @@ jobs:
         run: |
           node --check mpp/model.mjs
           node --check mpp/viewer.mjs
+          node --check mpp/reader-worker.mjs
           node --check src/mpp-route.js
       - name: Test model and browser reader
         run: node --test tests/mpp_model.test.mjs
