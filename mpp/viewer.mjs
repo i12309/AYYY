@@ -1,5 +1,5 @@
 /* AYYY Project Viewer — local-only Microsoft Project plan reader and Gantt UI. */
-import {DAY, dateValue, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, workingHoursOnDate, criticalChain, tasksCsv, demoProject} from './model.mjs';
+import {DAY, dateValue, dateText, normalizeProject, visibleTasks, timelineRange, rowWindow, dependencyLines, viewportDependencyLines, workingHoursOnDate, criticalChain, tasksCsv, assignmentsCsv, demoProject} from './model.mjs';
 
 import {ganttSvg} from './export-svg.mjs';
 
@@ -329,7 +329,7 @@ export function mount(root, options={}) {
       }
       visible=baseVisible.filter(t=>included.has(t.uid));
     }
-    const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button><button type="button" class="pv-button" data-pv-action="export-svg">SVG диаграммы</button></div></div>'+
+    const viewState=loaded?'<div class="pv-file-banner"><div><div class="pv-kicker">ОТКРЫТЫЙ ПРОЕКТ '+(state.demo?'· ДЕМО':'')+'</div><h1>'+escapeHtml(model.title)+'</h1><div class="pv-file-meta"><span>'+escapeHtml(state.filename)+'</span><span>'+escapeHtml(model.format||'Microsoft Project')+'</span><span>'+model.tasks.length+' задач</span><span>'+model.links.length+' связей</span><span>'+model.resources.length+' ресурсов</span></div></div><div class="pv-file-actions">'+buttons()+'<button type="button" class="pv-button" data-pv-action="export">CSV задач</button><button type="button" class="pv-button" data-pv-action="export-svg">SVG диаграммы</button>'+(state.tab==='resources'?'<button type="button" class="pv-button" data-pv-action="export-assignments">CSV назначений</button>':'')+'</div></div>'+
       '<div class="pv-control-bar"><div class="pv-tabs" role="tablist"><button type="button" data-pv-tab="gantt" aria-selected="'+(state.tab==='gantt')+'">Гант / Задачи</button><button type="button" data-pv-tab="resources" aria-selected="'+(state.tab==='resources')+'">Ресурсы</button><button type="button" data-pv-tab="calendars" aria-selected="'+(state.tab==='calendars')+'">Календари</button></div><label class="pv-search"><span aria-hidden="true">⌕</span><input id="pv-search" type="search" placeholder="Поиск задач и ресурсов…" aria-label="Поиск" value="'+escapeHtml(state.query)+'"></label><div class="pv-chart-controls"><label>Колонки <select id="pv-columns" aria-label="Столбцы таблицы задач"><option value="basic"'+(state.columnMode==='basic'?' selected':'')+'>Основные</option><option value="resources"'+(state.columnMode==='resources'?' selected':'')+'>Ресурсы</option><option value="baseline"'+(state.columnMode==='baseline'?' selected':'')+'>Базовый план</option><option value="critical"'+(state.columnMode==='critical'?' selected':'')+'>Критичность</option></select></label><label>Сортировка <select id="pv-sort" aria-label="Сортировка задач"><option value="id"'+(state.sort==='id'?' selected':'')+'>WBS</option><option value="name"'+(state.sort==='name'?' selected':'')+'>Название</option><option value="start"'+(state.sort==='start'?' selected':'')+'>Начало</option><option value="finish"'+(state.sort==='finish'?' selected':'')+'>Окончание</option><option value="percent"'+(state.sort==='percent'?' selected':'')+'>Готовность</option></select></label><button type="button" class="pv-text-button" data-pv-action="expand">Развернуть</button><button type="button" class="pv-text-button" data-pv-action="collapse">Свернуть</button><label>Масштаб <select id="pv-zoom" aria-label="Масштаб диаграммы"><option value="day"'+(state.zoom==='day'?' selected':'')+'>День</option><option value="week"'+(state.zoom==='week'?' selected':'')+'>Неделя</option><option value="month"'+(state.zoom==='month'?' selected':'')+'>Месяц</option></select></label><button type="button" class="pv-toggle" data-pv-action="toggle-links" aria-pressed="'+state.showLinks+'">Связи</button><button type="button" class="pv-toggle" data-pv-action="toggle-baseline" aria-pressed="'+state.showBaseline+'">Базовый план</button><button type="button" class="pv-toggle" data-pv-action="toggle-calendar" aria-pressed="'+state.showCalendar+'">Нерабочие дни</button><button type="button" class="pv-toggle" data-pv-action="critical-only" aria-pressed="'+state.criticalOnly+'"'+(state.analysis?.mode==='none'?' disabled':'')+'>Критические</button><button type="button" class="pv-text-button" data-pv-action="today">Сегодня</button><label class="pv-jump"><input type="date" id="pv-jump-date" value="'+escapeHtml(state.jumpDate)+'" aria-label="Дата перехода"></label><button type="button" class="pv-text-button" data-pv-action="jump-date">Перейти</button></div></div>'+
       '<div class="pv-body">'+(state.tab==='resources'?resourceMarkup(model,state.query):state.tab==='calendars'?calendarMarkup(model,state.calendarId):
       '<div class="pv-workspace"><div class="pv-list-scroll" tabindex="0" aria-label="Таблица задач" id="pv-list-scroll"></div><div class="pv-splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Изменить ширину таблицы задач и диаграммы Ганта" aria-valuemin="340" aria-valuemax="950" aria-valuenow="550" title="Перетащите для изменения ширины. Клавиши ← и → тоже работают"><span aria-hidden="true"></span></div><div class="pv-chart-scroll" tabindex="0" aria-label="Диаграмма Ганта" id="pv-chart-scroll"></div></div>')+
@@ -535,6 +535,12 @@ export function mount(root, options={}) {
     state.model=demoProject();state.analysis=criticalChain(state.model);state.calendarId=state.model.calendar;state.filename='Пример (вымышленный)';state.demo=true;
     state.query='';state.zoom='week';state.scrollZoom='week';state.scrollTop=0;state.scrollLeft=0;state.tab='gantt';state.selectedUid=null;state.collapsed.clear();render(true);
   }
+  function exportAssignments() {
+    if(!state.model || !app?.download)return;
+    const basename=(state.filename||'project').replace(/\.[^.]+$/,'').replace(/[\/\\:*?"<>|]/g,'_').slice(0,70)||'project';
+    app.download(basename+'-assignments.csv',assignmentsCsv(state.model),'text/csv;charset=utf-8');
+    sendStatus('CSV назначений создан локально.','success');
+  }
   function exportCsv() {
     if(!state.model || !app?.download)return;
     const basename=(state.filename||'project').replace(/\.[^.]+$/,'').replace(/[\/\\:*?"<>|]/g,'_').slice(0,70)||'project';
@@ -550,6 +556,7 @@ export function mount(root, options={}) {
     if(action==='demo'){renderDemo();return;}
     if(action==='export'){exportCsv();return;}
     if(action==='export-svg'){exportSvg();return;}
+    if(action==='export-assignments'){exportAssignments();return;}
     if(action==='today'){jumpToDate(todayStamp());return;}
     if(action==='jump-date'){jumpToDate(state.jumpDate);return;}
     if(action==='focus-task'){focusSelectedTask();return;}
