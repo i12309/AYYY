@@ -67,7 +67,7 @@
   }
   if(entries.size!==doc.documents.length+1)throw Error('В архиве есть документы, не связанные с базой.');
   for(const row of tables.health_records||[]){if(Number(row.deleted))continue;const o=jsonPayload(row),type={weight:'Масса',height:'Рост',pressure:'Давление',pulse:'Пульс',temperature:'Температура',oxygen:'Сатурация',respiration:'Частота дыхания',glucose:'Глюкоза'}[o.kind];
-   if(type)doc.vitals.push({id:row.id,type,date:str(o.observed_at).slice(0,10),value:o.kind==='pressure'?str(o.value)+'/'+str(o.secondary):str(o.value),unit:o.unit||'',notes:[o.context,o.notes].filter(Boolean).join('\n'),human:o,createdAt:o.created_at||'',updatedAt:o.updated_at||''});else retained.health_records=(retained.health_records||0)+1;
+   if(type)doc.vitals.push({id:row.id,type,date:window.HumanHealth.localInput(o.observed_at,doc.profile.timezone).slice(0,10),observedAt:o.observed_at,context:o.context||'',episodeId:o.episode_id||'',value:o.kind==='pressure'?str(o.value)+'/'+str(o.secondary):str(o.value),unit:o.unit||'',notes:o.notes||'',human:o,createdAt:o.created_at||'',updatedAt:o.updated_at||''});else retained.health_records=(retained.health_records||0)+1;
   }
   for(const row of tables.medical_records||[]){if(Number(row.deleted))continue;const o=jsonPayload(row),start=o.start||{},date=start.precision==='year'?str(start.value).slice(0,4):start.precision==='month'?str(start.value).slice(0,7):start.precision==='unknown'?'':str(start.value);
    if(o.kind==='medication')doc.medications.push({id:row.id,name:o.name,dose:o.medication?.dose||'',frequency:o.medication?.schedule||'',startDate:date,notes:o.notes||'',human:o,createdAt:o.created_at||'',updatedAt:o.updated_at||''});
@@ -77,6 +77,7 @@
   for(const [table,rows] of Object.entries(tables))if(table.endsWith('_revisions'))for(const row of rows)doc.revisions.push({id:table+':'+(row.id||doc.revisions.length),kind:'human:'+table,previous:row.snapshot?JSON.parse(row.snapshot):row,changedAt:row.changed_at||'',human:row});
   const archiveHash=await hash(bytes),counts=Object.fromEntries(Object.entries(tables).map(([k,v])=>[k,v.length]));
   doc.humanMigration={format:'human-user',version:2,userId:manifest.user_id,archiveHash,archiveName:file.name,originalArchive:HumanCrypto.base64(bytes),manifest,counts,tables,retained,importedAt:new Date().toISOString()};
+  doc.episodes=window.HumanHealth.episodes(doc);if(retained.health_records){retained.health_records-=doc.episodes.length;if(!retained.health_records)delete retained.health_records;}
   const size=new TextEncoder().encode(JSON.stringify(doc)).length;if(size>28*1024*1024)throw Error('Перенос превышает текущий предел журнала 28 МиБ. Исходный архив не изменён.');
   return {doc,archiveHash,counts,size};
  }

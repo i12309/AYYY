@@ -35,6 +35,7 @@
         typeof doc.id!=='string' || !doc.profile || typeof doc.profile!=='object' ||
         ['observations','vitals','medical','medications','diary','documents','revisions'].some(k=>!Array.isArray(doc[k])))
       throw new Error('Неизвестная структура медицинских данных.');
+    if(doc.episodes!==undefined&&!Array.isArray(doc.episodes))throw new Error('Неизвестная структура эпизодов.');
     return doc;
   }
   function requireCrypto() {
@@ -83,8 +84,8 @@
       throw new Error('Фраза доступа должна содержать не менее 12 символов.');
     requireCrypto();
     const id=crypto.randomUUID();
-    const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'',notes:''},
-      observations:[],vitals:[],medical:[],medications:[],diary:[],documents:[],revisions:[]};
+    const doc={schema:1,id,profile:{name:'',birthDate:'',sex:'',notes:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'},
+      observations:[],vitals:[],episodes:[],medical:[],medications:[],diary:[],documents:[],revisions:[]};
     const salt=crypto.getRandomValues(new Uint8Array(16));
     const key=await derive(passphrase,salt);
     const envelope=await seal(doc,key,{format:FORMAT,vaultId:id,kdf:'PBKDF2-SHA256',iterations:ITERATIONS,

@@ -19,7 +19,7 @@ function makeModules(window,extras={}){
     crypto:{randomUUID:()=>('demo-test-'+(++seq))},
     ...extras
   });
-  for(const file of ['health/crypto.js','health/model.js','health/demo.js'])
+  for(const file of ['health/crypto.js','health/model.js','health/health-state.js','health/demo.js'])
     vm.runInContext(read(file),context,{filename:file});
   return {window,context};
 }
@@ -29,7 +29,7 @@ test('fictional dataset is complete, valid and independently regenerated',()=>{
   window.HumanCrypto.assertData(first);
   assert.equal(first.schema,1);
   assert.equal(first.observations.length,68);
-  assert.equal(first.vitals.length,33);
+  assert.equal(first.vitals.length,33);assert.equal(first.episodes.length,2);assert.equal(window.HumanHealth.episodeState(first.episodes[1]).status,'unknown');
   assert.equal(first.medical.length,4);
   assert.equal(first.medications.length,2);
   assert.equal(first.diary.length,12);
@@ -103,6 +103,7 @@ test('deep-linked demo renders all tabs without reading personal vault or GitHub
     write:async()=>{remoteCalls++;throw Error('demo accessed GitHub');}
   };
   vm.runInContext(read('health/view.js'),context,{filename:'health/view.js'});
+  vm.runInContext(read('health/health-view.js'),context,{filename:'health/health-view.js'});
   vm.runInContext(read('health/medical-view.js'),context,{filename:'health/medical-view.js'});
   vm.runInContext(read('health/app.js'),context,{filename:'health/app.js'});
   const target=nodes.get('health-root');

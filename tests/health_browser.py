@@ -56,7 +56,7 @@ with sync_playwright() as pw:
   p.locator('.sidebar button[data-tab='+tab+']').click();check('tab '+tab,p.locator('.health-heading h1').is_visible())
  p.locator('.sidebar button[data-tab=vital]').click()
  p.locator('[data-action=filter-records][data-value="Давление"]').click()
- check('measurement kind filters history',p.locator('.health-table tbody tr').count()==10 and p.locator('.health-vital-summary strong').inner_text().endswith('мм рт. ст.') and p.locator('.health-kind-tabs [aria-pressed=true]').inner_text()=='Давление')
+ check('measurement kind filters history',p.locator('.health-table tbody tr').count()==10 and p.locator('.health-vital-summary strong').inner_text().endswith('мм рт. ст.') and p.locator('.health-kinds [aria-pressed=true]').inner_text()=='Давление')
  p.locator('[data-action=filter-records][data-value="Масса"]').click();p.locator('.health-vital-summary [data-action=new-vital]').click()
  check('measurement add keeps selected kind',p.locator('#health-dialog [name=type]').input_value()=='Масса');p.locator('#health-dialog [data-action=close-dialog]').click()
  p.locator('.sidebar button[data-tab=medical]').click();p.locator('[data-action=filter-records][data-value=allergy]').click()

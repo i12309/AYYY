@@ -1,4 +1,13 @@
 /* Browser-edition data/UI adapters over the original HUMAN design system. */
+.health-page .health-card{margin:0}
+.health-page .health-details pre{max-height:220px;overflow:auto}
+.health-page .health-table-wrap{max-width:100%}
+.health-page .health-table{min-width:620px}
+.health-page .health-toolbar{align-items:center}
+.health-page .health-chart{margin:0}
+.health-page .health-chart svg{max-height:260px}
+.health-page .episode-inbox button{margin:6px 6px 0 0}
+.health-list>.field{max-width:300px;margin-bottom:14px}
 .medical-page .health-card{margin:0;min-width:0}
 .medical-list .health-table-wrap{width:100%;margin:0}
 .medical-filters .field{min-width:0}

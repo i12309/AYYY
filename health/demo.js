@@ -108,11 +108,13 @@
       attachment('three','demo-medication-history.txt','История препаратов · пример','2026-10-26','text/plain',
         'ДЕМОНСТРАЦИЯ. Не является назначением.\nВитамин D — учебная запись от 2026-10-01.\nНазальный спрей — учебная запись от 2026-04-05.\n')
     ];
+    const episodes=[{id:'demo-episode-ended',title:'Пример эпизода самочувствия',date:'2026-11-01',observedAt:'',diagnosisBasis:'self_reported',symptoms:'Вымышленная запись для знакомства с журналом.',treatments:'',context:'',notes:'Только демонстрация, не медицинское заключение.',endDate:'2026-11-07',status:'ended',confirmedAt:'2026-11-07T12:00:00Z',confirmedUntil:'',nextPromptAt:'',version:1,createdAt:'2026-11-01T12:00:00Z',updatedAt:'2026-11-07T12:00:00Z'},{id:'demo-episode-review',title:'Демонстрационная запись для уточнения',date:'2026-10-01',observedAt:'',diagnosisBasis:'self_reported',symptoms:'Состояние в примере не уточнено.',treatments:'',context:'',notes:'',endDate:'',status:'unknown',confirmedAt:'',confirmedUntil:'',nextPromptAt:'',version:1,createdAt:'2026-10-01T12:00:00Z',updatedAt:'2026-10-01T12:00:00Z'}];
+    vitals.find(x=>x.type==='Температура'&&x.date==='2026-11-06').episodeId='demo-episode-ended';
     const doc={
       schema:1,id:'demo-human-example-v1',
       profile:{name:'Анна Примерова',birthDate:'1988-04-18',sex:'female',
         notes:'Вымышленный профиль для знакомства с интерфейсом HUMAN. Записи не являются медицинскими рекомендациями.'},
-      observations,vitals,medical:medicalRecords,medications,diary:diaryRows,documents,
+      observations,vitals,episodes,medical:medicalRecords,medications,diary:diaryRows,documents,
       revisions:[]
     };
     window.HumanCrypto.assertData(doc);

@@ -8,7 +8,7 @@
  const statusName=c=>c.category==='medication'&&c.status==='active'?'Принимаю':c.category==='vaccine'?'Введена':statuses[c.status]||c.status;
  const period=c=>V.date(c.start.value)+(c.end.value?' — '+V.date(c.end.value):'');
  function summary(c){if(c.category==='allergy')return c.allergy.reaction||'Реакция не описана';if(c.category==='medication')return [c.medication.dose,c.medication.schedule].filter(Boolean).join(' · ')||'Доза и режим не указаны';if(c.category==='vaccine')return [c.vaccination.against,c.vaccination.dose_label].filter(Boolean).join(' · ');return c.condition.description||'';}
- function episodes(doc){const all=new Map((doc.episodes||[]).map(x=>[x.id,x]));for(const row of doc.humanMigration?.tables.health_records||[]){if(row.kind!=='illness'||Number(row.deleted))continue;try{const raw=JSON.parse(row.payload);if(!all.has(row.id))all.set(row.id,{id:row.id,title:raw.title});}catch{}}return Array.from(all.values());}
+ function episodes(doc){return window.HumanHealth.episodes(doc);}
  function fields(kind,item,doc){
   const c=M.clinical(item,kind),f=V.field,r=V.row,parts=[];
   if(kind==='medical')parts.push(f('Категория','category',c.category,'select',Object.entries(labels).filter(([key])=>key!=='medication')));
@@ -36,9 +36,9 @@
   append('Примечание',c.notes);
   const box=V.card(c.name,[facts,h('div',{class:'health-actions'},V.button('Редактировать','edit',{'data-kind':kind,'data-id':item.id}),V.button('Закрыть запись','close-medical'))]);box.classList.add('medical-detail');box.setAttribute('tabindex','-1');
   if(c.documentId){const doc=state.doc.documents.find(x=>x.id===c.documentId);box.append(doc?V.button('Документ: '+(doc.title||doc.name),'file-preview',{'data-id':doc.id}):h('p',{class:'health-note'},'Исходный документ недоступен; связь сохранена.'));}
-  if(c.episodeId){const episode=episodes(state.doc).find(x=>x.id===c.episodeId);box.append(h('p',{class:'health-note'},'Связанный эпизод: '+(episode?.title||'недоступен')));}
+  if(c.episodeId){const episode=episodes(state.doc).find(x=>x.id===c.episodeId);box.append(episode?V.button('Эпизод: '+episode.title,'open-episode',{'data-id':episode.id}):h('p',{class:'health-note'},'Связанный эпизод недоступен; ссылка сохранена.'));}
   const revisions=state.doc.revisions.filter(x=>x.recordId===item.id||x.human?.record_id===item.id);
-  box.append(h('details',{},h('summary',{},'История исправлений · '+revisions.length),revisions.map(x=>h('div',{class:'medical-revision'},h('small',{},V.date(x.changedAt)),h('pre',{},JSON.stringify(x.previous,null,2))))));return box;
+  box.append(h('details',{},h('summary',{},'История исправлений · '+revisions.length),revisions.map(x=>{const old=x.previous||{},prior=M.clinical(old.kind&&!old.category?{human:old}:old,kind);return h('div',{class:'medical-revision'},h('small',{},'Исправлено: '+V.date(x.changedAt)),h('p',{},prior.name+' · '+statusName(prior)),h('p',{class:'health-note'},period(prior)),h('p',{class:'preserve'},[summary(prior),prior.notes].filter(Boolean).join('\n')));})));return box;
  }
  function page(state){
   const filter=state.filters.medical||'',query=(state.medicalSearch||'').toLocaleLowerCase('ru-RU'),status=state.medicalStatus||'';

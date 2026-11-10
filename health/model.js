@@ -47,17 +47,7 @@
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
   }
-  function checkVital(input,original){
-    const type=text(input.type,100),value=text(input.value,90);
-    if(!type||!value)throw new Error('Выберите вид показателя и укажите значение.');
-    const valid=type==='Давление' ? /^\d{2,3}\s*\/\s*\d{2,3}$/.test(value) : number(value)!==null;
-    if(!valid)throw new Error(type==='Давление'?'Формат давления: 120/80.':'Введите числовое значение.');
-    const units={'Давление':'мм рт. ст.','Пульс':'уд/мин','Масса':'кг','Температура':'°C',
-      'Глюкоза':'ммоль/л','Сон':'ч','Шаги':'шагов','Рост':'см'};
-    return {...original,id:original?.id||id(),date:isoDate(input.date),type,value,
-      unit:units[type]||text(input.unit,50),notes:text(input.notes,1000),
-      createdAt:original?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
-  }
+  function checkVital(input,original){return window.HumanHealth.checkVital(input,original);}
   const clinicalStatuses={allergy:['unknown','active','inactive'],medication:['unknown','planned','active','paused','completed'],vaccine:['completed'],condition:['unknown','active','remission','resolved'],surgery:['unknown','planned','completed'],other:['unknown','active','resolved']};
   function partialDate(value,precision){
     const raw=String(value??'').trim(),inferred=!raw?'unknown':/^\d{4}$/.test(raw)?'year':/^\d{4}-\d\d$/.test(raw)?'month':'day';
