@@ -119,10 +119,8 @@
     return 'normal';
   }
   function timestamp(row){return Date.parse(row.datePrecision==='exact'?row.date:row.date+'T12:00:00Z');}
-  function chartRows(rows){
-    return rows.filter(row=>row.reviewStatus!=='draft'&&text(row.unit)&&number(row.value)!==null&&((row.datePrecision==='exact'&&Number.isFinite(timestamp(row)))||/^\d{4}-\d\d-\d\d$/.test(row.date)))
-      .slice().sort((a,b)=>timestamp(a)-timestamp(b));
-  }
+  function numericRows(rows){return rows.filter(row=>row.reviewStatus!=='draft'&&text(row.unit)&&number(row.value)!==null);}
+  function chartRows(rows){return numericRows(rows).filter(row=>row.datePrecision==='exact'?Number.isFinite(timestamp(row)):/^\d{4}-\d\d-\d\d$/.test(row.date)).sort((a,b)=>timestamp(a)-timestamp(b));}
   function sortKey(row){return row.datePrecision==='exact'&&Number.isFinite(timestamp(row))?new Date(timestamp(row)).toISOString():row.date||row.startDate||row.createdAt||'';}
   function recent(items,limit=6){
     return items.slice().sort((a,b)=>sortKey(b).localeCompare(sortKey(a))).slice(0,limit);
@@ -172,5 +170,5 @@
     return {records,errors};
   }
   window.HumanModel={clinical,clinicalStatuses,partialDate,id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
-    checkDiary,groupKey,groups,status,chartRows,recent,parseCSV};
+    checkDiary,groupKey,groups,status,numericRows,chartRows,recent,parseCSV};
 })();

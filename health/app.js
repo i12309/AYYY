@@ -13,7 +13,7 @@
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
     genetic:'findings',diary:'diary',meal:'diary','activity-day':'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
-    ['medical','Медкарта'],['care','Приёмы и напоминания'],['nutrition','Питание'],['activity','Активность'],['diary','Дневник'],['genetics','Генетика'],['document','Документы'],['timeline','История'],['profile','Мой профиль'],['recommendations','Рекомендации'],['settings','Настройки']];
+    ['medical','Медкарта'],['care','Приёмы и напоминания'],['recommendations','Рекомендации'],['nutrition','Питание'],['activity','Активность'],['genetics','Генетика'],['diary','Дневник'],['document','Документы'],['timeline','История'],['profile','Мой профиль'],['settings','Настройки']];
   const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
   let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0,keyChangeRun=0;
   const clientId=crypto.randomUUID();
@@ -28,11 +28,11 @@
   function error(e){toast(e instanceof Error?e.message:String(e));}
   async function profileList(){state.profiles=await S.list();}
   const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.'],settings:['Settings','neutral','Профиль, безопасность и синхронизация.']};
-  navMeta.nutrition=['Flame','yellow','Приёмы пищи и известные нутриенты.'];navMeta.activity=['Footprints','green','Шаги, сон и упражнения по дням.'];
+  navMeta.nutrition=['Utensils','green','Приёмы пищи и известные нутриенты.'];navMeta.activity=['Dumbbell','yellow','Шаги, сон и упражнения по дням.'];
   navMeta.recommendations=['ClipboardList','green','Анкета, снимки данных и отдельные рецензии.'];
   navMeta.timeline=['History','yellow','Что и когда появилось в вашем журнале.'];navMeta.profile=['UserRound','neutral','Профиль и ваши данные.'];
   navMeta.genetics=['Dna','green','Ваши записи из генетических отчётов.'];
-  navMeta.care=['Bell','blue','Фактические события и ваши расписания.'];
+  navMeta.care=['Bell','yellow','Фактические события и ваши расписания.'];
   function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
@@ -200,7 +200,7 @@
   let renderedVaultId=null;
   function render(){
     if(!state.doc||state.conflict?.review&&state.conflict.review.snapshot!==state.local)state.conflict=false;
-    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.vitalOffset=0;state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.observationId='';state.trendKey='';state.labFrom=state.labTo='';state.labOffset=0;state.documentQuery='';state.documentOffset=0;state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.vitalOffset=0;state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
     const reviewDetails=new Map(Array.from(root.querySelectorAll('.recommendations-page details[data-review-details]'),e=>[e.dataset.reviewDetails,e.open])),reviewTask=root.querySelector('[name=reviewTask]'),reviewFocus=reviewTask&&document.activeElement===reviewTask,reviewSelection=reviewFocus?[reviewTask.selectionStart,reviewTask.selectionEnd]:null;
@@ -221,13 +221,14 @@
     else view=V.listSection(state,state.tab);
     const nextEditor=view.querySelector('.diary-editor');if(nextEditor){if(previousEditor?.dataset.editorKey===nextEditor.dataset.editorKey)nextEditor.replaceWith(previousEditor);else{const form=nextEditor.querySelector('form'),id=form.dataset.id;if(id){const existing=recordsFor(state.doc,form.dataset.kind).find(r=>r.id===id);if(existing)formSnapshots.set(form,JSON.stringify(existing));}}}
     view.querySelectorAll('.health-heading').forEach((heading,index)=>{if(!index){heading.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('ЛИЧНЫЙ ЖУРНАЛ '),V.h('span',{},'/'),document.createTextNode(String(tabs.findIndex(([id])=>id===state.tab)+1).padStart(2,'0')));return;}heading.className='health-section-heading';heading.querySelector('.eyebrow')?.remove();const title=heading.querySelector('h1');if(title)title.replaceWith(V.h('h2',{},title.textContent));});
+    const contentClass=state.tab==='lab'&&state.globalSearch.length<2?'content content-labs':'content';
     if(state.demo){
       const label=V.h('div',{class:'health-demo-strip',role:'note'},
         V.h('span',{class:'health-demo-tag'},'ДЕМО'),
         V.h('span',{},'Все сведения вымышлены · изменения не сохраняются'),
         V.button('Сбросить пример','reset-demo',{class:'small'}));
-      const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:'content'},label,view));
-    }else {const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:'content'},view));}
+      const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:contentClass},label,view));
+    }else {const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:contentClass},view));}
     if(state.tab==='recommendations'){for(const detail of root.querySelectorAll('details[data-review-details]'))if(reviewDetails.has(detail.dataset.reviewDetails))detail.open=reviewDetails.get(detail.dataset.reviewDetails);if(reviewFocus){const next=root.querySelector('[name=reviewTask]');next?.focus();next?.setSelectionRange(...reviewSelection);}refreshReviewPreview();}
   }
   const formSnapshots=new WeakMap();
@@ -972,7 +973,7 @@
     state.doc=window.HumanDemo.create();
     state.local={id:state.doc.id,repo:null,dirty:false};
     state.key=null;
-    state.picker=false;state.tab='overview';state.globalSearch='';state.search='';state.groupKey='';state.filters={};state.abnormalOnly=false;state.medicalId='';state.medicalSearch='';state.medicalStatus='';
+    state.picker=false;state.tab='overview';state.globalSearch='';state.search='';state.groupKey='';state.observationId='';state.trendKey='';state.labFrom=state.labTo='';state.labOffset=0;state.documentQuery='';state.documentOffset=0;state.filters={};state.abnormalOnly=false;state.medicalId='';state.medicalSearch='';state.medicalStatus='';
     state.conflict=false;state.syncBusy=false;
     render();
   }
@@ -991,7 +992,7 @@
   async function onClick(event){
     const el=event.target.closest('[data-action],[data-tab]');
     if(!el)return;
-    if(el.dataset.tab){event.preventDefault();state.tab=el.dataset.tab;state.globalSearch='';state.search='';state.groupKey='';document.body.classList.remove('health-menu-open');render();root.focus({preventScroll:true});window.scrollTo(0,0);return;}
+    if(el.dataset.tab){event.preventDefault();state.tab=el.dataset.tab;state.globalSearch='';state.search='';state.groupKey='';state.labOffset=0;document.body.classList.remove('health-menu-open');render();root.focus({preventScroll:true});window.scrollTo(0,0);return;}
     const action=el.dataset.action;
     try{
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
@@ -1047,10 +1048,15 @@
           row.updatedAt=new Date().toISOString();
         });
       }
-      else if(action==='filter-favorites'){state.favoritesOnly=!state.favoritesOnly;render();}
-      else if(action==='filter-abnormal'){state.abnormalOnly=!state.abnormalOnly;state.groupKey='';render();}
+      else if(action==='filter-favorites'){state.favoritesOnly=!state.favoritesOnly;state.labOffset=0;render();}
+      else if(action==='filter-abnormal'){state.abnormalOnly=!state.abnormalOnly;state.groupKey='';state.labOffset=0;render();}
+      else if(action==='lab-page'){state.labOffset=Number(el.dataset.offset);render();}
+      else if(action==='lab-results'){state.groupKey=state.observationId='';render();window.scrollTo(0,0);}
+      else if(action==='lab-reset'){state.search=state.labFrom=state.labTo='';state.abnormalOnly=false;state.labOffset=0;render();}
+      else if(action==='document-page'){state.documentOffset=Number(el.dataset.offset);render();}
+      else if(action==='document-reset'){state.documentQuery='';state.documentOffset=0;render();root.querySelector('[data-search=documents]')?.focus();}
       else if(action==='select-observation'){state.observationId=el.dataset.id;render();}
-      else if(action==='open-group'){state.abnormalOnly=false;state.observationId=el.dataset.id||'';state.tab='lab';state.globalSearch='';state.search='';state.groupKey=el.dataset.key;render();}
+      else if(action==='open-group'){state.observationId=el.dataset.id||'';state.tab='lab';state.globalSearch='';state.groupKey=el.dataset.key;render();window.scrollTo(0,0);}
       else if(action==='open-demo'||action==='reset-demo')openDemo();
       else if(action==='exit-demo')await exitDemo();
       else if(action==='filter-records'){state.filters[el.dataset.kind]=el.dataset.value;if(el.dataset.kind==='vital'){state.episodeId='';state.vitalId='';state.vitalUnit='';state.vitalOffset=0;}if(el.dataset.kind==='medical'){state.medicalId='';state.medicalStatus='';}render();}
@@ -1107,21 +1113,32 @@
   }
   document.addEventListener('submit',event=>{void onSubmit(event);});
   document.addEventListener('click',event=>{void onClick(event);});
+  function labDateInput(input){
+    const field=input?.dataset?.labDate;
+    if(field!=='labFrom'&&field!=='labTo')return;
+    if(!input.isConnected||!input.validity.valid||input.value===(state[field]||''))return;
+    const focused=document.activeElement===input;
+    state[field]=input.value;state.labOffset=0;render();
+    if(focused)root.querySelector(`[data-lab-date=${field}]`)?.focus({preventScroll:true});
+  }
   document.addEventListener('input',event=>{
     diaryDateInput(event.target);
+    labDateInput(event.target);
     if(event.target?.name==='reviewTask')state.reviewTask=event.target.value;
     if(event.target?.dataset?.search==='timeline'){const value=event.target.value,position=event.target.selectionStart||0;state.timelineQuery=value;state.timelineOffset=0;render();const next=root.querySelector('[data-search=timeline]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='genetics'){const value=event.target.value,position=event.target.selectionStart||0;state.geneticQuery=value;state.geneticOffset=0;render();const next=root.querySelector('[data-search=genetics]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='diary-native'){const value=event.target.value,position=event.target.selectionStart||0;state.diaryQueries??={};state.diaryQueries[state.tab]=value;state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;render();const next=root.querySelector('[data-search=diary-native]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='medical'){const value=event.target.value,position=event.target.selectionStart||0;state.medicalSearch=value;render();const next=root.querySelector('[data-search=medical]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
+    }else if(event.target?.dataset?.search==='documents'){const value=event.target.value,position=event.target.selectionStart||0;state.documentQuery=value;state.documentOffset=0;render();const next=root.querySelector('[data-search=documents]');next?.focus();next?.setSelectionRange(position,position);
     }else if(event.target?.dataset?.search==='global'){const pos=event.target.selectionStart||0;state.globalSearch=event.target.value;render();const next=document.getElementById('health-global-search');next.focus();try{next.setSelectionRange(pos,pos);}catch{}
     }else if(event.target?.dataset?.search==='labs'){
       const position=event.target.selectionStart||0;
-      state.search=event.target.value;state.groupKey='';render();
+      state.search=event.target.value;state.groupKey='';state.labOffset=0;render();
       const next=root.querySelector('[data-search=labs]');
       if(next){next.focus();try{next.setSelectionRange(position,position);}catch{}}
     }
   });
+  document.addEventListener('change',event=>labDateInput(event.target));
   document.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('circle[data-action],[role=button][data-action]')){event.preventDefault();void onClick(event);return;}if(event.key==='Escape'&&document.body.classList.contains('health-menu-open')){document.body.classList.remove('health-menu-open');document.querySelector('[data-action=toggle-menu]')?.focus();}if(event.key==='/'&&!dialog.open&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=true]')){event.preventDefault();document.getElementById('health-global-search')?.focus();}});
   document.addEventListener('change',event=>{if(event.target?.dataset?.reviewSelected){state.reviewSelected=event.target.value;state.reviewSection='assessment';render();}if(event.target?.dataset?.reviewUpload){const file=event.target.files[0];event.target.value='';void reviewUpload(file);}if(event.target?.dataset?.timelineKind){state.timelineKind=event.target.value;state.timelineOffset=0;render();}if(event.target?.dataset?.geneticCategory){state.geneticCategory=event.target.value;state.geneticOffset=0;render();}diaryDateInput(event.target);if(event.target?.dataset?.careFilter){state.careFilter=event.target.value;state.careOffset=0;render();}if(event.target?.dataset?.episodeFilter){state.episodeFilter=event.target.value;state.vitalOffset=0;render();}if(event.target?.dataset?.medicalStatus){state.medicalStatus=event.target.value;render();}if(event.target?.dataset?.trend==='overview'){state.trendKey=event.target.value;render();}});
   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});

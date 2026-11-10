@@ -53,8 +53,20 @@ body{font-size:14px}
 .health-app{min-height:100dvh}
 .diary-overview{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
 .health-card .data-row>div:not(.row-result){min-width:0;flex:1}
-.health-labs-card{padding:0}.health-labs-card .filters{padding:12px;margin:0}.health-labs-card .health-search{margin:0;flex:1;width:auto}
-.health-labs-card .table-wrap{width:100%;margin:0}.health-labs-card .table-summary,.health-labs-card .summary-footnote{margin:0;padding:12px 16px}
+.grouped-labs .filters{margin:0}
+.grouped-labs .filter-search input{min-width:0}
+.grouped-labs .pager{margin-top:0}
+.health-lab-period-error{margin:0;padding:0 12px 12px}
+.content.content-labs{max-width:none}
+.health-heading.page-heading-labs{max-width:none;padding-top:12px;padding-bottom:8px}
+.health-heading.page-heading-labs h1{font-size:22px}
+.page-heading-labs .eyebrow,.page-heading-labs .page-description{display:none}
+.labs-mode{display:flex;gap:8px;margin:0 0 8px}
+.content-labs .labs-mode .health-btn{min-height:30px;padding:5px 9px;font-size:11px}
+.labs-mode .health-btn>svg{display:none}
+.labs-mode [aria-pressed=true]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
+.diary-overview:has(+.metrics){margin-bottom:16px}
+.metrics+.diary-overview{margin-top:16px}
 .health-two-panel>.health-card{margin-bottom:0}
 .health-kind-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .health-kind-tabs [aria-pressed=true]{background:var(--blue-soft);color:var(--blue-ink);border-color:#9db8ec}
@@ -63,6 +75,8 @@ body{font-size:14px}
 .health-vital-summary>div{display:grid;gap:7px}.health-vital-summary small{font-size:11px;color:var(--muted)}.health-vital-summary strong{font-size:24px;font-weight:650}
 .documents-table .document-actions>.health-actions{display:inline-flex;margin-left:6px}
 .documents-table .document-main{min-width:200px}.documents-table .table-name{overflow-wrap:anywhere}
+.health-documents-empty{display:grid;justify-items:center;gap:10px;text-align:center}
+.health-documents-empty>svg{color:var(--blue)}
 .health-table td{overflow-wrap:anywhere}
 .health-intro .health-form>label{margin:0}
 .health-root{padding:0;margin:0;max-width:none;width:100%;outline:none}
@@ -136,6 +150,9 @@ body{font-size:14px}
  .health-topbar-content{gap:10px}.health-topbar-content .global-search{width:180px;max-width:52vw}.health-topbar-content .health-status{display:none}
  .health-heading{padding:24px 16px 19px;align-items:flex-start;flex-direction:column;margin:0}
  .health-heading h1{font-size:26px}.health-heading p.page-description{font-size:11px;line-height:1.6}
+ .health-heading.page-heading-labs{padding:14px 16px 8px}
+ .health-heading.page-heading-labs h1{font-size:26px}
+ .grouped-labs .lab-status{display:none}
  .health-heading .health-toolbar{width:auto}.health-card{padding:14px}.health-two-panel{grid-template-columns:1fr}
  .health-group-list{max-height:240px}.health-grid.equal,.health-grid.two{grid-template-columns:1fr}
  .health-menu-open .sidebar{display:flex;width:248px;box-shadow:15px 0 40px #13223922;overflow:auto;padding-bottom:72px}

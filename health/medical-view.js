@@ -45,7 +45,7 @@
   const filter=state.filters.medical||'',query=(state.medicalSearch||'').toLocaleLowerCase('ru-RU'),status=state.medicalStatus||'';
   const all=[...state.doc.medical.map(item=>({item,kind:'medical'})),...state.doc.medications.map(item=>({item,kind:'medication'}))].map(x=>({...x,c:M.clinical(x.item,x.kind)}));
   const rows=all.filter(x=>(!filter||x.c.category===filter)&&(!status||x.c.status===status)&&(!query||[x.c.name,summary(x.c),x.c.notes,x.c.vaccination.lot].join(' ').toLocaleLowerCase('ru-RU').includes(query)));
-  const output=h('div',{},V.title('Медицинская карта','Ваши записи, периоды и источники.',[V.button(filter==='medication'?'Новый препарат':'Новая запись',filter==='medication'?'new-medication':'new-medical',{class:'primary'})]));
+  const output=h('div',{},V.title('Медкарта','Ваши записи, периоды и источники.',[V.button(filter==='medication'?'Новый препарат':'Новая запись',filter==='medication'?'new-medication':'new-medical',{class:'primary'})]));
   const workspace=h('div',{class:'medical-page'});output.append(workspace);
   workspace.append(h('div',{class:'medical-tabs',role:'group','aria-label':'Разделы медкарты'},[['','Все записи'],...Object.entries(labels)].map(([value,label])=>h('button',{type:'button',class:'button','data-action':'filter-records','data-kind':'medical','data-value':value,'aria-pressed':String(filter===value)},label))));
   const selected=all.find(x=>x.item.id===state.medicalId&&x.kind===state.medicalKind);if(selected)workspace.append(detail(state,selected.item,selected.kind));

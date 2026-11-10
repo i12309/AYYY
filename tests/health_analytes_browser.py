@@ -137,6 +137,37 @@ def run(page):
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     print('PASS search, favorites, reload and mobile review',flush=True)
 
+    page.set_viewport_size({'width':1440,'height':900})
+    import_file('date-filter.csv','Period marker;10;mg;;;2026-10-03\n'
+        'Period marker;20;mg;;;2026-10\nPeriod marker;30;mg;;;2026-11-01\nPeriod marker;40;mg;;;\n')
+    page.locator('[data-search=labs]').fill('Period marker')
+    start, end = page.locator('[data-lab-date=labFrom]'), page.locator('[data-lab-date=labTo]')
+    start.fill('2026-10-03')
+    end.fill('2026-10-03')
+    results = page.locator('.analyte-groups tbody tr')
+    assert results.count() == 1
+    assert '15' in results.locator('td').nth(2).inner_text() and '2 из 2' in results.locator('td').nth(2).inner_text()
+    results.locator('.group-name').click()
+    assert page.locator('.analyte-history tbody tr').count() == 4
+    page.locator('[data-action=lab-results]').click()
+    assert start.input_value() == end.input_value() == '2026-10-03'
+    end.fill('2026-10-02')
+    assert page.get_by_role('alert').filter(has_text='Конец периода').is_visible()
+    page.locator('[data-action=lab-reset]').click()
+    assert not start.input_value() and not end.input_value()
+
+    import_file('pagination.csv',''.join(f'Page marker {i:02};{i};mg;;;2026-10-03\n' for i in range(51)))
+    page.locator('[data-search=labs]').fill('Page marker')
+    assert results.count() == 50 and '51' in page.locator('.grouped-labs .pager').inner_text()
+    page.get_by_role('button',name='Далее',exact=True).click()
+    assert results.count() == 1 and 'Page marker 50' in results.inner_text()
+    assert page.get_by_role('button',name='Далее',exact=True).is_disabled()
+    page.get_by_role('button',name='Назад',exact=True).click()
+    assert results.count() == 50 and page.get_by_role('button',name='Назад',exact=True).is_disabled()
+    page.set_viewport_size({'width':360,'height':900})
+    assert page.locator('.labs-mode').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
+    print('PASS inclusive dates, partial dates, unfiltered detail, and 50-result pages',flush=True)
+
 
 if __name__ == '__main__':
     with sync_playwright() as playwright:
