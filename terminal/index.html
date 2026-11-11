@@ -312,6 +312,13 @@
     .engine-option input { width:166px; }
     .engine-status { color:#639f74; flex:1; min-width:130px; text-align:right; font-size:10px; }
     .engine-info { width:100%; font-size:9px; color:#678874; letter-spacing:0; }
+    .engine-check { font-size:9px; color:#b6ffca; border-color:#426b51; }
+    .engine-check:disabled { opacity:.5; cursor:not-allowed; }
+    .local-download-message { color:#b4d3bb; font-size:12px; white-space:pre-wrap; margin:0 0 14px; }
+    .local-download-actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+    .local-download-actions button { border:1px solid #41684d; color:#c4ead0; background:#112d1d;
+      padding:8px 13px; border-radius:4px; cursor:pointer; }
+    .local-download-actions #localDownloadYes { border-color:#5ab677; color:#cbffdc; background:#225a34; }
     @media(max-width:790px) {
       .engine-strip { margin:0 0 12px; gap:7px; }
       .engine-status { text-align:left; flex-basis:100%; }
@@ -366,6 +373,7 @@
               <option value="qwen15">Qwen2 1.5B</option>
             </select>
           </label>
+          <button type="button" class="engine-btn engine-check" id="localCheckBtn" hidden>ПРОВЕРИТЬ</button>
           <span id="engineStatus" class="engine-status" role="status" aria-live="polite">DEMO / НЕТ ПОДКЛЮЧЕНИЯ</span>
           <span id="engineInfo" class="engine-info">DEMO: ответы имитируются. PUBLIC отправляет запрос во внешний сервис; LOCAL запускает WebLLM или Wllama прямо в браузере.</span>
         </section>
@@ -449,7 +457,19 @@
       </footer>
     </div>
   </dialog>
-  <script src="providers.js?v=20261111-cache"></script>
+  <dialog class="cache-dialog local-download-dialog" id="localDownloadDialog" aria-labelledby="localDownloadTitle">
+    <header class="cache-dialog-head">
+      <div><span class="cache-eyebrow">AYYY / PRE-DOWNLOAD CHECK</span><h2 id="localDownloadTitle">Подтвердите загрузку модели</h2></div>
+    </header>
+    <div class="cache-dialog-body">
+      <p id="localDownloadMessage" class="local-download-message"></p>
+      <div class="local-download-actions">
+        <button type="button" id="localDownloadNo">ОТМЕНА</button>
+        <button type="button" id="localDownloadYes">СКАЧАТЬ МОДЕЛЬ</button>
+      </div>
+    </div>
+  </dialog>
+  <script src="providers.js?v=20261111-preflight"></script>
   <script src="model-cache-ui.js?v=20261111-a"></script>
   <script>
     (() => {
@@ -482,6 +502,13 @@
       const engineStatus = document.querySelector('#engineStatus');
       const inferenceIndicator = document.querySelector('#inferenceIndicator');
       const stopButton = document.querySelector('#stopBtn');
+      const localCheckButton = document.querySelector('#localCheckBtn');
+      const downloadDialog = document.querySelector('#localDownloadDialog');
+      const downloadMessage = document.querySelector('#localDownloadMessage');
+      const downloadYes = document.querySelector('#localDownloadYes');
+      const downloadNo = document.querySelector('#localDownloadNo');
+      let cancelDownloadConfirmation=null;
+      let checkVersion=0,hardwareChecking=false;
       const providerNames = {ovh:'OVH / Qwen3.8-27B', hf:'HUGGING FACE / Qwen3'};
       const stamp = () => new Date().toLocaleTimeString('ru-RU', { hour12: false });
       const date = () => new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
@@ -521,6 +548,8 @@
         publicOption.hidden = engineMode !== 'public';
         spaceOption.hidden = engineMode !== 'public' || publicChoice.value !== 'hf';
         localOption.hidden = engineMode !== 'webgpu';
+        localCheckButton.hidden = engineMode !== 'webgpu';
+        localCheckButton.disabled = working || hardwareChecking;
         const pocketSelected = engineMode === 'webgpu' && localChoice.value === 'pocket';
         const label = engineMode === 'demo' ? 'DISABLED' :
           engineMode === 'webgpu' ? (pocketSelected ? 'GGUF / WASM' : (providers.hasWebGPU() ? 'WEBGPU' : 'NO GPU')) :
@@ -528,24 +557,86 @@
         inferenceIndicator.textContent = label;
         inferenceIndicator.classList.toggle('amber',engineMode === 'demo');
         if (!working) setEngineStatus(engineMode === 'demo' ? 'DEMO / OFFLINE' :
-          engineMode === 'webgpu' ? (pocketSelected ? 'GGUF / WLLAMA · 192 МБ' :
-            (providers.hasWebGPU() ? 'WEBGPU / ДОСТУПЕН' : 'WEBGPU / НЕДОСТУПЕН')) :
+          engineMode === 'webgpu' ? (pocketSelected ? 'CPU / WASM · НЕ ПРОВЕРЕН' :
+            (providers.hasWebGPU() ? 'GPU / НЕ ПРОВЕРЕН' : 'GPU / НЕДОСТУПЕН')) :
           'PUBLIC / ' + providerNames[publicChoice.value]);
         engineInfo.textContent = engineMode === 'demo' ?
           'DEMO: демонстрационные ответы. Нет модели, сети и сохранения истории.' :
           engineMode === 'webgpu' ? (pocketSelected ?
-          'MNN-Pocket: 192 МБ GGUF Q4_1 с Hugging Face при первом запросе. Движок Wllama (не WebLLM): WebGPU при наличии, иначе WASM/CPU; модель кэшируется в браузере.' :
-          'WebLLM: модель загружается на ваш GPU при первом запросе (сотни МБ / ГБ). Ответы не уходят на сервер; история только в этой вкладке.') :
+          'MNN-Pocket: CPU / WebAssembly, 1 поток. Для запуска GPU не нужен. До скачивания 192 МБ проверим WASM, хранилище и тестовый запуск движка.' :
+          'WebLLM: нужен работающий WebGPU, на CPU эти модели не запускаются. До скачивания проверим GPU-адаптер и устройство.') :
           'PUBLIC: запрос и контекст переписки отправляются выбранному внешнему сервису. Без ключа и прокси, возможны CORS, очередь и ограничения.';
       }
       function switchEngine(next) {
         if (!['public','webgpu','demo'].includes(next)) return;
         if (working) stopGeneration();
         engineMode = next;
+        checkVersion++;
         updateEngineUI();
         addMessage('system','CHANNEL / SWITCH','РЕЖИМ: ' + next.toUpperCase() +
           (next === 'public' ? ' / ' + providerNames[publicChoice.value] : '') +
           '\nИстория на экране сохранена только до перезагрузки страницы.');
+      }
+      function confirmLocalDownload(report) {
+        if (cancelDownloadConfirmation)cancelDownloadConfirmation();
+        const size = Number.isFinite(report.sizeBytes) ?
+          'Размер модели: около ' + Math.round(report.sizeBytes/1024/1024) + ' МБ.' :
+          'Размер загрузки: сотни мегабайт или гигабайты, зависит от модели WebLLM.';
+        downloadMessage.textContent = report.modelName + '\n' + report.engine + '\n' +
+          size + '\n\nПроверка браузера пройдена, но это НЕ гарантия запуска модели: ' +
+          'может не хватить оперативной или видеопамяти, либо формат модели окажется неподдерживаемым.' +
+          (report.warnings.length ? '\n\n' + report.warnings.join('\n') : '') +
+          '\n\nСкачивать модель на это устройство?';
+        return new Promise(resolve => {
+          let finished=false;
+          const finish=approved=>{
+            if(finished)return;
+            finished=true;
+            downloadYes.removeEventListener('click',yes);
+            downloadNo.removeEventListener('click',no);
+            downloadDialog.removeEventListener('cancel',escape);
+            downloadDialog.removeEventListener('close',no);
+            if(downloadDialog.open)downloadDialog.close();
+            cancelDownloadConfirmation=null;
+            resolve(approved);
+          };
+          const yes=()=>finish(true);
+          const no=()=>finish(false);
+          const escape=event=>{event.preventDefault();no();};
+          cancelDownloadConfirmation=no;
+          downloadYes.addEventListener('click',yes);
+          downloadNo.addEventListener('click',no);
+          downloadDialog.addEventListener('cancel',escape);
+          downloadDialog.addEventListener('close',no);
+          downloadDialog.showModal();
+        });
+      }
+      async function checkLocalDevice() {
+        if(working || hardwareChecking || engineMode!=='webgpu')return;
+        const choice=localChoice.value,version=++checkVersion;
+        hardwareChecking=true;
+        localCheckButton.disabled=true;
+        setEngineStatus('ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА...');
+        try {
+          const report=await providers.preflightLocalModel(choice,{
+            runtimeTest:true,
+            onStatus:text=>{
+              if(version===checkVersion && engineMode==='webgpu')setEngineStatus(text);
+            }
+          });
+          if(version!==checkVersion || engineMode!=='webgpu')return;
+          setEngineStatus(report.ok ? (report.cached?'ГОТОВА / В КЭШЕ':'ПРОВЕРКА ПРОЙДЕНА / НЕ СКАЧАНА') :
+            'ЗАПУСК НЕВОЗМОЖЕН');
+          engineInfo.textContent=report.ok ?
+            report.engine + ' · ' + (report.cached?'Модель уже сохранена.':'Веса ещё не скачивались.') +
+            ' · ' + (report.warnings||[]).join(' ') :
+            report.reason + ' Модель не скачивается.';
+        }catch(error){
+          if(version===checkVersion)setEngineStatus('ОШИБКА / '+(error?.message||String(error)));
+        }finally{
+          hardwareChecking=false;
+          localCheckButton.disabled=working;
+        }
       }
       async function realReply(message, token) {
         const selectedMode = engineMode === 'webgpu' ? 'webgpu' : publicChoice.value;
@@ -558,6 +649,27 @@
         activeController = ctrl;
         let result = '';
         try {
+          if(selectedMode==='webgpu'){
+            const report=await providers.preflightLocalModel(localChoice.value,{
+              signal:ctrl.signal,runtimeTest:true,
+              onStatus:text=>{
+                if(generation!==token)return;
+                el.textContent=text;
+                setEngineStatus(text);
+              }
+            });
+            if(generation!==token || ctrl.signal.aborted)return;
+            if(!report.ok)throw new Error('Модель не скачана. '+report.reason);
+            if(!report.cached){
+              const approved=await confirmLocalDownload(report);
+              if(generation!==token || ctrl.signal.aborted)return;
+              if(!approved){
+                el.textContent='Загрузка отменена. Модель не скачивалась.';
+                setEngineStatus('СКАЧИВАНИЕ ОТМЕНЕНО');
+                return;
+              }
+            }
+          }
           result = await providers.run(selectedMode,{
             prompt:message,history:turns.slice(-10),
             modelPreference:localChoice.value,space:document.querySelector('#hfSpace').value,
@@ -585,9 +697,8 @@
           const aborted = ctrl.signal.aborted || error?.name === 'AbortError';
           const detail = error instanceof Error ? error.message : String(error);
           el.textContent = aborted ? '[Генерация остановлена]' :
-            'СБОЙ ПОДКЛЮЧЕНИЯ: ' + detail +
-            '\n\nПопробуйте другого публичного провайдера, режим WEBGPU или DEMO. ' +
-            'Автоматической подмены ответа нет.';
+            (selectedMode==='webgpu'?'ЛОКАЛЬНЫЙ ЗАПУСК НЕДОСТУПЕН: ':'СБОЙ ПОДКЛЮЧЕНИЯ: ') + detail +
+            '\n\nМодель не заменяется автоматически. Проверьте устройство кнопкой ПРОВЕРИТЬ или выберите другой режим.';
           setEngineStatus(aborted ? 'ОСТАНОВЛЕНО' : 'ERROR / ' + detail.slice(0,100));
         } finally {
           if (generation === token) {
@@ -683,6 +794,7 @@
       function setWorking(value) {
         working = value;
         send.disabled = value;
+        localCheckButton.disabled = value || hardwareChecking;
         led.classList.toggle('busy', value);
         stopButton.hidden = !value;
         status.textContent = value ? 'ПРИЁМ / ВЫВОД СИМВОЛОВ...' : 'ОЖИДАНИЕ ВВОДА_';
@@ -704,6 +816,7 @@
       function stopGeneration() {
         generation++;
         activeController?.abort();
+        cancelDownloadConfirmation?.();
         providers.abort();
         activeController = null;
         if (activeReply) {activeReply.textContent = '[Генерация остановлена]'; activeReply = null;}
@@ -749,7 +862,8 @@
       document.querySelectorAll('[data-engine]').forEach(b =>
         b.addEventListener('click',()=>switchEngine(b.dataset.engine)));
       publicChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
-      localChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
+      localChoice.addEventListener('change',()=>{if (working) stopGeneration(); checkVersion++; updateEngineUI();});
+      localCheckButton.addEventListener('click',()=>void checkLocalDevice());
       stopButton.addEventListener('click',()=>{stopGeneration(); input.focus();});
       try {
         if(window.AYYY_TERMINAL_MODEL_CACHE_UI?.init)
