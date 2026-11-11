@@ -1,0 +1,317 @@
+{
+  "version": 1,
+  "order": [
+    "oberon",
+    "health",
+    "weather",
+    "family",
+    "games",
+    "finance",
+    "tools",
+    "mpp",
+    "search",
+    "ai"
+  ],
+  "services": {
+    "oberon": {
+      "source": "оберон_орбитальный_знак_и_ракета.png",
+      "source_sha256": "32790d98979b60fbaa25c6655329b7d7f8c3cb09c1cb99b3744e5c7248b269aa",
+      "hero": {
+        "path": "assets/service-art/v1/oberon-hero.webp",
+        "width": 850,
+        "height": 958,
+        "bytes": 82540,
+        "sha256": "d91b8afb26308994a667df986655117c58f272c75318ba79e7c2786b5720bc43",
+        "crop": [
+          0.008,
+          0.011,
+          0.658,
+          0.988
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/oberon-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 30358,
+        "sha256": "a8af62d9a4ea316f387f7a539e41594dc46d66df9722450d11c33971f5b8b07e",
+        "crop": [
+          0.683,
+          0.308,
+          0.977,
+          0.741
+        ]
+      }
+    },
+    "health": {
+      "source": "акварельная_днк_и_медицинские_технологии.png",
+      "source_sha256": "a18f49816d9c879e8e1ff0016f29fa6306486f53f35b38e6b3b95e25029e7e12",
+      "hero": {
+        "path": "assets/service-art/v1/health-hero.webp",
+        "width": 850,
+        "height": 958,
+        "bytes": 103888,
+        "sha256": "8ba7248306e2f744dd620e31df18e15831ab8f19c5b77578775604e5f613498e",
+        "crop": [
+          0.0,
+          0.0,
+          0.666,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/health-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 30170,
+        "sha256": "69bd266f9ba1dfaab3ec3a76786aa8ac8a1db1df8ee49d7e9f14ebe063651504",
+        "crop": [
+          0.716,
+          0.297,
+          0.973,
+          0.669
+        ]
+      }
+    },
+    "weather": {
+      "source": "погода_грозовой_пейзаж_акварелью.png",
+      "source_sha256": "3c21439442139eca67cc737902126ef73c5ad758e43191cc7846fc7c5d30b277",
+      "hero": {
+        "path": "assets/service-art/v1/weather-hero.webp",
+        "width": 850,
+        "height": 932,
+        "bytes": 202908,
+        "sha256": "c8e709f3ba1ddf4ecc3be712f6d1f28a7f24090e8d6164d2c78e32a91c4cd5d6",
+        "crop": [
+          0.0,
+          0.0,
+          0.681,
+          0.995
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/weather-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 36040,
+        "sha256": "d11e5504af6034c5858b0fe94746b06336863f6530d69a07ca7ca20b7958c03e",
+        "crop": [
+          0.723,
+          0.389,
+          0.974,
+          0.76
+        ]
+      }
+    },
+    "family": {
+      "source": "родословная_дерево_семейной_памяти.png",
+      "source_sha256": "28d44ca84ed9fbe13c496912d232a829e0a4406dc82e623fbb1752ba93448ea4",
+      "hero": {
+        "path": "assets/service-art/v1/family-hero.webp",
+        "width": 850,
+        "height": 942,
+        "bytes": 211330,
+        "sha256": "36ed072fab73234a3fcc17d6acdb73190914650a57f7dd69b1944d90ac097e9d",
+        "crop": [
+          0.0,
+          0.0,
+          0.677,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/family-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 41224,
+        "sha256": "0174792f10eee895c6f9f2f1bcb68f93004d6a3e48530ef4913f566f4ebc8598",
+        "crop": [
+          0.708,
+          0.271,
+          0.977,
+          0.661
+        ]
+      }
+    },
+    "games": {
+      "source": "игровые_миры_приключения_и_фантазия.png",
+      "source_sha256": "733695d74b6cba701d35338588a7b2c05f388c2de6126e70bfff01c16a9ee7bc",
+      "hero": {
+        "path": "assets/service-art/v1/games-hero.webp",
+        "width": 850,
+        "height": 953,
+        "bytes": 113092,
+        "sha256": "43556ed4d6c1add12e89fec2ec1f7fdfeae4db7ef426569fb0ccbcd1fef7e75f",
+        "crop": [
+          0.0,
+          0.0,
+          0.669,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/games-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 30958,
+        "sha256": "49c7a59c4d15cdd5b90eb631f001b7d8877c9aabc41260655a8461bec34dc354",
+        "crop": [
+          0.71,
+          0.375,
+          0.972,
+          0.731
+        ]
+      }
+    },
+    "finance": {
+      "source": "финансовая_панорама_золото_и_рынки.png",
+      "source_sha256": "ffc6d7f8353bde28f2b060810e0f96dc99397a31624525331771b64896115fb1",
+      "hero": {
+        "path": "assets/service-art/v1/finance-hero.webp",
+        "width": 850,
+        "height": 998,
+        "bytes": 124084,
+        "sha256": "6334acbda97bb66f39721d17ae7a4c3e60c5f38c8a041493a27c9e6fe741a35f",
+        "crop": [
+          0.0,
+          0.0,
+          0.639,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/finance-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 26724,
+        "sha256": "468873608e8324758e46bfc129101442a5d9039a72c1e7e9327a8ebad8988e9b",
+        "crop": [
+          0.687,
+          0.376,
+          0.972,
+          0.739
+        ]
+      }
+    },
+    "tools": {
+      "source": "инструменты_и_архитектура_будущего.png",
+      "source_sha256": "3187a815b8ab6e0669ffb9f9e201fe5ab74b44c3fa4d870cc8626ef9f88bc2e0",
+      "hero": {
+        "path": "assets/service-art/v1/tools-hero.webp",
+        "width": 850,
+        "height": 1010,
+        "bytes": 103424,
+        "sha256": "c6c59057f4aac29e8f12767d4ef3adbc973153f0773373c45a81e3dc2a6303e4",
+        "crop": [
+          0.0,
+          0.0,
+          0.631,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/tools-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 54318,
+        "sha256": "b92ad737cd013de7c295015ad53e8a208aaa58e11e017997f6e04ed1bdd6f6b8",
+        "crop": [
+          0.647,
+          0.337,
+          0.964,
+          0.718
+        ]
+      }
+    },
+    "mpp": {
+      "source": "projektplanung_gantt_chart_am_schreibtisch.png",
+      "source_sha256": "a53b6f50c1f46de17f7e321b1323565bde55cf980348649445e61eb805d3432f",
+      "hero": {
+        "path": "assets/service-art/v1/mpp-hero.webp",
+        "width": 850,
+        "height": 939,
+        "bytes": 69424,
+        "sha256": "f3646d1e3c5291c8b76d2b31d7180ec25bbac61c576cb8f7f9347994361c31f0",
+        "crop": [
+          0.0,
+          0.0,
+          0.679,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/mpp-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 11476,
+        "sha256": "3ca6a15b7230101330d62756ca3690e98333724e4008b69dbe310f47e3be204f",
+        "crop": [
+          0.72,
+          0.388,
+          0.973,
+          0.735
+        ]
+      }
+    },
+    "search": {
+      "source": "умный_поиск_карты_и_документы.png",
+      "source_sha256": "487d24896f18134d82c1fe9f0a640ccc53437bee9a706744691bd3fbf458dfe4",
+      "hero": {
+        "path": "assets/service-art/v1/search-hero.webp",
+        "width": 850,
+        "height": 961,
+        "bytes": 53890,
+        "sha256": "c76a728c09fa154130bcee180765bf3957fff066ddcbf9a965215b2cc69e9ad1",
+        "crop": [
+          0.0,
+          0.0,
+          0.664,
+          1.0
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/search-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 24154,
+        "sha256": "63f42a7cdd188c88bb268be5c6efae506189dda83a051dc6e24c03d09015db0b",
+        "crop": [
+          0.702,
+          0.375,
+          0.968,
+          0.721
+        ]
+      }
+    },
+    "ai": {
+      "source": "ретро_терминал_с_зелёным_свечением.png",
+      "source_sha256": "39fb093d1eb56d4f377ceb81bce1ee7f6c1a0bc052c8b645800fbc1df94c514e",
+      "hero": {
+        "path": "assets/service-art/v1/ai-hero.webp",
+        "width": 850,
+        "height": 921,
+        "bytes": 70762,
+        "sha256": "31806ab12a9443ad9620f905f62db7340a83bc087607cc68b3739ea7a34481ab",
+        "crop": [
+          0.02,
+          0.032,
+          0.668,
+          0.968
+        ]
+      },
+      "card": {
+        "path": "assets/service-art/v1/ai-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 14016,
+        "sha256": "162ccf657229a51de2041711ea7731bbe5196846b2a7b5b625340f2dfc0f7d7c",
+        "crop": [
+          0.697,
+          0.407,
+          0.964,
+          0.721
+        ]
+      }
+    }
+  }
+}

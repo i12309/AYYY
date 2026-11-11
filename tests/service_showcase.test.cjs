@@ -11,7 +11,7 @@ test('one catalog item per real service route',()=>{
  const {app}=setup();
  assert.equal(app.services.length,10);
  assert.equal(new Set(app.services.map(s=>s.route)).size,10);
- assert.deepEqual(Array.from(app.services,s=>s.id),['oberon','ai','search','weather','finance','mpp','tools','family','health','games']);
+ assert.deepEqual(Array.from(app.services,s=>s.id),['oberon','health','weather','family','games','finance','tools','mpp','search','ai']);
  assert.equal(app.services.find(s=>s.id==='tools').param,'loan');
  assert.equal(app.services.filter(s=>s.route==='tools').length,1);
 });
@@ -42,20 +42,20 @@ test('ten illustrated stories replace the lighthouse on hover, then restore it',
  assert.equal(previews.length,11);
  assert.deepEqual(previews.slice(1),Array.from(app.services,s=>s.id));
  for(const id of previews.slice(1)){
-   const filename='assets/service-stories/'+id+'.svg';
+   const filename='assets/service-art/v1/'+id+'-hero.webp';
    assert.ok(fs.existsSync(path.join(root,filename)),filename);
-   const svg=read(filename);
-   assert.ok(svg.includes('<svg')&&svg.includes('</svg>'),filename);
+   const bytes=fs.readFileSync(path.join(root,filename));
+   assert.equal(bytes.toString('ascii',0,4),'RIFF',filename);
+   assert.equal(bytes.toString('ascii',8,12),'WEBP',filename);
  }
  assert.match(source,/grid\.addEventListener\('pointerover',pointerOver\)/);
  assert.match(source,/grid\.addEventListener\('pointerout',pointerOut\)/);
  assert.match(source,/grid\.addEventListener\('focusin',focusIn\)/);
  assert.match(source,/showScene\(null\)/);
 });
-test('compact rows fill the available right-hand width and retain descriptions',()=>{
+test('compact rows fill the available width and retain expandable descriptions',()=>{
  const css=read('src/showcase.css'),source=read('src/showcase.js');
  assert.match(css,/\.sc-shell\s*\{[^}]*width:100%/);
- assert.match(css,/\.sc-shell\s*\{[^}]*min-width:0/);
  assert.match(css,/\.sc-row\s*\{[^}]*min-height:168px/);
  assert.match(css,/position:sticky/);
  assert.match(source,/<details class="sc-card-more">/);

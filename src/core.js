@@ -108,15 +108,15 @@
   };
   app.services = [
     {id:'oberon',name:'OBERON',desc:'Заметки Markdown, папки и связи в GitHub',icon:'oberon',color:'amber',group:'personal',kind:'connect',route:'oberon'},
-    {id:'ai',name:'Терминал',desc:'Нейронный терминал · модели в браузере',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'},
-    {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
-    {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
-    {id:'finance',name:'Валюты и рынки',desc:'История курсов, графики и конвертер',icon:'chart',color:'orange',group:'everyday',kind:'api',route:'finance'},
-    {id:'mpp',name:'Project Viewer',desc:'Гант из файлов MPP и Project XML',icon:'chart',color:'blue',group:'tools',kind:'local',route:'mpp'},
-    {id:'tools',name:'Инструменты',desc:'Девять инструментов для расчётов, файлов и текста',icon:'calculator',color:'green',group:'tools',kind:'local',route:'tools',param:'loan'},
-    {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
     {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
-    {id:'games',name:'Игры',desc:'Головоломки, аркады и тренировка памяти',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games'}
+    {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
+    {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
+    {id:'games',name:'Игры',desc:'Головоломки, аркады и тренировка памяти',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games'},
+    {id:'finance',name:'Финансы',desc:'История курсов, графики и конвертер',icon:'chart',color:'orange',group:'everyday',kind:'api',route:'finance'},
+    {id:'tools',name:'Инструменты',desc:'Девять инструментов для расчётов, файлов и текста',icon:'calculator',color:'green',group:'tools',kind:'local',route:'tools',param:'loan'},
+    {id:'mpp',name:'Project Viewer',desc:'Гант из файлов MPP и Project XML',icon:'chart',color:'blue',group:'tools',kind:'local',route:'mpp'},
+    {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
+    {id:'ai',name:'Терминал',desc:'Нейронный терминал · модели в браузере',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'}
   ];
   app.kindLabels={local:'В браузере',api:'Открытый API',link:'Внешний сервис',connect:'Подключаемый',demo:'Демо-экран'};
   // Existing preferences may contain individual tools: keep their favorites and shortcuts.
