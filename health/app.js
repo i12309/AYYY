@@ -11,11 +11,11 @@
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
     globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false,pendingGitHub:null};
   let importWorkspace=null;
-  const currentTab=()=>state.tab==='import'?'lab':state.tab;
+  const currentTab=()=>state.tab==='import'?'lab':state.tab==='settings'?'profile':state.tab;
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
     genetic:'findings',diary:'diary',meal:'diary','activity-day':'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
-    ['medical','Медкарта'],['care','Приёмы и напоминания'],['recommendations','Рекомендации'],['nutrition','Питание'],['activity','Активность'],['genetics','Генетика'],['diary','Дневник'],['document','Документы'],['timeline','История'],['profile','Мой профиль'],['settings','Настройки']];
+    ['medical','Медкарта'],['care','Приёмы и напоминания'],['recommendations','Рекомендации'],['nutrition','Питание'],['activity','Активность'],['genetics','Генетика'],['diary','Дневник'],['document','Документы'],['timeline','История'],['profile','Мой профиль']];
   const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
   let writeQueue=Promise.resolve(),syncTimer,toastTimer,sessionRevision=0,syncRun=0,keyChangeRun=0;
   const clientId=crypto.randomUUID();
@@ -29,13 +29,13 @@
   }
   function error(e){toast(e instanceof Error?e.message:String(e));}
   async function profileList(){state.profiles=await S.list();}
-  const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.'],settings:['Settings','neutral','Профиль, безопасность и синхронизация.']};
+  const navMeta={overview:['LayoutGrid','blue','Показатели, документы и события — всё под рукой.'],lab:['FlaskConical','blue','Результаты исследований с историей и референсами.'],vital:['HeartPulse','red','Домашние измерения, самочувствие и история.'],medical:['NotebookTabs','green','Аллергии, лекарства, прививки и хронические состояния.'],diary:['BookOpen','yellow','Самочувствие, питание, активность и сон.'],document:['FileText','red','Бланки, заключения и направления в одном месте.']};
   navMeta.nutrition=['Utensils','green','Приёмы пищи и известные нутриенты.'];navMeta.activity=['Dumbbell','yellow','Шаги, сон и упражнения по дням.'];
   navMeta.recommendations=['ClipboardList','green','Анкета, снимки данных и отдельные рецензии.'];
   navMeta.timeline=['History','yellow','Что и когда появилось в вашем журнале.'];navMeta.profile=['UserRound','neutral','Профиль и ваши данные.'];
   navMeta.genetics=['Dna','green','Ваши записи из генетических отчётов.'];
   navMeta.care=['Bell','yellow','Фактические события и ваши расписания.'];
-  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(currentTab()===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':currentTab()===id?'page':null},V.icon(navMeta[id][0]),label)));}
+  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(currentTab()===id?' active':''),'data-tab':id,'aria-current':currentTab()===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
     if(state.local&&!state.picker){
@@ -100,12 +100,14 @@
           V.field('Токен GitHub','token','', 'password')),
         githubTokenGuide(true)
       ],'Проверить и подключить');
-    outer.append(V.h('div',{class:'health-intro-grid'},
-      V.card('Создать журнал на устройстве',[V.h('p',{class:'health-note'},
-        'Фраза шифрования защищает ваши медицинские данные. Это не пароль GitHub: она потребуется для открытия журнала и здесь, и на других устройствах. HUMAN её не хранит; без фразы данные не восстановить.'),create]),
-      V.card('Подключить свой GitHub',[V.h('p',{class:'health-note'},
-        remoteSetup?'Создание первого зашифрованного журнала в выбранном репозитории.':
-          'HUMAN найдёт существующий журнал или предложит создать новый, даже если репозиторий пуст. Можно использовать тот же GitHub, что и для родословной.'),download])));
+    const githubCard=V.card('Подключить свой GitHub',[V.h('p',{class:'health-note'},
+      remoteSetup?'Создание первого зашифрованного журнала в выбранном репозитории.':
+        'HUMAN найдёт существующий журнал или предложит создать новый, даже если репозиторий пуст. Можно использовать тот же GitHub, что и для родословной.'),download]);
+    outer.append(V.h('div',{class:'health-intro-grid'+(remoteSetup?' health-intro-grid-single':'')},
+      remoteSetup?githubCard:[
+        V.card('Создать журнал на устройстве',[V.h('p',{class:'health-note'},
+          'Фраза шифрования защищает медицинские данные. Это не пароль GitHub: она потребуется для открытия журнала на любом устройстве. HUMAN её не хранит.'),create]),
+        githubCard]));
     const restore=V.card('Восстановить зашифрованный файл',[
       V.h('p',{class:'health-note'},'Восстановите журнал и вложения из зашифрованной копии HUMAN.'),
       V.form('import-vault',[V.field('Резервная копия .human','file','','file')],'Импортировать')
@@ -140,7 +142,7 @@
     if(!unlocked){document.body.classList.remove('health-menu-open');header.replaceChildren();return;}
     const profile=state.doc.profile.name||'Мой профиль';
     sidebar.replaceChildren(V.brand('human'),V.h('button',{class:'workspace profile-entry','data-tab':'profile','aria-current':state.tab==='profile'?'page':null,'aria-label':'Мой профиль'},V.h('span',{class:'avatar'},profile.slice(0,1).toUpperCase()),V.h('div',{},V.h('strong',{},profile),V.h('small',{},'Личное пространство'))),V.h('p',{class:'nav-caption'},'МОЙ ЖУРНАЛ'),nav(),V.h('div',{class:'sidebar-footer'},V.icon('ShieldCheck',16),V.h('span',{},state.demo?'Демонстрационный журнал':'Данные на вашем устройстве'),V.h('button',{'data-action':state.demo?'exit-demo':'lock','aria-label':state.demo?'Выйти из демо':'Закрыть доступ'},V.icon('LogOut',17))));
-    const label=state.tab==='import'?'Импорт анализов':tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
+    const label=state.tab==='import'?'Импорт анализов':tabs.find(([id])=>id===currentTab())?.[1]||'Обзор';
     const search=V.h('div',{class:'global-search'},V.icon('Search',15),V.h('input',{type:'search',id:'health-global-search','aria-label':'Поиск по всем данным',placeholder:'Найти в журнале',value:state.globalSearch||'','data-search':'global'}),V.h('kbd',{},'/'));
     const top=V.h('div',{class:'health-topbar-content'},V.brand('ayyy'),V.h('div',{class:'breadcrumb'},V.h('span',{},'Личное пространство'),V.icon('ChevronRight',13),V.h('strong',{},label)),search,V.h('span',{class:'health-status',role:'status','aria-label':status(),'data-state':state.conflict?'problem':'ok',title:status()},V.icon('ShieldCheck',15)),V.button('Добавить','quick-add',{class:'primary desktop-add'}));
     const dueCount=window.HumanCare.records(state.doc,'reminder').filter(r=>window.HumanCare.due(r)).length;
@@ -164,61 +166,69 @@
     if(!count)results.append(V.empty('По вашему запросу ничего не найдено.'));
     box.append(results);return box;
   }
+
+  // Storage and sync controls belong to the profile, not a duplicate screen.
   function settings(){
-    const doc=state.doc,local=state.local,repo=local.repo;
-    const box=V.h('div',{});
     if(state.demo){
-      box.append(V.title('Настройки демо','Образец журнала без подключения личного аккаунта.'));
-      box.append(V.card('Только пример',[
-        V.banner('Полностью вымышленные данные',
-          'Пример существует исключительно в памяти вкладки. Он не использует IndexedDB, пароль, токен GitHub или синхронизацию.'),
-        V.h('p',{},'Профиль: '+doc.profile.name),
-        V.h('p',{},'Лабораторных результатов: '+doc.observations.length),
-        V.h('p',{},'Домашних измерений: '+doc.vitals.length),
-        V.h('p',{},'Документов: '+doc.documents.length),
-        V.h('p',{class:'health-note'},
-          'Можно менять и добавлять записи для оценки интерфейса. После выхода или перезагрузки эти изменения исчезнут.'),
-        V.button('Вернуть исходные демо-данные','reset-demo'),
-        V.button('Перейти к личному журналу','exit-demo',{class:'primary'})
-      ]));
-      return box;
+      const demo=V.card('Режим просмотра примера',[
+        V.h('p',{class:'health-note'},'Здесь только вымышленные данные. Они не сохраняются на устройстве и не отправляются в GitHub.'),
+        V.h('div',{class:'health-profile-actions'},
+          V.button('Сбросить пример','reset-demo'),
+          V.button('Перейти к личному журналу','exit-demo',{class:'primary'}))
+      ]);
+      demo.classList.add('profile-panel-github');
+      return [demo];
     }
-    box.append(V.title('Настройки','Профиль, безопасность и синхронизация.'));
-    if(state.conflict)box.append(syncConflictCard(state.conflict));
-    const profile=V.card('Профиль',[
-      V.h('p',{},'Имя: '+(doc.profile.name||'Не указано')),
-      V.h('p',{},'Дата рождения: '+V.date(doc.profile.birthDate)),
-      V.h('p',{},'Пол: '+(doc.profile.sex||'Не указан')),
-      V.button('Редактировать','edit-profile')
+    const local=state.local,repo=local.repo;
+    const items=[];
+    if(state.conflict){
+      const conflict=syncConflictCard(state.conflict);
+      conflict.classList.add('profile-panel-conflict');
+      items.push(conflict);
+    }
+    const security=V.card('Защита данных',[
+      V.h('p',{class:'health-profile-meta'},'AES-256-GCM · PBKDF2-SHA256 · 310 000 итераций'),
+      V.h('p',{class:'health-note'},'Журнал зашифрован на устройстве. Фраза доступа не отправляется в GitHub.'),
+      V.h('div',{class:'health-profile-actions'},
+        V.button('Изменить фразу','change-passphrase'),
+        V.button('Другой профиль','picker'))
     ]);
-    const localBox=V.card('Локальное хранение',[
-      V.h('p',{},'AES-256-GCM · PBKDF2-SHA256 · 310 000 итераций'),
-      V.h('p',{class:'health-note'},'В IndexedDB хранятся только зашифрованные записи.'),
-      V.button('Скачать архив','backup'),V.button('Изменить фразу доступа','change-passphrase'),V.button('Другой профиль','picker')
-    ]);
-    box.append(V.h('div',{class:'health-grid equal'},profile,localBox));
+    security.classList.add('profile-panel-security');
+    items.push(security);
+
+    const connection=V.h('div',{class:'health-profile-github-status'},
+      V.icon(repo?'ShieldCheck':'Cloud',17),
+      V.h('div',{},V.h('strong',{},repo?'Репозиторий: '+VRepo(repo):'Репозиторий не подключён'),
+        V.h('small',{},repo?(G.hasToken()?'Токен активен в этой вкладке':'Для синхронизации введите токен'):'Подключите личный приватный GitHub')));
     const form=V.form('connect',[
       V.field('Приватный репозиторий owner/repo','repo',repo?repo.owner+'/'+repo.repo:''),
       V.row(V.field('Ветка','branch',repo?.branch||'main'),
         V.field('Токен GitHub (fine-grained)','token','','password')),
       githubTokenGuide(false)
     ],'Подключить и проверить');
-    box.append(V.card('GitHub · персональное хранилище',[
-      V.banner('Тот же репозиторий, что у родословной',
-        'HUMAN автоматически создаст health-data/v2/ при первой синхронизации, если папки нет. Семейное дерево в family-data/trees/ останется без изменений.'),
-      V.h('p',{},repo?'Подключено: '+VRepo(repo):'Не подключён'),
+    form.classList.add('health-profile-github-form');
+    const github=V.card('GitHub · синхронизация',[
+      connection,
+      V.h('p',{class:'health-note'},'Можно использовать репозиторий родословной: HUMAN хранит файлы отдельно, в health-data/v2/. При первой отправке папка будет создана автоматически.'),
       form,
-      repo?V.button('Синхронизировать сейчас','sync',{class:'small'}):null,
-      V.button('Стереть токен из памяти','disconnect-token',{class:'small danger'}),
-      V.h('p',{class:'health-note'},
-        'Токен не сохраняется на диск. Синхронизация выполняется только пока эта страница открыта.')
-    ]));
-    box.append(V.card('Резервирование и удаление',[
-      V.h('p',{class:'health-note'},'Держите отдельную зашифрованную резервную копию вне GitHub.'),
-      V.button('Скачать копию .human','backup'),V.button('Восстановить из файла','restore-file'),
-      V.button('Удалить только локальную копию','delete-local',{class:'danger'})
-    ]));
-    return box;
+      V.h('div',{class:'health-profile-actions health-profile-github-actions'},
+        repo?V.button('Синхронизировать сейчас','sync',{class:'small'}):null,
+        G.hasToken()?V.button('Отключить токен','disconnect-token',{class:'small'}):null),
+      V.h('p',{class:'health-note'},'Токен хранится только в памяти открытой вкладки, а не на диске.')
+    ]);
+    github.classList.add('profile-panel-github');
+    items.push(github);
+
+    const backup=V.card('Резервные копии',[
+      V.h('p',{class:'health-note'},'Отдельная зашифрованная копия защищает от удаления или повреждения данных в GitHub.'),
+      V.h('div',{class:'health-profile-actions'},
+        V.button('Скачать копию .human','backup'),
+        V.button('Восстановить из файла','restore-file'),
+        V.button('Удалить с устройства','delete-local',{class:'danger'}))
+    ]);
+    backup.classList.add('profile-panel-backups');
+    items.push(backup);
+    return items;
   }
   let renderedVaultId=null;
   function demoBanner(){
@@ -249,7 +259,7 @@
     else if(state.tab==='care')view=window.HumanCareView.page(state);
     else if(['nutrition','activity'].includes(state.tab))view=window.HumanDiaryView.page(state);
     else if(state.tab==='recommendations')view=window.HumanRecommendationsView.page(state);
-    else if(state.tab==='profile')view=window.HumanJournalView.profilePage(state);
+    else if(state.tab==='profile'||state.tab==='settings')view=window.HumanJournalView.profilePage(state,settings());
     else if(state.tab==='timeline')view=window.HumanJournalView.timelinePage(state);
     else if(state.tab==='settings')view=settings();
     else view=V.listSection(state,state.tab);
@@ -733,7 +743,7 @@
   }
   function showSyncConflict(message,review=null){
     state.conflict={message,review};
-    state.tab='settings';
+    state.tab='profile';
     state.globalSearch='';
     render();
   }
@@ -828,7 +838,7 @@
   async function syncNow(){
     if(state.demo){toast('Демо никогда не отправляется в GitHub.');return;}
     if(state.syncBusy||state.rekeyBusy||!state.local?.repo||!state.key){if(!state.local?.repo)toast('Сначала подключите GitHub на вкладке «Настройки».');return;}
-    if(!G.hasToken()){state.tab='settings';render();toast('Введите токен GitHub.');return;}
+    if(!G.hasToken()){state.tab='profile';render();toast('Введите токен GitHub.');return;}
     const fence=sessionFence(),run=++syncRun,active=()=>fence()&&run===syncRun;
     state.syncBusy=true;renderHeader();
     try{
