@@ -36,7 +36,8 @@
       const matches=key=>labels.filter(label=>aliases[key].includes(columnLabel(label))).length;
       if(matches('name')!==1||matches('value')!==1||headings.some((item,i)=>i>0&&item.x-headings[i-1].x<=4))continue;
       rows[index]=labels;
-      let end=rows.length;
+      let end=rows.length,current=-1;
+      const fragments={},nameColumn=columnIndex(labels,'name'),valueColumn=columnIndex(labels,'value');
       for(let i=index+1;i<rows.length;i++){
         const text=rows[i].join(' ').trim();
         if(pdfFooter.test(text)){end=i;break;}
@@ -46,10 +47,25 @@
           row[column]=row[column]?row[column]+' '+item.str:item.str;
         }
         rows[i]=row;
+        if(labels.every((heading,column)=>columnLabel(heading)===columnLabel(row[column]))){current=-1;continue;}
+        if(row[nameColumn]||row[valueColumn])current=i;
+        else if(current>=0&&lines[i-1].y-lines[i].y<25)(fragments[current]??=[]).push(i);
+        else current=-1;
       }
-      return {name,rows,pdfLayout:{header:index+1,end}};
+      return {name,rows,pdfLayout:{header:index+1,end,fragments}};
     }
     return {name,rows};
+  }
+  function pdfPatientHints(tables){
+    const hints=new Set(),printedPerson=/^\s*(\p{Lu}{3,}(?:-\p{Lu}{2,})?\s+\p{Lu}{3,}\s+\p{Lu}{3,})(?:\s|$)/u;
+    for(const table of tables){
+      const header=table.pdfLayout?.header??table.rows.findIndex(labels=>columnIndex(labels,'name')>=0&&columnIndex(labels,'value')>=0)+1;
+      for(const row of table.rows.slice(0,header?Math.min(header-1,25):25)){
+        const name=printedPerson.exec(row.join(' '))?.[1];
+        if(name&&!name.includes('ИНВИТРО')&&!name.startsWith('ООО '))hints.add(name);
+      }
+    }
+    return [...hints];
   }
   const dateLike=/^(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\S+)?)?)?|\d{1,2}[./]\d{1,2}[./]\d{4})$/;
   const day=(year,month,date)=>[year,month.padStart(2,'0'),date.padStart(2,'0')].join('-');
@@ -185,9 +201,18 @@
     }
     if(fallbackDate)checkedDate(fallbackDate,order);
     const results=[],positioned=table.pdfLayout?.header===header?table.pdfLayout:null;
+    const fragments=positioned&&layout==='rows'&&mapping.name===columnIndex(headings,'name')&&mapping.value===columnIndex(headings,'value')
+      ?positioned.fragments??{}:{};
+    const fragmentRows=new Set(Object.values(fragments).flat());
     for(let rowIndex=header;rowIndex<(positioned?.end??table.rows.length);rowIndex++){
-      const raw=table.rows[rowIndex],rawCells=table.provenance?.[rowIndex]||null;
-      const cells=Object.fromEntries(fields.map(key=>[key,mapping[key]>=0?(raw[mapping[key]]||''):'']));
+      if(fragmentRows.has(rowIndex))continue;
+      const sourceRows=[table.rows[rowIndex],...(fragments[rowIndex]??[]).map(index=>table.rows[index])];
+      const raw=sourceRows.length===1?sourceRows[0]:sourceRows[0].map((value,column)=>sourceRows.map(row=>row[column]).filter(Boolean).join('\n'));
+      const rawCells=table.provenance?.[rowIndex]||null;
+      const cells=Object.fromEntries(fields.map(key=>{
+        const value=mapping[key]>=0?(raw[mapping[key]]||''):'';
+        return [key,['unit','source','material','method'].includes(key)?value.replace(/\n/g,' '):value];
+      }));
       if(positioned&&(!cells.name.trim()&&columns.every(column=>!raw[column]?.trim())||
         headings.every((heading,column)=>columnLabel(heading)===columnLabel(raw[column]||''))))continue;
       for(const column of columns){
@@ -223,5 +248,5 @@
     if(!results.length)throw Error('После заголовка нет результатов.');
     return results;
   }
-  window.HumanImportTable={date,checkedDate,columnIndex,pdfTable,pdfCollectionDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
+  window.HumanImportTable={date,checkedDate,columnIndex,pdfTable,pdfPatientHints,pdfCollectionDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
 })();

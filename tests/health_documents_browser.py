@@ -30,12 +30,12 @@ def pdf_objects(objects):
  for i,obj in enumerate(objects):offsets.append(len(output));output+=f'{i+1} 0 obj\n'.encode()+obj+b'\nendobj\n'
  at=len(output);output+=f'xref\n0 {len(objects)+1}\n0000000000 65535 f \n'.encode()+b''.join(f'{o:010} 00000 n \n'.encode() for o in offsets)+f'trailer << /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{at}\n%%EOF'.encode()
  return output
-def text_pdf(pages,columns):
+def text_pdf(pages,columns,spacing=30):
  kids=' '.join(f'{4+index*2} 0 R' for index in range(len(pages)))
  objects=[b'<< /Type /Catalog /Pages 2 0 R >>',f'<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>'.encode(),
           b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
  for page in pages:
-  commands=[f'BT /F1 12 Tf 1 0 0 1 {x} {750-30*index} Tm ({value}) Tj ET'
+  commands=[f'BT /F1 12 Tf 1 0 0 1 {x} {750-spacing*index} Tm ({value}) Tj ET'
             for index,row in enumerate(page) for x,value in zip(columns,row) if value]
   stream='\n'.join(commands).encode()
   objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 3 0 R >> >> /Contents {len(objects)+2} 0 R >>'.encode())
@@ -58,6 +58,14 @@ def previous_result_pdf():
   ['Synthetic empty history','6','','U/L','1-7'],
   ['Performed by: Synthetic laboratory'],['Synthetic footer marker','50','40','mg','1-10'],
  ]],[30,215,315,420,490])
+def wrapped_pdf():
+ return text_pdf([[
+  ['SYNTHETIC TEST PERSON'],['Collection date: 2026-11-11'],
+  ['test','result','previous','units','reference','notes'],
+  ['Synthetic wrapped marker','3','9.1','U/L','1-4','First line'],
+  ['','','2025-01-01','','for adults','Second line'],
+  ['Synthetic next marker','2','','mg','2-3','Third line'],
+ ]],[30,215,300,390,440,520],spacing=12)
 def scan_pdf(jpeg):
  commands=b'q 600 0 0 210 0 0 cm /Scan Do Q'
  def stream(attributes,data):
@@ -183,6 +191,26 @@ with sync_playwright() as pw:
  close_import()
  check('only current values are saved from a PDF with historical columns',
        'Synthetic PDF result' in p.locator('.analyte-groups').inner_text() and 'Synthetic prior only' not in p.locator('.analyte-groups').inner_text())
+ upload('synthetic-wrapped-result.pdf',wrapped_pdf(),'application/pdf');draft()
+ wrapped=p.locator('[data-form=document-review]')
+ check('PDF continuation remains with its result and preserves a dated historical source',
+       wrapped.locator('[data-import-row]').count()==2 and wrapped.locator('[name="0:value"]').input_value()=='3' and
+       wrapped.locator('[name="0:referenceText"]').input_value()=='1-4\nfor adults' and
+       wrapped.locator('[name="0:notes"]').input_value()=='First line\nSecond line' and
+       '2025-01-01' in wrapped.locator('.health-import-row-source').inner_text())
+ p.get_by_text('Принадлежность результатов и источник',exact=True).click()
+ check('printed patient text is shown for review and requires profile confirmation',
+       'SYNTHETIC TEST PERSON' in wrapped.locator('[data-import-patient-hints]').inner_text() and
+       not wrapped.locator('[name=profileConfirmed]').is_checked() and wrapped.locator('[type=submit]').is_disabled())
+ save();p.locator('.group-name').filter(has_text='Synthetic wrapped marker').click()
+ check('a wrapped reference stays verbatim after the PDF is saved',
+       '1-4\nfor adults' in p.locator('.analyte-source').inner_text())
+ p.locator('.sidebar button[data-tab=lab]').click()
+ ambiguous=text_pdf([[['name','result','result','unit'],['Synthetic ambiguous PDF','4','99','mg']]],[30,215,315,420])
+ upload('synthetic-ambiguous-columns.pdf',ambiguous,'application/pdf');draft()
+ check('PDF with ambiguous heading positions requires explicit per-result selection',
+       p.locator('[name=selected]:checked').count()==0 and p.locator('[data-action=import-select-ready]').count()==0)
+ p.locator('[name=selected]').check();save()
  matching=b'name;value;date;unit\nSYNTHETIC PDF MARKER;4,00;01.11.2026;mg\n'
  upload('another-format.csv',matching,'text/csv');draft()
  review=p.locator('[data-form=document-review]')
@@ -395,5 +423,21 @@ with sync_playwright() as pw:
  v.evaluate("document.querySelector('.sidebar [data-action=lock]').click()")
  late.value.set_files({'name':'synthetic-late-photo.png','mimeType':'image/png','buffer':png})
  check('a camera selection from a locked session cannot open the import',v.locator('[data-form=unlock]').is_visible() and not v.locator('#health-import-page').is_visible())
+ v.locator('[name=passphrase]').fill('synthetic-document-password');v.locator('[data-form=unlock] [type=submit]').click()
+ v.locator('.sidebar button[data-tab=lab]').click()
+ with v.expect_file_chooser() as sample:v.locator('[data-action=csv]').click()
+ sample.value.set_files({'name':'synthetic-encrypted-pdf.pdf','mimeType':'application/pdf','buffer':wrapped_pdf()})
+ v.locator('[data-form=document-mapping] [type=submit]').click()
+ v.locator('[data-action=save-import-draft]').click();v.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+ v.reload();v.locator('[name=passphrase]').fill('synthetic-document-password');v.locator('[data-form=unlock] [type=submit]').click()
+ v.locator('.sidebar button[data-tab=lab]').click();v.locator('[data-action=open-import-draft]').click()
+ check('PDF layout and continued source text survive encrypted draft restore',
+       v.locator('[name="0:referenceText"]').input_value()=='1-4\nfor adults' and '2025-01-01' in v.locator('.health-import-row-source').inner_text())
+ check('restored PDF draft requires profile confirmation again',not v.locator('[name=profileConfirmed]').is_checked())
+ save(v);v.reload();v.locator('[name=passphrase]').fill('synthetic-document-password');v.locator('[data-form=unlock] [type=submit]').click()
+ v.locator('.sidebar button[data-tab=lab]').click();v.locator('.group-name').filter(has_text='Synthetic wrapped marker').click()
+ v.get_by_text('Строка в исходном файле',exact=True).click()
+ check('PDF continuation and reference survive journal encryption and reload',
+       '2025-01-01' in v.locator('.analyte-origin').inner_text() and '1-4\nfor adults' in v.locator('.analyte-source').inner_text())
  check('no external requests',not remote);check('no runtime errors',not errors);browser.close()
 print(len(checks),'document checks PASS')

@@ -348,6 +348,7 @@
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
    const requiresSelection=table.ocr||pdf&&table.pdfLayout?.header!==header;
+   const patientHints=pdf?T.pdfPatientHints(original.tables):[];
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
    let unitDoc=doc,unitIndex=A.unitHistoryIndex(doc),unitDocumentId=documentId;
    const choices=[],refreshRows=[],captureRows=[],selection=[];
@@ -371,9 +372,9 @@
     const savedRow=savedRows[index];
     draft.duplicate=alreadyImported(coordinates,draft);
     const rowLabel=draft.manual?`ручная строка ${draft.manual}`:`строка ${draft.row}, колонка ${draft.column}`;
-    const controls=new Map(fields.map(([key,label])=>[key,V.h(key==='referenceText'?'textarea':'input',{
+    const controls=new Map(fields.map(([key,label])=>[key,V.h(['referenceText','notes'].includes(key)?'textarea':'input',{
       name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],disabled:draft.duplicate,'aria-label':label+' · '+rowLabel,
-      rows:key==='referenceText'?3:null,
+      rows:['referenceText','notes'].includes(key)?3:null,
     })]));
     const sourceUnit=String(draft.item.unit??''),unitField=controls.get('unit');
     const unitInfo=V.h('div',{class:'health-import-unit-info','data-import-unit-info':true,hidden:true});
@@ -573,6 +574,10 @@
    },{disabled:drafts.length>=5000});
    const form=V.form('document-review',[
     V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
+    pdf?V.h('details',{class:'health-import-source','data-import-patient-hints':true},V.h('summary',{},'Принадлежность результатов и источник'),
+     patientHints.length?V.h('p',{},'В бланке — '+patientHints.join(' · ')):null,
+     V.h('p',{class:'health-note'},(patientHints.length>1?'В документе несколько имён. ':'')+
+      'Сверьте выбранные строки с оригиналом и открытым профилем. Обработка выполняется в этом браузере.')):null,
     requiresSelection||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
     V.h('div',{class:'health-import-selection'},requiresSelection||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
      action('Снять выбор','import-clear-selection',()=>selectRows(false),{class:'small'}),selectionStatus),result,

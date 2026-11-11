@@ -121,13 +121,39 @@ test('PDF column positions keep split headings and missing current values separa
     line([10,'Синтетический показатель'],[220,'42'],[350,'мг']),
     line([10,'Исполнитель: Тест']),line([10,'Синтетический текст'],[125,'12']),
   ]);
-  assert.deepEqual({...table.pdfLayout},{header:2,end:3});
+  assert.equal(table.pdfLayout.header,2);
+  assert.equal(table.pdfLayout.end,3);
   assert.equal(T.columnIndex(table.rows[1],'value'),1);
   assert.deepEqual([...table.rows[2]],['Синтетический показатель','','42','мг']);
   const [draft]=T.draft(table,{hash:'synthetic',sheet:0,header:2,mapping:{name:0,value:1,unit:3},layout:'rows'},['name','value','unit'],new Set());
   assert.equal(draft.item.value,'');
   assert.ok(draft.problem);
   assert.equal(draft.row,3);
+});
+
+test('PDF continuations preserve source facts and patient hints remain separate from records',()=>{
+  const T=model().importTable;
+  const line=(y,...cells)=>({y,items:cells.map(([x,str])=>({x,right:x+12,str}))});
+  const table=T.pdfTable('Страница 1',[
+    line(780,[10,'SYNTHETIC TEST PERSON']),line(765,[10,'СИНТЕТИЧЕСКИЙ ТЕСТОВЫЙ ПАЦИЕНТ']),
+    line(740,[10,'test'],[130,'result'],[210,'previous'],[300,'reference'],[410,'notes']),
+    line(720,[10,'Synthetic A'],[130,'3'],[210,'4'],[300,'1-5'],[410,'First line']),
+    line(708,[210,'2025-01-01'],[300,'for adults'],[410,'Second line']),
+    line(680,[10,'Synthetic B'],[130,'2']),
+    line(668,[300,'Different reference']),
+  ]);
+  const fields=['name','value','referenceText','notes'];
+  const drafts=T.draft(table,{hash:'synthetic',sheet:0,header:3,mapping:{name:0,value:1,referenceText:3,notes:4},layout:'rows'},fields,new Set());
+  assert.equal(drafts.length,2);
+  assert.equal(drafts[0].item.value,'3');
+  assert.equal(drafts[0].item.referenceText,'1-5\nfor adults');
+  assert.equal(drafts[0].item.notes,'First line\nSecond line');
+  assert.equal(drafts[0].raw[2],'4\n2025-01-01');
+  assert.equal(drafts[1].item.referenceText,'Different reference');
+  assert.equal(drafts[1].row,6);
+  assert.equal(table.rows[4][2],'2025-01-01');
+  assert.deepEqual([...T.pdfPatientHints([table])],['SYNTHETIC TEST PERSON','СИНТЕТИЧЕСКИЙ ТЕСТОВЫЙ ПАЦИЕНТ']);
+  assert.equal('patient' in drafts[0].item,false);
 });
 
 test('partial dates and censored values retain their original meaning',()=>{
