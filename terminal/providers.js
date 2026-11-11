@@ -4,9 +4,13 @@
   const URLS={
     gradio:'https://esm.sh/@gradio/client@2.7.2',
     webllm:'https://esm.run/@mlc-ai/web-llm@0.2.87',
+    wllama:'https://esm.sh/@wllama/wllama@3.13.0',
+    wllamaWasm:'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.13.0/esm/wasm/wllama.wasm',
     ovh:'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions'
   };
   const SPACE='Qwen/Qwen3-Demo';
+  // GGUF is not an MLC/WebLLM artifact; Wllama loads the published Q4_1 build.
+  const POCKET={repo:'taobao-mnn/MNN-Pocket-0.3B-GGUF',file:'MNN-Pocket-0.3B-Instruct-Q4_1.gguf'};
   const MODELS={
     qwen:'Qwen2-0.5B-Instruct-q4f16_1-MLC',
     llama:'Llama-3.2-1B-Instruct-q4f32_1-MLC',
@@ -46,7 +50,7 @@
     const load=injected.importModule || (url=>import(url));
     const fetcher=injected.fetch || ((url,config)=>fetch(url,config));
     const hasGPU=injected.hasGPU || (()=>!!(global.navigator && global.navigator.gpu));
-    let hfClient=null, hfName='', gpuEngine=null, gpuName='';
+    let hfClient=null, hfName='', gpuEngine=null, gpuName='', pocketEngine=null;
     let job=null,controller=null;
     const abort=()=>{
       controller?.abort();
@@ -144,7 +148,48 @@
       if(!answer.trim())throw new Error('HF: ответ пустой или формат API изменился.');
       return answer;
     }
+    async function pocket({prompt,history,onText,onStatus,signal}) {
+      onStatus('GGUF / MNN-POCKET: подготовка Wllama...');
+      if(!pocketEngine) {
+        const lib=await load(URLS.wllama);
+        if(signal.aborted)throw new DOMException('Stopped','AbortError');
+        if(typeof lib.Wllama!=='function')throw new Error('Не удалось загрузить Wllama.');
+        const next=new lib.Wllama({default:URLS.wllamaWasm},{allowOffline:true});
+        next.setCompat?.('default');
+        try {
+          await next.loadModelFromHF(POCKET,{
+            n_ctx:2048,n_threads:1,signal,
+            progressCallback:({loaded,total})=>{
+              if(signal.aborted)return;
+              const percent=total>0?Math.round(loaded/total*100)+'%':'загрузка...';
+              onStatus('GGUF / MNN-POCKET: '+percent+' / 192 МБ');
+            }
+          });
+          if(signal.aborted)throw new DOMException('Stopped','AbortError');
+          pocketEngine=next;
+        }catch(error){
+          try{await next.exit();}catch(_){}
+          throw error;
+        }
+      }
+      onStatus('GGUF / MNN-POCKET: генерация...');
+      const stream=await pocketEngine.createChatCompletion({
+        messages:[{role:'system',content:'Answer in the language of the user.'},
+          ...messages(history,prompt)],
+        max_tokens:384,temperature:0.7,top_p:0.8,top_k:20,
+        stream:true,abortSignal:signal
+      });
+      let answer='';
+      for await(const chunk of stream){
+        if(signal.aborted)throw new DOMException('Stopped','AbortError');
+        const part=chunk?.choices?.[0]?.delta?.content;
+        if(typeof part==='string'&&part){answer+=part;onText(answer);}
+      }
+      if(!answer.trim())throw new Error('GGUF: модель не вернула текст.');
+      return answer;
+    }
     async function webgpu({prompt,history,onText,onStatus,signal,modelPreference}) {
+      if(modelPreference==='pocket')return pocket({prompt,history,onText,onStatus,signal});
       if(!hasGPU())throw new Error('WebGPU недоступен. Нужен браузер с аппаратным ускорением.');
       onStatus('WEBGPU: загрузка WebLLM...');
       const lib=await load(URLS.webllm);
