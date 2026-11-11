@@ -121,5 +121,9 @@
       tx.onerror=tx.onabort=()=>reject(tx.error||Error('Не удалось очистить временный доступ.'));
     });
   }
-  window.HumanRemember={remember,recall,forget,sweep,TTL};
+  function expiresAt(vaultId){
+    const lease=session();
+    return lease&&lease.vaultId===vaultId&&lease.expiresAt>Date.now()?lease.expiresAt:null;
+  }
+  window.HumanRemember={remember,recall,forget,sweep,expiresAt,TTL};
 })();
