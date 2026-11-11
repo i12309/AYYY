@@ -36,8 +36,11 @@ function makePortal() {
 
 test('only active services are registered; focus is retired and the AI demo remains', () => {
   const { app } = makePortal();
-  assert.equal(app.services.length, 18);
+  assert.equal(app.services.length, 17);
   assert.ok(app.services.find(s => s.id === 'family'));
+  assert.deepEqual(Array.from(app.services.filter(s=>s.group==='games'),s=>[s.id,s.name,s.route,s.param]),[['games','Игры','games',undefined]]);
+  assert.equal(app.services.find(s=>s.id==='ai').name,'Терминал');
+  assert.equal(app.services.find(s=>s.id==='health').desc,'Медкарта, анализы, графики');
   retired.forEach(id => {
     assert.equal(app.services.find(s => s.id === id), undefined, id);
     assert.equal(app.views[id], undefined, id);
@@ -48,10 +51,14 @@ test('only active services are registered; focus is retired and the AI demo rema
 
 test('retired favorites and shortcuts are filtered without clearing local data', () => {
   const { app, storage } = makePortal();
-  storage.set('ayyy:v1:favorites', JSON.stringify(['notes', 'weather', 'parcels', 'games', 'calc']));
-  assert.equal(Array.from(app.favorites()).join(','), 'weather,calc');
+  storage.set('ayyy:v1:favorites', JSON.stringify(['notes', 'weather', 'parcels', 'memory', '2048', 'games', 'calc']));
+  assert.equal(Array.from(app.favorites()).join(','), 'weather,games,calc');
   assert.deepEqual(JSON.parse(storage.get('ayyy:v1:favorites')),
-    ['notes', 'weather', 'parcels', 'games', 'calc']);
+    ['notes', 'weather', 'parcels', 'memory', '2048', 'games', 'calc']);
+  storage.set('ayyy:v1:home.shortcuts', JSON.stringify(['memory', '2048', 'math', 'ai']));
+  const selected=app.views.home.render();
+  assert.equal((selected.match(/href="#games"/g)||[]).length,1);
+  assert.match(selected,/>Терминал<\/span>/);
   storage.set('ayyy:v1:home.shortcuts', JSON.stringify(['notes', 'parcels', 'paint']));
   const html = app.views.home.render();
   assert.doesNotMatch(html, /href="#focus"/);

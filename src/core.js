@@ -106,7 +106,7 @@
     }
   };
   app.services = [
-    {id:'ai',name:'ИИ-помощник',desc:'Нейронный терминал · локальное демо',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'},
+    {id:'ai',name:'Терминал',desc:'Нейронный терминал · локальное демо',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'},
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
     {id:'finance',name:'Валюты и рынки',desc:'Курсы, конвертер и индексы',icon:'chart',color:'green',group:'everyday',kind:'api',route:'finance'},
@@ -120,14 +120,12 @@
     {id:'text',name:'Работа с текстом',desc:'Символы, слова и чистые пробелы',icon:'type',color:'blue',group:'tools',kind:'local',route:'tools',param:'text'},
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
     {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
-    {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики и демонстрационный профиль',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
-    {id:'memory',name:'Найди пару',desc:'Небольшая тренировка памяти',icon:'grid',color:'purple',group:'games',kind:'local',route:'games',param:'memory'},
-    {id:'2048',name:'2048',desc:'Числа складываются в игру',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games',param:'2048'},
-    {id:'math',name:'Математика в игре',desc:'Считать становится интересно',icon:'plus',color:'green',group:'games',kind:'local',route:'games',param:'math'},
+    {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
+    {id:'games',name:'Игры',desc:'Головоломки, аркады и тренировка памяти',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games'},
     {id:'translate',name:'Переводчик',desc:'Открыть Google Переводчик',icon:'translate',color:'blue',group:'everyday',kind:'link',url:'https://translate.google.com/'}
   ];
   app.kindLabels={local:'В браузере',api:'Открытый API',link:'Внешний сервис',connect:'Подключаемый',demo:'Демо-экран'};
-  // Keep historical local favorites intact, but never surface retired services.
-  app.favorites=()=>{const ids=app.get('favorites',['ai','calc','weather','memory','password','translate']);return Array.isArray(ids)?ids.filter(id=>app.services.some(s=>s.id===id)):[];};
+  app.serviceId=id=>['memory','2048','math'].includes(id)?'games':id;
+  app.favorites=()=>{const ids=app.get('favorites',['ai','calc','weather','games','password','translate']);return Array.isArray(ids)?[...new Set(ids.map(app.serviceId))].filter(id=>app.services.some(s=>s.id===id)):[];};
   app.serviceCard=(s,compact=false)=>`<article class="service-card ${compact?'compact':''}"><button class="service-open" ${s.url?`data-external="${app.escape(s.url)}"`:`data-route="${s.route}" data-param="${s.param||''}"`}><span class="service-icon ${s.color}">${app.icon(s.icon,24)}</span><span class="service-title">${s.name}</span><span class="service-desc">${s.desc}</span>${compact?'':`<span class="service-kind"><i class="status-dot ${s.kind==='local'?'green':''}"></i>${app.kindLabels[s.kind]}</span>`}</button><button class="favorite-btn ${app.favorites().includes(s.id)?'selected':''}" data-favorite="${s.id}" title="${app.favorites().includes(s.id)?'Убрать из избранного':'В избранное'}" aria-label="${app.favorites().includes(s.id)?'Убрать из избранного':'В избранное'}: ${s.name}" aria-pressed="${app.favorites().includes(s.id)}">${app.icon('star',15)}</button></article>`;
 })();

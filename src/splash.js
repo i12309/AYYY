@@ -3,15 +3,15 @@
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
   const artwork = 'assets/lighthouse-watercolor.webp';
-  const defaults = ['memory', 'ai', 'calc', 'weather', 'family', 'search'];
+  const defaults = ['games', 'ai', 'calc', 'weather', 'family', 'search'];
   const groups = [['all','Все'],['everyday','Каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
-  const shortNames = {memory:'Игры',ai:'Спросить ИИ',calc:'Посчитать',weather:'Погода',search:'Поиск'};
-  const shortDescriptions = {memory:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',search:'Найти направление'};
+  const shortNames = {games:'Игры',ai:'Терминал',calc:'Посчитать',weather:'Погода',search:'Поиск'};
+  const shortDescriptions = {games:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',search:'Найти направление'};
   a.catalogCategory = 'all';
 
   const shortcutIds = () => {
     const saved = a.get('home.shortcuts', defaults);
-    const available = [...new Set(Array.isArray(saved) ? saved : defaults)].filter(id => a.services.some(s => s.id===id));
+    const available = [...new Set((Array.isArray(saved) ? saved : defaults).map(a.serviceId))].filter(id => a.services.some(s => s.id===id));
     return (available.length ? available : defaults).slice(0,6);
   };
 
@@ -39,7 +39,7 @@
   }
 
   function shortcut(service) {
-    const param = service.id === 'memory' ? '' : service.param;
+    const param = service.param;
     const destination = service.url ? `href="${e(service.url)}" target="_blank" rel="noopener noreferrer"` : `href="#${e(service.route)}${param?'/'+encodeURIComponent(param):''}"`;
     return `<a class="shore-shortcut" ${destination}>${serviceIcon(service)}<span class="shore-shortcut-name">${e(shortNames[service.id]||service.name)}</span><small>${e(shortDescriptions[service.id]||service.desc)}</small></a>`;
   }
@@ -135,7 +135,7 @@
       return `<div class="shore-page shore-directory">${navigation('directory')}
         <div class="shore-directory-stage"><aside class="shore-directory-art" aria-label="Маяк AYYY">${picture()}</aside>
           <div class="shore-catalog-content"><div class="shore-catalog-heading"><h1>Все сервисы</h1></div>
-            <div class="shore-catalog-tools"><div class="shore-catalog-search">${icon('search',19)}<input id="catalog-search" aria-label="Найти сервис" placeholder="Название, занятие или идея…" value="${e(a.param)}" maxlength="150"><span>${a.services.length} сервиса</span></div><div class="shore-catalog-filters" role="group" aria-label="Категории сервисов">${groups.map(([id,name])=>`<button type="button" class="${id===a.catalogCategory?'active':''}" data-category="${id}" aria-pressed="${id===a.catalogCategory}">${id==='favorites'?icon('star',13):''}${name}</button>`).join('')}</div></div>
+            <div class="shore-catalog-tools"><div class="shore-catalog-search">${icon('search',19)}<input id="catalog-search" aria-label="Найти сервис" placeholder="Название, занятие или идея…" value="${e(a.param)}" maxlength="150"><span>${a.services.length} сервисов</span></div><div class="shore-catalog-filters" role="group" aria-label="Категории сервисов">${groups.map(([id,name])=>`<button type="button" class="${id===a.catalogCategory?'active':''}" data-category="${id}" aria-pressed="${id===a.catalogCategory}">${id==='favorites'?icon('star',13):''}${name}</button>`).join('')}</div></div>
             <div class="shore-catalog-summary"><p id="catalog-count" aria-live="polite"></p><span>Сохраняйте любимое ${icon('star',12)}</span></div><div class="shore-catalog-grid" id="catalog-grid"></div>
             <p class="shore-catalog-note">${icon('lighthouse',17)} На главной — только ваши шесть направлений. Здесь — весь горизонт.</p>
           </div>
