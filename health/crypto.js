@@ -171,5 +171,5 @@
   }
   window.HumanCrypto={FORMAT,MAX_FILE,MAX_FILES,MAX_OBJECTS,MAX_METADATA,FILE_OVERHEAD,
     base64,unbase64,assertEnvelope,assertData,seal,unlock,openWithKey,create,newKey,
-    sealFile,openFile,verifyObject,isHash};
+    sealFile,openFile,verifyObject,isHash,sha256};
 })();

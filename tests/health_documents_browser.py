@@ -1,5 +1,5 @@
 """Synthetic local document import, OCR, queue and provenance regression tests."""
-import io, zipfile, mimetypes, base64
+import io, zipfile, mimetypes, base64, hashlib
 from pathlib import Path
 from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
@@ -85,6 +85,7 @@ with sync_playwright() as pw:
  p.locator('.group-name').filter(has_text='Synthetic PDF marker').click();p.locator('.analyte-source [data-action=file-preview]').click();p.locator('.health-pdf-pages canvas').wait_for()
  capture(p,path=str(ROOT/'docs/health-ui/pdf-preview-1440.png'),full_page=True)
  check('PDF preview renders locally','Страница 1 из 2' in p.locator('.health-document-preview').inner_text())
+ check('PDF preview can start lab review',p.locator('[data-action=import-saved-document]').is_visible())
  p.get_by_role('button',name='Вперёд →').click();p.get_by_text('Страница 2 из 2',exact=True).wait_for();check('PDF page navigation',p.locator('.health-pdf-pages canvas').count()==1);p.locator('#health-dialog [data-action=close-dialog]').click()
  p.locator('.sidebar button[data-tab=lab]').click()
  matching=b'name;value;date;unit\nSYNTHETIC PDF MARKER;4,00;01.11.2026;mg\n'
@@ -207,10 +208,30 @@ with sync_playwright() as pw:
  check('a camera file saves through the existing document form','synthetic-camera-doc.png' in p.locator('.documents-table').inner_text())
  # The same import runs against an actual encrypted IndexedDB vault.
  v=ctx.new_page();v.on('pageerror',lambda e:errors.append(str(e)));v.goto(BASE+'health/')
- v.locator('[data-form=create] [name=password]').fill('synthetic-document-password');v.locator('[name=repeat]').fill('synthetic-document-password');v.locator('[data-form=create] [type=submit]').click();v.locator('.metric').first.wait_for();v.locator('.sidebar button[data-tab=lab]').click()
- with v.expect_file_chooser() as chooser:v.locator('[data-action=csv]').click()
- chooser.value.set_files({'name':'encrypted-source.csv','mimeType':'text/csv','buffer':b'name;value;date;unit\nSynthetic persisted file;5;2026-11-01;mg'})
- v.locator('[data-form=document-mapping] [type=submit]').click();v.locator('[data-form=document-review] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
+ v.locator('[data-form=create] [name=password]').fill('synthetic-document-password');v.locator('[name=repeat]').fill('synthetic-document-password');v.locator('[data-form=create] [type=submit]').click();v.locator('.metric').first.wait_for()
+ v.locator('.sidebar button[data-tab=document]').click()
+ source_bytes=b'name;value;date;unit\nSynthetic persisted file;5;2026-11-01;mg'
+ for name,mime,payload in [('encrypted-copy.csv','text/csv',source_bytes),('encrypted-source.CSV','text/csv',source_bytes),('synthetic-note.txt','text/plain',b'Synthetic document without tabular data')]:
+  v.locator('[data-action=new-document]').first.click()
+  v.locator('#health-dialog [name=file]').set_input_files({'name':name,'mimeType':mime,'buffer':payload})
+  v.locator('#health-dialog [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
+ v.get_by_role('button',name='synthetic-note.txt',exact=True).click()
+ v.locator('.health-document-preview pre').wait_for()
+ check('unsupported document formats have no import action',v.locator('[data-action=import-saved-document]').count()==0)
+ v.locator('#health-dialog [data-action=close-dialog]').click()
+ v.get_by_role('button',name='encrypted-source.CSV',exact=True).click()
+ v.get_by_text('Сведения о файле',exact=True).click()
+ check('document details show the original name, format and SHA-256',
+       'encrypted-source.CSV' in v.locator('.health-document-metadata').inner_text() and
+       'text/csv' in v.locator('.health-document-metadata').inner_text() and
+       v.locator('.health-document-metadata .hash').inner_text()==hashlib.sha256(source_bytes).hexdigest())
+ v.locator('[data-action=import-saved-document]').click()
+ v.locator('[data-form=document-mapping] [type=submit]').click()
+ v.locator('[data-action=save-import-draft]').click();v.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+ v.locator('#health-dialog [data-action=close-dialog]').click();v.locator('.sidebar button[data-tab=lab]').click()
+ v.locator('[data-action=open-import-draft]').click()
+ v.locator('[data-form=document-review] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
+ check('import from a saved document does not create another attachment',v.evaluate('async()=>(await HumanStore.snapshot(await HumanStore.current())).objects.length')==3)
  with v.expect_file_chooser() as chooser:v.locator('[data-action=csv]').click()
  chooser.value.set_files({'name':'encrypted-link.csv','mimeType':'text/csv','buffer':b'name;value;date;unit\nSynthetic persisted file;5.0;2026-11-01;mg'})
  v.locator('[data-form=document-mapping] [type=submit]').click();v.locator('[name=selected]').check()
@@ -218,6 +239,7 @@ with sync_playwright() as pw:
  v.locator('[data-form=document-review] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
  v.reload();v.locator('[data-form=unlock] [name=passphrase]').fill('synthetic-document-password');v.locator('[data-form=unlock] [type=submit]').click();v.locator('.metric').first.wait_for();v.locator('.sidebar button[data-tab=lab]').click();v.locator('.group-name').click();v.locator('.analyte-source > [data-action=file-preview]').click()
  check('attachment and record link survive encrypted reload','Synthetic persisted file;5;2026-11-01;mg' in v.locator('.health-document-preview pre').inner_text())
+ check('restored import keeps the selected document among identical originals',v.locator('#health-dialog h2').inner_text()=='encrypted-source.CSV')
  v.locator('#health-dialog [data-action=close-dialog]').click();v.get_by_text('Связанные источники (1)',exact=True).click()
  v.locator('.health-linked-sources [data-action=file-preview]').click()
  check('additional source and original bytes survive encrypted reload',v.locator('.analyte-history tbody tr').count()==1 and 'Synthetic persisted file;5.0;2026-11-01;mg' in v.locator('.health-document-preview pre').inner_text())

@@ -60,6 +60,9 @@
 .health-import-draft-actions p{margin:0;overflow-wrap:anywhere}
 .health-dialog:has(.health-pdf-pages){width:min(720px,calc(100vw - 24px))}
 .health-document-preview pre{max-height:55vh;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:6px}
+.health-document-metadata{margin:12px 0}
+.health-document-metadata summary{cursor:pointer;font-weight:600}
+.health-document-metadata .metadata{margin-top:10px}
 :root{--ink:var(--text);--canvas:var(--bg);--line:var(--border);--shadow:none}
 body{font-size:14px}
 [hidden]{display:none!important}

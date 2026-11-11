@@ -4,13 +4,14 @@
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
- async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,notify}){
+ async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,sourceDocumentId,notify}){
   if(!files.length&&!saved?.entries.length)return;
   if(files.length>100||files.reduce((size,file)=>size+file.size,0)>128*1024*1024)
    throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
-  const entries=saved?saved.entries.map(({id,name,bytes,parsed,editor})=>parsed
-   ?{id,name,original:{...parsed,name,bytes},editor}:{id,name,file:new File([bytes],name)}):files.map(file=>({id:M.id(),name:file.name,file}));
+  const entries=saved?saved.entries.map(({id,name,bytes,parsed,editor,sourceDocumentId})=>parsed
+   ?{id,name,sourceDocumentId,original:{...parsed,name,bytes},editor}:{id,name,sourceDocumentId,file:new File([bytes],name)}):
+   files.map(file=>({id:M.id(),name:file.name,file,sourceDocumentId}));
   const single=entries.length===1,controller=new AbortController();
   let checkpoint=saved?.checkpoint??null,persisting=false,draftNotice=saved?'Черновик открыт с этого устройства.':'';
   const body=document.getElementById('health-dialog-body');dialog.classList.add('health-import-dialog');
@@ -26,7 +27,7 @@
   const pending=()=>entries.filter(entry=>entry.done==null&&!entry.skipped);
   function draftMetadata(entry){
    const source=entry.original;
-   return {parsed:source?{hash:source.hash,extension:source.extension,tables:source.tables}:null,
+   return {sourceDocumentId:entry.sourceDocumentId,parsed:source?{hash:source.hash,extension:source.extension,tables:source.tables}:null,
     editor:entry.capture?.()??entry.editor??null};
   }
   async function updateCheckpoint(entry,changes=null){
@@ -121,6 +122,13 @@
   let drafts=[],busy=false;
   entry.editor=null;
   const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate,manualMode,manualIds:[...manualIds]});
+  function sourceDocument(doc){
+   if(!entry.sourceDocumentId)return doc.documents.find(file=>file.sha256===original.hash);
+   const selected=doc.documents.find(file=>file.id===entry.sourceDocumentId);
+   if(!selected||(selected.sha256!==original.hash&&!(selected.sha256==null&&typeof selected.data==='string')))
+    throw Error('Выбранный документ удалён или изменился. Откройте документ заново.');
+   return selected;
+  }
   function manualDraft(id,index,imported){
    const importKey=`${original.hash}:${sheet}:manual:${id}`;
    return {item:Object.fromEntries(fields.map(([key])=>[key,''])),manual:index+1,importKey,previousKey:'',
@@ -227,12 +235,12 @@
    }catch(err){error.hidden=false;error.textContent=err.message;}});
   }
   function review(savedRows=[]){
+   const doc=getDoc(),documentId=sourceDocument(doc)?.id;
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
    const result=V.h('p',{class:'health-note','data-import-result':true,role:'status',hidden:true});
    navigation(content);
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
-   const doc=getDoc(),documentId=doc.documents.find(file=>file.sha256===original.hash)?.id;
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
    const choices=[],refreshRows=[],captureRows=[],selection=[];
    const problems=savedRows.map(row=>row?.problem);
@@ -386,7 +394,7 @@
        accepted.push({record,target});
       }
       if(!accepted.length)throw needsReview;
-      let saved=doc.documents.find(d=>d.sha256===original.hash);
+      let saved=sourceDocument(doc);
       if(!saved){
        saved=await stageDocument(attachment,original.bytes);
        doc.documents.push(saved);
@@ -431,6 +439,7 @@
   }
   if(!dialog.open)dialog.showModal();
   if(single)await load(entries[0]);else queue();
+  if(sourceDocumentId&&active())body.querySelector('.health-modal-head button')?.focus();
  }
  window.HumanImport={open};
 })();

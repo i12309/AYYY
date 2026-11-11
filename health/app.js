@@ -594,6 +594,7 @@
     const active=sessionFence();
     const file=state.doc.documents.find(x=>x.id===id);if(!file)return;
     const bytes=await documentBytes(file);
+    const checksum=file.sha256||await C.sha256(bytes);
     if(!active()||!state.doc.documents.includes(file))return;
     clearPreview();
     const content=V.h('div',{class:'health-document-preview'});let renderFirst;
@@ -607,7 +608,20 @@
       if(bytes.length>256*1024)content.append(V.h('p',{},'Здесь показано начало файла. Полный текст доступен для скачивания.'));
     }
     else content.append(V.h('p',{},'Скачайте оригинал, чтобы открыть этот формат в программе просмотра.'));
-    content.append(V.h('p',{class:'health-muted'},file.name+' · '+V.date(file.date)+' · '+new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'),V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'}));
+    const metadata=V.h('dl',{class:'metadata'});
+    for(const [label,value] of [['Имя файла',file.name],['Дата',V.date(file.date)],['Размер',new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(file.size/1024)+' КБ'],['Формат',file.mime],['SHA-256',checksum]]){
+      metadata.append(V.h('dt',{},label),V.h('dd',{class:label==='SHA-256'?'hash':null},value));
+    }
+    const importButton=HumanDocuments.importExtension(file.name)?V.button('Разобрать анализы','import-saved-document'):null;
+    importButton?.addEventListener('click',event=>{
+      event.stopPropagation();
+      if(!active()||!dialog.open||!content.isConnected||!state.doc.documents.includes(file))return;
+      clearPreview();
+      const source=new File([bytes],file.name,{type:file.mime});
+      void importDocuments([source],{sourceDocumentId:id}).catch(error);
+    });
+    content.prepend(V.h('div',{class:'actions'},importButton,V.button('Скачать оригинал','file-download',{'data-id':file.id,class:'primary'})),
+      V.h('details',{class:'health-document-metadata'},V.h('summary',{},'Сведения о файле'),metadata));
     document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),returnFinding?V.button('К результату','open-finding',{'data-id':returnFinding,class:'small'}):null,V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();if(renderFirst)await renderFirst();
   }
   dialog.addEventListener('close',clearPreview);
@@ -979,7 +993,7 @@
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
   let importGeneration=0;
-  async function importDocuments(files,restore=false){
+  async function importDocuments(files,{restore=false,sourceDocumentId}={}){
     if((!files.length&&!restore)||!state.doc)return;
     const generation=++importGeneration,tab=state.tab,session=sessionFence();
     const isCurrent=()=>session()&&generation===importGeneration&&state.tab===tab;
@@ -1014,7 +1028,7 @@
         return;
       }
     }
-    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,notify:toast});
+    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,sourceDocumentId,notify:toast});
   }
   async function deleteImportDraft(revision){
     if(!state.key||!state.local||!confirm('Удалить сохранённый черновик и его исходники с этого устройства?'))return;
@@ -1173,7 +1187,7 @@
       else if(action==='file-download')await fileDownload(el.dataset.id);
       else if(action==='file-preview')await previewFile(el.dataset.id,el.dataset.returnFinding||'');
       else if(action==='close-dialog')dialog.close();
-      else if(action==='open-import-draft')await importDocuments([],true);
+      else if(action==='open-import-draft')await importDocuments([],{restore:true});
       else if(action==='delete-import-draft')await deleteImportDraft(el.dataset.revision);
       else if(action==='csv'||action==='capture-import'){
         const active=sessionFence(),tab=state.tab,camera=action==='capture-import';
