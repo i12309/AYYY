@@ -197,7 +197,7 @@
     items.push(security);
 
     const connection=V.h('div',{class:'health-profile-github-status'},
-      V.icon(repo?'ShieldCheck':'Cloud',17),
+      V.icon(repo?'ShieldCheck':'Upload',17),
       V.h('div',{},V.h('strong',{},repo?'Репозиторий: '+VRepo(repo):'Репозиторий не подключён'),
         V.h('small',{},repo?(G.hasToken()?'Токен активен в этой вкладке':'Для синхронизации введите токен'):'Подключите личный приватный GitHub')));
     const form=V.form('connect',[
