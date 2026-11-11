@@ -85,7 +85,13 @@
   }
   const branchPath=repo=>root(repo)+'/git/ref/heads/'+encodeURIComponent(repo.branch);
   async function branchHead(repo,allowEmpty=false){
-    const result=await api(branchPath(repo),'GET',undefined,true);
+    let result;
+    try{result=await api(branchPath(repo),'GET',undefined,true);}
+    catch(e){
+      // GitHub may return either 404 or 409 for an unborn default branch.
+      if(!allowEmpty||e.status!==409)throw e;
+      result=null;
+    }
     if(result?.object?.sha)return result.object.sha;
     if(allowEmpty){
       const branches=await api(root(repo)+'/branches?per_page=1');
