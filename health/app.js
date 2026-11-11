@@ -9,7 +9,7 @@
   const dialog=document.getElementById('health-dialog');
   const notice=document.getElementById('health-notice');
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
-    globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false};
+    globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false,pendingGitHub:null};
   let importWorkspace=null;
   const currentTab=()=>state.tab==='import'?'lab':state.tab;
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
@@ -79,20 +79,32 @@
       outer.append(V.card('Профили на этом устройстве',[list]));
     }
     const create=V.form('create',[
-      V.field('Фраза доступа (минимум 12 символов)','password','', 'password'),
-      V.field('Повторите фразу','repeat','', 'password')
-    ],'Создать журнал');
-    const download=V.form('download',[
-      V.field('Приватный GitHub owner/repo','repo'),
-      V.row(V.field('Ветка','branch','main'),
-        V.field('Токен GitHub','token','', 'password')),
-      githubTokenGuide(true)
-    ],'Загрузить из GitHub');
+      V.field('Фраза шифрования (минимум 12 символов)','password','', 'password'),
+      V.field('Повторите фразу шифрования','repeat','', 'password')
+    ],'Создать локальный журнал');
+    const remoteSetup=state.pendingGitHub;
+    const download=remoteSetup
+      ? V.h('div',{class:'health-github-setup'},
+        V.banner('В репозитории пока нет журнала HUMAN',
+          'Доступ к '+VRepo(remoteSetup.repo)+' подтверждён. Задайте фразу шифрования, чтобы создать здесь новый пустой журнал. Другие данные репозитория останутся без изменений.'),
+        V.form('initialize-remote',[
+          V.field('Новая фраза шифрования (минимум 12 символов)','password','', 'password'),
+          V.field('Повторите фразу','repeat','', 'password')
+        ],'Создать хранилище в GitHub'),
+        V.h('p',{class:'health-note'},'Для первого сохранения токену нужны права Contents → Read and write. Фраза не передаётся в GitHub.'),
+        V.button('Выбрать другой репозиторий','cancel-remote-setup',{class:'small'}))
+      : V.form('download',[
+        V.field('Приватный GitHub owner/repo','repo'),
+        V.row(V.field('Ветка','branch','main'),
+          V.field('Токен GitHub','token','', 'password')),
+        githubTokenGuide(true)
+      ],'Проверить и подключить');
     outer.append(V.h('div',{class:'health-intro-grid'},
-      V.card('Создать новый',[V.h('p',{class:'health-note'},
-        'Придумайте фразу, которую будете использовать на других устройствах.'),create]),
-      V.card('Продолжить на другом устройстве',[V.h('p',{class:'health-note'},
-        'Можно использовать репозиторий родословной — папки данных раздельные.'),download])));
+      V.card('Создать журнал на устройстве',[V.h('p',{class:'health-note'},
+        'Фраза шифрования защищает ваши медицинские данные. Это не пароль GitHub: она потребуется для открытия журнала и здесь, и на других устройствах. HUMAN её не хранит; без фразы данные не восстановить.'),create]),
+      V.card('Подключить свой GitHub',[V.h('p',{class:'health-note'},
+        remoteSetup?'Создание первого зашифрованного журнала в выбранном репозитории.':
+          'HUMAN найдёт существующий журнал или предложит создать новый, даже если репозиторий пуст. Можно использовать тот же GitHub, что и для родословной.'),download])));
     const restore=V.card('Восстановить зашифрованный файл',[
       V.h('p',{class:'health-note'},'Восстановите журнал и вложения из зашифрованной копии HUMAN.'),
       V.form('import-vault',[V.field('Резервная копия .human','file','','file')],'Импортировать')
@@ -105,7 +117,7 @@
   }
   function githubTokenGuide(readOnly=false){
     return V.h('p',{class:'health-help'},
-      readOnly?'Для загрузки достаточно Contents → Read-only; для синхронизации нужно Read and write. ':
+      readOnly?'Для существующего журнала достаточно Contents → Read-only; для создания нового и синхронизации нужно Read and write. ':
         'Для сохранения: Only select repositories и Contents → Read and write. ',
       V.h('a',{href:'../help/github/',target:'_blank',rel:'noopener noreferrer'},'Пошаговая инструкция с иллюстрациями ↗'));
   }
@@ -192,7 +204,7 @@
     ],'Подключить и проверить');
     box.append(V.card('GitHub · персональное хранилище',[
       V.banner('Тот же репозиторий, что у родословной',
-        'Зашифрованный журнал и вложения сохраняются в health-data/v2/. Семейное дерево находится в family-data/trees/.'),
+        'HUMAN автоматически создаст health-data/v2/ при первой синхронизации, если папки нет. Семейное дерево в family-data/trees/ останется без изменений.'),
       V.h('p',{},repo?'Подключено: '+VRepo(repo):'Не подключён'),
       form,
       repo?V.button('Синхронизировать сейчас','sync',{class:'small'}):null,
@@ -651,7 +663,7 @@
     if(dialog.open)dialog.close();
     document.getElementById('health-dialog-body').replaceChildren();
     notice.textContent='';notice.classList.remove('show');
-    state.demo=false;state.doc=null;state.key=null;state.picker=false;state.conflict=false;
+    state.demo=false;state.doc=null;state.key=null;state.picker=false;state.conflict=false;state.pendingGitHub=null;
     render();
   }
   async function switchProfile(id){
@@ -956,6 +968,29 @@
         state.doc=created.doc;state.key=created.key;state.picker=false;state.tab='overview';
         render();
         toast('Зашифрованный профиль создан. Не теряйте фразу доступа.');
+      }else if(mode==='initialize-remote'){
+        const setup=state.pendingGitHub;
+        if(!setup||!G.hasToken())throw Error('Сначала проверьте доступ к репозиторию GitHub.');
+        const pass=form.elements.namedItem('password').value;
+        if(pass.length<12||pass!==form.elements.namedItem('repeat').value)
+          throw Error('Фразы не совпадают или короче 12 символов.');
+        const active=sessionFence(),current=()=>active()&&state.pendingGitHub===setup&&G.hasToken();
+        await G.verify(setup.repo);if(!current())return;
+        const existing=await G.read(setup.repo);if(!current())return;
+        if(existing){
+          state.pendingGitHub=null;render();
+          throw Error('В GitHub уже появился журнал HUMAN. Подключите репозиторий снова, чтобы загрузить его.');
+        }
+        const created=await C.create(pass);if(!current())return;
+        const sha=await G.write(setup.repo,created.envelope,null,null,current);
+        if(!current())return;
+        const local=await S.createSelected({id:created.doc.id,envelope:created.envelope,
+          repo:setup.repo,remoteSha:sha,dirty:false,lastSyncAt:new Date().toISOString()});
+        if(!current())return;
+        await profileList();if(!current())return;
+        state.pendingGitHub=null;state.local=local;state.doc=created.doc;state.key=created.key;
+        state.picker=false;state.tab='overview';render();
+        toast('Хранилище GitHub подготовлено и проверено записью зашифрованного журнала.');
       }else if(mode==='unlock'){
         const active=sessionFence();
         const opened=await C.unlock(state.local.envelope,form.elements.namedItem('passphrase').value);
@@ -970,7 +1005,11 @@
         try{
           await G.verify(repo);if(!active())return;
           const data=await G.read(repo);if(!active())return;
-          if(!data)throw new Error('В репозитории нет текущего журнала HUMAN.');
+          if(!data){
+            state.pendingGitHub={repo};render();
+            toast('Репозиторий доступен. Задайте фразу шифрования для нового журнала.');
+            return;
+          }
           if(await S.get(data.envelope.vaultId))throw new Error('Этот профиль уже есть на устройстве.');
           if(!active())return;
           const objects=await fetchDocuments(repo,data,null,null,null,active);
@@ -978,7 +1017,7 @@
           const local=await S.createSelected({id:data.envelope.vaultId,envelope:data.envelope,
             repo,remoteSha:data.sha,dirty:false},objects);
           if(!active())return;await profileList();if(!active())return;
-          state.local=local;state.doc=null;state.key=null;state.picker=false;render();
+          state.pendingGitHub=null;state.local=local;state.doc=null;state.key=null;state.picker=false;render();
           toast('Архив загружен. Введите вашу фразу доступа.');
         }catch(e){if(session()){if(authorized())G.disconnect();throw e;}}
       }else if(mode==='import-vault')await startRestore(form.elements.namedItem('file').files[0]);
@@ -1120,7 +1159,7 @@
     sessionRevision++;
     clearTimeout(syncTimer);
     G.disconnect();
-    state.demo=true;
+    state.demo=true;state.pendingGitHub=null;
     state.doc=window.HumanDemo.create();
     state.local={id:state.doc.id,repo:null,dirty:false};
     state.key=null;
@@ -1130,7 +1169,7 @@
   }
   async function exitDemo(){
     sessionRevision++;clearTimeout(syncTimer);G.disconnect();
-    state.demo=false;state.doc=null;state.key=null;state.local=null;state.picker=true;
+    state.demo=false;state.doc=null;state.key=null;state.local=null;state.picker=true;state.pendingGitHub=null;
     state.tab='overview';state.search='';state.groupKey='';state.conflict=false;render();
     const active=sessionFence();
     try{
@@ -1148,6 +1187,7 @@
     try{
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
       else if(action==='close-menu')document.body.classList.remove('health-menu-open');
+      else if(action==='cancel-remote-setup'){sessionRevision++;G.disconnect();state.pendingGitHub=null;render();}
       else if(action==='diary-shift')chooseDiaryDay(window.HumanHealth.shiftDay(window.HumanDiaryView.selectedDay(state),Number(el.dataset.delta)));
       else if(action==='diary-today')chooseDiaryDay(window.HumanHealth.localInput(new Date(),state.doc.profile.timezone).slice(0,10));
       else if(action==='diary-choose-day')chooseDiaryDay(el.dataset.day);
@@ -1225,7 +1265,7 @@
       }else if(action==='picker'){
         sessionRevision++;
         clearTimeout(syncTimer);G.disconnect();state.demo=false;
-        state.picker=true;state.local=null;state.doc=null;state.key=null;render();
+        state.picker=true;state.local=null;state.doc=null;state.key=null;state.pendingGitHub=null;render();
       }else if(action==='select-profile')await switchProfile(el.dataset.id);
       else if(action==='lock')lockJournal();
       else if(action==='sync')await syncNow();
