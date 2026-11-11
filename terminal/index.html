@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>AYYY — Нейронный терминал</title>
+  <link rel="stylesheet" href="model-cache.css?v=20261111-a">
   <style>
     :root {
       --void: #050907;
@@ -423,6 +424,7 @@
               <button type="button" class="hw-btn active" id="scanlineBtn" aria-pressed="true">SCANLINES <strong id="scanlineValue">ON</strong></button>
               <button type="button" class="hw-btn active" id="glowBtn" aria-pressed="true">GLOW <strong id="glowValue">ON</strong></button>
               <button type="button" class="hw-btn" id="stopBtn" hidden>■ STOP</button>
+              <button type="button" class="hw-btn" id="modelCacheBtn" title="Просмотреть скаченные ИИ-модели и удалить ненужные">▤ МОДЕЛИ</button>
               <button type="button" class="hw-btn" id="resetBtn" title="Удалить сообщения из этой вкладки">↻ RESET</button>
             </div>
           </div>
@@ -431,7 +433,24 @@
       </main>
     </div>
   </div>
-  <script src="providers.js"></script>
+  <dialog id="modelCacheDialog" class="cache-dialog" aria-labelledby="modelCacheTitle">
+    <header class="cache-dialog-head">
+      <div><span class="cache-eyebrow">AYYY / LOCAL STORAGE</span><h2 id="modelCacheTitle">Загруженные модели</h2></div>
+      <button type="button" class="cache-dialog-close" id="modelCacheClose" aria-label="Закрыть менеджер моделей">×</button>
+    </header>
+    <div class="cache-dialog-body">
+      <p class="cache-dialog-intro">Только модели, сохранённые в этом браузере: GGUF (Wllama) и WebLLM. Удаление выборочное, не затрагивает данные других сервисов.</p>
+      <div id="modelCacheSummary" class="cache-dialog-summary">ПРОВЕРКА КЭША НЕ ВЫПОЛНЕНА</div>
+      <div id="modelCacheList" class="cache-model-list" role="list"></div>
+      <p id="modelCacheNotice" class="cache-model-notice" role="status" aria-live="polite"></p>
+      <footer class="cache-dialog-footer">
+        <span id="modelCacheUsage" class="cache-dialog-usage"></span>
+        <button type="button" id="modelCacheRefresh" class="cache-dialog-refresh">↻ ОБНОВИТЬ СПИСОК</button>
+      </footer>
+    </div>
+  </dialog>
+  <script src="providers.js?v=20261111-cache"></script>
+  <script src="model-cache-ui.js?v=20261111-a"></script>
   <script>
     (() => {
       'use strict';
@@ -732,6 +751,7 @@
       publicChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
       localChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
       stopButton.addEventListener('click',()=>{stopGeneration(); input.focus();});
+      window.AYYY_TERMINAL_MODEL_CACHE_UI.init(providers,()=>working);
       updateEngineUI();
       boot();
       const initialPrompt = new URLSearchParams(window.location.search).get('prompt');
