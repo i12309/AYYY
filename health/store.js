@@ -8,15 +8,22 @@
     if(connection)return connection;
     connection=new Promise((resolve,reject)=>{
       if(!globalThis.indexedDB){reject(new Error('Этот браузер не поддерживает IndexedDB.'));return;}
-      const request=indexedDB.open(DATABASE,1);
+      const request=indexedDB.open(DATABASE,2);
+      let blocked=false;
+      request.onblocked=()=>{blocked=true;reject(Error('Закройте другие вкладки журнала и откройте эту страницу заново.'));};
       request.onupgradeneeded=()=>{
         const db=request.result;
         if(!db.objectStoreNames.contains('vaults'))db.createObjectStore('vaults',{keyPath:'id'});
         if(!db.objectStoreNames.contains('meta'))db.createObjectStore('meta');
-        const files=db.createObjectStore('objects',{keyPath:['vaultId','id']});
-        files.createIndex('vault','vaultId');
+        if(!db.objectStoreNames.contains('objects'))db.createObjectStore('objects',{keyPath:['vaultId','id']}).createIndex('vault','vaultId');
+        if(!db.objectStoreNames.contains('importDrafts'))db.createObjectStore('importDrafts',{keyPath:'vaultId'});
       };
-      request.onsuccess=()=>resolve(request.result);
+      request.onsuccess=()=>{
+        const db=request.result;
+        if(blocked){db.close();return;}
+        db.onversionchange=()=>{db.close();connection=null;};
+        resolve(db);
+      };
       request.onerror=()=>reject(request.error || new Error('Не удалось открыть хранилище.'));
     }).catch(error=>{connection=null;throw error;});
     return connection;
@@ -40,9 +47,11 @@
   const sameEnvelope=(a,b)=>!!a&&!!b&&['format','vaultId','kdf','iterations','salt','iv','ciphertext'].every(k=>a[k]===b[k])&&
     a.objectIds.length===b.objectIds.length&&a.objectIds.every((id,index)=>id===b.objectIds[index]);
   function sameRecord(a,b){return !!a&&!!b&&a.id===b.id&&sameEnvelope(a.envelope,b.envelope)&&!!a.dirty===!!b.dirty&&(a.remoteSha||null)===(b.remoteSha||null)&&(a.lastSyncAt||null)===(b.lastSyncAt||null)&&['owner','repo','branch'].every(k=>(a.repo?.[k]||null)===(b.repo?.[k]||null));}
-  async function write(entry,expected,objects,selectNew){
+  async function write(entry,expected,objects,selectNew,draftUpdate){
     if(!entry || typeof entry.id!=='string' || entry.envelope?.vaultId!==entry.id)
       throw new Error('Попытка записать несовпадающий архив.');
+    if(draftUpdate?.next&&(draftUpdate.next.vaultId!==entry.id||draftUpdate.next.salt!==entry.envelope.salt))
+      throw Error('Черновик относится к другому журналу.');
     window.HumanCrypto.assertEnvelope(entry.envelope);
     const record={id:entry.id,envelope:entry.envelope,
       repo:entry.repo||null,remoteSha:entry.remoteSha||null,
@@ -56,6 +65,7 @@
     const db=await open();
     await new Promise((resolve,reject)=>{
       const stores=selectNew?['vaults','objects','meta']:['vaults','objects'];
+      if(draftUpdate)stores.push('importDrafts');
       const tx=db.transaction(stores,'readwrite',durable),store=tx.objectStore('vaults'),files=tx.objectStore('objects');
       let failure;
       const fail=error=>{failure=error;tx.abort();};
@@ -66,6 +76,7 @@
           fail(new Error('Журнал изменён в другой операции. Откройте его заново; новые данные не перезаписаны.'));return;
         }
         try{
+          if(draftUpdate)updateDraft(tx.objectStore('importDrafts'),record.id,draftUpdate,fail);
           const oldIds=new Set(previous?.envelope.objectIds||[]);
           for(const id of wanted){
             if(newObjects.has(id))files.put({vaultId:record.id,...newObjects.get(id)});
@@ -84,9 +95,33 @@
     });
     return record;
   }
-  function save(entry,expected,objects=[]){return write(entry,expected,objects,false);}
+  function save(entry,expected,objects=[],draftUpdate){return write(entry,expected,objects,false,draftUpdate);}
   function createSelected(entry,objects=[]){return write(entry,null,objects,true);}
   function getObject(vaultId,id){return request('objects','readonly',s=>s.get([vaultId,id]));}
+  function importDraft(id){return request('importDrafts','readonly',s=>s.get(id));}
+  function updateDraft(store,id,{expected,next},fail){
+    const read=store.get(id);
+    read.onsuccess=()=>{
+      if((read.result?.revision??null)!==expected){fail(Error('Черновик изменился в другом окне. Откройте сохранённый черновик заново.'));return;}
+      try{if(next)store.put(next);else store.delete(id);}catch(error){fail(error);}
+    };
+  }
+  async function saveImportDraft(id,salt,expected,next,active=()=>true){
+    if(next&&(next.vaultId!==id||next.salt!==salt))throw Error('Черновик относится к другому журналу.');
+    const db=await open();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(['vaults','importDrafts'],'readwrite',durable);
+      let failure;
+      const fail=error=>{failure=error;tx.abort();};
+      tx.oncomplete=()=>resolve(next);tx.onerror=tx.onabort=()=>reject(failure||tx.error||Error('Не удалось сохранить черновик.'));
+      const vault=tx.objectStore('vaults').get(id);
+      vault.onsuccess=()=>{
+        if(!active()){fail(Error('Журнал или окно импорта закрыто.'));return;}
+        if(!vault.result||vault.result.envelope.salt!==salt){fail(Error('Журнал изменился. Откройте его заново.'));return;}
+        updateDraft(tx.objectStore('importDrafts'),id,{expected,next},fail);
+      };
+    });
+  }
   async function snapshot(id){
     const db=await open();
     return new Promise((resolve,reject)=>{
@@ -109,7 +144,7 @@
   async function remove(id,expectedEnvelope){
     const db=await open();
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(['vaults','objects','meta'],'readwrite',durable);
+      const tx=db.transaction(['vaults','objects','meta','importDrafts'],'readwrite',durable);
       const vaults=tx.objectStore('vaults'),objects=tx.objectStore('objects'),meta=tx.objectStore('meta');
       let failure;
       tx.oncomplete=resolve;
@@ -122,6 +157,7 @@
           return;
         }
         vaults.delete(id);
+        tx.objectStore('importDrafts').delete(id);
         const selected=meta.get('current');
         selected.onsuccess=()=>{if(selected.result===id)meta.delete('current');};
         const cursor=objects.index('vault').openKeyCursor(id);
@@ -134,5 +170,5 @@
   }
   function current(){return request('meta','readonly',s=>s.get('current'));}
   function select(id){return request('meta','readwrite',s=>s.put(id,'current'));}
-  window.HumanStore={list,get,save,remove,current,select,createSelected,sameEnvelope,getObject,snapshot};
+  window.HumanStore={list,get,save,remove,current,select,createSelected,sameEnvelope,getObject,snapshot,importDraft,saveImportDraft};
 })();

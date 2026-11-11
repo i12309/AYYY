@@ -48,6 +48,9 @@
 .health-import-queue small{display:block;margin-top:3px;color:var(--muted)}
 .health-import-queue-actions{display:flex;flex-wrap:wrap;gap:6px}
 .health-import-dialog .health-modal-content>.health-btn{margin:0 6px 8px 0}
+.health-import-resume{margin:0 0 8px}
+.health-import-draft-actions{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center}
+.health-import-draft-actions p{margin:0;overflow-wrap:anywhere}
 .health-dialog:has(.health-pdf-pages){width:min(720px,calc(100vw - 24px))}
 .health-document-preview pre{max-height:55vh;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:6px}
 :root{--ink:var(--text);--canvas:var(--bg);--line:var(--border);--shadow:none}

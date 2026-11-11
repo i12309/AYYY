@@ -336,8 +336,16 @@
         if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
       }
       const envelope=await C.seal(doc,encrypted.key,encrypted);if(!active()||!form.isConnected)throw Error('Журнал закрыт.');
+      const draft=await S.importDraft(id);
+      const currentDraft=()=>active()&&form.isConnected;
+      let draftUpdate;
+      if(!draft||draft.salt===before.envelope.salt){
+        const entries=draft?await HumanImportDraft.open(draft,previousKey,currentDraft):null;
+        const rewritten=entries?await HumanImportDraft.seal(id,encrypted.salt,encrypted.key,entries,currentDraft):null;
+        draftUpdate={expected:draft?.revision??null,next:rewritten};
+      }
       const fresh=await S.get(id);if(!active()||!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw Error('Журнал изменился во время смены фразы. Повторите действие.');
-      const saved=await S.save({...fresh,envelope,dirty:true},fresh,objects);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
+      const saved=await S.save({...fresh,envelope,dirty:true},fresh,objects,draftUpdate);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
       state.local=saved;state.doc=doc;state.key=encrypted.key;sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;dialog.close();render();if(saved.repo&&G.hasToken())scheduleSync();toast('Журнал зашифрован новой фразой доступа.');
     });writeQueue=run.catch(()=>{});
     try{await run;}finally{if(runId===keyChangeRun&&state.local?.id===id){state.rekeyBusy=false;renderHeader();if(state.doc&&state.local.dirty&&state.local.repo&&G.hasToken())scheduleSync();}}
@@ -959,17 +967,55 @@
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
   let importGeneration=0;
-  async function importDocuments(files){
-    if(!files.length)return;
-    const generation=++importGeneration,tab=state.tab,active=sessionFence();
-    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent:()=>active()&&generation===importGeneration&&state.tab===tab});
+  async function importDocuments(files,restore=false){
+    if((!files.length&&!restore)||!state.doc)return;
+    const generation=++importGeneration,tab=state.tab,session=sessionFence();
+    const isCurrent=()=>session()&&generation===importGeneration&&state.tab===tab;
+    const id=state.doc.id,key=state.key,salt=state.local?.envelope?.salt;
+    const persistence=state.demo?null:{
+      async save(entries,previous,active){
+        const existing=previous??await S.importDraft(id);
+        if(!active())return null;
+        if(!previous&&existing&&!confirm('Заменить сохранённый черновик этой очередью?'))return null;
+        const next=await HumanImportDraft.seal(id,salt,key,entries,active);
+        return S.saveImportDraft(id,salt,existing?.revision??null,next,active);
+      },
+      async prune(previous,entryId,active){
+        const next=await HumanImportDraft.prune(previous,key,entryId);
+        if(next===previous)return previous;
+        return S.saveImportDraft(id,salt,previous.revision,next,active);
+      },
+      discard(previous,active){return S.saveImportDraft(id,salt,previous.revision,null,active);},
+    };
+    let saved;
+    if(restore&&persistence){
+      const checkpoint=await S.importDraft(id);
+      if(!isCurrent())return;
+      if(!checkpoint){toast('Сохранённого черновика импорта пока нет.');return;}
+      try{
+        const entries=await HumanImportDraft.open(checkpoint,key,isCurrent);
+        if(!isCurrent())return;
+        saved={checkpoint,entries};
+      }catch(e){
+        if(isCurrent())careDialog('Черновик импорта',V.h('div',{},V.h('p',{class:'error'},e.message),
+          V.button('Удалить черновик','delete-import-draft',{'data-revision':checkpoint.revision,class:'danger'})));
+        return;
+      }
+    }
+    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,notify:toast});
+  }
+  async function deleteImportDraft(revision){
+    if(!state.key||!state.local||!confirm('Удалить сохранённый черновик и его исходники с этого устройства?'))return;
+    const active=sessionFence(),{id,envelope}=state.local;
+    await S.saveImportDraft(id,envelope.salt,revision,null,active);
+    if(active()){dialog.close();toast('Черновик удалён.');}
   }
   async function deleteLocal(){
     if(state.demo)throw new Error('Демо удаляется при выходе.');
     if(!state.local)return;
     const sameSession=sessionFence();
     const copied=await backup();if(!copied||!sameSession())return;
-    if(!confirm('Удалить локальную зашифрованную копию? GitHub останется без изменений.'))return;
+    if(!confirm('Удалить локальную зашифрованную копию и черновики импорта с этого устройства? GitHub останется без изменений.'))return;
     if(!confirm('Подтвердите окончательное удаление с устройства.'))return;
     const id=state.local.id;clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
     try{
@@ -1115,6 +1161,8 @@
       else if(action==='file-download')await fileDownload(el.dataset.id);
       else if(action==='file-preview')await previewFile(el.dataset.id,el.dataset.returnFinding||'');
       else if(action==='close-dialog')dialog.close();
+      else if(action==='open-import-draft')await importDocuments([],true);
+      else if(action==='delete-import-draft')await deleteImportDraft(el.dataset.revision);
       else if(action==='csv'){
         const input=document.createElement('input');
         input.type='file';input.accept='.csv,.xlsx,.pdf,.png,.jpg,.jpeg';input.hidden=true;input.multiple=true;

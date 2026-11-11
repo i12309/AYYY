@@ -1,0 +1,157 @@
+"""Synthetic browser tests for encrypted, device-local import checkpoints."""
+from pathlib import Path
+from urllib.parse import urlsplit
+import mimetypes
+
+from playwright.sync_api import sync_playwright
+from health_browser_support import launch_browser
+
+ROOT=Path(__file__).resolve().parents[1]
+BASE='http://localhost:8877/'
+OLD='synthetic-local-draft-old'
+NEW='synthetic-local-draft-new'
+SOURCE=b'name;value;date;unit\nSynthetic first draft marker;15;2026-10-06;mg'
+NEXT=b'name;value;date;unit\nSynthetic waiting draft marker;18;2026-10-07;mg'
+
+
+def run(browser):
+    context=browser.new_context(viewport={'width':1440,'height':900})
+    remote,errors=[],[]
+
+    def serve(route):
+        url=route.request.url
+        if not url.startswith(BASE):
+            remote.append(url)
+            route.abort()
+            return
+        if url==BASE+'synthetic-old-store':
+            route.fulfill(content_type='text/html',body='<!doctype html><title>Synthetic store setup</title>')
+            return
+        file=(ROOT/urlsplit(url).path.lstrip('/')).resolve()
+        if file.is_dir():file/='index.html'
+        if ROOT in file.parents and file.is_file():
+            route.fulfill(body=file.read_bytes(),content_type=mimetypes.guess_type(file)[0] or 'application/octet-stream')
+        else:route.fulfill(status=404,body='Missing')
+
+    context.route('**/*',serve)
+
+    def page():
+        instance=context.new_page()
+        instance.on('pageerror',lambda error:errors.append(str(error)))
+        instance.on('dialog',lambda dialog:dialog.accept())
+        return instance
+
+    def unlock(instance,phrase):
+        form=instance.locator('[data-form=unlock]')
+        form.locator('[name=passphrase]').fill(phrase)
+        form.locator('[type=submit]').click()
+        instance.locator('.metric').first.wait_for()
+
+    def lab(instance):instance.locator('.sidebar button[data-tab=lab]').click()
+    def close(instance):instance.locator('#health-dialog [data-action=close-dialog]').click()
+    def resume(instance):instance.locator('[data-action=open-import-draft]').click()
+    def entry(instance,name):return instance.locator('.health-import-queue li').filter(has=instance.get_by_text(name,exact=True))
+    def review(instance):return instance.locator('[data-form=document-review]')
+
+    def checkpoint(instance):
+        instance.locator('[data-action=save-import-draft]').click()
+        instance.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+
+    p=page()
+    p.goto(BASE+'synthetic-old-store')
+    p.add_script_tag(url=BASE+'health/crypto.js')
+    p.evaluate('''async phrase=>{
+      const created=await HumanCrypto.create(phrase);
+      const request=indexedDB.open(HumanCrypto.FORMAT,1);
+      request.onupgradeneeded=()=>{
+       const db=request.result;
+       db.createObjectStore('vaults',{keyPath:'id'});
+       db.createObjectStore('meta');
+       db.createObjectStore('objects',{keyPath:['vaultId','id']}).createIndex('vault','vaultId');
+      };
+      const db=await new Promise((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
+      const tx=db.transaction(['vaults','meta'],'readwrite');
+      tx.objectStore('vaults').put({id:created.doc.id,envelope:created.envelope,dirty:true});
+      tx.objectStore('meta').put(created.doc.id,'current');
+      await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();
+    }''',OLD)
+    p.goto(BASE+'health/');unlock(p,OLD);lab(p)
+    with p.expect_file_chooser() as choose:p.locator('[data-action=csv]').click()
+    choose.value.set_files([{'name':'pending-first.csv','mimeType':'text/csv','buffer':SOURCE},
+                            {'name':'pending-next.csv','mimeType':'text/csv','buffer':NEXT}])
+    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    p.locator('[data-form=document-mapping] [type=submit]').click()
+    review(p).locator('[name="0:value"]').fill('15.25')
+    review(p).locator('[name=selected]').uncheck()
+    p.set_viewport_size({'width':390,'height':840})
+    assert p.locator('[data-action=save-import-draft]').is_visible()
+    assert p.locator('#health-dialog').evaluate('(dialog)=>dialog.scrollWidth<=dialog.clientWidth')
+    checkpoint(p)
+    p.set_viewport_size({'width':1440,'height':900})
+    proof=p.evaluate('''async phrase=>{
+      const id=await HumanStore.current(),draft=await HumanStore.importDraft(id),vault=await HumanStore.snapshot(id);
+      const plain=await HumanCrypto.unlock(vault.envelope,phrase),objects=[draft.metadata,...draft.files.map(file=>file.bytes)];
+      draft.files[0].bytes[15]^=1;
+      const rejected=await HumanImportDraft.open(draft,plain.key).then(()=>false,()=>true);
+      return {encrypted:objects.every(bytes=>bytes instanceof Uint8Array&&!new TextDecoder().decode(bytes).includes('Synthetic')),rejected,
+        files:draft.files.length, count:plain.doc.observations.length, attachments:vault.objects.length,
+        noNames:!Object.keys(draft).includes('entries')&&!Object.keys(draft.files[0]).includes('name'),salt:draft.salt};
+    }''',OLD)
+    assert proof['encrypted'] and proof['rejected'] and proof['noNames'] and proof['files']==2 and proof['count']==proof['attachments']==0,proof
+    p.reload();unlock(p,OLD);lab(p);resume(p)
+    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    assert review(p).locator('[name="0:value"]').input_value()=='15.25' and not review(p).locator('[name=selected]').is_checked()
+    print('PASS encrypted files and edits survive reload without entering the journal or backup',flush=True)
+
+    peer=page();peer.goto(BASE+'health/');unlock(peer,OLD);lab(peer);resume(peer)
+    entry(peer,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    review(peer).locator('[name="0:value"]').fill('15.75');review(peer).locator('[name=selected]').check();checkpoint(peer)
+    review(p).locator('[name="0:value"]').fill('999')
+    p.locator('[data-action=save-import-draft]').click()
+    p.get_by_text('Черновик изменился в другом окне. Откройте сохранённый черновик заново.',exact=True).wait_for()
+    close(p);peer.close()
+    print('PASS concurrent edits cannot overwrite a newer checkpoint',flush=True)
+
+    p.locator('.sidebar button[data-tab=settings]').click()
+    p.locator('[data-action=change-passphrase]').click()
+    form=p.locator('[data-form=change-passphrase]')
+    for name,value in [('current',OLD),('next',NEW),('repeat',NEW)]:form.locator(f'[name={name}]').fill(value)
+    form.locator('[type=submit]').click();p.get_by_text('Журнал зашифрован новой фразой доступа.',exact=True).wait_for()
+    salt=p.evaluate('async()=>(await HumanStore.importDraft(await HumanStore.current())).salt')
+    assert salt!=proof['salt']
+    p.reload();unlock(p,NEW);lab(p);resume(p)
+    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    assert review(p).locator('[name="0:value"]').input_value()=='15.75' and review(p).locator('[name=selected]').is_checked()
+    review(p).locator('[type=submit]').click();p.get_by_text('Сохранено результатов: 1',exact=True).wait_for();close(p)
+    resume(p)
+    mapping=p.locator('[data-form=document-mapping]')
+    assert 'pending-next.csv' in mapping.inner_text() and 'pending-first.csv' not in mapping.inner_text()
+    mapping.locator('[type=submit]').click();review(p).locator('[type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
+    assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
+    assert p.locator('.group-name').filter(has_text='Synthetic waiting draft marker').count()==1
+    print('PASS rekey preserves the latest edits and successful imports remove only their completed files',flush=True)
+
+    with p.expect_file_chooser() as choose:p.locator('[data-action=csv]').click()
+    choose.value.set_files({'name':'delete-draft.csv','mimeType':'text/csv','buffer':SOURCE})
+    mapping.locator('[name=date]').select_option('-1')
+    mapping.locator('[name=fallbackDate]').fill('2026-10-08')
+    checkpoint(p);close(p);resume(p)
+    assert mapping.locator('[name=date]').input_value()=='-1' and mapping.locator('[name=fallbackDate]').input_value()=='2026-10-08'
+    p.locator('[data-action=discard-import-draft]').click()
+    p.get_by_text('Сохранённый черновик удалён.',exact=True).wait_for()
+    assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))') and mapping.is_visible()
+    checkpoint(p);close(p)
+    assert p.evaluate('''async()=>{
+      const id=await HumanStore.current(),local=await HumanStore.get(id);
+      await HumanStore.remove(id,local.envelope);
+      return !(await HumanStore.importDraft(id));
+    }''')
+    assert not remote and not errors,(remote,errors)
+    print('PASS deleting the local journal deletes its draft and produces no external requests',flush=True)
+    context.close()
+
+
+with sync_playwright() as playwright:
+    browser=launch_browser(playwright)
+    run(browser)
+    browser.close()

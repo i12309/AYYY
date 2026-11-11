@@ -7,7 +7,7 @@ import sys
 import time
 
 ROOT=Path(__file__).resolve().parents[1]
-SUITES=['health_browser','health_analytes_browser','health_medical_browser','health_episodes_browser','health_measurements_browser','health_care_browser','health_diary_browser','health_genetics_browser','health_documents_browser','health_storage_browser','health_journal_browser','health_recommendations_browser']
+SUITES=['health_browser','health_analytes_browser','health_medical_browser','health_episodes_browser','health_measurements_browser','health_care_browser','health_diary_browser','health_genetics_browser','health_documents_browser','health_import_draft_browser','health_storage_browser','health_journal_browser','health_recommendations_browser']
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--engine',choices=['all','chromium','firefox','webkit'],default='all')
 parser.add_argument('--suite',choices=SUITES,action='append',help='Repeat to select suites; default is every current workflow')

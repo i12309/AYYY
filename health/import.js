@@ -4,12 +4,15 @@
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
- async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true}){
-  if(!files.length)return;
+ async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,notify}){
+  if(!files.length&&!saved?.entries.length)return;
   if(files.length>100||files.reduce((size,file)=>size+file.size,0)>128*1024*1024)
    throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
-  const entries=files.map(file=>({name:file.name,file})),single=entries.length===1,controller=new AbortController();
+  const entries=saved?saved.entries.map(({id,name,bytes,parsed,editor})=>parsed
+   ?{id,name,original:{...parsed,name,bytes},editor}:{id,name,file:new File([bytes],name)}):files.map(file=>({id:M.id(),name:file.name,file}));
+  const single=entries.length===1,controller=new AbortController();
+  let checkpoint=saved?.checkpoint??null,persisting=false,draftNotice=saved?'Черновик открыт с этого устройства.':'';
   const body=document.getElementById('health-dialog-body');dialog.classList.add('health-import-dialog');
   const active=()=>dialog.open&&!controller.signal.aborted&&isCurrent()&&getDoc()?.id===identity;
   window.addEventListener('pagehide',()=>controller.abort(),{once:true,signal:controller.signal});
@@ -17,21 +20,77 @@
   function frame(title){const content=V.h('div',{class:'health-modal-content'});body.replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть импорт'})),content);return content;}
   function action(label,key,run,attrs={}){
    const button=V.button(label,key,attrs);
-   button.addEventListener('click',event=>{event.stopPropagation();if(active())run();});
+   button.addEventListener('click',event=>{event.stopPropagation();if(active()&&!persisting)run();});
    return button;
+  }
+  const pending=()=>entries.filter(entry=>entry.done==null&&!entry.skipped);
+  async function prune(entry){
+   if(!checkpoint||!active())return;
+   try{checkpoint=await persistence.prune(checkpoint,entry.id,active);}
+   catch(error){draftNotice='Сохранённый черновик не обновился: '+error.message;if(active())notify?.(draftNotice);}
+  }
+  function draftActions(content,canSave=()=>true){
+   if(!persistence||(!pending().length&&!checkpoint))return;
+   const status=V.h('p',{class:'health-note',role:'status','data-import-draft-status':true},draftNotice);
+   const save=action('Сохранить черновик','save-import-draft',async()=>{
+    if(!canSave()||!pending().length)return;
+    persisting=true;save.disabled=discard.disabled=true;
+    status.textContent='Шифрование черновика…';
+    let controls=[];
+    try{
+     const snapshots=pending().map(entry=>({id:entry.id,name:entry.name,entry,
+      parsed:entry.original?structuredClone({hash:entry.original.hash,extension:entry.original.extension,tables:entry.original.tables}):null,
+      editor:structuredClone(entry.capture?.()??entry.editor??null)}));
+     controls=[...content.querySelectorAll('input:enabled,select:enabled,textarea:enabled')];
+     for(const control of controls)control.disabled=true;
+     const data=[];
+     for(const {entry,...snapshot} of snapshots){
+      if(!active())return;
+      if((entry.original?.bytes.byteLength??entry.file.size)>window.HumanCrypto.MAX_FILE)throw Error('В черновике разрешено до 32 МиБ на файл.');
+      data.push({...snapshot,bytes:entry.original?.bytes??new Uint8Array(await entry.file.arrayBuffer())});
+     }
+     if(!active())return;
+     const next=await persistence.save(data,checkpoint,active);
+     if(next)checkpoint=next;
+     draftNotice=next?'Черновик зашифрован и сохранён на этом устройстве.':'Сохранение отменено.';
+    }catch(error){draftNotice=error.message;}
+    finally{for(const control of controls)control.disabled=false;persisting=false;save.disabled=discard.disabled=false;discard.hidden=!checkpoint;status.textContent=draftNotice;}
+   },{class:'small',hidden:!pending().length});
+   const discard=action('Удалить сохранённый черновик','discard-import-draft',async()=>{
+    if(!canSave()||!checkpoint||!confirm('Удалить сохранённый черновик с этого устройства? Правки в открытом окне останутся до его закрытия.'))return;
+    persisting=true;save.disabled=discard.disabled=true;
+    try{await persistence.discard(checkpoint,active);checkpoint=null;draftNotice='Сохранённый черновик удалён.';}
+    catch(error){draftNotice=error.message;}
+    finally{persisting=false;save.disabled=discard.disabled=false;discard.hidden=!checkpoint;status.textContent=draftNotice;}
+   },{class:'small',hidden:!checkpoint});
+   content.append(V.h('div',{class:'health-import-draft-actions'},save,discard,status));
   }
   function queue(){
    const content=frame('Очередь импорта');
-   content.append(V.h('p',{class:'health-note'},'Проверяйте и сохраняйте результаты по каждому файлу. При закрытии окна несохранённые черновики удаляются.'),
+   draftActions(content);
+   content.append(V.h('p',{class:'health-note'},persistence?'Проверяйте и сохраняйте результаты по каждому файлу. После закрытия окна доступна сохранённая версия черновика.':'Проверяйте и сохраняйте результаты по каждому файлу. В демо правки черновика доступны в открытом окне.'),
     V.h('ul',{class:'health-import-queue'},entries.map(entry=>{
-     const status=entry.done!=null?[entry.done?`Сохранено результатов: ${entry.done}`:'',entry.linked?`Связано источников: ${entry.linked}`:''].filter(Boolean).join(' · '):entry.skipped?'Пропущен':entry.error||(entry.view?'Готов к проверке':'Ожидает');
+     const status=entry.done!=null?[entry.done?`Сохранено результатов: ${entry.done}`:'',entry.linked?`Связано источников: ${entry.linked}`:''].filter(Boolean).join(' · '):entry.skipped?'Пропущен':entry.error||(entry.original?'Готов к проверке':'Ожидает');
      return V.h('li',{},V.h('div',{},V.h('strong',{},entry.name),V.h('small',{},status)),entry.done!=null||entry.skipped?null:
-      V.h('div',{class:'health-import-queue-actions'},action(entry.view?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void load(entry),{class:'small'}),
-       action('Пропустить','import-skip-file',()=>{entry.file=null;entry.view=null;entry.refreshReview=null;entry.error=null;entry.skipped=true;queue();},{class:'small'})));
+      V.h('div',{class:'health-import-queue-actions'},action(entry.original?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void load(entry),{class:'small'}),
+       action('Пропустить','import-skip-file',async()=>{
+        persisting=true;
+        try{await prune(entry);}finally{persisting=false;}
+        if(!active())return;
+        entry.file=entry.view=entry.original=entry.refreshReview=entry.capture=entry.editor=null;
+        entry.error=null;entry.skipped=true;queue();
+       },{class:'small'})));
     })));
   }
   async function load(entry){
    if(entry.view){body.replaceChildren(...entry.view);entry.view=null;entry.refreshReview?.();return;}
+   if(entry.original){
+    try{edit(entry,entry.original);}catch(error){
+     if(single){dialog.close();throw error;}
+     entry.error=error.message;queue();
+    }
+    return;
+   }
    const content=frame('Чтение файла'),status=V.h('p',{class:'health-note',role:'status'},'Чтение '+entry.name);
    content.append(status);
    const reader=new AbortController(),abort=()=>reader.abort();
@@ -42,6 +101,7 @@
     reader.signal.throwIfAborted();
     if(!active())return;
     if(!original.tables.length)throw Error('В файле нет таблиц.');
+    entry.original=original;
     edit(entry,original);
     entry.file=null;entry.error=null;
    }catch(error){
@@ -52,7 +112,16 @@
    }finally{controller.signal.removeEventListener('abort',abort);}
   }
   function edit(entry,original){
-  let sheet=0,header=1,mapping,layout,order='',fallbackDate='',drafts=[],busy=false;
+  const restored=entry.editor??{};
+  let {sheet=0,header=1,mapping,layout,order='',fallbackDate=''}=restored;
+  let drafts=[],busy=false;
+  entry.editor=null;
+  const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate});
+  function createDrafts(){
+   const imported=T.importedCoordinates(getDoc());
+   return T.draft(original.tables[sheet],{hash:original.hash,sheet,header,mapping,layout,order,
+    fallbackDate:layout==='rows'?fallbackDate:''},fields.map(([key])=>key),imported);
+  }
   function navigation(content){
    if(!single)content.append(action('К очереди','import-queue',()=>{
     if(busy)return;
@@ -71,6 +140,7 @@
    const table=original.tables[sheet];
    const content=frame('Сопоставление колонок'),labels=table.rows[header-1]||[],width=Math.max(0,...table.rows.map(r=>r.length));
    navigation(content);
+   draftActions(content,()=>!busy);
    mapping??=Object.fromEntries(fields.map(([key])=>[key,labels.findIndex(x=>(aliases[key]||[]).includes(x.trim().toLocaleLowerCase('ru-RU')))]));
    layout??=T.suggestedLayout(labels,mapping);
    const error=V.h('p',{class:'error',role:'alert',hidden:true});
@@ -86,6 +156,7 @@
     table.ocr?V.h('p',{class:'health-note'},'Текст распознан с изображения. Сверьте колонки, значения и даты с оригиналом.'):null,
     scanStatus,error,V.table(['Строка',...Array.from({length:width},(_,i)=>String(i+1))],table.rows.slice(0,12).map((row,i)=>[i+1,...row]))
    ].filter(Boolean),'Создать черновик');
+   entry.capture=()=>{readOptions(form);return editorState();};
    content.append(form);if(!table.rows.length){error.hidden=false;error.textContent=table.ocrError||(original.extension==='pdf'?'На листе нет текста. Выберите другой лист или распознайте страницу PDF.':'В файле не найден текст для импорта.');form.querySelector('[type=submit]').disabled=true;}
    if(original.extension==='pdf'&&!table.ocr){
     const recognize=action('Распознать страницу','import-ocr-page',async()=>{
@@ -107,24 +178,25 @@
    form.elements.namedItem('header').addEventListener('change',e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=table.rows.length){readOptions(form);header=n;mapping=layout=undefined;choose();}});
    form.elements.namedItem('layout').addEventListener('change',e=>{readOptions(form);layout=e.target.value;choose();});
    form.addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();try{
-    if(!active()||busy)return;
+    if(!active()||busy||persisting)return;
     const input=readOptions(form);
     if(Number(input.get('header'))!==header)throw Error('Укажите строку заголовка из предпросмотра.');
-    const imported=T.importedCoordinates(getDoc());
-    drafts=T.draft(table,{hash:original.hash,sheet,header,mapping,layout,order,fallbackDate:layout==='rows'?fallbackDate:''},fields.map(([key])=>key),imported);
+    drafts=createDrafts();
     review();
    }catch(err){error.hidden=false;error.textContent=err.message;}});
   }
-  function review(){
+  function review(savedRows=[]){
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
    navigation(content);
+   draftActions(content,()=>!busy);
    const table=original.tables[sheet];
    const doc=getDoc(),documentId=doc.documents.find(file=>file.sha256===original.hash)?.id;
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
-   const choices=[],refreshRows=[];
+   const choices=[],refreshRows=[],captureRows=[];
    const rows=drafts.map((draft,index)=>{
+    const savedRow=savedRows[index];
     const controls=new Map(fields.map(([key,label])=>[key,V.h('input',{
-      name:index+':'+key,value:draft.item[key],'aria-label':label+' · строка '+draft.row,
+      name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],'aria-label':label+' · строка '+draft.row,
     })]));
     const caption=V.h('small',{class:'import-classification'});
     const checked=V.h('input',{type:'checkbox',name:'selected',value:String(index),disabled:draft.duplicate,
@@ -154,10 +226,15 @@
      showDecision();
     }
     refreshMatches();
-    checked.checked=!table.ocr&&!draft.problem&&!draft.duplicate&&!candidates.length;
+    checked.checked=!draft.duplicate&&(savedRow?.selected??(!table.ocr&&!draft.problem&&!candidates.length));
+    if(savedRow&&checked.checked){
+     withinFile=savedRow.decision==='separate';refreshMatches(false);
+     if(Array.from(decision.options).some(option=>option.value===savedRow.decision))decision.value=savedRow.decision;
+    }
     checked.addEventListener('change',()=>refreshMatches(false));
     for(const key of ['name','value','date','unit','low','high','source','material','method'])controls.get(key).addEventListener('input',()=>refreshMatches());
     choices[index]=(matches,repeated)=>{candidates=matches;withinFile=repeated;showDecision();};
+    captureRows.push(()=>({values:Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value])),selected:checked.checked,decision:decision.value}));
     refreshRows.push(()=>{
      draft.duplicate=coordinates.has(draft.importKey)||coordinates.has(draft.previousKey);
      checked.disabled=draft.duplicate;
@@ -182,12 +259,13 @@
     const current=getDoc();indexOfResults=T.duplicateIndex(current.observations);coordinates=T.importedCoordinates(current);
     refreshRows.forEach(refresh=>refresh());
    };
+   entry.capture=()=>({...editorState(),review:captureRows.map(capture=>capture())});
    const form=V.form('document-review',[
     V.h('p',{class:'health-note'},original.name+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
     table.ocr?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
     V.h('div',{class:'health-import-review'},V.table(['Сохранить','Строка / колонка',...fields.map(x=>x[1])],rows)),error
    ].filter(Boolean),'Сохранить выбранные результаты');content.append(action('Вернуться к колонкам','import-back',()=>{if(!busy)choose();}),form);
-   form.addEventListener('submit',async e=>{e.preventDefault();e.stopPropagation();if(busy||!active())return;busy=true;const submit=form.querySelector('[type=submit]');submit.disabled=true;try{
+   form.addEventListener('submit',async e=>{e.preventDefault();e.stopPropagation();if(busy||persisting||!active())return;busy=true;const submit=form.querySelector('[type=submit]');submit.disabled=true;try{
     const input=new FormData(form),indices=input.getAll('selected').map(Number),records=[];
     if(!indices.length)throw Error('Выберите хотя бы одну строку.');
     for(const i of indices){const draft=drafts[i];if(!draft||draft.duplicate)throw Error('Неверная строка импорта.');const item=Object.fromEntries(fields.map(([key])=>[key,String(input.get(i+':'+key)||'')]));
@@ -233,13 +311,16 @@
       created++;
      }
     });
+    if(active())await prune(entry);
     if(active()){
      if(single)dialog.close();
-     else{entry.done=created;entry.linked=linked;entry.refreshReview=null;entry.error=null;queue();}
+     else{entry.done=created;entry.linked=linked;entry.original=entry.refreshReview=entry.capture=null;entry.error=null;queue();}
     }
    }catch(err){error.hidden=false;error.textContent=err.message;}finally{busy=false;if(submit.isConnected)submit.disabled=false;}});
   }
-  choose();
+  if(Array.isArray(restored.review)){
+   drafts=createDrafts();review(restored.review);
+  }else choose();
   }
   if(!dialog.open)dialog.showModal();
   if(single)await load(entries[0]);else queue();

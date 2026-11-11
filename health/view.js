@@ -240,6 +240,7 @@
     section.append(heading,h('div',{class:'labs-mode actions','aria-label':'Работа с анализами'},
       button('Результаты','lab-results',{'aria-pressed':String(!state.groupKey)}),button('Импорт файлов','csv'),
       button('Добавить вручную','new-lab')));
+    if(!state.demo&&!state.groupKey)section.append(h('div',{class:'health-import-resume'},button('Открыть черновик импорта','open-import-draft',{class:'small'})));
     if(!state.groupKey){
       const box=card(null);box.classList.add('grouped-labs');
       box.append(h('div',{class:'filters'},button('☆ Избранное','filter-favorites',{class:'favorites-filter','aria-pressed':String(!!state.favoritesOnly)}),
