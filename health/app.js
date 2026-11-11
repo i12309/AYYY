@@ -993,7 +993,7 @@
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
   let importGeneration=0;
-  async function importDocuments(files,{restore=false,sourceDocumentId}={}){
+  async function importDocuments(files,{restore=false,sourceDocumentId,skippedFiles=0}={}){
     if((!files.length&&!restore)||!state.doc)return;
     const generation=++importGeneration,tab=state.tab,session=sessionFence();
     const isCurrent=()=>session()&&generation===importGeneration&&state.tab===tab;
@@ -1028,7 +1028,7 @@
         return;
       }
     }
-    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,sourceDocumentId,notify:toast});
+    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles,notify:toast});
   }
   async function deleteImportDraft(revision){
     if(!state.key||!state.local||!confirm('Удалить сохранённый черновик и его исходники с этого устройства?'))return;
@@ -1189,16 +1189,20 @@
       else if(action==='close-dialog')dialog.close();
       else if(action==='open-import-draft')await importDocuments([],{restore:true});
       else if(action==='delete-import-draft')await deleteImportDraft(el.dataset.revision);
-      else if(action==='csv'||action==='capture-import'){
-        const active=sessionFence(),tab=state.tab,camera=action==='capture-import';
+      else if(action==='csv'||action==='capture-import'||action==='import-folder'){
+        const active=sessionFence(),tab=state.tab,camera=action==='capture-import',folder=action==='import-folder';
         const input=document.createElement('input');
         input.type='file';input.accept=camera?'image/jpeg,image/png':'.csv,.xlsx,.pdf,.png,.jpg,.jpeg';input.hidden=true;input.multiple=!camera;
         if(camera)input.setAttribute('capture','environment');
+        if(folder)input.webkitdirectory=true;
         input.addEventListener('cancel',()=>input.remove(),{once:true});
         input.addEventListener('change',()=>{
-          const files=Array.from(input.files);
+          const chosen=Array.from(input.files);
           input.remove();
-          if(active()&&state.tab===tab)void importDocuments(files).catch(error);
+          if(!active()||state.tab!==tab)return;
+          const files=folder?chosen.filter(file=>HumanDocuments.importExtension(file.name)):chosen;
+          if(folder&&!files.length){toast('В папке нет файлов PDF, XLSX, CSV, PNG или JPEG.');return;}
+          void importDocuments(files,{skippedFiles:chosen.length-files.length}).catch(error);
         },{once:true});
         document.body.append(input);input.click();
       }

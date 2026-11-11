@@ -1,5 +1,6 @@
 """Synthetic browser tests for encrypted, device-local import checkpoints."""
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from urllib.parse import urlsplit
 import mimetypes
 
@@ -14,7 +15,7 @@ SOURCE=b'name;value;date;unit\nSynthetic first draft marker;15;2026-10-06;mg'
 NEXT=b'name;value;date;unit\nSynthetic waiting draft marker;18;2026-10-07;mg'
 
 
-def run(browser):
+def run(browser, directory):
     context=browser.new_context(viewport={'width':1440,'height':900})
     remote,errors=[],[]
 
@@ -52,6 +53,9 @@ def run(browser):
     def resume(instance):instance.locator('[data-action=open-import-draft]').click()
     def entry(instance,name):return instance.locator('.health-import-queue li').filter(has=instance.get_by_text(name,exact=True))
     def review(instance):return instance.locator('[data-form=document-review]')
+    def confirm_review(instance):
+        review(instance).locator('[name=profileConfirmed]').check()
+        review(instance).locator('[type=submit]').click()
 
     def checkpoint(instance):
         instance.locator('[data-action=save-import-draft]').click()
@@ -76,10 +80,24 @@ def run(browser):
       await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();
     }''',OLD)
     p.goto(BASE+'health/');unlock(p,OLD);lab(p)
-    with p.expect_file_chooser() as choose:p.locator('[data-action=csv]').click()
-    choose.value.set_files([{'name':'pending-first.csv','mimeType':'text/csv','buffer':SOURCE},
-                            {'name':'pending-next.csv','mimeType':'text/csv','buffer':NEXT}])
-    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    panel=directory/'synthetic-panel'
+    first_path='synthetic-panel/first/pending.csv'
+    next_path='synthetic-panel/nested/later/pending.csv'
+    for path,contents in [(first_path,SOURCE),(next_path,NEXT),('synthetic-panel/ignored/readme.txt',b'Not an import document')]:
+        file=directory/path
+        file.parent.mkdir(parents=True,exist_ok=True)
+        file.write_bytes(contents)
+    with p.expect_file_chooser() as choose:p.locator('[data-action=import-folder]').click()
+    assert choose.value.element.get_attribute('webkitdirectory') is not None
+    choose.value.set_files(panel/'ignored')
+    p.get_by_text('В папке нет файлов PDF, XLSX, CSV, PNG или JPEG.',exact=True).wait_for()
+    assert not p.locator('#health-dialog').is_visible()
+    with p.expect_file_chooser() as choose:p.locator('[data-action=import-folder]').click()
+    choose.value.set_files(panel)
+    p.get_by_text('Пропущено файлов неподдерживаемых форматов: 1',exact=True).wait_for()
+    assert p.locator('.health-import-queue li').count()==2
+    assert entry(p,next_path).count()==1
+    entry(p,first_path).locator('[data-action=import-open-file]').click()
     p.locator('[data-form=document-mapping] [type=submit]').click()
     review(p).locator('[name="0:value"]').fill('15.25')
     review(p).locator('[name=selected]').uncheck()
@@ -93,18 +111,18 @@ def run(browser):
       const plain=await HumanCrypto.unlock(vault.envelope,phrase),objects=[draft.metadata,...draft.files.map(file=>file.bytes)];
       draft.files[0].bytes[15]^=1;
       const rejected=await HumanImportDraft.open(draft,plain.key).then(()=>false,()=>true);
-      return {encrypted:objects.every(bytes=>bytes instanceof Uint8Array&&!new TextDecoder().decode(bytes).includes('Synthetic')),rejected,
+      return {encrypted:objects.every(bytes=>bytes instanceof Uint8Array&&!/Synthetic|synthetic-panel/.test(new TextDecoder().decode(bytes))),rejected,
         files:draft.files.length, count:plain.doc.observations.length, attachments:vault.objects.length,
         noNames:!Object.keys(draft).includes('entries')&&!Object.keys(draft.files[0]).includes('name'),salt:draft.salt};
     }''',OLD)
     assert proof['encrypted'] and proof['rejected'] and proof['noNames'] and proof['files']==2 and proof['count']==proof['attachments']==0,proof
     p.reload();unlock(p,OLD);lab(p);resume(p)
-    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    entry(p,first_path).locator('[data-action=import-open-file]').click()
     assert review(p).locator('[name="0:value"]').input_value()=='15.25' and not review(p).locator('[name=selected]').is_checked()
-    print('PASS encrypted files and edits survive reload without entering the journal or backup',flush=True)
+    print('PASS folder paths distinguish same-name files and survive encrypted draft reload',flush=True)
 
     peer=page();peer.goto(BASE+'health/');unlock(peer,OLD);lab(peer);resume(peer)
-    entry(peer,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    entry(peer,first_path).locator('[data-action=import-open-file]').click()
     review(peer).locator('[name="0:value"]').fill('15.75');review(peer).locator('[name=selected]').check();checkpoint(peer)
     review(p).locator('[name="0:value"]').fill('999')
     p.locator('[data-action=save-import-draft]').click()
@@ -120,15 +138,25 @@ def run(browser):
     salt=p.evaluate('async()=>(await HumanStore.importDraft(await HumanStore.current())).salt')
     assert salt!=proof['salt']
     p.reload();unlock(p,NEW);lab(p);resume(p)
-    entry(p,'pending-first.csv').locator('[data-action=import-open-file]').click()
+    entry(p,first_path).locator('[data-action=import-open-file]').click()
     assert review(p).locator('[name="0:value"]').input_value()=='15.75' and review(p).locator('[name=selected]').is_checked()
-    review(p).locator('[type=submit]').click();p.get_by_text('Сохранено результатов: 1',exact=True).wait_for();close(p)
+    confirm_review(p);p.get_by_text('Сохранено результатов: 1',exact=True).wait_for()
+    entry(p,next_path).locator('[data-action=import-open-file]').click()
+    p.locator('[data-form=document-mapping] [type=submit]').click()
+    assert not review(p).locator('[name=profileConfirmed]').is_checked() and review(p).locator('[type=submit]').is_disabled()
+    close(p)
     resume(p)
     mapping=p.locator('[data-form=document-mapping]')
-    assert 'pending-next.csv' in mapping.inner_text() and 'pending-first.csv' not in mapping.inner_text()
-    mapping.locator('[type=submit]').click();review(p).locator('[type=submit]').click();p.locator('#health-dialog').wait_for(state='hidden')
+    assert next_path in mapping.inner_text() and first_path not in mapping.inner_text()
+    mapping.locator('[type=submit]').click();confirm_review(p);p.locator('#health-dialog').wait_for(state='hidden')
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
     assert p.locator('.group-name').filter(has_text='Synthetic waiting draft marker').count()==1
+    assert p.evaluate('''async phrase=>{
+      const {envelope}=await HumanStore.snapshot(await HumanStore.current());
+      const {doc}=await HumanCrypto.unlock(envelope,phrase);
+      return doc.documents.length===2&&doc.documents.every(file=>file.name==='pending.csv')&&
+        !JSON.stringify(doc).includes('synthetic-panel');
+    }''',NEW)
     print('PASS rekey preserves the latest edits and successful imports remove only their completed files',flush=True)
 
     partial=b'name;value;date;unit\nSynthetic accepted marker;10;2026-10-06;mg\nSynthetic pending marker;20;2026-10-06;mg'
@@ -144,15 +172,16 @@ def run(browser):
     mapping.locator('[type=submit]').click()
     review(p).locator('[name=selected]').last.uncheck()
     review(p).locator('[name="1:value"]').fill('20.25')
-    review(p).locator('[type=submit]').click()
+    confirm_review(p)
     p.get_by_text('Сохранено результатов: 1 · Осталось строк: 1',exact=True).wait_for()
     after=p.evaluate(draft_state)
     assert before['revision']!=after['revision'] and before['hash']==after['hash']
     p.reload();unlock(p,NEW);lab(p);resume(p)
     assert review(p).locator('[name=selected]').first.is_disabled() and not review(p).locator('[name=selected]').last.is_checked()
+    assert not review(p).locator('[name=profileConfirmed]').is_checked()
     assert review(p).locator('[name="1:value"]').input_value()=='20.25'
     assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==0
-    review(p).locator('[name=selected]').last.check();review(p).locator('[type=submit]').click()
+    review(p).locator('[name=selected]').last.check();confirm_review(p)
     p.locator('#health-dialog').wait_for(state='hidden')
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
     assert p.locator('.group-name').filter(has_text='Synthetic accepted marker').count()==1
@@ -179,7 +208,7 @@ def run(browser):
     context.close()
 
 
-with sync_playwright() as playwright:
+with TemporaryDirectory() as directory, sync_playwright() as playwright:
     browser=launch_browser(playwright)
-    run(browser)
+    run(browser, Path(directory))
     browser.close()

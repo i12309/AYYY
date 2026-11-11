@@ -4,21 +4,25 @@
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
- async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,sourceDocumentId,notify}){
+ async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
   if(!files.length&&!saved?.entries.length)return;
   if(files.length>100||files.reduce((size,file)=>size+file.size,0)>128*1024*1024)
    throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
-  const entries=saved?saved.entries.map(({id,name,bytes,parsed,editor,sourceDocumentId})=>parsed
-   ?{id,name,sourceDocumentId,original:{...parsed,name,bytes},editor}:{id,name,sourceDocumentId,file:new File([bytes],name)}):
-   files.map(file=>({id:M.id(),name:file.name,file,sourceDocumentId}));
+  const entries=saved?saved.entries.map(({id,name,relativePath,bytes,parsed,editor,sourceDocumentId})=>parsed
+   ?{id,name,relativePath,sourceDocumentId,original:{...parsed,name,bytes},editor}:{id,name,relativePath,sourceDocumentId,file:new File([bytes],name)}):
+   files.map(file=>({id:M.id(),name:file.name,relativePath:file.webkitRelativePath||undefined,file,sourceDocumentId}));
   const single=entries.length===1,controller=new AbortController();
   let checkpoint=saved?.checkpoint??null,persisting=false,draftNotice=saved?'Черновик открыт с этого устройства.':'';
   const body=document.getElementById('health-dialog-body');dialog.classList.add('health-import-dialog');
   const active=()=>dialog.open&&!controller.signal.aborted&&isCurrent()&&getDoc()?.id===identity;
   window.addEventListener('pagehide',()=>controller.abort(),{once:true,signal:controller.signal});
   dialog.addEventListener('close',()=>{controller.abort();dialog.classList.remove('health-import-dialog');entries.length=0;},{once:true});
-  function frame(title){const content=V.h('div',{class:'health-modal-content'});body.replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть импорт'})),content);return content;}
+  function frame(title){
+   const content=V.h('div',{class:'health-modal-content'},skippedFiles?V.h('p',{class:'health-note'},`Пропущено файлов неподдерживаемых форматов: ${skippedFiles}`):null);
+   body.replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть импорт'})),content);
+   return content;
+  }
   function action(label,key,run,attrs={}){
    const button=V.button(label,key,attrs);
    button.addEventListener('click',event=>{event.stopPropagation();if(active()&&!persisting)run();});
@@ -27,7 +31,7 @@
   const pending=()=>entries.filter(entry=>entry.done==null&&!entry.skipped);
   function draftMetadata(entry){
    const source=entry.original;
-   return {sourceDocumentId:entry.sourceDocumentId,parsed:source?{hash:source.hash,extension:source.extension,tables:source.tables}:null,
+   return {sourceDocumentId:entry.sourceDocumentId,relativePath:entry.relativePath,parsed:source?{hash:source.hash,extension:source.extension,tables:source.tables}:null,
     editor:entry.capture?.()??entry.editor??null};
   }
   async function updateCheckpoint(entry,changes=null){
@@ -75,7 +79,7 @@
    content.append(V.h('p',{class:'health-note'},persistence?'Проверяйте и сохраняйте результаты по каждому файлу. После закрытия окна доступна сохранённая версия черновика.':'Проверяйте и сохраняйте результаты по каждому файлу. В демо правки черновика доступны в открытом окне.'),
     V.h('ul',{class:'health-import-queue'},entries.map(entry=>{
      const status=entry.done!=null?[entry.done?`Сохранено результатов: ${entry.done}`:'',entry.linked?`Связано источников: ${entry.linked}`:''].filter(Boolean).join(' · '):entry.skipped?'Пропущен':entry.error||(entry.original?'Готов к проверке':'Ожидает');
-     return V.h('li',{},V.h('div',{},V.h('strong',{},entry.name),V.h('small',{},status)),entry.done!=null||entry.skipped?null:
+     return V.h('li',{},V.h('div',{},V.h('strong',{},entry.relativePath||entry.name),V.h('small',{},status)),entry.done!=null||entry.skipped?null:
       V.h('div',{class:'health-import-queue-actions'},action(entry.original?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void load(entry),{class:'small'}),
        action('Пропустить','import-skip-file',async()=>{
         persisting=true;
@@ -95,7 +99,7 @@
     }
     return;
    }
-   const content=frame('Чтение файла'),status=V.h('p',{class:'health-note',role:'status'},'Чтение '+entry.name);
+   const content=frame('Чтение файла'),status=V.h('p',{class:'health-note',role:'status'},'Чтение '+(entry.relativePath||entry.name));
    content.append(status);
    const reader=new AbortController(),abort=()=>reader.abort();
    controller.signal.addEventListener('abort',abort,{once:true});
@@ -119,7 +123,7 @@
   const restored=entry.editor??{};
   let {sheet=0,header=1,mapping,layout,order='',fallbackDate=''}=restored;
   let manualMode=restored.manualMode===true,manualIds=restored.manualIds??[];
-  let drafts=[],busy=false;
+  let drafts=[],busy=false,profileConfirmed=false;
   entry.editor=null;
   const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate,manualMode,manualIds:[...manualIds]});
   function sourceDocument(doc){
@@ -191,7 +195,7 @@
    const error=V.h('p',{class:'error',role:'alert',hidden:true});
    const scanStatus=V.h('p',{class:'health-note',role:'status',hidden:true});
    const form=V.form('document-mapping',[
-    V.h('p',{class:'health-note'},original.name+' · файл остаётся в этом браузере. Проверьте лист и назначение колонок.'),
+    V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · файл остаётся в этом браузере. Проверьте лист и назначение колонок.'),
     V.row(V.field('Лист','sheet',String(sheet),'select',original.tables.map((t,i)=>[String(i),t.name])),V.field('Строка заголовка в предпросмотре','header',String(header),'number')),
     V.row(V.field('Расположение дат','layout',layout,'select',[['rows','Даты в строках'],['dates_in_columns','Даты в заголовках колонок']]),
      V.field('Порядок дат через /','dateOrder',order,'select',[['','Выберите, если есть такие даты'],['dmy','День / месяц / год'],['mdy','Месяц / день / год']])),
@@ -245,7 +249,13 @@
    const choices=[],refreshRows=[],captureRows=[],selection=[];
    const problems=savedRows.map(row=>row?.problem);
    const selectionStatus=V.h('span',{class:'health-note',role:'status'});
-   const updateSelection=()=>{selectionStatus.textContent=`Отмечено: ${selection.filter(row=>row.checked.checked).length}`;};
+   const confirmation=V.h('input',{type:'checkbox',name:'profileConfirmed',checked:profileConfirmed,required:true});
+   const profile=typeof doc.profile.name==='string'?doc.profile.name.trim():'';
+   function updateSelection(){
+    const count=selection.filter(row=>row.checked.checked).length;
+    selectionStatus.textContent=`Отмечено: ${count}`;
+    submit.disabled=!confirmation.checked||!count;
+   }
    const rows=drafts.map((draft,index)=>{
     const savedRow=savedRows[index];
     draft.duplicate=alreadyImported(coordinates,draft);
@@ -336,7 +346,6 @@
     }
     updateSelection();
    }
-   updateSelection();
    const addRow=action('Добавить строку вручную','import-add-manual',()=>{
     if(busy||drafts.length>=5000)return;
     const edits=captureRows.map(capture=>capture()),id=M.id();
@@ -345,16 +354,21 @@
     body.querySelector(`[name="${drafts.length-1}:name"]`)?.focus();
    },{disabled:drafts.length>=5000});
    const form=V.form('document-review',[
-    V.h('p',{class:'health-note'},original.name+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
+    V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
     table.ocr||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
     sourcePreview(),
     V.h('div',{class:'health-import-selection'},table.ocr||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
      action('Снять выбор','import-clear-selection',()=>selectRows(false),{class:'small'}),selectionStatus),result,
     V.h('div',{class:'health-import-review'},V.table(['Сохранить','Строка / колонка',...fields.map(x=>x[1])],rows)),error
    ].filter(Boolean),'Сохранить выбранные результаты');content.append(action('Вернуться к колонкам','import-back',()=>{if(!busy)choose();}),addRow,form);
+   form.querySelector('.health-form-actions').prepend(V.h('label',{class:'health-import-profile'},confirmation,
+    profile?V.h('span',{},'Результаты относятся к профилю ',V.h('strong',{},profile)):'Результаты относятся к открытому профилю'));
+   const submit=form.querySelector('[type=submit]');
+   confirmation.addEventListener('change',()=>{profileConfirmed=confirmation.checked;updateSelection();});
+   updateSelection();
    form.addEventListener('submit',async e=>{
     e.preventDefault();e.stopPropagation();
-    if(busy||persisting||!active())return;
+    if(busy||persisting||!active()||!confirmation.checked)return;
     busy=true;form.inert=true;error.hidden=true;result.hidden=true;
     const needsReview=Error('Исправьте отмеченные строки или снимите с них выбор.');
     try{

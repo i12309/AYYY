@@ -26,6 +26,7 @@ def run(page):
         review.wait_for()
         if match:
             assert match in review.locator('.import-classification').first.inner_text()
+        review.locator('[name=profileConfirmed]').check()
         review.locator('[type=submit]').click()
         page.locator('#health-dialog').wait_for(state='hidden')
 
@@ -166,6 +167,7 @@ def run(page):
     assert results.count() == 50 and page.get_by_role('button',name='Назад',exact=True).is_disabled()
     page.set_viewport_size({'width':360,'height':900})
     assert page.locator('.labs-mode').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
+    assert page.locator('.health-import-resume').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
     print('PASS inclusive dates, partial dates, unfiltered detail, and 50-result pages',flush=True)
 
 
