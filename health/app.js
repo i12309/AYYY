@@ -9,7 +9,7 @@
   const dialog=document.getElementById('health-dialog');
   const notice=document.getElementById('health-notice');
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
-    globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false,pendingGitHub:null};
+    globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false,pendingGitHub:null,onboardingTab:'local'};
   let importWorkspace=null;
   const currentTab=()=>state.tab==='import'?'lab':state.tab==='settings'?'profile':state.tab;
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
@@ -135,22 +135,48 @@
           V.field('Токен GitHub','token','', 'password')),
         githubTokenGuide(true)
       ],'Проверить и подключить');
-    const githubCard=V.card('Подключить свой GitHub',[V.h('p',{class:'health-note'},
-      remoteSetup?'Создание первого зашифрованного журнала в выбранном репозитории.':
-        'HUMAN найдёт существующий журнал или предложит создать новый, даже если репозиторий пуст. Можно использовать тот же GitHub, что и для родословной.'),download]);
-    main.append(V.h('div',{class:'health-intro-grid'+(remoteSetup?' health-intro-grid-single':'')},
-      remoteSetup?githubCard:[
-        V.card('Создать журнал на устройстве',[V.h('p',{class:'health-note'},
-          'Фраза шифрования защищает медицинские данные. Это не пароль GitHub: она потребуется для открытия журнала на любом устройстве. HUMAN её не хранит.'),create]),
-        githubCard]));
-    const restore=V.card('Восстановить зашифрованный файл',[
-      V.h('p',{class:'health-note'},'Восстановите журнал и вложения из зашифрованной копии HUMAN.'),
-      V.form('import-vault',[V.field('Резервная копия .human','file','','file')],'Импортировать')
-    ]);
-    restore.classList.add('health-restore-card');
-    main.append(restore);
+    const restore=V.form('import-vault',[
+      V.field('Резервная копия .human','file','','file')
+    ],'Импортировать');
+    const modes=[
+      ['local','Создать журнал'],
+      ['github','Подключить GitHub'],
+      ['restore','Восстановить копию']
+    ];
+    const choice=modes.some(([id])=>id===state.onboardingTab)?state.onboardingTab:'local';
+    const panels={
+      local:V.card('Новый журнал на устройстве',[
+        V.h('p',{class:'health-note'},'Создайте личный зашифрованный журнал. Для работы не нужен GitHub — подключить его можно позже в профиле.'),
+        create
+      ]),
+      github:V.card(remoteSetup?'Создать журнал в GitHub':'Открыть или создать журнал в GitHub',[
+        V.h('p',{class:'health-note'},remoteSetup?
+          'Это второй шаг подключения: задайте фразу для нового журнала.':
+          'Укажите свой приватный репозиторий. HUMAN загрузит существующий журнал или поможет создать первый, не затрагивая другие папки.'),
+        download
+      ]),
+      restore:V.card('Восстановить журнал из файла',[
+        V.h('p',{class:'health-note'},'Если ранее скачивали резервную копию HUMAN, выберите файл .human. Журнал и вложения будут восстановлены после проверки фразы доступа.'),
+        restore
+      ])
+    };
+    const tabs=V.h('div',{class:'health-onboarding-tabs',role:'tablist','aria-label':'Способ создания или открытия журнала'},
+      modes.map(([id,label])=>V.h('button',{
+        type:'button',id:'health-onboarding-tab-'+id,
+        class:'health-onboarding-tab'+(choice===id?' is-active':''),
+        role:'tab','aria-selected':choice===id?'true':'false',
+        'aria-controls':'health-onboarding-panel',
+        'data-action':'onboarding-tab','data-mode':id,
+        tabindex:choice===id?'0':'-1'
+      },label)));
+    main.append(V.h('section',{class:'health-onboarding','aria-label':'Выбор способа работы с журналом'},
+      V.h('p',{class:'health-onboarding-hint'},'Выберите один вариант — заполнять все формы не нужно.'),
+      tabs,
+      V.h('div',{class:'health-onboarding-panel',role:'tabpanel',
+        id:'health-onboarding-panel','aria-labelledby':'health-onboarding-tab-'+choice},
+        panels[choice])));
     main.append(V.h('p',{class:'health-security'},
-      'Личные данные не сохраняются в публичном репозитории AYYY.'));
+      'Медицинские данные не сохраняются в публичном репозитории AYYY.'));
     outer.append(layout);
     return outer;
   }
@@ -1044,7 +1070,7 @@
         const created=await C.create(pass);
         if(!active())return;const local=await S.createSelected({id:created.doc.id,envelope:created.envelope,dirty:true});if(!active())return;
         await profileList();if(!active())return;
-        state.local=local;
+        state.pendingGitHub=null;G.disconnect();state.local=local;
         state.doc=created.doc;state.key=created.key;state.picker=false;state.tab='overview';
         render();
         await applyRemember(remember);
@@ -1091,7 +1117,7 @@
           await G.verify(repo);if(!active())return;
           const data=await G.read(repo);if(!active())return;
           if(!data){
-            state.pendingGitHub={repo};render();
+            state.pendingGitHub={repo};state.onboardingTab='github';render();
             toast('Репозиторий доступен. Задайте фразу шифрования для нового журнала.');
             return;
           }
@@ -1274,6 +1300,14 @@
     try{
       if(action==='toggle-menu'){document.body.classList.toggle('health-menu-open');el.setAttribute('aria-expanded',String(document.body.classList.contains('health-menu-open')));}
       else if(action==='close-menu')document.body.classList.remove('health-menu-open');
+      else if(action==='onboarding-tab'){
+        const mode=el.dataset.mode;
+        if(['local','github','restore'].includes(mode)&&mode!==state.onboardingTab){
+          state.onboardingTab=mode;
+          render();
+          root.querySelector('#health-onboarding-tab-'+mode)?.focus({preventScroll:true});
+        }
+      }
       else if(action==='cancel-remote-setup'){sessionRevision++;G.disconnect();state.pendingGitHub=null;render();}
       else if(action==='diary-shift')chooseDiaryDay(window.HumanHealth.shiftDay(window.HumanDiaryView.selectedDay(state),Number(el.dataset.delta)));
       else if(action==='diary-today')chooseDiaryDay(window.HumanHealth.localInput(new Date(),state.doc.profile.timezone).slice(0,10));
