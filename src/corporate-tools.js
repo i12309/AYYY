@@ -4,8 +4,7 @@
  const A=window.AYYY,legacy=A.views.tools,e=A.escape;
  const tabs=[['loan','Ипотека и кредит','home'],['science','Инженерный','calculator'],['percent','Проценты','percent'],['converter','Конвертер','ruler'],['dates','Даты','calendar'],['password','Пароли','lock'],['json','JSON','code'],['text','Текст','type'],['color','Цвета','paint']];
  const selected=()=>A.param==='calc'?'science':tabs.some(t=>t[0]===A.param)?A.param:'loan';
- const oldCalc=A.services.find(s=>s.id==='calc');if(oldCalc)Object.assign(oldCalc,{name:'Инженерный калькулятор',desc:'Функции, графики, численные методы',param:'science'});
- if(!A.services.some(s=>s.id==='loan')){const ix=A.services.findIndex(s=>s.id==='calc');A.services.splice(ix,0,{id:'loan',name:'Ипотека и кредит',desc:'График, досрочные взносы и сценарии',icon:'home',color:'blue',group:'tools',kind:'local',route:'tools',param:'loan'});}
+ // The workspace's nine tabs are not separate catalog services.
  document.querySelectorAll('.nav-count').forEach(x=>x.textContent=A.services.length);
  A.register('tools',{
   title:'Финансы и инженерия',

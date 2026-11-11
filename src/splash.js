@@ -3,10 +3,9 @@
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
   const artwork = 'assets/lighthouse-watercolor.webp';
-  const defaults = ['games', 'ai', 'calc', 'weather', 'family', 'search'];
-  const groups = [['all','Все'],['everyday','Каждый день'],['tools','Инструменты'],['creative','Творчество'],['games','Игры'],['personal','Личное'],['favorites','Избранное']];
-  const shortNames = {games:'Игры',ai:'Терминал',calc:'Посчитать',weather:'Погода',search:'Поиск'};
-  const shortDescriptions = {games:'Пять минут для себя',ai:'Разобраться вместе',calc:'Сложное — в простое',weather:'Прогноз на день',search:'Найти направление'};
+  const defaults = ['games', 'ai', 'tools', 'weather', 'family', 'search'];
+  const shortNames = {games:'Игры',ai:'Терминал',tools:'Инструменты',weather:'Погода',search:'Поиск'};
+  const shortDescriptions = {games:'Пять минут для себя',ai:'Разобраться вместе',tools:'Нужное под рукой',weather:'Прогноз на день',search:'Найти направление'};
   a.catalogCategory = 'all';
 
   const shortcutIds = () => {
@@ -123,47 +122,7 @@
     update();document.querySelector('#shore-save-shortcuts').onclick=()=>{if(a.set('home.shortcuts',selected)){a.closeModal();a.render();a.toast('Ваши направления сохранены');}};
   }
 
-  function catalogCard(service) {
-    const favorite=a.favorites().includes(service.id);
-    const destination=service.url?`href="${e(service.url)}" target="_blank" rel="noopener noreferrer"`:`href="#${e(service.route)}${service.param?'/'+encodeURIComponent(service.param):''}"`;
-    return `<article class="shore-service-card"><a class="shore-catalog-open" ${destination}>${serviceIcon(service,29)}<h3>${e(service.name)}</h3><p>${e(service.desc)}</p><span class="shore-service-kind"><i class="${service.kind==='local'?'is-local':''}"></i>${e(a.kindLabels[service.kind])}</span><span class="shore-card-arrow">${icon('arrow-right',16)}</span></a><button class="shore-favorite favorite-btn ${favorite?'selected':''}" data-favorite="${e(service.id)}" data-service-name="${e(service.name)}" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из избранного':'В избранное'}: ${e(service.name)}" title="${favorite?'Убрать из избранного':'В избранное'}">${icon('star',16)}</button></article>`;
-  }
-
-  a.register('directory', {
-    title:'Все направления',
-    render() {
-      return `<div class="shore-page shore-directory">${navigation('directory')}
-        <div class="shore-directory-stage"><aside class="shore-directory-art" aria-label="Маяк AYYY">${picture()}</aside>
-          <div class="shore-catalog-content"><div class="shore-catalog-heading"><h1>Все сервисы</h1></div>
-            <div class="shore-catalog-tools"><div class="shore-catalog-search">${icon('search',19)}<input id="catalog-search" aria-label="Найти сервис" placeholder="Название, занятие или идея…" value="${e(a.param)}" maxlength="150"><span>${a.services.length} сервисов</span></div><div class="shore-catalog-filters" role="group" aria-label="Категории сервисов">${groups.map(([id,name])=>`<button type="button" class="${id===a.catalogCategory?'active':''}" data-category="${id}" aria-pressed="${id===a.catalogCategory}">${id==='favorites'?icon('star',13):''}${name}</button>`).join('')}</div></div>
-            <div class="shore-catalog-summary"><p id="catalog-count" aria-live="polite"></p><span>Сохраняйте любимое ${icon('star',12)}</span></div><div class="shore-catalog-grid" id="catalog-grid"></div>
-            <p class="shore-catalog-note">${icon('lighthouse',17)} На главной — только ваши шесть направлений. Здесь — весь горизонт.</p>
-          </div>
-        </div>${footer()}</div>`;
-    },
-    mount() {
-      const root=document.querySelector('#view'), input=root.querySelector('#catalog-search');
-      const update=()=>{
-        const category=a.catalogCategory, query=input.value.toLocaleLowerCase('ru').trim();
-        const list=a.services.filter(s=>(category==='all'||category==='favorites'&&a.favorites().includes(s.id)||s.group===category)&&(!query||`${s.name} ${s.desc} ${s.id} ${shortNames[s.id]||''}`.toLocaleLowerCase('ru').includes(query)));
-        root.querySelector('#catalog-count').textContent=`${list.length} из ${a.services.length} · ${groups.find(g=>g[0]===category)?.[1]||'Все'}`;
-        root.querySelector('#catalog-grid').innerHTML=list.length?list.map(catalogCard).join(''):`<div class="shore-catalog-empty">${icon('search',32)}<h2>В этом направлении пока тихо</h2><p>Попробуйте другое слово или вернитесь ко всем сервисам.</p><button class="shore-small-button" id="shore-reset-catalog">Показать все</button></div>`;
-        root.querySelector('#shore-reset-catalog')?.addEventListener('click',()=>{input.value='';a.catalogCategory='all';selectFilter();update();});
-      };
-      const selectFilter=()=>root.querySelectorAll('[data-category]').forEach(b=>{const active=b.dataset.category===a.catalogCategory;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
-      input.oninput=update;
-      root.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{a.catalogCategory=b.dataset.category;selectFilter();update();});
-      const updateFavorites=()=>{
-        if(a.catalogCategory!=='favorites')return;
-        const buttons=[...root.querySelectorAll('[data-favorite]')];
-        const focused=buttons.indexOf(document.activeElement);
-        update();
-        if(focused>=0){const remaining=[...root.querySelectorAll('[data-favorite]')];(remaining[Math.min(focused,remaining.length-1)]||root.querySelector('[data-category="favorites"]')).focus();}
-      };
-      document.addEventListener('ayyy:favorites',updateFavorites);update();
-      return ()=>document.removeEventListener('ayyy:favorites',updateFavorites);
-    }
-  });
+  // Editorial directory registered in showcase.js.
 
   // Both art and beam are fixed to the viewport. Only a resize or image load
   // changes the geometry; pointer movement and content refresh never move them.

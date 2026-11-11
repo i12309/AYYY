@@ -29,14 +29,14 @@ function makePortal() {
     crypto: { randomUUID: () => 'test-uuid' }, Date, Math
   });
   ['src/core.js', 'src/pages.js', 'src/creative.js',
-    'src/neural-terminal-route.js', 'src/splash.js']
+    'src/neural-terminal-route.js', 'src/splash.js', 'src/showcase.js']
     .forEach(file => vm.runInContext(read(file), ctx, { filename: file }));
   return { app: window.AYYY, storage, opened };
 }
 
 test('only active services are registered; focus is retired and the AI demo remains', () => {
   const { app } = makePortal();
-  assert.equal(app.services.length, 18);
+  assert.equal(app.services.length, 10);
   assert.ok(app.services.find(s => s.id === 'family'));
   assert.deepEqual(Array.from(app.services.filter(s=>s.group==='games'),s=>[s.id,s.name,s.route,s.param]),[['games','Игры','games',undefined]]);
   assert.equal(app.services.find(s=>s.id==='ai').name,'Терминал');
@@ -52,7 +52,7 @@ test('only active services are registered; focus is retired and the AI demo rema
 test('retired favorites and shortcuts are filtered without clearing local data', () => {
   const { app, storage } = makePortal();
   storage.set('ayyy:v1:favorites', JSON.stringify(['notes', 'weather', 'parcels', 'memory', '2048', 'games', 'calc']));
-  assert.equal(Array.from(app.favorites()).join(','), 'weather,games,calc');
+  assert.equal(Array.from(app.favorites()).join(','), 'weather,games,tools');
   assert.deepEqual(JSON.parse(storage.get('ayyy:v1:favorites')),
     ['notes', 'weather', 'parcels', 'memory', '2048', 'games', 'calc']);
   storage.set('ayyy:v1:home.shortcuts', JSON.stringify(['memory', '2048', 'math', 'ai']));
@@ -94,7 +94,7 @@ test('removed modules have no runtime imports or service links', () => {
       assert.doesNotMatch(html, new RegExp('href="#'+id+'"'));
     }
   });
-  assert.match(index, /nav-count">19<\/span>/);
+  assert.match(index, /nav-count">10<\/span>/);
   assert.doesNotMatch(boot, /result\.(?:tasks|notes|bookmarks|parcels|mailDrafts)\s*=/);
   assert.doesNotMatch(read('src/creative.js'), /register\('paint'/);
   assert.equal(fs.existsSync(path.join(ROOT, 'src/productivity.js')), false);
