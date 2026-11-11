@@ -107,6 +107,7 @@
     }
   };
   app.services = [
+    {id:'oberon',name:'OBERON',desc:'Заметки Markdown, папки и связи в GitHub',icon:'oberon',color:'amber',group:'personal',kind:'connect',route:'oberon'},
     {id:'ai',name:'Терминал',desc:'Нейронный терминал · локальное демо',icon:'sparkles',color:'purple',group:'everyday',kind:'demo',route:'ai',tag:'CRT'},
     {id:'search',name:'Умный поиск',desc:'Веб, видео, карты и знания',icon:'search',color:'blue',group:'everyday',kind:'link',route:'search'},
     {id:'weather',name:'Погода',desc:'Планы с учётом прогноза',icon:'sun',color:'amber',group:'everyday',kind:'api',route:'weather'},
@@ -122,7 +123,6 @@
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
     {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
     {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
-    {id:'oberon',name:'OBERON',desc:'Заметки Markdown, папки и связи в GitHub',icon:'oberon',color:'amber',group:'personal',kind:'connect',route:'oberon'},
     {id:'games',name:'Игры',desc:'Головоломки, аркады и тренировка памяти',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games'},
     {id:'translate',name:'Переводчик',desc:'Открыть Google Переводчик',icon:'translate',color:'blue',group:'everyday',kind:'link',url:'https://translate.google.com/'}
   ];

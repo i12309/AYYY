@@ -42,6 +42,7 @@ test('OBERON is a discoverable personal service and uses its own full-screen she
   const service = p.app.services.find(service => service.id === 'oberon');
   assert.equal(service.name, 'OBERON');
   assert.equal(service.group, 'personal');
+  assert.equal(p.app.services[0].id, 'oberon', 'OBERON should be immediately visible in the directory');
   assert.equal(service.route, 'oberon');
   assert.match(service.desc, /Markdown.*GitHub/);
   assert.equal(p.app.services.filter(service => service.id === 'oberon').length, 1);
