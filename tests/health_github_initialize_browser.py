@@ -50,6 +50,8 @@ with sync_playwright() as pw:
         form.locator('[type=submit]').click()
         page.locator('[data-form=initialize-remote]').wait_for()
         assert 'В репозитории пока нет журнала' in page.locator('.health-github-setup').inner_text()
+        assert page.locator('.health-intro-grid-single').count()==1
+        assert page.locator('[data-form=create]').count()==0
 
     connect()
     assert page.evaluate('HumanGithub.hasToken()')
