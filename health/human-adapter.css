@@ -516,3 +516,7 @@ body{font-size:14px}
  .health-unlock-actions>.button{flex:1 1 auto}
  .health-marketing-card h2{font-size:16px}
 }
+
+/* Explicit feedback and revocation for the opt-in 30-minute unlock. */
+.profile-page .health-remember-status{display:flex;align-items:center;gap:7px;margin:11px 0 0;color:var(--green-ink);font-size:11px;font-weight:600;line-height:1.45}
+.profile-page .health-remember-status svg{flex:none}
