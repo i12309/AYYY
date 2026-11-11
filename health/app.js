@@ -261,7 +261,6 @@
     else if(state.tab==='recommendations')view=window.HumanRecommendationsView.page(state);
     else if(state.tab==='profile'||state.tab==='settings')view=window.HumanJournalView.profilePage(state,settings());
     else if(state.tab==='timeline')view=window.HumanJournalView.timelinePage(state);
-    else if(state.tab==='settings')view=settings();
     else view=V.listSection(state,state.tab);
     const nextEditor=view.querySelector('.diary-editor');if(nextEditor){if(previousEditor?.dataset.editorKey===nextEditor.dataset.editorKey)nextEditor.replaceWith(previousEditor);else{const form=nextEditor.querySelector('form'),id=form.dataset.id;if(id){const existing=recordsFor(state.doc,form.dataset.kind).find(r=>r.id===id);if(existing)formSnapshots.set(form,JSON.stringify(existing));}}}
     view.querySelectorAll('.health-heading').forEach((heading,index)=>{if(!index){heading.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('ЛИЧНЫЙ ЖУРНАЛ '),V.h('span',{},'/'),document.createTextNode(String(tabs.findIndex(([id])=>id===state.tab)+1).padStart(2,'0')));return;}heading.className='health-section-heading';heading.querySelector('.eyebrow')?.remove();const title=heading.querySelector('h1');if(title)title.replaceWith(V.h('h2',{},title.textContent));});
