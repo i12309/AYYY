@@ -104,16 +104,10 @@
     return outer;
   }
   function githubTokenGuide(readOnly=false){
-    return V.h('div',{class:'health-help'},
-      V.h('p',{},V.h('strong',{},'Fine-grained token: '),
-        'Repository access → Only select repositories → выберите нужный приватный репозиторий.'),
-      V.h('p',{},readOnly?
-        'Для загрузки достаточно Repository permissions → Contents → Read-only; для синхронизации выберите Read and write.':
-        'Repository permissions → Contents → Read and write — для сохранения и синхронизации.',
-        ' Metadata → Read-only добавлено автоматически; остальные разрешения не нужны.'),
-      V.h('p',{},'Нажмите Generate token и вставьте токен сюда. ',
-        V.h('a',{href:'https://github.com/settings/personal-access-tokens/new',target:'_blank',rel:'noopener noreferrer'},'Создать токен GitHub ↗')),
-      V.h('p',{},'Права на запись действуют на весь репозиторий, а не только на health-data/. Токен хранится только в памяти вкладки.'));
+    return V.h('p',{class:'health-help'},
+      readOnly?'Для загрузки достаточно Contents → Read-only; для синхронизации нужно Read and write. ':
+        'Для сохранения: Only select repositories и Contents → Read and write. ',
+      V.h('a',{href:'../help/github/',target:'_blank',rel:'noopener noreferrer'},'Пошаговая инструкция с иллюстрациями ↗'));
   }
   function VRepo(repo){return repo.owner+'/'+repo.repo+' · '+repo.branch;}
   function status(){

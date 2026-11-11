@@ -52,3 +52,5 @@ python -X utf8 src/build.py dist/index.html
 ## Права токена GitHub
 
 Для собственного приватного репозитория создайте [GitHub fine-grained token](https://github.com/settings/personal-access-tokens/new): `Repository access → Only select repositories` → выберите репозиторий. В `Repository permissions` задайте `Contents → Read and write` для синхронизации или `Contents → Read-only` при одной лишь загрузке данных. `Metadata → Read-only` включается автоматически, остальные разрешения не нужны. Нажмите `Generate token`. Разрешение `Contents: Read and write` охватывает **весь выбранный репозиторий**, а не только `health-data/`; приложение хранит токен только в памяти открытой вкладки.
+
+Единая справка для пользователей: [`/help/github/`](../help/github/) — создание репозитория, токен, разрешения и безопасность. Ссылки доступны в обеих формах подключения HUMAN.
