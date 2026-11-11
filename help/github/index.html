@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#172329">
+  <meta name="description" content="Простая инструкция с иллюстрациями: как создать приватный репозиторий GitHub, получить токен для AYYY и синхронизировать заметки, родословную и журнал HUMAN.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'none'">
+  <title>Как подключить GitHub — помощь AYYY</title>
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+  <a class="skip" href="#main">Перейти к инструкции</a>
+  <header class="site-head">
+    <div class="shell site-head-inner">
+      <a class="brand" href="../../#home" aria-label="AYYY — главная"><span>ayyy<span class="brand-dot">.</span></span><i></i><small>ПОМОЩЬ</small></a>
+      <nav aria-label="Разделы инструкции"><a href="#how">Как это работает</a><a href="#steps">Подключение</a><a href="#safety">Безопасность</a><a href="#problems">Вопросы</a></nav>
+      <a class="back-link" href="../../#directory">Все сервисы <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="orbit-dot"></span> AYYY / ЛИЧНОЕ ХРАНИЛИЩЕ</p>
+          <h1>Ваши файлы.<br><em>Ваше пространство.</em></h1>
+          <p class="lead">GitHub может хранить ваши заметки, семейное дерево и зашифрованный журнал здоровья. Здесь — простая инструкция без программирования: от первого клика до сохранения данных.</p>
+          <div class="hero-actions"><a class="btn primary" href="#steps">Настроить по шагам <span aria-hidden="true">↓</span></a><a class="btn secondary" href="#how">Сначала разобраться</a></div>
+          <p class="hero-foot">Нужен обычный аккаунт GitHub. Настройка выполняется в браузере.</p>
+        </div>
+        <div class="hero-visual" aria-label="Схема личного хранилища с раздельными папками сервисов">
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <div class="repository-preview">
+            <div class="repository-top"><span class="repo-pip"></span><span>MY SPACE / PRIVATE</span><b>●</b></div>
+            <div class="folder-row"><span class="folder-icon">▰</span><strong>OBERON/</strong><span>Заметки</span></div>
+            <div class="folder-row"><span class="folder-icon">▰</span><strong>family-data/</strong><span>Родословная</span></div>
+            <div class="folder-row"><span class="folder-icon">▰</span><strong>health-data/</strong><span>HUMAN</span></div>
+            <div class="repository-foot"><span>ВАШ РЕПОЗИТОРИЙ</span><span>Синхронизация по HTTPS</span></div>
+          </div>
+          <span class="tiny-star s1">✦</span><span class="tiny-star s2">✧</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="shell main-body">
+      <div class="guide-intro" id="how">
+        <p class="section-kicker">01 / ОБЩАЯ ИДЕЯ</p>
+        <h2>Что такое GitHub и зачем он нужен?</h2>
+        <p class="section-lead">Представьте личный шкаф для файлов в интернете. <strong>Репозиторий</strong> — это шкаф, <strong>папки</strong> — полки, а <strong>токен</strong> — временный ключ, которым вы разрешаете приложению пользоваться шкафом. GitHub также хранит историю изменений файлов.</p>
+        <div class="how-flow" aria-label="Как происходит синхронизация">
+          <div class="flow-cell"><span class="flow-icon">01</span><strong>Ваш браузер</strong><small>Создаёте или меняете заметки</small></div>
+          <span class="flow-arrow" aria-hidden="true">→</span>
+          <div class="flow-cell"><span class="flow-icon">02</span><strong>GitHub</strong><small>Хранит файлы в приватном репозитории</small></div>
+          <span class="flow-arrow" aria-hidden="true">→</span>
+          <div class="flow-cell"><span class="flow-icon">03</span><strong>Другое устройство</strong><small>Открываете тот же репозиторий</small></div>
+        </div>
+        <p class="subtle-line">Данные идут напрямую из браузера на <strong>GitHub через HTTPS</strong>. Отдельного сервера хранения AYYY для этих модулей нет. Синхронизация требует соединения с интернетом, а отправка изменений происходит при открытом приложении.</p>
+      </div>
+
+      <section class="modules" aria-labelledby="modules-title">
+        <div class="section-top"><p class="section-kicker">ГДЕ ЭТО ИСПОЛЬЗУЕТСЯ</p><h2 id="modules-title">Один репозиторий — три сервиса</h2></div>
+        <div class="module-grid">
+          <article class="module"><div class="module-top"><span class="module-icon mark-oberon">◌</span><span>01 / MARKDOWN</span></div><h3>OBERON</h3><p>Заметки, папки и ссылки между мыслями. Файлы хранятся как обычные <code>.md</code>.</p><code class="path">OBERON/</code><a href="../../#oberon">Открыть заметки ↗</a></article>
+          <article class="module"><div class="module-top"><span class="module-icon mark-gen">◎</span><span>02 / СЕМЬЯ</span></div><h3>Родословная</h3><p>Дерево семьи, биографии, фотографии и резервные копии. Для семейных данных используйте <strong>Private</strong>.</p><code class="path">family-data/trees/</code><a href="../../#family">Открыть родословную ↗</a></article>
+          <article class="module"><div class="module-top"><span class="module-icon mark-human">✚</span><span>03 / ЗДОРОВЬЕ</span></div><h3>HUMAN</h3><p>Журнал здоровья с шифрованием до отправки в GitHub. Не теряйте свою фразу доступа.</p><code class="path">health-data/v2/</code><a href="../../#health">Открыть журнал ↗</a></article>
+        </div>
+        <p class="note-line">Эти папки создаются сервисами по мере работы. Для первой настройки специально создавать их в GitHub не нужно.</p>
+      </section>
+
+      <section class="steps-section" id="steps" aria-labelledby="steps-title">
+        <p class="section-kicker">02 / ПОШАГОВАЯ НАСТРОЙКА</p>
+        <h2 id="steps-title">Подключение за пять шагов</h2>
+        <p class="section-lead">Все кнопки указаны так, как они называются в интерфейсе GitHub. Иллюстрации ниже — схемы экранов для ориентирования, а не снимки ваших личных данных.</p>
+        <nav class="step-chips" aria-label="Перейти к шагу">
+          <a href="#step1">1. Репозиторий</a><a href="#step2">2. Токен</a><a href="#step3">3. Доступ</a><a href="#step4">4. Права</a><a href="#step5">5. Подключение</a>
+        </nav>
+
+        <article class="step" id="step1">
+          <div class="step-copy"><div class="step-number">01 <span>СНАЧАЛА</span></div><h3>Создайте место для своих файлов</h3>
+            <p>Откройте GitHub и нажмите <strong>New repository</strong>. Укажите любое понятное название, например <code>my-ayyy-data</code>.</p>
+            <ul><li>Выберите <strong>Private</strong> — содержимое не будет общедоступным.</li><li>Отметьте <strong>Add a README file</strong> — так сразу появится ветка <code>main</code>.</li><li>Нажмите <strong>Create repository</strong>.</li></ul>
+            <p class="mini-tip">Если репозиторий уже есть, создавать новый необязательно. Можно использовать один приватный репозиторий для всех трёх сервисов.</p>
+            <a class="action-link" href="https://github.com/new?visibility=private" target="_blank" rel="noopener noreferrer">Создать репозиторий на GitHub ↗</a>
+          </div>
+          <figure class="mock-figure"><div class="mock-head"><span class="mock-dot"></span><span>GitHub · New repository</span><span class="mock-example">СХЕМА</span></div>
+            <div class="mock-body">
+              <div class="mock-title">Create a new repository</div>
+              <label class="fake-label">Repository name</label><div class="fake-input focus-ring">my-ayyy-data <span class="indicator">1</span></div>
+              <div class="fake-radio muted">◯ Public</div><div class="fake-radio selected">⦿ Private <small>Only you and people you share access with</small><span class="indicator">2</span></div>
+              <div class="fake-check">☑ Add a README file <span class="indicator">3</span></div>
+              <div class="fake-button green">Create repository</div>
+            </div>
+            <figcaption>Пример расположения полей при создании репозитория.</figcaption>
+          </figure>
+        </article>
+
+        <article class="step" id="step2">
+          <div class="step-copy"><div class="step-number">02 <span>КЛЮЧ ДОСТУПА</span></div><h3>Откройте создание токена</h3>
+            <p>Токен — это отдельный ключ для приложения. Он не заменяет ваш пароль от GitHub.</p>
+            <p>На GitHub откройте <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>. Нажмите <strong>Generate new token</strong>.</p>
+            <ul><li>Назовите токен, например <code>AYYY Storage</code>.</li><li>Для <strong>Expiration</strong> задайте срок действия, например 90 дней.</li><li>В <strong>Resource owner</strong> выберите свой аккаунт.</li></ul>
+            <a class="action-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Открыть создание токена ↗</a>
+          </div>
+          <figure class="mock-figure"><div class="mock-head"><span class="mock-dot"></span><span>GitHub · Fine-grained personal access token</span><span class="mock-example">СХЕМА</span></div>
+            <div class="mock-body">
+              <div class="mock-title">New fine-grained personal access token</div>
+              <label class="fake-label">Token name</label><div class="fake-input focus-ring">AYYY Storage <span class="indicator">1</span></div>
+              <label class="fake-label">Expiration</label><div class="fake-input">90 days <span class="chevron">▾</span></div>
+              <label class="fake-label">Resource owner</label><div class="fake-input">Ваш аккаунт GitHub <span class="chevron">▾</span></div>
+              <div class="fake-divider"></div><p class="mock-small">Следующие пункты — самый важный этап.</p>
+            </div><figcaption>Имя и срок действия токена можно выбрать самостоятельно.</figcaption>
+          </figure>
+        </article>
+
+        <article class="step" id="step3">
+          <div class="step-copy"><div class="step-number">03 <span>ВАЖНО</span></div><h3>Ограничьте доступ одним репозиторием</h3>
+            <p>В разделе <strong>Repository access</strong> выберите <strong>Only select repositories</strong>. Затем нажмите <strong>Select repositories</strong> и отметьте только свой репозиторий.</p>
+            <p>Не выбирайте <strong>All repositories</strong> без необходимости. Так вы дадите ключу больше возможностей, чем требуется.</p>
+            <p class="mini-tip">Если используете один репозиторий для OBERON, GEN и HUMAN, достаточно выбрать его один раз.</p>
+          </div>
+          <figure class="mock-figure"><div class="mock-head"><span class="mock-dot"></span><span>GitHub · Repository access</span><span class="mock-example">СХЕМА</span></div>
+            <div class="mock-body">
+              <div class="mock-title">Repository access</div><p class="mock-small">Select the repositories this token can access</p>
+              <div class="fake-radio muted">◯ Public repositories</div><div class="fake-radio muted">◯ All repositories</div>
+              <div class="fake-radio selected focus-ring">⦿ Only select repositories <span class="indicator">1</span></div>
+              <div class="fake-input compact">Select repositories <span class="chevron">▾</span><span class="indicator">2</span></div>
+              <div class="selected-repo">▣ &nbsp; username/my-ayyy-data <span class="checkmark">✓</span></div>
+            </div><figcaption>Токен будет действовать только на выбранный репозиторий.</figcaption>
+          </figure>
+        </article>
+
+        <article class="step" id="step4">
+          <div class="step-copy"><div class="step-number">04 <span>САМОЕ ВАЖНОЕ</span></div><h3>Выберите правильные разрешения</h3>
+            <p>Ниже найдите <strong>Permissions → Repository permissions</strong>. Нажмите <strong>Add permissions</strong> и добавьте <strong>Contents</strong>.</p>
+            <ul><li><strong>Contents → Read and write</strong> — для создания и сохранения файлов.</li><li><strong>Metadata → Read-only</strong> — добавляется автоматически, менять не нужно.</li><li>Других прав для обычной синхронизации не требуется.</li></ul>
+            <p class="mini-tip">Если вместо Read and write выбрано Read-only, чтение сработает, но при сохранении появится ошибка <code>403</code>.</p>
+          </div>
+          <figure class="mock-figure important-figure"><div class="mock-head"><span class="mock-dot"></span><span>GitHub · Permissions</span><span class="mock-example">СХЕМА</span></div>
+            <div class="mock-body">
+              <div class="mock-title">Permissions</div>
+              <div class="fake-tabs"><span class="tab active">Repositories <b>2</b></span><span class="tab">Account <b>0</b></span><span class="mock-add">+ Add permissions</span></div>
+              <div class="permission-row"><div><strong>Contents</strong><small>Repository contents, commits, branches</small></div><span class="permission-pill success">Read and write ▾</span><span class="indicator">1</span></div>
+              <div class="permission-row"><div><strong>Metadata <em>Required</em></strong><small>Repository metadata</small></div><span class="permission-pill">Read-only ▾</span><span class="indicator">2</span></div>
+              <div class="fake-button green">Generate token</div>
+            </div><figcaption>Два разрешения: Contents — запись, Metadata — только чтение.</figcaption>
+          </figure>
+        </article>
+
+        <article class="step" id="step5">
+          <div class="step-copy"><div class="step-number">05 <span>ГОТОВО</span></div><h3>Подключите репозиторий в AYYY</h3>
+            <p>Нажмите <strong>Generate token</strong>. Скопируйте полученный токен: GitHub может показать его полностью только в момент создания.</p>
+            <ul><li>Вернитесь в нужный модуль AYYY.</li><li>Укажите репозиторий в виде <code>username/my-ayyy-data</code>, ветку <code>main</code> и вставьте токен.</li><li>Создайте небольшую тестовую запись и дождитесь статуса <strong>«Сохранено в GitHub»</strong> или успешной синхронизации.</li></ul>
+            <p class="mini-tip">Токен не нужно показывать другим людям, присылать в чат или размещать в файлах. После обновления страницы его придётся ввести заново.</p>
+          </div>
+          <figure class="mock-figure"><div class="mock-head"><span class="mock-dot"></span><span>AYYY · Подключение хранилища</span><span class="mock-example">СХЕМА</span></div>
+            <div class="mock-body">
+              <div class="mock-title">Подключить GitHub</div>
+              <label class="fake-label">Репозиторий</label><div class="fake-input">username/my-ayyy-data</div>
+              <label class="fake-label">Ветка</label><div class="fake-input">main</div>
+              <label class="fake-label">Токен GitHub</label><div class="fake-input">github_pat_••••••••••••</div>
+              <div class="fake-button copper">Подключить и синхронизировать</div>
+              <p class="mock-small success-text">✓ После успешной отправки данные появятся в GitHub.</p>
+            </div><figcaption>Пример. Никогда не вставляйте настоящий токен в чужие формы или сообщения.</figcaption>
+          </figure>
+        </article>
+      </section>
+
+      <section class="security" id="safety" aria-labelledby="safety-title">
+        <p class="section-kicker">03 / БЕЗОПАСНОСТЬ</p><h2 id="safety-title">Почему такой способ удобен — и что важно защитить</h2>
+        <p class="section-lead">Доступом управляете вы: сами выбираете приватный репозиторий, назначаете минимальные права и можете отозвать токен. Но отсутствие своего сервера не означает абсолютной защиты от всех рисков.</p>
+        <div class="security-grid">
+          <article><span class="security-glyph">◈</span><h3>Личный репозиторий</h3><p>Режим <strong>Private</strong> скрывает обычный доступ посторонних. GitHub остаётся сторонним сервисом хранения; это не сквозное шифрование.</p></article>
+          <article><span class="security-glyph">⌘</span><h3>Токен с ограничениями</h3><p>Выбирайте один репозиторий и <strong>Contents: Read and write</strong>. GitHub не умеет ограничивать токен одной папкой: запись разрешена во всём выбранном репозитории.</p></article>
+          <article><span class="security-glyph">◴</span><h3>Токен только в памяти</h3><p>AYYY не записывает токен в локальные файлы или браузерную базу. Он используется открытой страницей для запросов к GitHub и исчезает после перезагрузки. Защищайте устройство и браузер.</p></article>
+          <article><span class="security-glyph">▤</span><h3>Разные уровни защиты данных</h3><p><strong>OBERON</strong> сохраняет Markdown без шифрования, <strong>GEN</strong> — семейные файлы, а <strong>HUMAN</strong> шифрует журнал перед отправкой. Для первых двух приватность репозитория особенно важна.</p></article>
+        </div>
+        <div class="security-warning"><strong>Что не стоит делать</strong><p>Не публикуйте скриншоты с токеном и не передавайте его другим. Не переводите репозиторий с личными данными в Public. Делайте отдельные резервные копии: синхронизация сама по себе не защищает от случайного удаления или повреждения данных.</p></div>
+      </section>
+
+      <section class="faq" id="problems" aria-labelledby="faq-title">
+        <p class="section-kicker">04 / ПОМОЩЬ</p><h2 id="faq-title">Частые вопросы и ошибки</h2>
+        <div class="faq-grid">
+          <details><summary>Ошибка 403: Resource not accessible by personal access token <span>+</span></summary><p>Чаще всего токен имеет только права чтения. Откройте <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">список токенов</a> → выберите токен → <strong>Edit</strong> → <strong>Contents: Read and write</strong> → <strong>Update</strong>. Проверьте, что нужный репозиторий выбран в Repository access. Если требуется, повторно подключите токен в AYYY.</p></details>
+          <details><summary>Нужно ли создавать три разных репозитория? <span>+</span></summary><p>Нет. Можно использовать один приватный репозиторий: OBERON работает в <code>OBERON/</code>, GEN — в <code>family-data/trees/</code>, HUMAN — в <code>health-data/v2/</code>. Важно не менять чужие папки вручную без резервной копии.</p></details>
+          <details><summary>Можно ли открыть данные на другом компьютере? <span>+</span></summary><p>Да. Подключите тот же репозиторий и ветку, введите токен и загрузите данные. Убедитесь, что на первом устройстве синхронизация действительно завершилась: локальное сохранение ещё не означает отправку на GitHub. Для HUMAN также понадобится ваша фраза доступа.</p></details>
+          <details><summary>GitHub просит токен снова. Это ошибка? <span>+</span></summary><p>Нет. В AYYY токен хранится только в памяти открытой страницы, а не в постоянном хранилище браузера. После перезагрузки или на другом устройстве вводите его снова. Можно создать новый токен и отозвать старый.</p></details>
+          <details><summary>Заметки пропадут, если отключить синхронизацию? <span>+</span></summary><p>Локальные данные обычно остаются в браузере, но могут исчезнуть при очистке его хранилища. Скачивайте резервные копии и периодически проверяйте, что файлы действительно есть в GitHub.</p></details>
+          <details><summary>Как отключить доступ AYYY? <span>+</span></summary><p>Откройте <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">настройки токенов GitHub</a> и нажмите <strong>Delete</strong> для соответствующего токена. После отзыва старые токены перестанут работать. Сами файлы репозитория не удалятся.</p></details>
+          <details><summary>Можно ли использовать публичный репозиторий? <span>+</span></summary><p>OBERON умеет читать публичный репозиторий без токена. Но для личных заметок, фотографий и семейных данных используйте Private. HUMAN и GEN рассчитаны на приватный репозиторий.</p></details>
+        </div>
+      </section>
+      <section class="bottom-cta"><div><p class="section-kicker">ПРОВЕРКА ПЕРЕД СТАРТОМ</p><h2>Всё готово к первой синхронизации?</h2><p>Приватный репозиторий создан, выбрана ветка main, токен привязан к нему, а Contents установлен в Read and write.</p></div><a class="btn primary" href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">Проверить токен ↗</a></section>
+    </div>
+  </main>
+
+  <footer class="page-footer"><div class="shell"><div><a class="footer-brand" href="../../#home">ayyy<span>.</span></a><p>Простая помощь для личных сервисов AYYY. Схемы интерфейса приведены для ориентирования; названия кнопок GitHub могут меняться.</p></div><div class="footer-links"><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer">Справка GitHub о токенах ↗</a><a href="https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository" target="_blank" rel="noopener noreferrer">Справка о репозиториях ↗</a><a href="../../#directory">Все сервисы AYYY ↗</a></div></div></footer>
+</body>
+</html>

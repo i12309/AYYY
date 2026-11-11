@@ -39,7 +39,7 @@ def build(destination: Path, inline: bool = False):
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(html, encoding='utf-8', newline='\n')
     # Every output, including dist/, is a complete static site, not a broken HTML copy.
-    for name in ('assets', 'weather', 'tools', 'markets', 'games', 'family', 'health', 'oberon', 'mpp', 'terminal') + (() if inline else ('src',)):
+    for name in ('assets', 'weather', 'tools', 'markets', 'games', 'family', 'health', 'oberon', 'help', 'mpp', 'terminal') + (() if inline else ('src',)):
         source, target = ROOT.parent/name, destination.parent/name
         if source.is_dir() and (source.resolve() != target.resolve()):
             shutil.copytree(source, target, dirs_exist_ok=True,
