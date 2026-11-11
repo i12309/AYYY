@@ -11,6 +11,8 @@
   const SPACE='Qwen/Qwen3-Demo';
   // GGUF is not an MLC/WebLLM artifact; Wllama loads the published Q4_1 build.
   const POCKET={repo:'taobao-mnn/MNN-Pocket-0.3B-GGUF',file:'MNN-Pocket-0.3B-Instruct-Q4_1.gguf'};
+  const POCKET_BYTES=192*1024*1024;
+  const POCKET_RESERVE=240*1024*1024; // approximate space for 192-MB file + cache overhead
   const MODELS={
     qwen:'Qwen2-0.5B-Instruct-q4f16_1-MLC',
     llama:'Llama-3.2-1B-Instruct-q4f32_1-MLC',
@@ -49,7 +51,8 @@
   function createProviders(injected={}) {
     const load=injected.importModule || (url=>import(url));
     const fetcher=injected.fetch || ((url,config)=>fetch(url,config));
-    const hasGPU=injected.hasGPU || (()=>!!(global.navigator && global.navigator.gpu));
+    const hasGPU=injected.hasGPU || (()=>!!global.navigator?.gpu);
+    const requestGPUAdapter=injected.requestGPUAdapter || (()=>global.navigator?.gpu?.requestAdapter?.());
     let hfClient=null, hfName='', gpuEngine=null, gpuName='', pocketEngine=null;
     let job=null,controller=null;
     let webLLMLibrary=null,wllamaLibrary=null;
@@ -60,6 +63,116 @@
     async function wllamaLib(){
       if(!wllamaLibrary)wllamaLibrary=load(URLS.wllama).catch(e=>{wllamaLibrary=null;throw e;});
       return wllamaLibrary;
+    }
+    const interrupted=signal=>{
+      if(signal?.aborted)throw new DOMException('Stopped','AbortError');
+    };
+    function fastLocalSupport(modelPreference) {
+      if(global.isSecureContext===false)
+        return {ok:false,reason:'Нужна защищённая HTTPS-страница.'};
+      if(modelPreference==='pocket') {
+        if(typeof global.WebAssembly?.validate!=='function')
+          return {ok:false,reason:'В браузере нет WebAssembly — запуск на CPU невозможен.'};
+        if(typeof global.navigator?.storage?.getDirectory!=='function')
+          return {ok:false,reason:'В браузере отсутствует OPFS — кэширование GGUF недоступно.'};
+        return {ok:true,engine:'CPU / WebAssembly',details:'GGUF · CPU, 1 поток'};
+      }
+      if(!Object.hasOwn(MODELS,modelPreference))
+        return {ok:false,reason:'Неизвестная модель.'};
+      if(!hasGPU() || !global.navigator?.gpu?.requestAdapter && !injected.requestGPUAdapter)
+        return {ok:false,reason:'WebGPU недоступен. Эта модель WebLLM не запускается на CPU. Выберите MNN-Pocket.'};
+      return {ok:true,engine:'GPU / WebGPU',details:'WebLLM · требуется WebGPU'};
+    }
+    // Runs before any model-weight download, optionally exercising the small
+    // WASM runtime itself. Passing this check never guarantees enough RAM, a
+    // compatible GGUF architecture or successful inference.
+    async function preflightLocalModel(modelPreference,{signal,runtimeTest=false,onStatus=()=>{}}={}) {
+      const quick=fastLocalSupport(modelPreference);
+      if(!quick.ok)return {...quick,cached:false,warnings:[]};
+      const warnings=[];
+      const fail=reason=>({ok:false,reason,engine:quick.engine,cached:false,warnings});
+      const tell=text=>{interrupted(signal);onStatus(text);};
+      try {
+        tell('LOCAL: проверка возможностей браузера (без загрузки модели)...');
+        if(modelPreference==='pocket') {
+          interrupted(signal);
+          await global.navigator.storage.getDirectory();
+          let estimate=null;
+          try{estimate=await global.navigator.storage.estimate?.();}catch(_){}
+          if(Number.isFinite(global.navigator?.deviceMemory)&&global.navigator.deviceMemory<2)
+            warnings.push('Браузер сообщает менее 2 ГБ RAM: запуск может завершиться ошибкой.');
+          tell('CPU / GGUF: проверка сохранённых файлов...');
+          const lib=await wllamaLib();
+          if(typeof lib.Wllama!=='function'||typeof lib.ModelManager!=='function')
+            return fail('Wllama не предоставил необходимые API.');
+          const models=await new lib.ModelManager().getModels({includeInvalid:true});
+          const match=models.find(m=>
+            m?.url?.includes('/taobao-mnn/MNN-Pocket-0.3B-GGUF/resolve/') &&
+            m.url.split('?')[0].endsWith('/'+POCKET.file));
+          const cached=match?.validate?.()==='valid';
+          if(match && !cached)
+            warnings.push('Найдена неполная загрузка — потребуется загрузить модель заново.');
+          if(!cached && Number.isFinite(estimate?.quota)&&Number.isFinite(estimate?.usage)) {
+            const available=estimate.quota-estimate.usage;
+            if(available<POCKET_RESERVE)
+              return fail('Недостаточно места в хранилище браузера: свободно около '+
+                Math.max(0,Math.floor(available/(1024*1024)))+
+                ' МБ, для GGUF желательно не менее 240 МБ.');
+          }
+          if(runtimeTest&&!pocketEngine) {
+            tell('CPU / GGUF: пробный запуск WASM-движка без весов (192 МБ пока не скачиваются)...');
+            const tester=new lib.Wllama({default:URLS.wllamaWasm},{allowOffline:true});
+            tester.setCompat?.('default');
+            try{
+              if(typeof tester.testBackendOps!=='function')
+                return fail('Текущий Wllama не поддерживает тест вычислительного движка.');
+              const result=await tester.testBackendOps(['-o','ADD']);
+              if(!result?.success)return fail('Пробный запуск Wllama завершился ошибкой ('+
+                (result?.retcode??'нет кода')+'). Модель не будет скачана.');
+            }finally{try{await tester.exit?.();}catch(_){}}
+          }
+          interrupted(signal);
+          return {
+            ok:true,engine:'CPU / WASM (1 поток)',cached:!!cached,
+            modelName:'MNN-Pocket-0.3B Q4_1',sizeBytes:POCKET_BYTES,
+            warnings:[...warnings,'Проверка не гарантирует совместимость GGUF и достаточный объём оперативной памяти.']
+          };
+        }
+        tell('WebGPU: проверка адаптера и устройства...');
+        const adapter=await requestGPUAdapter();
+        if(!adapter)return fail('WebGPU API есть, но браузер не смог получить GPU-адаптер. WebLLM не запустится.');
+        try{
+          if(typeof adapter.requestDevice!=='function')
+            return fail('GPU-адаптер не поддерживает создание вычислительного устройства.');
+          const device=await adapter.requestDevice();
+          if(!device)return fail('Не удалось создать GPU-устройство.');
+          device.destroy?.();
+        }catch(error){
+          return fail('GPU-устройство недоступно: '+(error?.message||String(error)));
+        }
+        tell('WebLLM: проверка наличия модели в каталоге...');
+        const lib=await webLLMLib();
+        if(!lib.prebuiltAppConfig||typeof lib.CreateMLCEngine!=='function')
+          return fail('WebLLM не загрузился или API недоступен.');
+        const id=MODELS[modelPreference];
+        const model=lib.prebuiltAppConfig.model_list?.find(m=>m.model_id===id);
+        if(!model)return fail('Выбранной модели нет в каталоге WebLLM. Автоматическая замена отключена.');
+        let cached=false;
+        try{
+          if(typeof lib.hasModelInCache==='function')
+            cached=!!await lib.hasModelInCache(id,lib.prebuiltAppConfig);
+        }catch(error){warnings.push('Не удалось проверить локальный кэш: '+(error?.message||String(error)));}
+        if(model.vram_required_MB)
+          warnings.push('Нужно приблизительно '+Math.round(model.vram_required_MB)+
+            ' МБ видеопамяти; браузер не сообщает её точный свободный объём.');
+        else warnings.push('Свободный объём видеопамяти недоступен для предварительной оценки.');
+        interrupted(signal);
+        return {ok:true,engine:'GPU / WebGPU',cached,modelName:id,
+          sizeBytes:null,warnings};
+      }catch(error){
+        if(signal?.aborted||error?.name==='AbortError')throw error;
+        return fail('Предварительная проверка не пройдена: '+(error?.message||String(error)));
+      }
     }
     const abort=()=>{
       controller?.abort();
@@ -198,19 +311,15 @@
       return answer;
     }
     async function webgpu({prompt,history,onText,onStatus,signal,modelPreference}) {
+      // Mandatory lightweight check even if the UI preflight was bypassed.
+      const check=await preflightLocalModel(modelPreference,{signal,onStatus});
+      if(!check.ok)throw new Error(check.reason);
       if(modelPreference==='pocket')return pocket({prompt,history,onText,onStatus,signal});
-      if(!hasGPU())throw new Error('WebGPU недоступен. Нужен браузер с аппаратным ускорением.');
       onStatus('WEBGPU: загрузка WebLLM...');
       const lib=await webLLMLib();
-      if(!lib.CreateMLCEngine || !lib.prebuiltAppConfig)throw new Error('WebLLM не загрузился.');
-      const catalog=lib.prebuiltAppConfig.model_list || [];
-      const preferred=MODELS[modelPreference] || MODELS.qwen;
-      let model=catalog.find(m=>m.model_id===preferred)||
-        catalog.find(m=>m.model_id===MODELS.llama);
-      if(!model)model=catalog.filter(m=>!(/vision|audio/i).test(m.model_id||''))
-        .sort((a,b)=>(a.vram_required_MB||99999)-(b.vram_required_MB||99999))[0];
-      if(!model)throw new Error('WebLLM: нет доступных текстовых моделей.');
-      if(signal.aborted)throw new DOMException('Stopped','AbortError');
+      const model=lib.prebuiltAppConfig.model_list.find(m=>m.model_id===MODELS[modelPreference]);
+      if(!model)throw new Error('Выбранной модели нет в каталоге WebLLM.');
+      interrupted(signal);
       if(!gpuEngine || gpuName!==model.model_id){
         gpuEngine=await lib.CreateMLCEngine(model.model_id,{
           initProgressCallback:p=>onStatus('WEBGPU: '+(p.text||'загрузка')+
@@ -333,7 +442,7 @@
         if(controller===ctrl)controller=null;
       }
     }
-    return {run,abort,hasWebGPU:hasGPU,listCachedModels,deleteCachedModel,isBusy:()=>!!controller};
+    return {run,abort,hasWebGPU:hasGPU,fastLocalSupport,preflightLocalModel,listCachedModels,deleteCachedModel,isBusy:()=>!!controller};
   }
   global.AYYY_TERMINAL_PROVIDERS={createProviders,gradioAnswer,messages};
 })(typeof window!=='undefined'?window:globalThis);
