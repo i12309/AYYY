@@ -3,7 +3,8 @@
  'use strict';
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['referenceText','Условия референса из бланка'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
- const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],referenceText:['reference','reference range','reference interval','reference values','референс','референсы','референсные значения','референсный интервал','норма','нормы','нормальные значения','условия референса из бланка'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
+ const aliases={name:['name','test','analyte','показатель','название','наименование','анализ','исследование'],value:['value','result','результат','значение'],date:['date','result date','дата','дата результата'],unit:['unit','units','единица','единицы','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],referenceText:['reference','reference range','reference interval','reference values','референс','референсы','референсные значения','референсный интервал','норма','нормы','нормальные значения','условия референса из бланка'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
+ const columnIndex=(labels,key)=>labels.findIndex(label=>aliases[key].includes(label.trim().toLocaleLowerCase('ru-RU')));
  const sameUnitChoice=(option,choice)=>option.unit===choice.unit&&option.settingsVersion===choice.settingsVersion&&
   option.observationId===choice.observationId&&option.observationUpdatedAt===choice.observationUpdatedAt;
  function open(files,{V,M,body,signal,close,commit,getDoc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
@@ -212,11 +213,20 @@
   }
   function edit(entry,original){
   const restored=entry.editor??{};
-  let {sheet=0,header=1,mapping,layout,order='',fallbackDate=''}=restored;
+  const pdf=original.extension==='pdf';
+  let {sheet=0,mapping,layout,order='',fallbackDate}=restored;
+  let header=restored.header??suggestedHeader(original.tables[sheet]);
+  const pageFallbacks={...(pdf&&fallbackDate?{[sheet]:fallbackDate}:{}),...restored.pageFallbacks};
   let manualMode=restored.manualMode===true,manualIds=restored.manualIds??[];
   let drafts=[],profileConfirmed=false;
   entry.editor=null;
-  const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate,manualMode,manualIds:[...manualIds]});
+  const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate,pageFallbacks:{...pageFallbacks},manualMode,manualIds:[...manualIds]});
+  const manualDate=()=>pdf?pageFallbacks[sheet]:fallbackDate;
+  function suggestedHeader(table){
+   if(!pdf)return 1;
+   const index=table.rows.findIndex(labels=>columnIndex(labels,'name')>=0&&columnIndex(labels,'value')>=0);
+   return index<0?1:index+1;
+  }
   function sourceDocument(doc){
    if(!entry.sourceDocumentId)return doc.documents.find(file=>file.sha256===original.hash);
    const selected=doc.documents.find(file=>file.id===entry.sourceDocumentId);
@@ -234,8 +244,9 @@
   }
   function createDrafts(){
    const imported=T.importedCoordinates(getDoc());
-   const parsed=manualMode?[]:T.draft(original.tables[sheet],{hash:original.hash,sheet,header,mapping,layout,order,
-    fallbackDate:layout==='rows'?fallbackDate:''},fields.map(([key])=>key),imported);
+   const table=original.tables[sheet],hint=pdf&&layout==='rows'?T.pdfCollectionDate(table.rows):null;
+   const parsed=manualMode?[]:T.draft(table,{hash:original.hash,sheet,header,mapping,layout,order,
+    fallbackDate:layout==='rows'?manualDate():undefined,collectionDate:hint?.date?hint:undefined},fields.map(([key])=>key),imported);
    return [...parsed,...manualIds.map((id,index)=>manualDraft(id,index,imported))];
   }
   function sourcePreview(){
@@ -263,7 +274,6 @@
   function readOptions(form){
    const input=new FormData(form);
    order=String(input.get('dateOrder')||'');
-   if(input.has('fallbackDate'))fallbackDate=String(input.get('fallbackDate')||'');
    for(const [key] of fields)if(input.has(key))mapping[key]=Number(input.get(key));
    return input;
   }
@@ -274,8 +284,9 @@
    const content=frame('Сопоставление колонок'),labels=table.rows[header-1]||[],width=Math.max(0,...table.rows.map(r=>r.length));
    content.append(queueLink());
    draftActions(content,()=>!busy);
-   mapping??=Object.fromEntries(fields.map(([key])=>[key,labels.findIndex(x=>(aliases[key]||[]).includes(x.trim().toLocaleLowerCase('ru-RU')))]));
+   mapping??=Object.fromEntries(fields.map(([key])=>[key,columnIndex(labels,key)]));
    layout??=T.suggestedLayout(labels,mapping);
+   const hint=pdf&&layout==='rows'?T.pdfCollectionDate(table.rows):null;
    const error=V.h('p',{class:'error',role:'alert',hidden:true});
    const scanStatus=V.h('p',{class:'health-note',role:'status',hidden:true});
    const form=V.form('document-mapping',[
@@ -284,11 +295,18 @@
     V.row(V.field('Расположение дат','layout',layout,'select',[['rows','Даты в строках'],['dates_in_columns','Даты в заголовках колонок']]),
      V.field('Порядок дат через /','dateOrder',order,'select',[['','Выберите'],['dmy','День / месяц / год'],['mdy','Месяц / день / год']])),
     V.h('div',{class:'health-form-row'},fields.filter(([key])=>layout==='rows'||!['value','date'].includes(key)).map(([key,label])=>V.field(label,key,String(mapping[key]),'select',[['-1','Не указана'],...Array.from({length:width},(_,i)=>[String(i),(i+1)+' · '+(labels[i]||'Без заголовка')])]))),
-    layout==='rows'?V.field('Дата для строк без даты (необязательно)','fallbackDate',fallbackDate):null,
+    layout==='rows'?V.field('Дата для строк без даты (необязательно)','fallbackDate',manualDate()??hint?.date??''):null,
+    hint?V.h('p',{class:'health-note','data-import-collection-date':true},hint.uncertain?
+     'Дата забора на этой странице требует проверки. При необходимости введите дату вручную.':
+     'Дата забора на этой странице — '+hint.raw+'. Сверьте её с оригиналом.'):null,
     V.h('p',{class:'health-note'},'Поддерживаются даты ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ГГГГ-ММ и ГГГГ. Из Excel читаются сохранённые результаты формул.'),
     table.ocr?V.h('p',{class:'health-note'},'Текст распознан с изображения. Сверьте колонки, значения и даты с оригиналом.'):null,
     sourcePreview(),scanStatus,error,V.table(['Строка',...Array.from({length:width},(_,i)=>String(i+1))],table.rows.slice(0,12).map((row,i)=>[i+1,...row]))
    ].filter(Boolean),'Создать черновик');
+   form.elements.namedItem('fallbackDate')?.addEventListener('input',event=>{
+    if(pdf)pageFallbacks[sheet]=event.target.value;
+    else fallbackDate=event.target.value;
+   });
    entry.capture=()=>{readOptions(form);return editorState();};
    content.append(form);if(!table.rows.length){error.hidden=false;error.textContent=table.ocrError||(original.extension==='pdf'?'На листе нет текста. Выберите другой лист или распознайте страницу PDF.':'В файле не найден текст для импорта.');form.querySelector('[type=submit]').disabled=true;}
    content.insertBefore(action('Ввести результат вручную','import-manual',()=>{
@@ -305,13 +323,13 @@
     const scanned=await HumanDocuments.recognizePDFPage(original.bytes,sheet+1,{signal,onProgress:text=>{scanStatus.textContent=text;}});
       if(!active())return;
       if(!scanned.rows.length)throw Error('На странице не удалось распознать текст.');
-      original.tables[sheet]=scanned;header=1;mapping=layout=undefined;choose();
+      original.tables[sheet]=scanned;header=suggestedHeader(scanned);mapping=layout=undefined;choose();
      }catch(err){if(active()){error.hidden=false;error.textContent=err.message;}}
      finally{busy=false;scanStatus.hidden=true;recognize.disabled=false;for(const control of form.elements)control.disabled=control.type==='submit'&&!table.rows.length;}
     });
     content.insertBefore(recognize,form);
    }
-   form.elements.namedItem('sheet').addEventListener('change',e=>{readOptions(form);sheet=Number(e.target.value);header=1;mapping=layout=undefined;choose();});
+   form.elements.namedItem('sheet').addEventListener('change',e=>{readOptions(form);sheet=Number(e.target.value);header=suggestedHeader(original.tables[sheet]);mapping=layout=undefined;choose();});
    form.elements.namedItem('header').addEventListener('change',e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=table.rows.length){readOptions(form);header=n;mapping=layout=undefined;choose();}});
    form.elements.namedItem('layout').addEventListener('change',e=>{readOptions(form);layout=e.target.value;choose();});
    form.addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();try{
@@ -488,6 +506,7 @@
       const formula=cell?.formula?` (формула: ${cell.formula})`:'';
       return `${cell?.address||`Колонка ${column+1}`} · ${value}${formula}`;
      }).filter(Boolean);
+     if(draft.collectionDate)source.unshift(`${draft.collectionDate.label} · ${draft.collectionDate.raw}`);
      if(layout==='dates_in_columns'&&draft.sourceDate){
       const header=draft.headerCell?.address||`Заголовок колонки ${draft.column}`;
       source.unshift(`${header} · ${draft.sourceDate}`);
@@ -579,7 +598,8 @@
        const item={...edit.values,...T.checkedDate(edit.values.date,order),unit:edit.unitChoice?'':edit.values.unit};
        records.push({index,decision:edit.decision,repeated:edit.repeated,unitChoice:edit.unitChoice,record:{...M.checkLab(item),importKey:draft.importKey,
         provenance:{filename:original.name,sha256:original.hash,sheet:table.name,row:draft.row,column:draft.column,
-        sourceCell:draft.importKey,sourceDate:draft.sourceDate,originalUnit:draft.item.unit||'',originalReference:draft.item.referenceText||'',
+        sourceCell:draft.importKey,sourceDate:draft.sourceDate,collectionDate:draft.collectionDate,
+        originalUnit:draft.item.unit||'',originalReference:draft.item.referenceText||'',
         headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
          method:draft.manual?'manual':table.ocr?'ocr-tesseract':original.extension}}});
        problems[index]='';

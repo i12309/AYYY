@@ -30,6 +30,23 @@ def pdf_objects(objects):
  for i,obj in enumerate(objects):offsets.append(len(output));output+=f'{i+1} 0 obj\n'.encode()+obj+b'\nendobj\n'
  at=len(output);output+=f'xref\n0 {len(objects)+1}\n0000000000 65535 f \n'.encode()+b''.join(f'{o:010} 00000 n \n'.encode() for o in offsets)+f'trailer << /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{at}\n%%EOF'.encode()
  return output
+def labelled_pdf():
+ header=['test','result','units','result date']
+ pages=[[
+  ['Report date: 2026-11-23'],['Collection date:','9.11.2026'],header,
+  ['Synthetic collection marker','4','mg'],['Synthetic dated marker','5','mg','2026-11-10'],
+ ],[
+  ['Collected: 2026-11-12'],['Collection date: 2026-11-13'],header,['Synthetic conflict marker','6','mg'],
+ ]]
+ objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>',
+          b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+ for page in pages:
+  commands=[f'BT /F1 12 Tf 1 0 0 1 {x} {750-30*index} Tm ({value}) Tj ET'
+            for index,row in enumerate(page) for x,value in zip([30,260,350,480],row)]
+  stream='\n'.join(commands).encode()
+  objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 3 0 R >> >> /Contents {len(objects)+2} 0 R >>'.encode())
+  objects.append(b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream')
+ return pdf_objects(objects)
 def scan_pdf(jpeg):
  commands=b'q 600 0 0 210 0 0 cm /Scan Do Q'
  def stream(attributes,data):
@@ -116,6 +133,25 @@ with sync_playwright() as pw:
  check('PDF preview renders locally','Страница 1 из 2' in p.locator('.health-document-preview').inner_text())
  check('PDF preview can start lab review',p.locator('[data-action=import-saved-document]').is_visible())
  p.get_by_role('button',name='Вперёд →').click();p.get_by_text('Страница 2 из 2',exact=True).wait_for();check('PDF page navigation',p.locator('.health-pdf-pages canvas').count()==1);p.locator('#health-dialog [data-action=close-dialog]').click()
+ p.locator('.sidebar button[data-tab=lab]').click()
+ upload('synthetic-sample-dates.pdf',labelled_pdf(),'application/pdf')
+ sample_mapping=p.locator('[data-form=document-mapping]');fallback=sample_mapping.locator('[name=fallbackDate]');page=sample_mapping.locator('[name=sheet]')
+ check('PDF finds the result header after metadata and suggests the printed collection date',
+       sample_mapping.locator('[name=header]').input_value()=='3' and fallback.input_value()=='2026-11-09')
+ page.select_option('1')
+ check('contradictory collection dates need manual review',fallback.input_value()=='' and 'требует проверки' in sample_mapping.locator('[data-import-collection-date]').inner_text())
+ fallback.fill('2026-11-14');page.select_option('0')
+ check('manual fallback on another page does not replace the original suggestion',fallback.input_value()=='2026-11-09')
+ page.select_option('1');check('manual fallback is retained on its PDF page',fallback.input_value()=='2026-11-14')
+ page.select_option('0');draft()
+ check('sample date has visible provenance in the result editor',p.locator('[name="0:date"]').input_value()=='2026-11-09' and
+       'Collection date · 9.11.2026' in p.locator('.health-import-row-source').inner_text())
+ p.locator('[data-import-row="1"]').click()
+ check('a printed result date takes precedence over the sample date',p.locator('[name="1:date"]').input_value()=='2026-11-10' and
+       'Collection date' not in p.locator('.health-import-row-source').inner_text())
+ save();p.locator('.group-name').filter(has_text='Synthetic collection marker').click()
+ check('saved result shows the original printed sample date',
+       'Дата забора в бланке' in p.locator('.analyte-origin').inner_text() and '9.11.2026' in p.locator('.analyte-origin').inner_text())
  p.locator('.sidebar button[data-tab=lab]').click()
  matching=b'name;value;date;unit\nSYNTHETIC PDF MARKER;4,00;01.11.2026;mg\n'
  upload('another-format.csv',matching,'text/csv');draft()

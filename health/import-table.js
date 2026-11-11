@@ -26,6 +26,31 @@
       throw Error('Выберите порядок дня и месяца для дат через /.');
     return M.observationDate(parsed,precision(parsed));
   }
+  const collectionLabel=String.raw`(?:дата(?:\s+и\s+время)?\s+(?:взятия|забора)(?:\s+(?:образца|материала|биоматериала|крови))?|collection\s+date|collected)`;
+  const printedDay=String.raw`(?:\d{1,2}\.\d{1,2}\.\d{4}|\d{4}-\d{2}-\d{2})`;
+  const collectionPrefix=String.raw`(?:^|[^\p{L}\p{N}_])(${collectionLabel})`;
+  const bareCollectionLabel=new RegExp(`${collectionPrefix}\\s*:?$`,'iu');
+  const bareCollectionDay=new RegExp(String.raw`^${printedDay}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$`,'u');
+  const collectionRange=new RegExp(String.raw`^(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?\s*(?:[-–—]|по\s+|to\s+)\s*${printedDay}`,'iu');
+  function pdfCollectionDate(rows){
+    const pattern=new RegExp(String.raw`${collectionPrefix}(?:\s*:\s*|\s+)(${printedDay})(?![\d./])`,'giu');
+    const lines=rows.map(row=>row.join(' ').trim()),dates=new Map();
+    let uncertain=false;
+    for(const [index,line] of lines.entries()){
+      const next=lines[index+1];
+      const text=bareCollectionLabel.test(line)&&bareCollectionDay.test(next||'')?line+' '+next:line;
+      for(const match of text.matchAll(pattern)){
+        const [,label,raw]=match;
+        try{
+          const {date}=checkedDate(raw),year=Number(date.slice(0,4));
+          if(year<1850||year>2200||collectionRange.test(text.slice(match.index+match[0].length))){uncertain=true;continue;}
+          if(!dates.has(date))dates.set(date,{date,label,raw});
+        }catch{uncertain=true;}
+      }
+    }
+    if(uncertain||dates.size>1)return {uncertain:true};
+    return dates.values().next().value??null;
+  }
   const referenceRange=/^([+-]?\d+(?:[.,]\d+)?)\s*[-–—]\s*([+-]?\d+(?:[.,]\d+)?)(?:\s+([\s\S]+))?$/;
   const additionalRange=/\d\s*[-–—]\s*[+-]?\d/;
   const referenceExplanations=['оборудование ','при исследовании крови ','рекомендуемые пороговые значения','нижний диагностический порог','(чем ниже тем хуже)'];
@@ -95,7 +120,7 @@
     observations.forEach(add);
     return {add,matches};
   }
-  function draft(table,{hash,sheet,header,mapping,layout,order,fallbackDate},fields,imported){
+  function draft(table,{hash,sheet,header,mapping,layout,order,fallbackDate,collectionDate},fields,imported){
     const headings=table.rows[header-1];
     if(!headings||mapping.name<0)throw Error('Укажите строку заголовка и колонку показателя.');
     if(layout==='rows'&&(mapping.value<0||mapping.value===mapping.name))
@@ -123,7 +148,8 @@
         const autoReference=!String(item.low??'').trim()&&!String(item.high??'').trim();
         if(autoReference)Object.assign(item,referenceInterval(item.referenceText,item.unit));
         const sourceDate=layout==='dates_in_columns'?headings[column]:item.date;
-        item.date=dates.get(column)?.date||date(sourceDate||fallbackDate,order);
+        const labelledDate=layout==='rows'&&!sourceDate?.trim()&&fallbackDate===undefined?collectionDate:undefined;
+        item.date=dates.get(column)?.date||date(sourceDate?.trim()?sourceDate:fallbackDate??labelledDate?.date,order);
         item.datePrecision=precision(item.date);
         let problem='';
         try{
@@ -138,7 +164,7 @@
         if(results.length>=5000)throw Error('Не больше 5000 результатов за импорт.');
         results.push({
           item,problem,autoReference,duplicate:imported.has(sourceCell)||imported.has(previousKey),importKey:sourceCell,previousKey,
-          row,column:column+1,sourceDate,raw,rawCells,
+          row,column:column+1,sourceDate,collectionDate:labelledDate,raw,rawCells,
           headerCell:layout==='dates_in_columns'?table.provenance?.[header-1]?.find(cell=>cell.column===column)||null:null,
         });
       }
@@ -146,5 +172,5 @@
     if(!results.length)throw Error('После заголовка нет результатов.');
     return results;
   }
-  window.HumanImportTable={date,checkedDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
+  window.HumanImportTable={date,checkedDate,pdfCollectionDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
 })();

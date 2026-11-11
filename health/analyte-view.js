@@ -80,6 +80,7 @@
     if(file){
       entries.push(['Источник',[file.filename,file.sheet,file.row?'строка '+file.row:'',file.column?'колонка '+file.column:''].filter(Boolean).join(' · ')]);
       if(file.sourceDate)entries.push(['Дата в источнике',file.sourceDate]);
+      if(typeof file.collectionDate?.raw==='string')entries.push(['Дата забора в бланке',file.collectionDate.raw]);
       if(typeof file.originalUnit==='string'&&(row.unitHistory||file.originalUnit.trim()!==row.unit))
         entries.push(['Единица в источнике',file.originalUnit||'Не указана']);
       if(typeof file.originalReference==='string'&&file.originalReference.trim()&&file.originalReference!==row.referenceText)

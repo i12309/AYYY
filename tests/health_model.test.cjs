@@ -100,6 +100,18 @@ test('impossible dates are rejected rather than silently normalised',()=>{
   assert.equal(m.isoDate('2026-02-28'),'2026-02-28');
 });
 
+test('PDF sample dates require an explicit label and one valid calendar day',()=>{
+  const parse=model().importTable.pdfCollectionDate;
+  assert.deepEqual({...parse([['Дата рождения: 03.04.1980'],['Дата и время забора крови:','9.11.2026 08:45'],['Collection date: 2026-11-09']])},
+    {date:'2026-11-09',label:'Дата и время забора крови',raw:'9.11.2026'});
+  assert.equal(parse([['Дата взятия биоматериала:'],['2026-11-09 08:45']]).date,'2026-11-09');
+  assert.equal(parse([['Report date: 2026-11-12'],['uncollected: 2026-11-09'],['collected2026-11-09']]),null);
+  for(const rows of [[['Collected: 2026-11-12'],['Collection date: 2026-11-09']],
+    [['Дата взятия: 31.02.2026']],[['Collected: 2026-11-12 12:00 — 2026-11-14']]]){
+    assert.deepEqual({...parse(rows)},{uncertain:true});
+  }
+});
+
 test('partial dates and censored values retain their original meaning',()=>{
   const m=model(),base={name:'Synthetic CRP',unit:'мг/л',value:'< 0,1'};
   const year=m.checkLab({...base,date:'2026',datePrecision:'year'});
