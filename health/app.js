@@ -85,7 +85,8 @@
     const download=V.form('download',[
       V.field('Приватный GitHub owner/repo','repo'),
       V.row(V.field('Ветка','branch','main'),
-        V.field('Токен GitHub','token','', 'password'))
+        V.field('Токен GitHub','token','', 'password')),
+      githubTokenGuide(true)
     ],'Загрузить из GitHub');
     outer.append(V.h('div',{class:'health-intro-grid'},
       V.card('Создать новый',[V.h('p',{class:'health-note'},
@@ -101,6 +102,18 @@
     outer.append(V.h('p',{class:'health-security'},
       'Личные данные не сохраняются в публичном репозитории AYYY.'));
     return outer;
+  }
+  function githubTokenGuide(readOnly=false){
+    return V.h('div',{class:'health-help'},
+      V.h('p',{},V.h('strong',{},'Fine-grained token: '),
+        'Repository access → Only select repositories → выберите нужный приватный репозиторий.'),
+      V.h('p',{},readOnly?
+        'Для загрузки достаточно Repository permissions → Contents → Read-only; для синхронизации выберите Read and write.':
+        'Repository permissions → Contents → Read and write — для сохранения и синхронизации.',
+        ' Metadata → Read-only добавлено автоматически; остальные разрешения не нужны.'),
+      V.h('p',{},'Нажмите Generate token и вставьте токен сюда. ',
+        V.h('a',{href:'https://github.com/settings/personal-access-tokens/new',target:'_blank',rel:'noopener noreferrer'},'Создать токен GitHub ↗')),
+      V.h('p',{},'Права на запись действуют на весь репозиторий, а не только на health-data/. Токен хранится только в памяти вкладки.'));
   }
   function VRepo(repo){return repo.owner+'/'+repo.repo+' · '+repo.branch;}
   function status(){
@@ -180,7 +193,8 @@
     const form=V.form('connect',[
       V.field('Приватный репозиторий owner/repo','repo',repo?repo.owner+'/'+repo.repo:''),
       V.row(V.field('Ветка','branch',repo?.branch||'main'),
-        V.field('Токен с Contents: Read/Write','token','','password'))
+        V.field('Токен GitHub (fine-grained)','token','','password')),
+      githubTokenGuide(false)
     ],'Подключить и проверить');
     box.append(V.card('GitHub · персональное хранилище',[
       V.banner('Тот же репозиторий, что у родословной',
