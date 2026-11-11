@@ -243,13 +243,13 @@ body{font-size:14px}
 .health-intro-heading h1{font-size:clamp(28px,2.35vw,34px);font-weight:680;letter-spacing:-1px;line-height:1.15;margin:0}
 .health-intro-heading>p{margin:0;color:var(--muted);font-size:12px;line-height:1.5;max-width:none}
 
-.health-intro>.health-demo-card{display:block;margin:0 0 16px;padding:15px 25px 15px 28px;min-height:0;border-radius:9px;background:#fff}
-.health-intro>.health-demo-card:before{background:var(--green);width:3px;inset:16px auto 16px -1px}
-.health-intro>.health-demo-card .health-demo-card-body{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:24px;width:100%}
-.health-intro>.health-demo-card .health-demo-card-body>div{min-width:0;flex:1}
-.health-intro>.health-demo-card h2{font-size:18px;font-weight:650;margin:3px 0 4px}
-.health-intro>.health-demo-card p{max-width:none;margin:0;color:var(--muted);font-size:12px;line-height:1.45}
-.health-intro>.health-demo-card .health-demo-open{align-self:center;flex:none;white-space:nowrap;text-align:center}
+.health-intro-main>.health-demo-card{display:block;margin:0 0 16px;padding:15px 25px 15px 28px;min-height:0;border-radius:9px;background:#fff}
+.health-intro-main>.health-demo-card:before{background:var(--green);width:3px;inset:16px auto 16px -1px}
+.health-intro-main>.health-demo-card .health-demo-card-body{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:24px;width:100%}
+.health-intro-main>.health-demo-card .health-demo-card-body>div{min-width:0;flex:1}
+.health-intro-main>.health-demo-card h2{font-size:18px;font-weight:650;margin:3px 0 4px}
+.health-intro-main>.health-demo-card p{max-width:none;margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+.health-intro-main>.health-demo-card .health-demo-open{align-self:center;flex:none;white-space:nowrap;text-align:center}
 
 .health-intro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;margin:0 0 17px}
 .health-intro-grid>.health-card{display:flex;flex-direction:column;padding:20px 22px 18px;margin:0;min-width:0;min-height:286px}
@@ -272,9 +272,9 @@ body{font-size:14px}
 .health-restore-card>.health-form>.field{min-width:0}
 .health-restore-card>.health-form input[type=file]{min-width:0;width:100%;padding:6px;cursor:pointer}
 .health-restore-card .health-form-actions{grid-column:2;margin:0;padding:0;border:0}
-.health-intro>.health-security{margin-top:16px}
+.health-intro-main>.health-security{margin-top:16px}
 .health-intro-unlock{max-width:760px}
-.health-intro-unlock>.health-card{padding:24px}
+.health-intro-unlock .health-intro-main>.health-card{padding:24px}
 .health-intro-unlock .health-intro-panel{padding:0}
 .health-intro-unlock .health-intro-panel .health-form{max-width:520px}
 .health-intro-unlock .health-intro-panel .health-security{margin-top:16px}
@@ -292,8 +292,8 @@ body{font-size:14px}
   .health-intro-grid>.health-card{padding:17px;min-height:0}
   .health-restore-card{display:flex;flex-direction:column;align-items:stretch;gap:9px}
   .health-restore-card>.health-form{width:100%}
-  .health-intro>.health-demo-card{padding:15px 18px 15px 21px}
-  .health-intro>.health-demo-card .health-demo-card-body{gap:14px}
+  .health-intro-main>.health-demo-card{padding:15px 18px 15px 21px}
+  .health-intro-main>.health-demo-card .health-demo-card-body{gap:14px}
 }
 @media(max-width:760px){
   .health-intro-top{display:flex;align-items:flex-start;flex-direction:column;gap:15px}
@@ -323,17 +323,17 @@ body{font-size:14px}
   .health-intro-top .ayyy-wordmark{font-size:27px;letter-spacing:-2.3px}
   .health-intro-heading h1{font-size:26px}
   .health-intro-heading>p{font-size:12px}
-  .health-intro>.health-demo-card{padding:16px 17px}
-  .health-intro>.health-demo-card .health-demo-card-body{flex-direction:column;align-items:stretch;gap:13px}
-  .health-intro>.health-demo-card .health-demo-open{align-self:flex-start;white-space:normal}
-  .health-intro>.health-demo-card h2{font-size:17px}
+  .health-intro-main>.health-demo-card{padding:16px 17px}
+  .health-intro-main>.health-demo-card .health-demo-card-body{flex-direction:column;align-items:stretch;gap:13px}
+  .health-intro-main>.health-demo-card .health-demo-open{align-self:flex-start;white-space:normal}
+  .health-intro-main>.health-demo-card h2{font-size:17px}
   .health-intro-grid{grid-template-columns:1fr;gap:12px}
   .health-intro-grid>.health-card{padding:17px 16px}
   .health-intro-grid .health-form{margin-top:0}
   .health-restore-card{padding:17px 16px}
   .health-restore-card>.health-form{grid-template-columns:minmax(0,1fr);gap:9px}
   .health-restore-card .health-form-actions{grid-column:1;border-top:1px solid var(--border);padding-top:11px;justify-content:flex-end}
-  .health-intro-unlock>.health-card{padding:18px}
+  .health-intro-unlock .health-intro-main>.health-card{padding:18px}
 }
 @media(max-width:380px){
   .health-intro-top .brand-copy>span{font-size:17px}
@@ -457,4 +457,62 @@ body{font-size:14px}
  .profile-page .health-profile-actions>.button{white-space:normal;text-align:center;flex:1 1 auto}
  .profile-page .health-profile-github-form input{font-size:16px}
  .health-intro-grid-single>.health-card{padding:17px 16px}
+}
+
+
+/* Two-column onboarding: real application on the left, concise marketing/security on the right. */
+.health-intro{max-width:1520px;padding:0 clamp(18px,3vw,48px)}
+.health-intro-unlock{max-width:1390px}
+.health-intro-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(265px,300px);gap:20px;align-items:start}
+.health-intro-main{min-width:0}
+.health-intro-main>.health-demo-card{width:100%}
+.health-intro-main>.health-profile-picker{min-width:0}
+.health-intro-unlock .health-intro-main>.health-card{padding:26px 28px}
+.health-intro-unlock .health-intro-main .health-intro-panel{padding:0}
+.health-unlock-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px}
+.health-unlock-actions>.button{flex:0 0 auto;min-height:36px}
+.health-intro-unlock .health-intro-panel .health-security{margin-top:18px}
+.health-intro .health-form .health-remember{display:flex;align-items:flex-start;gap:9px;min-width:0;padding:9px 0 2px;cursor:pointer}
+.health-intro .health-form .health-remember input{width:17px;height:17px;min-height:17px;flex:0 0 17px;margin:2px 0 0;padding:0;accent-color:var(--blue);cursor:pointer}
+.health-intro .health-form .health-remember>span{display:grid;gap:3px;min-width:0}
+.health-intro .health-form .health-remember strong{font-size:12px;font-weight:620;color:var(--text)}
+.health-intro .health-form .health-remember small{color:var(--muted);font-size:10px;line-height:1.45;font-weight:400}
+.health-intro .health-form .health-remember:focus-within strong{color:var(--blue-ink)}
+.health-intro-grid>.health-card{min-height:0}
+.health-intro-grid .health-form{margin-top:auto}
+.health-intro-grid.health-intro-grid-single{max-width:none}
+.health-marketing{display:grid;gap:14px;min-width:0}
+.health-marketing-card{background:#fff;border:1px solid var(--border);border-radius:9px;padding:19px 19px 18px;min-width:0}
+.health-marketing-kicker{font-size:9px;letter-spacing:1.2px;font-weight:700;color:var(--green-ink);margin:0 0 10px}
+.health-marketing-card h2{font-size:18px;font-weight:690;letter-spacing:-.35px;line-height:1.3;margin:0 0 10px}
+.health-marketing-lead{color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 14px}
+.health-marketing-features{display:grid;gap:14px;padding-top:13px;border-top:1px solid var(--border)}
+.health-marketing-feature{display:flex;align-items:flex-start;gap:9px}
+.health-marketing-feature>svg{color:var(--blue);flex:none;margin-top:2px}
+.health-marketing-feature>div{min-width:0}
+.health-marketing-feature strong{font-size:12px;font-weight:650}
+.health-marketing-feature p{font-size:11px;line-height:1.55;color:var(--muted);margin:3px 0 0}
+.health-marketing-security{border-color:#cfe1d6;background:#f8fcfa}
+.health-marketing-lock{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.health-marketing-lock svg{color:var(--green-ink);flex-shrink:0;margin-top:1px}
+.health-marketing-lock h2{font-size:15px;margin:0}
+.health-marketing-security>p{font-size:11px;line-height:1.6;color:#405e50;margin:0 0 10px}
+.health-marketing-security>.health-marketing-disclaimer{color:#60776b;font-size:10px;margin:0}
+@media(max-width:1250px){
+ .health-intro{max-width:1060px}
+ .health-intro-unlock{max-width:980px}
+ .health-intro-layout{grid-template-columns:minmax(0,1fr)}
+ .health-marketing{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+ .health-marketing-features{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+}
+@media(max-width:760px){
+ .health-intro{padding:0 16px}
+ .health-marketing{grid-template-columns:minmax(0,1fr)}
+ .health-marketing-card{padding:17px}
+ .health-marketing-features{grid-template-columns:minmax(0,1fr)}
+ .health-intro-unlock .health-intro-main>.health-card{padding:20px}
+}
+@media(max-width:390px){
+ .health-unlock-actions>.button{flex:1 1 auto}
+ .health-marketing-card h2{font-size:16px}
 }
