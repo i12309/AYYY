@@ -4,24 +4,33 @@
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
- async function open(files,{V,M,dialog,commit,getDoc,isCurrent=()=>true,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
-  if(!files.length&&!saved?.entries.length)return;
-  if(files.length>100||files.reduce((size,file)=>size+file.size,0)>128*1024*1024)
-   throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
+ function open(files,{V,M,body,signal,close,commit,getDoc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
+  const newEntries=(list,documentId)=>list.map(file=>({id:M.id(),name:file.name,relativePath:file.webkitRelativePath||undefined,file,sourceDocumentId:documentId}));
   const entries=saved?saved.entries.map(({id,name,relativePath,bytes,parsed,editor,sourceDocumentId})=>parsed
    ?{id,name,relativePath,sourceDocumentId,original:{...parsed,name,bytes},editor}:{id,name,relativePath,sourceDocumentId,file:new File([bytes],name)}):
-   files.map(file=>({id:M.id(),name:file.name,relativePath:file.webkitRelativePath||undefined,file,sourceDocumentId}));
-  const single=entries.length===1,controller=new AbortController();
+   newEntries(files,sourceDocumentId);
+  validateSize(entries);
+  let single=entries.length===1,currentEntry=null,loading=false,busy=false;
   let checkpoint=saved?.checkpoint??null,persisting=false,draftNotice=saved?'Черновик открыт с этого устройства.':'';
-  const body=document.getElementById('health-dialog-body');dialog.classList.add('health-import-dialog');
-  const active=()=>dialog.open&&!controller.signal.aborted&&isCurrent()&&getDoc()?.id===identity;
-  window.addEventListener('pagehide',()=>controller.abort(),{once:true,signal:controller.signal});
-  dialog.addEventListener('close',()=>{controller.abort();dialog.classList.remove('health-import-dialog');entries.length=0;},{once:true});
+  const active=()=>!signal.aborted&&isCurrent()&&getDoc()?.id===identity;
+  signal.addEventListener('abort',()=>{entries.length=0;body.replaceChildren();},{once:true});
+  function validateSize(batch){
+   if(batch.length>100||batch.reduce((size,entry)=>size+(entry.original?.bytes.byteLength??entry.file?.size??0),0)>128*1024*1024)
+    throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
+  }
   function frame(title){
-   const content=V.h('div',{class:'health-modal-content'},skippedFiles?V.h('p',{class:'health-note'},`Пропущено файлов неподдерживаемых форматов: ${skippedFiles}`):null);
-   body.replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},title),V.button('×','close-dialog',{'aria-label':'Закрыть импорт'})),content);
+   const heading=V.h('h2',{tabindex:-1},title);
+   const content=V.h('div',{class:'health-import-panel'},V.h('p',{class:'health-note','data-import-skipped':true,hidden:true}));
+   body.replaceChildren(heading,content);
+   updateSkipped();
+   if(body.isConnected)heading.focus({preventScroll:true});
    return content;
+  }
+  function updateSkipped(){
+   const note=body.querySelector('[data-import-skipped]');
+   note.hidden=!skippedFiles;
+   note.textContent=skippedFiles?`Пропущено файлов неподдерживаемых форматов: ${skippedFiles}`:'';
   }
   function action(label,key,run,attrs={}){
    const button=V.button(label,key,attrs);
@@ -74,6 +83,7 @@
    content.append(V.h('div',{class:'health-import-draft-actions'},save,discard,status));
   }
   function queue(){
+   currentEntry=null;
    const content=frame('Очередь импорта');
    draftActions(content);
    content.append(V.h('p',{class:'health-note'},persistence?'Проверяйте и сохраняйте результаты по каждому файлу. После закрытия окна доступна сохранённая версия черновика.':'Проверяйте и сохраняйте результаты по каждому файлу. В демо правки черновика доступны в открытом окне.'),
@@ -91,10 +101,11 @@
     })));
   }
   async function load(entry){
-   if(entry.view){body.replaceChildren(...entry.view);entry.view=null;entry.refreshReview?.();return;}
+   currentEntry=entry;
+   if(entry.view){body.replaceChildren(...entry.view);entry.view=null;updateSkipped();entry.refreshReview?.();body.querySelector('h2')?.focus({preventScroll:true});return;}
    if(entry.original){
     try{edit(entry,entry.original);}catch(error){
-     if(single){dialog.close();throw error;}
+     if(single){close();throw error;}
      entry.error=error.message;queue();
     }
     return;
@@ -102,7 +113,8 @@
    const content=frame('Чтение файла'),status=V.h('p',{class:'health-note',role:'status'},'Чтение '+(entry.relativePath||entry.name));
    content.append(status);
    const reader=new AbortController(),abort=()=>reader.abort();
-   controller.signal.addEventListener('abort',abort,{once:true});
+   loading=true;
+   signal.addEventListener('abort',abort,{once:true});
    if(!single)content.append(action('Отменить чтение','import-cancel-read',abort));
    try{
     const original=await HumanDocuments.read(entry.file,{signal:reader.signal,onProgress:message=>{status.textContent=message;}});
@@ -114,16 +126,16 @@
     entry.file=null;entry.error=null;
    }catch(error){
     if(!active())return;
-    if(single){dialog.close();throw error;}
+    if(single){close();throw error;}
     entry.error=reader.signal.aborted?null:error.message;
     queue();
-   }finally{controller.signal.removeEventListener('abort',abort);}
+   }finally{loading=false;signal.removeEventListener('abort',abort);}
   }
   function edit(entry,original){
   const restored=entry.editor??{};
   let {sheet=0,header=1,mapping,layout,order='',fallbackDate=''}=restored;
   let manualMode=restored.manualMode===true,manualIds=restored.manualIds??[];
-  let drafts=[],busy=false,profileConfirmed=false;
+  let drafts=[],profileConfirmed=false;
   entry.editor=null;
   const editorState=()=>({sheet,header,mapping:{...mapping},layout,order,fallbackDate,manualMode,manualIds:[...manualIds]});
   function sourceDocument(doc){
@@ -158,7 +170,6 @@
     started=true;
     panel.append(V.h('p',{class:'health-note',role:'status'},'Открываю оригинал…'));
     try{
-     const signal=controller.signal;
      const canvas=pdf?(await HumanDocuments.renderPDF(original.bytes,page,{signal})).canvas:
       await HumanOCR.imageCanvas(original.bytes,original.extension,{signal,preview:true});
      if(active()){
@@ -171,10 +182,10 @@
    return details;
   }
   function navigation(content){
-   if(!single)content.append(action('К очереди','import-queue',()=>{
+   content.append(action('К очереди','import-queue',()=>{
     if(busy)return;
     entry.view=[...body.childNodes];queue();
-   }));
+   },{hidden:single}));
   }
   function readOptions(form){
    const input=new FormData(form);
@@ -198,7 +209,7 @@
     V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · файл остаётся в этом браузере. Проверьте лист и назначение колонок.'),
     V.row(V.field('Лист','sheet',String(sheet),'select',original.tables.map((t,i)=>[String(i),t.name])),V.field('Строка заголовка в предпросмотре','header',String(header),'number')),
     V.row(V.field('Расположение дат','layout',layout,'select',[['rows','Даты в строках'],['dates_in_columns','Даты в заголовках колонок']]),
-     V.field('Порядок дат через /','dateOrder',order,'select',[['','Выберите, если есть такие даты'],['dmy','День / месяц / год'],['mdy','Месяц / день / год']])),
+     V.field('Порядок дат через /','dateOrder',order,'select',[['','Выберите'],['dmy','День / месяц / год'],['mdy','Месяц / день / год']])),
     V.h('div',{class:'health-form-row'},fields.filter(([key])=>layout==='rows'||!['value','date'].includes(key)).map(([key,label])=>V.field(label,key,String(mapping[key]),'select',[['-1','Не указана'],...Array.from({length:width},(_,i)=>[String(i),(i+1)+' · '+(labels[i]||'Без заголовка')])]))),
     layout==='rows'?V.field('Дата для строк без даты (необязательно)','fallbackDate',fallbackDate):null,
     V.h('p',{class:'health-note'},'Поддерживаются даты ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ГГГГ-ММ и ГГГГ. Из Excel читаются сохранённые результаты формул.'),
@@ -218,7 +229,7 @@
      for(const control of form.elements)control.disabled=true;
      recognize.disabled=true;scanStatus.hidden=false;scanStatus.textContent='Подготовка страницы';
      try{
-      const scanned=await HumanDocuments.recognizePDFPage(original.bytes,sheet+1,{signal:controller.signal,onProgress:text=>{scanStatus.textContent=text;}});
+    const scanned=await HumanDocuments.recognizePDFPage(original.bytes,sheet+1,{signal,onProgress:text=>{scanStatus.textContent=text;}});
       if(!active())return;
       if(!scanned.rows.length)throw Error('На странице не удалось распознать текст.');
       original.tables[sheet]=scanned;header=1;mapping=layout=undefined;choose();
@@ -438,7 +449,7 @@
       result.textContent=counts.filter(Boolean).join(' · ');result.hidden=false;
       const draftStatus=content.querySelector('[data-import-draft-status]');
       if(draftStatus)draftStatus.textContent=draftNotice;
-     }else if(single)dialog.close();
+     }else if(single)close();
      else{
       entry.done=entry.savedCount;entry.original=entry.refreshReview=entry.capture=null;entry.error=null;queue();
      }
@@ -451,9 +462,21 @@
    drafts=createDrafts();review(restored.review);
   }else choose();
   }
-  if(!dialog.open)dialog.showModal();
-  if(single)await load(entries[0]);else queue();
-  if(sourceDocumentId&&active())body.querySelector('.health-modal-head button')?.focus();
+  const ready=single?load(entries[0]):Promise.resolve(queue());
+  function add(list,{sourceDocumentId,skippedFiles:skipped=0}={}){
+   if(loading||persisting||busy)throw Error('Дождитесь окончания обработки текущего файла.');
+   const added=newEntries(list,sourceDocumentId);
+   validateSize([...entries,...added]);
+   if(currentEntry){
+    body.querySelector('[data-action=import-queue]')?.removeAttribute('hidden');
+    currentEntry.view=[...body.childNodes];
+   }
+   entries.push(...added);
+   skippedFiles+=skipped;
+   single=false;
+   queue();
+  }
+  return {ready,add};
  }
  window.HumanImport={open};
 })();

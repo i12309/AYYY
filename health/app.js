@@ -10,6 +10,8 @@
   const notice=document.getElementById('health-notice');
   const state={local:null,doc:null,key:null,profiles:[],picker:false,tab:'overview',
     globalSearch:'',search:'',groupKey:'',filters:{},syncBusy:false,conflict:false,demo:false};
+  let importWorkspace=null;
+  const currentTab=()=>state.tab==='import'?'lab':state.tab;
   const kinds={lab:'observations',episode:'episodes',vital:'vitals',medical:'medical',medication:'medications',intake:'intakes',reminder:'reminders',
     genetic:'findings',diary:'diary',meal:'diary','activity-day':'diary',document:'documents'};
   const tabs=[['overview','Обзор'],['lab','Анализы'],['vital','Показатели'],
@@ -33,7 +35,7 @@
   navMeta.timeline=['History','yellow','Что и когда появилось в вашем журнале.'];navMeta.profile=['UserRound','neutral','Профиль и ваши данные.'];
   navMeta.genetics=['Dna','green','Ваши записи из генетических отчётов.'];
   navMeta.care=['Bell','yellow','Фактические события и ваши расписания.'];
-  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(state.tab===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':state.tab===id?'page':null},V.icon(navMeta[id][0]),label)));}
+  function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(currentTab()===id?' active':'')+(id==='settings'?' nav-settings':''),'data-tab':id,'aria-current':currentTab()===id?'page':null},V.icon(navMeta[id][0]),label)));}
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
     if(state.local&&!state.picker){
@@ -118,13 +120,13 @@
     if(!unlocked){document.body.classList.remove('health-menu-open');header.replaceChildren();return;}
     const profile=state.doc.profile.name||'Мой профиль';
     sidebar.replaceChildren(V.brand('human'),V.h('button',{class:'workspace profile-entry','data-tab':'profile','aria-current':state.tab==='profile'?'page':null,'aria-label':'Мой профиль'},V.h('span',{class:'avatar'},profile.slice(0,1).toUpperCase()),V.h('div',{},V.h('strong',{},profile),V.h('small',{},'Личное пространство'))),V.h('p',{class:'nav-caption'},'МОЙ ЖУРНАЛ'),nav(),V.h('div',{class:'sidebar-footer'},V.icon('ShieldCheck',16),V.h('span',{},state.demo?'Демонстрационный журнал':'Данные на вашем устройстве'),V.h('button',{'data-action':state.demo?'exit-demo':'lock','aria-label':state.demo?'Выйти из демо':'Закрыть доступ'},V.icon('LogOut',17))));
-    const label=tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
+    const label=state.tab==='import'?'Импорт анализов':tabs.find(([id])=>id===state.tab)?.[1]||'Обзор';
     const search=V.h('div',{class:'global-search'},V.icon('Search',15),V.h('input',{type:'search',id:'health-global-search','aria-label':'Поиск по всем данным',placeholder:'Найти в журнале',value:state.globalSearch||'','data-search':'global'}),V.h('kbd',{},'/'));
     const top=V.h('div',{class:'health-topbar-content'},V.brand('ayyy'),V.h('div',{class:'breadcrumb'},V.h('span',{},'Личное пространство'),V.icon('ChevronRight',13),V.h('strong',{},label)),search,V.h('span',{class:'health-status',role:'status','aria-label':status(),'data-state':state.conflict?'problem':'ok',title:status()},V.icon('ShieldCheck',15)),V.button('Добавить','quick-add',{class:'primary desktop-add'}));
     const dueCount=window.HumanCare.records(state.doc,'reminder').filter(r=>window.HumanCare.due(r)).length;
     top.insertBefore(V.h('button',{type:'button',id:'health-reminder-bell',class:'button reminder-bell','data-action':'care-center','aria-label':'Центр напоминаний: '+dueCount,title:'Открыть напоминания'},V.icon('Bell',18),dueCount?V.h('span',{},dueCount>99?'99+':dueCount):null),top.lastChild);
     header.replaceChildren(top);
-    bottom.replaceChildren(...[['overview','Обзор','LayoutGrid'],['lab','Анализы','FlaskConical'],['add','Добавить','Plus'],['vital','Показатели','HeartPulse'],['more','Ещё','Menu']].map(([id,title,glyph])=>V.h('button',{type:'button',...(id==='add'?{'data-action':'quick-add',class:'mobile-add'}:id==='more'?{'data-action':'toggle-menu','aria-expanded':String(document.body.classList.contains('health-menu-open')),'aria-controls':'health-sidebar'}:{'data-tab':id,'aria-current':state.tab===id?'page':null})},V.icon(glyph,20),id==='add'?V.h('span',{class:'sr-only'},title):title)));
+    bottom.replaceChildren(...[['overview','Обзор','LayoutGrid'],['lab','Анализы','FlaskConical'],['add','Добавить','Plus'],['vital','Показатели','HeartPulse'],['more','Ещё','Menu']].map(([id,title,glyph])=>V.h('button',{type:'button',...(id==='add'?{'data-action':'quick-add',class:'mobile-add'}:id==='more'?{'data-action':'toggle-menu','aria-expanded':String(document.body.classList.contains('health-menu-open')),'aria-controls':'health-sidebar'}:{'data-tab':id,'aria-current':currentTab()===id?'page':null})},V.icon(glyph,20),id==='add'?V.h('span',{class:'sr-only'},title):title)));
     footer.replaceChildren(V.h('span',{},V.icon('Activity',13),'HUMAN · ваш журнал здоровья'),V.h('a',{href:'../#home',target:'_top'},'AYYY · Все сервисы'));
   }
   function searchResults(){
@@ -198,17 +200,28 @@
     return box;
   }
   let renderedVaultId=null;
+  function demoBanner(){
+    return V.h('div',{class:'health-demo-strip',role:'note'},
+      V.h('span',{class:'health-demo-tag'},'ДЕМО'),
+      V.h('span',{},'Все сведения вымышлены · изменения не сохраняются'),
+      V.button('Сбросить пример','reset-demo',{class:'small'}));
+  }
   function render(){
     if(!state.doc||state.conflict?.review&&state.conflict.review.snapshot!==state.local)state.conflict=false;
     const vaultId=state.doc?.id||null;if(vaultId!==renderedVaultId){sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;if(dialog.open)dialog.close();document.getElementById('health-dialog-body')?.replaceChildren();state.globalSearch='';state.search='';state.groupKey='';state.observationId='';state.trendKey='';state.labFrom=state.labTo='';state.labOffset=0;state.documentQuery='';state.documentOffset=0;state.filters={};state.medicalId='';state.medicalSearch='';state.medicalStatus='';state.episodeId='';state.vitalId='';state.episodeFilter='all';state.vitalUnit='';state.vitalOffset=0;state.careView='intakes';state.careMedication='';state.careFilter='all';state.careOffset=0;state.diaryDays={};state.diaryQueries={};state.diaryOffsets={};state.diaryAll=false;state.diaryEditor=null;state.diaryMetric='steps';state.geneticQuery='';state.geneticCategory='';state.geneticOffset=0;state.reviewPreview=null;state.reviewPending=null;state.reviewError='';state.reviewBusy=false;state.reviewSelected='';state.reviewSection='assessment';state.reviewOffset=0;state.reviewContextOffset=0;state.reviewTask='';state.timelineKind='';state.timelineQuery='';state.timelineOffset=0;state.abnormalOnly=false;state.favoritesOnly=false;renderedVaultId=vaultId;}
+    if(importWorkspace&&!importWorkspace.active())stopImport();
     renderHeader();careDelivery();
     if(!state.doc){root.replaceChildren(locked());return;}
+    if(state.tab==='import'&&importWorkspace){
+      if(importWorkspace.view.parentNode!==root)root.replaceChildren(importWorkspace.view);
+      return;
+    }
     const reviewDetails=new Map(Array.from(root.querySelectorAll('.recommendations-page details[data-review-details]'),e=>[e.dataset.reviewDetails,e.open])),reviewTask=root.querySelector('[name=reviewTask]'),reviewFocus=reviewTask&&document.activeElement===reviewTask,reviewSelection=reviewFocus?[reviewTask.selectionStart,reviewTask.selectionEnd]:null;
     const previousEditor=root.querySelector('.diary-editor');
     let view;
     if(state.globalSearch.length>=2)view=searchResults();
     else if(state.tab==='overview')view=V.stats(state);
-    else if(state.tab==='lab')view=V.labSection(state);
+    else if(state.tab==='lab')view=V.labSection(state,!!importWorkspace);
     else if(state.tab==='vital')view=window.HumanHealthView.page(state);
     else if(state.tab==='medical')view=window.HumanMedicalView.page(state);
     else if(state.tab==='genetics')view=window.HumanGeneticsView.page(state);
@@ -222,13 +235,8 @@
     const nextEditor=view.querySelector('.diary-editor');if(nextEditor){if(previousEditor?.dataset.editorKey===nextEditor.dataset.editorKey)nextEditor.replaceWith(previousEditor);else{const form=nextEditor.querySelector('form'),id=form.dataset.id;if(id){const existing=recordsFor(state.doc,form.dataset.kind).find(r=>r.id===id);if(existing)formSnapshots.set(form,JSON.stringify(existing));}}}
     view.querySelectorAll('.health-heading').forEach((heading,index)=>{if(!index){heading.querySelector('.eyebrow')?.replaceChildren(document.createTextNode('ЛИЧНЫЙ ЖУРНАЛ '),V.h('span',{},'/'),document.createTextNode(String(tabs.findIndex(([id])=>id===state.tab)+1).padStart(2,'0')));return;}heading.className='health-section-heading';heading.querySelector('.eyebrow')?.remove();const title=heading.querySelector('h1');if(title)title.replaceWith(V.h('h2',{},title.textContent));});
     const contentClass=state.tab==='lab'&&state.globalSearch.length<2?'content content-labs':'content';
-    if(state.demo){
-      const label=V.h('div',{class:'health-demo-strip',role:'note'},
-        V.h('span',{class:'health-demo-tag'},'ДЕМО'),
-        V.h('span',{},'Все сведения вымышлены · изменения не сохраняются'),
-        V.button('Сбросить пример','reset-demo',{class:'small'}));
-      const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:contentClass},label,view));
-    }else {const heading=view.querySelector('.health-heading');heading?.remove();root.replaceChildren(heading,V.h('div',{class:contentClass},view));}
+    const heading=view.querySelector('.health-heading');heading?.remove();
+    root.replaceChildren(heading,V.h('div',{class:contentClass},state.demo?demoBanner():null,view));
     if(state.tab==='recommendations'){for(const detail of root.querySelectorAll('details[data-review-details]'))if(reviewDetails.has(detail.dataset.reviewDetails))detail.open=reviewDetails.get(detail.dataset.reviewDetails);if(reviewFocus){const next=root.querySelector('[name=reviewTask]');next?.focus();next?.setSelectionRange(...reviewSelection);}refreshReviewPreview();}
   }
   const formSnapshots=new WeakMap();
@@ -407,6 +415,7 @@
       f('Название','title',''),f('Дата','date',now,'date')
     ];
     else if(kind==='profile')fields=window.HumanJournalView.profileFields(x);
+    if(kind==='lab'&&!existing)fields.unshift(V.h('div',{},V.button('Импортировать из файлов','csv')));
     const mode=kind==='profile'?'profile':'record';
     const form=V.form(mode,[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),...fields],'Сохранить');
     form.dataset.kind=kind;
@@ -993,8 +1002,32 @@
     finally{if(submit?.isConnected)submit.disabled=false;}
   }
   let importGeneration=0;
+  function stopImport(){
+    if(!importWorkspace)return;
+    const {controller,returnTab}=importWorkspace;
+    importWorkspace=null;
+    controller.abort();
+    if(state.tab==='import')state.tab=returnTab;
+  }
+  function finishImport(workspace){
+    if(!workspace||importWorkspace!==workspace)return;
+    const visible=state.tab==='import';
+    stopImport();render();
+    if(visible){root.focus({preventScroll:true});window.scrollTo(0,0);}
+  }
+  function showImport(){
+    if(!importWorkspace?.active())return;
+    if(dialog.open)dialog.close();
+    state.tab='import';render();
+    importWorkspace.view.querySelector('h1').focus({preventScroll:true});window.scrollTo(0,0);
+  }
   async function importDocuments(files,{restore=false,sourceDocumentId,skippedFiles=0}={}){
     if((!files.length&&!restore)||!state.doc)return;
+    if(importWorkspace){
+      if(!restore)importWorkspace.add(files,{sourceDocumentId,skippedFiles});
+      showImport();
+      return;
+    }
     const generation=++importGeneration,tab=state.tab,session=sessionFence();
     const isCurrent=()=>session()&&generation===importGeneration&&state.tab===tab;
     const id=state.doc.id,key=state.key,salt=state.local?.envelope?.salt;
@@ -1028,7 +1061,23 @@
         return;
       }
     }
-    await HumanImport.open(files,{V,M,dialog,commit:mutate,getDoc:()=>state.doc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles,notify:toast});
+    if(!isCurrent())return;
+    const controller=new AbortController(),body=V.h('section',{class:'card health-import-workspace','aria-label':'Проверка файлов анализов'});
+    const heading=V.title('Импорт анализов','',[V.button('Закрыть импорт','close-import')]);
+    heading.classList.add('page-heading-labs');
+    heading.querySelector('h1').tabIndex=-1;
+    const toolbar=V.h('div',{class:'card health-import-tools'},V.h('div',{},V.h('h2',{},'Файлы анализов'),V.h('p',{class:'health-note'},'PDF, XLSX, CSV, PNG и JPEG')),
+      V.h('div',{class:'actions'},V.button('Выбрать файлы','csv',{class:'primary'}),V.importFolder('Выбрать папку'),V.button('Снять фото','capture-import')));
+    const view=V.h('div',{id:'health-import-page'},heading,V.h('div',{class:'content content-labs'},state.demo?demoBanner():null,toolbar,body));
+    const workspace={view,controller,returnTab:tab,active:()=>session()&&!controller.signal.aborted};
+    importWorkspace=workspace;
+    try{
+      const flow=HumanImport.open(files,{V,M,body,signal:controller.signal,close:()=>finishImport(workspace),commit:mutate,
+        getDoc:()=>state.doc,isCurrent:()=>importWorkspace===workspace&&workspace.active(),persistence,saved,sourceDocumentId,skippedFiles,notify:toast});
+      workspace.add=flow.add;
+      showImport();
+      await flow.ready;
+    }catch(e){finishImport(workspace);throw e;}
   }
   async function deleteImportDraft(revision){
     if(!state.key||!state.local||!confirm('Удалить сохранённый черновик и его исходники с этого устройства?'))return;
@@ -1188,6 +1237,8 @@
       else if(action==='file-preview')await previewFile(el.dataset.id,el.dataset.returnFinding||'');
       else if(action==='close-dialog')dialog.close();
       else if(action==='open-import-draft')await importDocuments([],{restore:true});
+      else if(action==='continue-import')showImport();
+      else if(action==='close-import')finishImport(importWorkspace);
       else if(action==='delete-import-draft')await deleteImportDraft(el.dataset.revision);
       else if(action==='csv'||action==='capture-import'||action==='import-folder'){
         const active=sessionFence(),tab=state.tab,camera=action==='capture-import',folder=action==='import-folder';
@@ -1227,7 +1278,7 @@
     }else if(event.target?.dataset?.search==='diary-native'){const value=event.target.value,position=event.target.selectionStart||0;state.diaryQueries??={};state.diaryQueries[state.tab]=value;state.diaryOffsets??={};state.diaryOffsets[state.tab]=0;render();const next=root.querySelector('[data-search=diary-native]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='medical'){const value=event.target.value,position=event.target.selectionStart||0;state.medicalSearch=value;render();const next=root.querySelector('[data-search=medical]');next?.focus();try{next?.setSelectionRange(position,position);}catch{}
     }else if(event.target?.dataset?.search==='documents'){const value=event.target.value,position=event.target.selectionStart||0;state.documentQuery=value;state.documentOffset=0;render();const next=root.querySelector('[data-search=documents]');next?.focus();next?.setSelectionRange(position,position);
-    }else if(event.target?.dataset?.search==='global'){const pos=event.target.selectionStart||0;state.globalSearch=event.target.value;render();const next=document.getElementById('health-global-search');next.focus();try{next.setSelectionRange(pos,pos);}catch{}
+    }else if(event.target?.dataset?.search==='global'){const pos=event.target.selectionStart||0;state.globalSearch=event.target.value;if(state.tab==='import')state.tab='lab';render();const next=document.getElementById('health-global-search');next.focus();try{next.setSelectionRange(pos,pos);}catch{}
     }else if(event.target?.dataset?.search==='labs'){
       const position=event.target.selectionStart||0;
       state.search=event.target.value;state.groupKey='';state.labOffset=0;render();
@@ -1247,7 +1298,7 @@
   }
   let diaryResize;window.addEventListener?.('resize',()=>{if(state.doc&&['activity','vital'].includes(state.tab)){clearTimeout(diaryResize);diaryResize=setTimeout(render,120);}});
   window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});
-  window.addEventListener?.('pagehide',()=>{activeNotification?.close();if(!state.demo)lockJournal();});
+  window.addEventListener?.('pagehide',()=>{activeNotification?.close();stopImport();if(!state.demo)lockJournal();else render();});
   window.addEventListener?.('pageshow',event=>{if(event.persisted&&!state.demo)void loadLocal();});
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;

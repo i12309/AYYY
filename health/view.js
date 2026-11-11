@@ -34,6 +34,9 @@
     return h('button',{type:'button',...attrs,class:'button health-btn '+(attrs.class||''),
       'data-action':action},glyph?icon(glyph,15):null,text);
   }
+  function importFolder(label,attrs){
+    return typeof HTMLInputElement!=='undefined'&&'webkitdirectory' in HTMLInputElement.prototype?button(label,'import-folder',attrs):null;
+  }
   function card(title,items=[]){
     const box=h('section',{class:'health-card card'});
     if(title)box.append(h('div',{class:'section-heading'},h('h2',{},title)));
@@ -220,7 +223,7 @@
     section.append(items);
     return section;
   }
-  function labSection(state){
+  function labSection(state,hasImport=false){
     const doc=state.doc,rules=doc.analyteAliases,AV=window.HumanAnalyteView;
     const from=state.labFrom||'',to=state.labTo||'',dateFilter=!!(from||to),invalidPeriod=from&&to&&from>to;
     const dayInZone=new Intl.DateTimeFormat('sv-SE',{timeZone:window.HumanHealth.zoneName(doc.profile.timezone),year:'numeric',month:'2-digit',day:'2-digit'});
@@ -241,9 +244,9 @@
       button('Результаты','lab-results',{'aria-pressed':String(!state.groupKey)}),button('Импорт файлов','csv'),
       button('Добавить вручную','new-lab')));
     if(!state.groupKey)section.append(h('div',{class:'health-import-resume'},
-      typeof HTMLInputElement!=='undefined'&&'webkitdirectory' in HTMLInputElement.prototype?button('Импорт папки','import-folder',{class:'small'}):null,
+      importFolder('Импорт папки',{class:'small'}),
       button('Снять фото бланка','capture-import',{class:'small'}),
-      state.demo?null:button('Открыть черновик импорта','open-import-draft',{class:'small'})));
+      hasImport?button('Продолжить импорт','continue-import',{class:'small'}):state.demo?null:button('Открыть черновик импорта','open-import-draft',{class:'small'})));
     if(!state.groupKey){
       const box=card(null);box.classList.add('grouped-labs');
       box.append(h('div',{class:'filters'},button('☆ Избранное','filter-favorites',{class:'favorites-filter','aria-pressed':String(!!state.favoritesOnly)}),
@@ -373,7 +376,7 @@
     }
     return h('div',{class:'health-chart-wrap'},svg,refs.length?h('p',{class:'health-chart-note'},h('span',{class:'health-reference-key'}),group.preferences?.useReference?'Общий референс показателя':'Референсы исходных записей'):null);
   }
-  window.HumanView={h,icon,brand,button,card,title,empty,banner,status,date,form,field,row,table,
+  window.HumanView={h,icon,brand,button,importFolder,card,title,empty,banner,status,date,form,field,row,table,
     buttons,stats,listSection,labSection,category:{
       allergy:'Аллергия',condition:'Состояние',vaccine:'Прививка',surgery:'Операция',other:'Другое'}};
 })();

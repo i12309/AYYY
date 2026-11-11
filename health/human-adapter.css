@@ -30,11 +30,17 @@
 .analyte-chart circle:focus{outline:none;stroke-width:4}
 .health-document-preview img{display:block;max-width:100%;max-height:65vh;object-fit:contain;margin:auto}
 .health-pdf-pages canvas{display:block;max-width:100%;height:auto;margin:12px auto;border:1px solid var(--border)}
-.health-dialog.health-import-dialog{width:min(1200px,calc(100vw - 24px))}
-.health-import-dialog .health-form{min-width:0}
-.health-import-dialog .health-form>*{min-width:0}
-.health-import-dialog .health-table-wrap{width:100%;max-width:100%;max-height:50vh;overflow:auto}
-.health-import-dialog .health-form-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.health-import-tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px;padding:10px 14px}
+.health-import-tools h2,.health-import-tools p{margin:0}
+.health-import-tools h2,.health-import-workspace>h2{font-size:15px}
+.health-import-workspace{padding:14px;min-width:0}
+.health-import-workspace>h2{margin:0 0 12px}
+.health-import-workspace .health-form,.health-import-workspace .health-form>*{min-width:0}
+.health-import-workspace .health-table-wrap{width:100%;max-width:100%;max-height:50vh;overflow:auto}
+.health-import-workspace .health-form-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.health-import-workspace .field{grid-template-columns:minmax(0,1fr);overflow:clip}
+.health-import-workspace .field>select,.health-import-workspace .field>input{min-width:0;max-width:100%}
+.health-import-workspace .field>select{overflow:hidden;text-overflow:ellipsis}
 .health-import-review{min-width:0;max-width:100%}
 .health-import-review input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:0}
 .health-import-review input:not([type=checkbox]){min-width:150px}
@@ -53,7 +59,7 @@
 .health-import-queue li>div{min-width:0;overflow-wrap:anywhere}
 .health-import-queue small{display:block;margin-top:3px;color:var(--muted)}
 .health-import-queue-actions{display:flex;flex-wrap:wrap;gap:6px}
-.health-import-dialog .health-modal-content>.health-btn{margin:0 6px 8px 0}
+.health-import-panel>.health-btn{margin:0 6px 8px 0}
 .health-import-resume{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
 .health-import-source{margin:0 0 10px}
 .health-import-source summary{cursor:pointer;color:var(--text);font-weight:600}

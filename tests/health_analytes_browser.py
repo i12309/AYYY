@@ -28,7 +28,7 @@ def run(page):
             assert match in review.locator('.import-classification').first.inner_text()
         review.locator('[name=profileConfirmed]').check()
         review.locator('[type=submit]').click()
-        page.locator('#health-dialog').wait_for(state='hidden')
+        page.locator('#health-import-page').wait_for(state='hidden')
 
     def open_record(filename):
         lab()

@@ -49,7 +49,7 @@ def run(browser, directory):
         instance.locator('.metric').first.wait_for()
 
     def lab(instance):instance.locator('.sidebar button[data-tab=lab]').click()
-    def close(instance):instance.locator('#health-dialog [data-action=close-dialog]').click()
+    def close(instance):instance.locator('[data-action=close-import]').click()
     def resume(instance):instance.locator('[data-action=open-import-draft]').click()
     def entry(instance,name):return instance.locator('.health-import-queue li').filter(has=instance.get_by_text(name,exact=True))
     def review(instance):return instance.locator('[data-form=document-review]')
@@ -91,7 +91,7 @@ def run(browser, directory):
     assert choose.value.element.get_attribute('webkitdirectory') is not None
     choose.value.set_files(panel/'ignored')
     p.get_by_text('В папке нет файлов PDF, XLSX, CSV, PNG или JPEG.',exact=True).wait_for()
-    assert not p.locator('#health-dialog').is_visible()
+    assert not p.locator('#health-import-page').is_visible()
     with p.expect_file_chooser() as choose:p.locator('[data-action=import-folder]').click()
     choose.value.set_files(panel)
     p.get_by_text('Пропущено файлов неподдерживаемых форматов: 1',exact=True).wait_for()
@@ -103,7 +103,7 @@ def run(browser, directory):
     review(p).locator('[name=selected]').uncheck()
     p.set_viewport_size({'width':390,'height':840})
     assert p.locator('[data-action=save-import-draft]').is_visible()
-    assert p.locator('#health-dialog').evaluate('(dialog)=>dialog.scrollWidth<=dialog.clientWidth')
+    assert p.locator('#health-import-page').evaluate('(page)=>page.scrollWidth<=page.clientWidth')
     checkpoint(p)
     p.set_viewport_size({'width':1440,'height':900})
     proof=p.evaluate('''async phrase=>{
@@ -148,7 +148,7 @@ def run(browser, directory):
     resume(p)
     mapping=p.locator('[data-form=document-mapping]')
     assert next_path in mapping.inner_text() and first_path not in mapping.inner_text()
-    mapping.locator('[type=submit]').click();confirm_review(p);p.locator('#health-dialog').wait_for(state='hidden')
+    mapping.locator('[type=submit]').click();confirm_review(p);p.locator('#health-import-page').wait_for(state='hidden')
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
     assert p.locator('.group-name').filter(has_text='Synthetic waiting draft marker').count()==1
     assert p.evaluate('''async phrase=>{
@@ -182,7 +182,7 @@ def run(browser, directory):
     assert review(p).locator('[name="1:value"]').input_value()=='20.25'
     assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==0
     review(p).locator('[name=selected]').last.check();confirm_review(p)
-    p.locator('#health-dialog').wait_for(state='hidden')
+    p.locator('#health-import-page').wait_for(state='hidden')
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
     assert p.locator('.group-name').filter(has_text='Synthetic accepted marker').count()==1
     assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==1
@@ -197,7 +197,15 @@ def run(browser, directory):
     p.locator('[data-action=discard-import-draft]').click()
     p.get_by_text('Сохранённый черновик удалён.',exact=True).wait_for()
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))') and mapping.is_visible()
-    checkpoint(p);close(p)
+    checkpoint(p)
+    p.locator('.sidebar button[data-tab=overview]').click()
+    p.locator('.sidebar [data-action=lock]').click()
+    assert not p.locator('#health-import-page').count()
+    unlock(p,NEW);lab(p)
+    assert not p.locator('[data-action=continue-import]').count()
+    resume(p)
+    assert mapping.locator('[name=fallbackDate]').input_value()=='2026-10-08'
+    close(p)
     assert p.evaluate('''async()=>{
       const id=await HumanStore.current(),local=await HumanStore.get(id);
       await HumanStore.remove(id,local.envelope);
