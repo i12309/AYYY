@@ -563,7 +563,7 @@
         engineInfo.textContent = engineMode === 'demo' ?
           'DEMO: демонстрационные ответы. Нет модели, сети и сохранения истории.' :
           engineMode === 'webgpu' ? (pocketSelected ?
-          'MNN-Pocket: CPU / WebAssembly, 1 поток. Для запуска GPU не нужен. До скачивания 192 МБ проверим WASM, хранилище и тестовый запуск движка.' :
+          'MNN-Pocket: CPU / WebAssembly, 1 поток. Для запуска GPU не нужен. До скачивания 192 МБ выполним настоящую WASM/SIMD-операцию и проверим запись в OPFS.' :
           'WebLLM: нужен работающий WebGPU, на CPU эти модели не запускаются. До скачивания проверим GPU-адаптер и устройство.') :
           'PUBLIC: запрос и контекст переписки отправляются выбранному внешнему сервису. Без ключа и прокси, возможны CORS, очередь и ограничения.';
       }
@@ -616,6 +616,7 @@
         const choice=localChoice.value,version=++checkVersion;
         hardwareChecking=true;
         localCheckButton.disabled=true;
+        send.disabled=true;
         setEngineStatus('ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА...');
         try {
           const report=await providers.preflightLocalModel(choice,{
@@ -625,7 +626,7 @@
             }
           });
           if(version!==checkVersion || engineMode!=='webgpu')return;
-          setEngineStatus(report.ok ? (report.cached?'ГОТОВА / В КЭШЕ':'ПРОВЕРКА ПРОЙДЕНА / НЕ СКАЧАНА') :
+          setEngineStatus(report.ok ? (report.cached?'ГОТОВА / В КЭШЕ':'ПРЕДВАРИТЕЛЬНО ОК / НЕ СКАЧАНА') :
             'ЗАПУСК НЕВОЗМОЖЕН');
           engineInfo.textContent=report.ok ?
             report.engine + ' · ' + (report.cached?'Модель уже сохранена.':'Веса ещё не скачивались.') +
@@ -636,6 +637,7 @@
         }finally{
           hardwareChecking=false;
           localCheckButton.disabled=working;
+          send.disabled=working;
         }
       }
       async function realReply(message, token) {
@@ -793,7 +795,7 @@
       }
       function setWorking(value) {
         working = value;
-        send.disabled = value;
+        send.disabled = value || hardwareChecking;
         localCheckButton.disabled = value || hardwareChecking;
         led.classList.toggle('busy', value);
         stopButton.hidden = !value;
@@ -826,7 +828,7 @@
       }
       function submitMessage() {
         const message = input.value.trim();
-        if (!message || working) return;
+        if (!message || working || hardwareChecking) return;
         input.value = '';
         input.style.height = '31px';
         if (/^(\/clear|clear|очистить|сброс)$/i.test(message)) { stopGeneration(); boot(); input.focus(); return; }
