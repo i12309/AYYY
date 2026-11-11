@@ -76,7 +76,13 @@ with sync_playwright() as pw:
     p.reload()
     p.locator('.metric').first.wait_for()
     assert p.locator('[data-form=unlock]').count()==0
-    print('PASS consent permits a reload without typing the phrase, key is non-extractable',flush=True)
+    # Leaving the module for another AYYY route should behave like reloading it.
+    p.goto(BASE+'help/github/')
+    p.get_by_text('GitHub',exact=False).first.wait_for()
+    p.goto(BASE+'health/')
+    p.locator('.metric').first.wait_for()
+    assert p.locator('[data-form=unlock]').count()==0
+    print('PASS consent permits reload and same-tab return without typing the phrase',flush=True)
 
     p.locator('.sidebar [data-action=lock]').click()
     p.locator('[data-form=unlock]').wait_for()
