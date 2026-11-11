@@ -751,7 +751,14 @@
       publicChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
       localChoice.addEventListener('change',()=>{if (working) stopGeneration(); updateEngineUI();});
       stopButton.addEventListener('click',()=>{stopGeneration(); input.focus();});
-      window.AYYY_TERMINAL_MODEL_CACHE_UI.init(providers,()=>working);
+      try {
+        if(window.AYYY_TERMINAL_MODEL_CACHE_UI?.init)
+          window.AYYY_TERMINAL_MODEL_CACHE_UI.init(providers,()=>working);
+        else document.querySelector('#modelCacheBtn').hidden=true;
+      } catch (error) {
+        console.error('Model cache manager initialization failed:',error);
+        document.querySelector('#modelCacheBtn').hidden=true;
+      }
       updateEngineUI();
       boot();
       const initialPrompt = new URLSearchParams(window.location.search).get('prompt');
