@@ -155,3 +155,101 @@
   .sc-row,.sc-card-cover img,.sc-gallery-image {transition:none!important}
   .sc-row:hover,.sc-row:focus-within {transform:none}
 }
+
+/* Stable illustration stage: stays in the viewport through the final catalogue row. */
+@media (min-width:981px) {
+  /* A sticky grid child gets pushed away by the grid's bottom edge.
+     Fix the illustration to the viewport instead of the scrolling row container. */
+  .sc-page .sc-gallery {
+    position:fixed;
+    z-index:2;
+    top:clamp(78px,9svh,112px);
+    left:calc(max(0px,50vw - 870px) + clamp(22px,4vw,76px));
+    width:max(180px,calc(min(100vw,1740px) - clamp(22px,4vw,76px) - clamp(22px,4vw,76px) - clamp(28px,4vw,78px) - 690px));
+    height:calc(100svh - clamp(78px,9svh,112px) - 22px);
+    min-height:0;
+    max-height:1050px;
+    pointer-events:none;
+    overflow:hidden;
+    align-self:auto;
+    grid-column:auto;
+    grid-row:auto;
+  }
+  .sc-page .sc-catalog {
+    grid-column:2;
+    grid-row:1;
+    position:relative;
+    z-index:3;
+  }
+  .sc-page .sc-gallery-frame {
+    inset:0 0 126px;
+    border-radius:20px;
+    background:radial-gradient(ellipse at 50% 42%,#f1f4e9c2 0%,#f7f7f0ad 45%,transparent 75%);
+  }
+  .sc-page .sc-gallery-image {
+    width:100%;
+    height:100%;
+    max-height:none;
+    object-fit:contain;
+    object-position:center center;
+  }
+  .sc-page .sc-gallery-caption {
+    left:clamp(14px,4vw,58px);
+    right:clamp(14px,4vw,58px);
+    bottom:10px;
+    max-width:none;
+    overflow-wrap:break-word;
+    padding-top:13px;
+  }
+  .sc-page .sc-gallery-caption h2 {
+    font-size:clamp(18px,1.7vw,26px);
+    line-height:1.2;
+    max-width:100%;
+  }
+  .sc-page .sc-gallery-caption p {
+    font-size:11px;
+    line-height:1.45;
+    max-width:100%;
+  }
+  .sc-page .sc-gallery-hint {
+    top:4px;
+    right:clamp(14px,4vw,40px);
+    z-index:3;
+    color:#70847b;
+  }
+}
+@media (min-width:981px) and (max-width:1279px) {
+  .sc-page .sc-gallery {
+    left:26px;
+    width:max(180px,calc(100vw - 610px - 52px - clamp(15px,2.5vw,36px)));
+    top:76px;
+    height:calc(100svh - 92px);
+  }
+  .sc-page .sc-gallery-caption {
+    left:10px;
+    right:10px;
+  }
+  .sc-page .sc-gallery-caption h2 {font-size:19px}
+}
+@media (max-width:980px) {
+  .sc-page .sc-gallery {
+    overflow:hidden;
+  }
+  .sc-page .sc-gallery-caption {
+    overflow-wrap:break-word;
+  }
+}
+
+/* Compact does not mean microscopic: readable titles and metadata. */
+.sc-card-name h2 {font-size:18px}
+.sc-card-lead {font-size:11px}
+.sc-overline {font-size:9px}
+.sc-card-more summary {font-size:10.5px}
+.sc-connection {font-size:10px}
+@media (max-width:600px) {
+  .sc-card-name h2 {font-size:16px}
+  .sc-card-lead {font-size:10px}
+  .sc-overline {font-size:8px}
+  .sc-card-more summary {font-size:9.5px}
+  .sc-connection {font-size:9px}
+}

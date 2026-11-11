@@ -61,3 +61,11 @@ test('compact list is half the former width and retains expandable descriptions'
  assert.match(source,/data-sc-connection/);
  assert.match(source,/sc-card-cover/);
 });
+
+test('illustration stage stays fixed for long pages and never spills over cards',()=>{
+  const css=read('src/showcase.css');
+  assert.match(css,/\.sc-page \.sc-gallery \{\s*position:fixed/);
+  assert.match(css,/\.sc-page \.sc-gallery \{[\s\S]*?overflow:hidden/);
+  assert.match(css,/\.sc-page \.sc-gallery-frame \{\s*inset:0 0 126px/);
+  assert.match(css,/\.sc-page \.sc-gallery-caption \{[\s\S]*?overflow-wrap:break-word/);
+});
