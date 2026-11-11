@@ -81,6 +81,7 @@
       entries.push(['Источник',[file.filename,file.sheet,file.row?'строка '+file.row:'',file.column?'колонка '+file.column:''].filter(Boolean).join(' · ')]);
       if(file.sourceDate)entries.push(['Дата в источнике',file.sourceDate]);
       if(file.method==='ocr-tesseract')entries.push(['Способ импорта','Распознавание скана']);
+      if(file.method==='manual')entries.push(['Способ импорта','Введено вручную из бланка']);
       if(file.classification)entries.push(['При импорте',file.classification.name+' · '+names[file.classification.basis]]);
     }
     if(row.unitHistory){
@@ -95,7 +96,7 @@
     const linked=doc.documents.flatMap(document=>Array.isArray(document.importLinks)?document.importLinks
       .filter(link=>link?.observationId===row.id).map(link=>V.h('li',{},
         V.button('Открыть связанный источник','file-preview',{'data-id':document.id,class:'small'}),
-        V.h('p',{},[link.filename,link.sheet,`строка ${link.row}`,`колонка ${link.column}`].filter(Boolean).join(' · ')),
+        V.h('p',{},[link.filename,link.sheet,link.row?`строка ${link.row}`:'',link.column?`колонка ${link.column}`:'',link.method==='manual'?'Введено вручную':''].filter(Boolean).join(' · ')),
         Array.isArray(link.raw)&&link.raw.length?V.h('details',{},V.h('summary',{},'Исходные значения'),V.h('p',{},link.raw.join(' · '))):null)):[]);
     return V.h('div',{class:'analyte-origin'},details,
       file?.raw?.length?V.h('details',{},V.h('summary',{},'Строка в исходном файле'),

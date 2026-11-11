@@ -403,12 +403,24 @@
     ];
     else if(kind==='document')fields=[
       f('Файл PDF, JPEG, PNG, XLSX, CSV, TXT, JSON, VCF (до 32 МиБ)','file','','file'),
+      V.h('div',{},V.button('Снять фото','capture-document',{class:'small'})),
       f('Название','title',''),f('Дата','date',now,'date')
     ];
     else if(kind==='profile')fields=window.HumanJournalView.profileFields(x);
     const mode=kind==='profile'?'profile':'record';
     const form=V.form(mode,[V.h('p',{class:'error',role:'alert',hidden:true,'data-form-error':'yes'}),...fields],'Сохранить');
     form.dataset.kind=kind;
+    if(kind==='document'){
+      const file=form.elements.namedItem('file'),formats='.pdf,.jpeg,.jpg,.png,.xlsx,.csv,.txt,.json,.vcf';
+      let camera=false;
+      file.accept=formats;
+      file.addEventListener('click',()=>{if(!camera){file.accept=formats;file.removeAttribute('capture');}});
+      form.querySelector('[data-action=capture-document]').addEventListener('click',event=>{
+        event.stopPropagation();
+        camera=true;file.accept='image/jpeg,image/png';file.setAttribute('capture','environment');
+        try{file.click();}finally{camera=false;}
+      });
+    }
     if(kind==='profile'){formSnapshots.set(form,JSON.stringify(state.doc.profile));window.HumanJournalView.updateProfileForm(form);for(const name of ['birthDate','timezone'])form.elements.namedItem(name).addEventListener('input',()=>window.HumanJournalView.updateProfileForm(form));}
     if(kind==='genetic'){form.classList.add('genetics-form');window.HumanGeneticsView.updateForm(form);form.querySelector('[name=date_precision]').addEventListener('change',()=>window.HumanGeneticsView.updateForm(form,true));}
     if(kind==='intake'||kind==='reminder'){form.classList.add('care-form');window.HumanCareView.updateForm(form);form.querySelector(kind==='intake'?'[name=outcome]':'[name=frequency]')?.addEventListener('change',()=>window.HumanCareView.updateForm(form));}
@@ -1163,14 +1175,16 @@
       else if(action==='close-dialog')dialog.close();
       else if(action==='open-import-draft')await importDocuments([],true);
       else if(action==='delete-import-draft')await deleteImportDraft(el.dataset.revision);
-      else if(action==='csv'){
+      else if(action==='csv'||action==='capture-import'){
+        const active=sessionFence(),tab=state.tab,camera=action==='capture-import';
         const input=document.createElement('input');
-        input.type='file';input.accept='.csv,.xlsx,.pdf,.png,.jpg,.jpeg';input.hidden=true;input.multiple=true;
+        input.type='file';input.accept=camera?'image/jpeg,image/png':'.csv,.xlsx,.pdf,.png,.jpg,.jpeg';input.hidden=true;input.multiple=!camera;
+        if(camera)input.setAttribute('capture','environment');
         input.addEventListener('cancel',()=>input.remove(),{once:true});
         input.addEventListener('change',()=>{
           const files=Array.from(input.files);
           input.remove();
-          void importDocuments(files).catch(error);
+          if(active()&&state.tab===tab)void importDocuments(files).catch(error);
         },{once:true});
         document.body.append(input);input.click();
       }

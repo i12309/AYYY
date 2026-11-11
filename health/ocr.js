@@ -152,14 +152,14 @@
     throw Error('Не удалось прочитать размеры изображения. Проверьте формат файла.');
   }
 
-  async function image(bytes, extension, options = {}) {
+  async function imageCanvas(bytes, extension, {signal, preview=false} = {}) {
     const [width, height] = imageSize(bytes, extension);
     if (!width || !height || width * height > limit) throw Error('Изображение должно быть не больше 20 мегапикселей.');
-    options.signal?.throwIfAborted();
+    signal?.throwIfAborted();
     const bitmap = await createImageBitmap(new Blob([bytes], {type: extension === 'png' ? 'image/png' : 'image/jpeg'}));
     try {
-      options.signal?.throwIfAborted();
-      const scale = Math.min(1, 2600 / bitmap.width, 3200 / bitmap.height);
+      signal?.throwIfAborted();
+      const scale = Math.min(1, (preview?1500:2600) / bitmap.width, (preview?2000:3200) / bitmap.height);
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(bitmap.width * scale));
       canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -167,11 +167,11 @@
       context.fillStyle = '#fff';
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      return await recognize(canvas, 'Изображение', options);
+      return canvas;
     } finally {
       bitmap.close();
     }
   }
 
-  window.HumanOCR = {image, recognize};
+  window.HumanOCR = {imageCanvas, recognize};
 })();

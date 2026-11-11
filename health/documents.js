@@ -88,12 +88,16 @@
    }
    count+=table.rows.length;if(count>5000)throw Error('Не больше 5000 строк PDF.');tables.push(table);
   }return tables;}finally{await close();}}
- async function renderPDF(bytes,pageNumber=1){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');const canvas=await pageCanvas(await d.getPage(pageNumber));canvas.setAttribute('aria-label','Страница '+pageNumber+' из '+d.numPages);return {canvas,pages:d.numPages};}finally{await close();}}
+ async function renderPDF(bytes,pageNumber=1,options={}){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');const canvas=await pageCanvas(await d.getPage(pageNumber),options);canvas.setAttribute('aria-label','Страница '+pageNumber+' из '+d.numPages);return {canvas,pages:d.numPages};}finally{await close();}}
  async function recognizePDFPage(bytes,pageNumber,options){const {document:d,close}=await pdf(bytes);try{if(pageNumber<1||pageNumber>d.numPages)throw Error('Страница PDF не найдена.');return await scanPage(await d.getPage(pageNumber),pageNumber,options);}finally{await close();}}
  function csvTable(text){const counts={';':0,',':0,'\t':0};let inQuote=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(inQuote&&text[i+1]==='"')i++;else inQuote=!inQuote;}else if(!inQuote){if(c==='\n'||c==='\r')break;if(c in counts)counts[c]++;}}const sep=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];const rows=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){field+='"';i++;}else quoted=!quoted;}else if(c===sep&&!quoted){row.push(field);if(row.length>100)throw Error('Не больше 100 колонок CSV.');field='';}else if(/[\r\n]/.test(c)&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(x=>x.trim()))rows.push(row);row=[];field='';}else field+=c;}if(quoted)throw Error('Незакрытая кавычка CSV.');row.push(field);if(row.some(x=>x.trim()))rows.push(row);if(rows.length>5001)throw Error('Не больше 5000 строк за импорт.');return [{name:'CSV',rows}];}
  async function read(file,options={}){if(file.size>MAX)throw Error('Не больше 32 МиБ на файл.');const bytes=new Uint8Array(await file.arrayBuffer()),extension=file.name.split('.').pop().toLowerCase();let tables;
   options.signal?.throwIfAborted();
-  if(extension==='xlsx')tables=await xlsx(bytes);else if(extension==='pdf')tables=await pdfTables(bytes,options);else if(extension==='csv')tables=csvTable(decoder.decode(bytes).replace(/^\uFEFF/,''));else if(['png','jpg','jpeg'].includes(extension))tables=[await HumanOCR.image(bytes,extension,options)];else throw Error('Выберите PDF, XLSX, CSV, PNG или JPEG.');
+  if(extension==='xlsx')tables=await xlsx(bytes);else if(extension==='pdf')tables=await pdfTables(bytes,options);else if(extension==='csv')tables=csvTable(decoder.decode(bytes).replace(/^\uFEFF/,''));else if(['png','jpg','jpeg'].includes(extension)){
+   const canvas=await HumanOCR.imageCanvas(bytes,extension,options);
+   try{tables=[await HumanOCR.recognize(canvas,'Изображение',options)];}
+   catch(error){options.signal?.throwIfAborted();tables=[{name:'Изображение',rows:[],ocrError:error.message||'Не удалось распознать изображение.'}];}
+  }else throw Error('Выберите PDF, XLSX, CSV, PNG или JPEG.');
   options.signal?.throwIfAborted();
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');return {bytes,tables,hash,name:file.name,extension};
  }
