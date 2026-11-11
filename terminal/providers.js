@@ -52,6 +52,15 @@
     const hasGPU=injected.hasGPU || (()=>!!(global.navigator && global.navigator.gpu));
     let hfClient=null, hfName='', gpuEngine=null, gpuName='', pocketEngine=null;
     let job=null,controller=null;
+    let webLLMLibrary=null,wllamaLibrary=null;
+    async function webLLMLib(){
+      if(!webLLMLibrary)webLLMLibrary=load(URLS.webllm).catch(e=>{webLLMLibrary=null;throw e;});
+      return webLLMLibrary;
+    }
+    async function wllamaLib(){
+      if(!wllamaLibrary)wllamaLibrary=load(URLS.wllama).catch(e=>{wllamaLibrary=null;throw e;});
+      return wllamaLibrary;
+    }
     const abort=()=>{
       controller?.abort();
       try {job?.cancel?.();}catch(_){}
@@ -151,7 +160,7 @@
     async function pocket({prompt,history,onText,onStatus,signal}) {
       onStatus('GGUF / MNN-POCKET: подготовка Wllama...');
       if(!pocketEngine) {
-        const lib=await load(URLS.wllama);
+        const lib=await wllamaLib();
         if(signal.aborted)throw new DOMException('Stopped','AbortError');
         if(typeof lib.Wllama!=='function')throw new Error('Не удалось загрузить Wllama.');
         const next=new lib.Wllama({default:URLS.wllamaWasm},{allowOffline:true});
@@ -192,7 +201,7 @@
       if(modelPreference==='pocket')return pocket({prompt,history,onText,onStatus,signal});
       if(!hasGPU())throw new Error('WebGPU недоступен. Нужен браузер с аппаратным ускорением.');
       onStatus('WEBGPU: загрузка WebLLM...');
-      const lib=await load(URLS.webllm);
+      const lib=await webLLMLib();
       if(!lib.CreateMLCEngine || !lib.prebuiltAppConfig)throw new Error('WebLLM не загрузился.');
       const catalog=lib.prebuiltAppConfig.model_list || [];
       const preferred=MODELS[modelPreference] || MODELS.qwen;
@@ -224,6 +233,91 @@
       if(!answer.trim())throw new Error('WebGPU: пустой ответ.');
       return answer;
     }
+
+    // Inspect only the model caches owned by Wllama and WebLLM.
+    // Never clear Cache Storage, OPFS or IndexedDB for the whole Pages origin:
+    // other AYYY services and other GitHub Pages projects may share this origin.
+    async function listCachedModels() {
+      const models=[],errors=[];
+      try {
+        const lib=await wllamaLib();
+        if(typeof lib.ModelManager!=='function')throw new Error('ModelManager недоступен.');
+        const cached=await new lib.ModelManager().getModels({includeInvalid:true});
+        for(const item of cached) {
+          if(!item || typeof item.url!=='string' || item.size===-1)continue;
+          const status=item.validate?.() || 'invalid';
+          const filename=decodeURIComponent(item.url.split('/').pop()?.split('?')[0] || item.url);
+          const physicalBytes=Array.isArray(item.files) ?
+            item.files.reduce((n,file)=>n+Math.max(0,Number(file.size)||0),0) : 0;
+          models.push({
+            engine:'wllama',id:item.url,name:filename,
+            cache:'OPFS / GGUF',
+            sizeBytes:physicalBytes || Math.max(0,Number(item.size)||0),
+            status:status==='valid'?'ready':'incomplete'
+          });
+        }
+      }catch(error){
+        errors.push('GGUF / Wllama: '+(error?.message||String(error)));
+      }
+      try {
+        const lib=await webLLMLib();
+        if(typeof lib.hasModelInCache!=='function')throw new Error('Cache API библиотеки недоступен.');
+        const all=lib.prebuiltAppConfig?.model_list||[];
+        const unique=[...new Map(all.filter(m=>m?.model_id).map(m=>[m.model_id,m])).values()];
+        let failures=0;
+        for(let i=0;i<unique.length;i+=8){
+          await Promise.all(unique.slice(i,i+8).map(async model=>{
+            try{
+              if(await lib.hasModelInCache(model.model_id,lib.prebuiltAppConfig)){
+                models.push({
+                  engine:'webllm',id:model.model_id,name:model.model_id,
+                  cache:'Cache Storage / WebLLM',
+                  sizeBytes:null,status:'ready'
+                });
+              }
+            }catch(_){failures++;}
+          }));
+        }
+        if(failures)errors.push('WebLLM: не удалось проверить '+failures+' моделей каталога.');
+      }catch(error){
+        errors.push('WebLLM: '+(error?.message||String(error)));
+      }
+      let originUsage=null;
+      try {
+        const usage=(await global.navigator?.storage?.estimate?.())?.usage;
+        if(Number.isFinite(usage))originUsage=usage;
+      }catch(_){}
+      models.sort((a,b)=>a.engine.localeCompare(b.engine)||a.name.localeCompare(b.name));
+      return {models,errors,originUsage};
+    }
+    async function deleteCachedModel({engine,id}) {
+      if(controller)throw new Error('Остановите текущую генерацию или загрузку модели.');
+      if(typeof id!=='string' || !id)throw new Error('Не выбрана модель.');
+      if(engine==='wllama') {
+        const lib=await wllamaLib();
+        const cached=await new lib.ModelManager().getModels({includeInvalid:true});
+        const model=cached.find(m=>m.url===id);
+        if(!model)throw new Error('Эта GGUF-модель уже отсутствует в хранилище.');
+        if(pocketEngine){
+          await pocketEngine.exit();
+          pocketEngine=null;
+        }
+        await model.remove();
+      }else if(engine==='webllm') {
+        const lib=await webLLMLib();
+        const registered=lib.prebuiltAppConfig?.model_list?.some(m=>m.model_id===id);
+        if(!registered)throw new Error('Модель не найдена в каталоге WebLLM.');
+        if(typeof lib.deleteModelAllInfoInCache!=='function')
+          throw new Error('Удаление моделей не поддерживается текущей версией WebLLM.');
+        if(gpuName===id && gpuEngine){
+          await gpuEngine.unload?.();
+          gpuEngine=null;gpuName='';
+        }
+        await lib.deleteModelAllInfoInCache(id,lib.prebuiltAppConfig);
+      }else{
+        throw new Error('Неизвестный тип модели.');
+      }
+    }
     async function run(name,params) {
       if(!['ovh','hf','webgpu'].includes(name))throw new Error('Неизвестный движок.');
       const ctrl=new AbortController();
@@ -239,7 +333,7 @@
         if(controller===ctrl)controller=null;
       }
     }
-    return {run,abort,hasWebGPU:hasGPU};
+    return {run,abort,hasWebGPU:hasGPU,listCachedModels,deleteCachedModel,isBusy:()=>!!controller};
   }
   global.AYYY_TERMINAL_PROVIDERS={createProviders,gradioAnswer,messages};
 })(typeof window!=='undefined'?window:globalThis);
