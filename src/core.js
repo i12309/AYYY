@@ -8,6 +8,7 @@
     sparkles:'m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3 M20 2v4 M18 4h4',
     sun:'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1.5 1.5 M17.5 17.5 19 19 M19 5l-1.5 1.5 M6.5 17.5 5 19',
     moon:'M20.5 13.2A8.5 8.5 0 0 1 10.8 3.5a8.5 8.5 0 1 0 9.7 9.7Z',
+    oberon:'M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0 M11 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0 M17 14a2 2 0 1 1-4 0 2 2 0 0 1 4 0 M4 2v4 M2 4h4 M21 20h.01',
     cloud:'M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8Z',
     rain:'M6 15a4 4 0 0 1 1-8 5 5 0 0 1 9-1 4.5 4.5 0 1 1 2 9 M7 18l-1 3 M12 18l-1 3 M17 18l-1 3',
     wind:'M3 8h12a3 3 0 1 0-3-3 M2 12h17a3 3 0 1 1-3 3 M4 16h5a3 3 0 1 1-3 3',
@@ -94,7 +95,7 @@
       if(app.cleanup){app.cleanup();app.cleanup=null;}
       const [route,param]=location.hash.slice(1).split('/');app.route=app.views[route]?route:'home';try{app.param=decodeURIComponent(param||'');}catch{app.param='';}
       document.body.dataset.page=app.route;
-      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family','health'].includes(app.route)?app.route:'service';
+      document.body.dataset.shell=['home','directory'].includes(app.route)?'splash':['tools','search','games','family','health','oberon'].includes(app.route)?app.route:'service';
       const view=app.views[app.route];document.title=`${view.title} · AYYY`;
       document.querySelectorAll('[data-nav]').forEach(el=>{const selected=el.dataset.nav===app.route;el.classList.toggle('active',selected);if(selected)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
       document.querySelector('#page-label').textContent=view.title;
@@ -121,6 +122,7 @@
     {id:'color',name:'Палитра цветов',desc:'HEX, RGB и нужное настроение',icon:'paint',color:'pink',group:'creative',kind:'local',route:'tools',param:'color'},
     {id:'family',name:'Родословная',desc:'Семейное дерево, история семьи и личный архив',icon:'heart',color:'green',group:'personal',kind:'local',route:'family'},
     {id:'health',name:'Здоровье',desc:'Медкарта, анализы, графики',icon:'pulse',color:'blue',group:'personal',kind:'local',route:'health'},
+    {id:'oberon',name:'OBERON',desc:'Заметки Markdown, папки и связи в GitHub',icon:'oberon',color:'amber',group:'personal',kind:'connect',route:'oberon'},
     {id:'games',name:'Игры',desc:'Головоломки, аркады и тренировка памяти',icon:'gamepad',color:'orange',group:'games',kind:'local',route:'games'},
     {id:'translate',name:'Переводчик',desc:'Открыть Google Переводчик',icon:'translate',color:'blue',group:'everyday',kind:'link',url:'https://translate.google.com/'}
   ];

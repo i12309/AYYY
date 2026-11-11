@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#20262a">
+<meta name="description" content="OBERON — пространство для заметок Markdown. Ваши папки, файлы и связи в репозитории GitHub. Сервис AYYY.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.github.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>OBERON — заметки в GitHub · AYYY</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%2320272b'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='%23d9b28b' stroke-width='2'/%3E%3Cpath d='M38 15C20 19 20 46 38 49' fill='none' stroke='%23d9b28b' stroke-width='1'/%3E%3Ccircle cx='42' cy='25' r='4' fill='none' stroke='%23d9b28b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css?v=46e9d655a081">
+<link rel="stylesheet" href="home.css?v=1309bd8682cb">
+</head>
+<body>
+<div id="vault-home" class="oberon-home"></div>
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <button class="brand" data-action="vaults" title="Все пространства" aria-label="Все пространства OBERON"><span class="brand-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-labelledby="oberon-mark-title">
+  <title id="oberon-mark-title">Оберон — пространство для мыслей</title>
+  <g stroke="#e4bc94" stroke-width="1.2" stroke-linecap="round" opacity=".5">
+    <path d="M19.6 38A46 46 0 0 1 69.6 15M96 31.3A46 46 0 0 1 100.2 82.4M81 100.9A46 46 0 0 1 29.4 94.3"/>
+    <path d="m76 11 1-4M37 102l-2 4"/>
+  </g>
+  <circle cx="60" cy="60" r="37" fill="#2b3033" stroke="#e4bc94" stroke-width="1.4" stroke-opacity=".75"/>
+  <path d="M62 23.1A37 37 0 0 0 40.5 91.4C26.6 80.5 22.7 62.8 28.9 47.9 35.2 33 46.9 26.4 62 23.1Z" fill="#e4bc94" fill-opacity=".16"/>
+  <path d="M62 23.1A37 37 0 0 0 31.3 83.3" stroke="#f3e8d7" stroke-width="2.3" stroke-linecap="round"/>
+  <g stroke="#e4bc94" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45.8 40.9c2.5-3.8 7.6-4.4 10.4-1.7 2.6 2.6 1.4 7-1.8 9-3.2 2-7.2 1.6-8.8-.8-1.2-1.7-1-4 .2-6.5Z" stroke-width="1.7" opacity=".9"/>
+    <path d="M63.1 64.1c2.5-5 8.5-7.1 13.1-4.5 4.6 2.5 6.1 8.4 2.9 12.8-3 4-8.8 4.8-12.6 1.7-2.9-2.4-4.4-6.6-3.4-10Z" stroke-width="1.6" opacity=".8"/>
+    <path d="M37.4 63.4c1.5-3.1 4.5-4.3 6.7-2.7 2.2 1.6 3 5.1 1.2 8-1.8 2.7-5 3-6.9.9-1.5-1.6-1.8-4.3-1-6.2Z" stroke-width="1.6" opacity=".85"/>
+    <path d="M53.7 79.4c1.9-1.7 4.9-1.3 6.2.9 1.2 2.1.3 4.5-2 5.3-2.1.8-4.6-.1-5.3-2-.5-1.4-.2-3.1 1.1-4.2Z" stroke-width="1.5" opacity=".75"/>
+  </g>
+  <path d="M15.5 24h7m-3.5-3.5v7" stroke="#f3e8d7" stroke-width="1.3" stroke-linecap="round" opacity=".85"/>
+  <circle cx="97" cy="101" r="1.8" fill="#f3e8d7" opacity=".85"/>
+  <circle cx="95.5" cy="23" r="1.4" fill="#e4bc94" opacity=".75"/>
+</svg>
+</span><span><strong>OBERON<span class="brand-dot">.</span></strong><small>пространство для мыслей</small></span></button>
+    <div class="top-location"><span class="orbit-dot"></span><button class="workspace-switcher" data-action="vaults" title="Выбрать другое пространство">Все пространства</button><span class="top-divider">/</span><span class="top-folder" id="current-vault-name">OBERON</span></div>
+    <div class="top-actions"><button class="github-status" data-action="github" title="Хранение и подключение GitHub"><span data-icon="github"></span><span id="sync-label">Демо · локально</span><span class="status-dot"></span></button><span class="header-separator"></span><button class="icon-button top-theme" data-action="theme" aria-label="Переключить тему" title="Переключить тему"><span data-icon="moon"></span></button><a class="portal-link" href="../#home" target="_top" rel="noopener noreferrer" title="Открыть портал AYYY" aria-label="AYYY — на главную портала">ayyy<span class="portal-dot">.</span></a></div>
+  </header>
+  <aside id="sidebar" class="sidebar" aria-label="Библиотека заметок">
+    <div class="sidebar-tools"><button class="search-trigger" data-action="search"><span data-icon="search"></span><span>Найти мысль…</span><kbd>Ctrl K</kbd></button><button class="new-note" data-action="new"><span data-icon="plus"></span>Новая заметка<span class="shortcut">N</span></button></div>
+    <nav class="workspace-nav" aria-label="Режимы библиотеки"><button data-action="library" class="active" id="library-button"><span data-icon="library"></span>Заметки</button><button data-action="graph" id="graph-button"><span data-icon="graph"></span>Связи<span class="mini-orbit"></span></button></nav>
+    <div class="sidebar-scroll">
+      <section class="favorites-section"><div class="section-heading"><span>ПОД РУКОЙ</span><span data-icon="pin"></span></div><div id="favorites"></div></section>
+      <section class="files-section"><div class="section-heading"><span>ФАЙЛЫ</span><div class="heading-actions"><button class="icon-button" data-action="new-folder" aria-label="Создать папку" title="Создать папку"><span data-icon="folder-plus"></span></button><button class="icon-button" data-action="collapse" aria-label="Свернуть или развернуть папки" title="Свернуть / развернуть всё"><span data-icon="fold"></span></button></div></div><div id="tree" class="tree" role="tree" aria-label="Файлы в папке OBERON"></div></section>
+    </div>
+    <div class="sidebar-orbit" aria-hidden="true"><div class="sidebar-motto">У каждой мысли<br><em>своя орбита.</em></div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 190" fill="none" aria-hidden="true">
+  <g stroke="#e4bc94" stroke-width=".6" opacity=".22">
+    <path d="M5 133C117 129 231 28 377 22M58 168C204 154 242 66 416 54" stroke-dasharray="1.5 5"/>
+    <path d="M312 23A75 75 0 0 1 439 116M405 160A75 75 0 0 1 307 138"/>
+    <path d="m315 22-3-6m121 15 4-4m16 75 6 1m-84 60v6M290 85h-7"/>
+    <path d="M91 40h10m-5-5v10m384 105h7m-3.5-3.5v7"/>
+  </g>
+  <g stroke="#e4bc94" stroke-linecap="round">
+    <circle cx="369" cy="91" r="48" fill="#23282c" stroke-opacity=".43"/>
+    <path d="M373 43.2A48 48 0 0 0 343.7 131.8C327.3 116.7 321.4 96.5 329.7 76.1 338 55.8 354.4 47 373 43.2Z" fill="#e4bc94" fill-opacity=".1" stroke="none"/>
+    <path d="M373 43.2A48 48 0 0 0 330.9 120.2" stroke="#f3e8d7" stroke-width="1.4"/>
+    <path d="M384 45.4C354.7 50.5 339.2 69.2 339.5 95.5 339.7 115.9 351.7 130.8 369 139" stroke-width=".7" stroke-dasharray="1.5 3.5" opacity=".26"/>
+    <path d="M350 65c3-4.3 9-5.2 12-2 3 3.1 1.4 8.2-2.2 10.4-3.5 2.2-8.2 1.9-10.1-1-1.2-2-.9-4.7.3-7.4Z" opacity=".8"/>
+    <path d="M353 67c2.2-2.1 5.6-2.6 7.5-.8" stroke-width=".7" opacity=".5"/>
+    <path d="M373.2 98c3.1-6.3 10.6-9.1 16.5-5.8 5.7 3.2 7.5 10.7 3.5 16-3.7 5-11 6.1-15.7 2.2-3.6-2.9-5.6-8.3-4.3-12.4Z" opacity=".55"/>
+    <path d="M377 99c3.7-3.4 9.9-3.6 13 .4m-9.4 8.2 3-.4" stroke-width=".7" opacity=".4"/>
+    <path d="M339.7 97c1.5-3.3 4.8-4.7 7.2-3 2.4 1.7 3.2 5.7 1.3 8.8-2 3-5.4 3.3-7.5 1-1.7-1.7-2-4.8-1-6.8Z" opacity=".65"/>
+    <path d="M386.5 65c2-1.7 4.9-1.4 6.1.4 1.2 1.8.6 4.5-1.3 5.5-2.3 1.3-4.8.5-5.5-1.3-.6-1.5-.3-3.3.7-4.6Z" stroke-width=".7" opacity=".4"/>
+    <path d="M356 116.5c2-1.9 5.3-1.4 6.7 1 1.3 2.2.3 4.8-2.1 5.6-2.3.9-4.9-.1-5.6-2.1-.6-1.5-.3-3.4 1-4.5Z" stroke-width=".8" opacity=".6"/>
+    <path d="m367 84 3.1-1.3m-12.5 13.4 1.7 1.3m12.2 23.3 3 1M401 84l2.4 2.2m-65.6-8.3 1.8-2.7" stroke-width=".8" opacity=".45"/>
+  </g>
+  <g fill="#f3e8d7">
+    <circle cx="251" cy="42" r="1" opacity=".65"/>
+    <circle cx="159" cy="94" r=".8" opacity=".45"/>
+    <circle cx="450" cy="17" r="1.1" opacity=".65"/>
+    <circle cx="469" cy="83" r=".6" opacity=".4"/>
+    <circle cx="293" cy="162" r=".8" opacity=".45"/>
+  </g>
+</svg>
+<span class="orbit-caption">YOUR OWN LITTLE UNIVERSE</span></div>
+    <div class="sidebar-bottom"><button class="vault-control" data-action="github"><span class="vault-symbol" data-icon="box"></span><span><strong id="vault-owner">OBERON</strong><small id="vault-subtitle">Хранилище заметок</small></span><span data-icon="chevron-up"></span></button><div class="bottom-actions"><button class="icon-button" data-action="today" title="Заметка на сегодня" aria-label="Заметка на сегодня"><span data-icon="calendar"></span></button><button class="icon-button" data-action="import" title="Импорт Markdown" aria-label="Импорт Markdown"><span data-icon="upload"></span></button><button class="icon-button" data-action="settings" title="Настройки" aria-label="Настройки"><span data-icon="settings"></span></button><span class="bottom-spacer"></span><button class="icon-button" data-action="help" title="Горячие клавиши" aria-label="Горячие клавиши"><span data-icon="help"></span></button></div></div>
+  </aside>
+  <div id="left-resizer" class="panel-resizer" role="separator" aria-label="Ширина библиотеки" aria-orientation="vertical" tabindex="0"></div>
+  <main id="main" class="main">
+    <div class="tabs-bar"><button class="icon-button mobile-menu" data-action="sidebar" aria-label="Открыть библиотеку" title="Открыть библиотеку"><span data-icon="panel-left"></span></button><div id="tabs" class="tabs" role="tablist" aria-label="Открытые заметки"></div><button class="icon-button tab-add" data-action="new" title="Новая заметка" aria-label="Новая заметка"><span data-icon="plus"></span></button><button class="icon-button panel-toggle" data-action="inspector" title="Сведения о заметке" aria-label="Сведения о заметке"><span data-icon="panel-right"></span></button></div>
+    <div class="note-toolbar"><div id="breadcrumbs" class="breadcrumbs"></div><div class="note-toolbar-actions"><div class="view-switch" role="group" aria-label="Вид редактора"><button data-mode="edit" title="Редактировать Markdown" aria-label="Редактировать Markdown"><span data-icon="code"></span><span class="mode-name">Текст</span></button><button data-mode="split" title="Редактор и просмотр рядом" aria-label="Редактор и просмотр рядом"><span data-icon="columns"></span><span class="mode-name">Рядом</span></button><button data-mode="read" title="Чтение" aria-label="Чтение"><span data-icon="book"></span><span class="mode-name">Чтение</span></button></div><span class="toolbar-divider"></span><button id="favorite-button" class="icon-button" data-action="favorite" title="Закрепить заметку" aria-label="Закрепить заметку"><span data-icon="star"></span></button><button class="icon-button" data-action="focus" title="Режим фокуса" aria-label="Режим фокуса"><span data-icon="expand"></span></button><button class="icon-button" data-action="note-menu" title="Действия с заметкой" aria-label="Действия с заметкой"><span data-icon="more"></span></button></div></div>
+    <div id="workspace" class="workspace" data-mode="read">
+      <section id="editor-pane" class="editor-pane" aria-label="Редактор Markdown"><div class="format-toolbar" role="toolbar" aria-label="Форматирование"><button data-format="h2" title="Заголовок">H₂</button><button data-format="bold" title="Жирный"><b>B</b></button><button data-format="italic" title="Курсив"><i>I</i></button><span></span><button data-format="list" title="Список" aria-label="Список"><span data-icon="list"></span></button><button data-format="task" title="Задача" aria-label="Задача"><span data-icon="check-square"></span></button><button data-format="link" title="Связь с заметкой" aria-label="Связь с заметкой"><span data-icon="link"></span></button><button data-format="quote" title="Цитата" aria-label="Цитата"><span data-icon="quote"></span></button><button data-format="code" title="Блок кода" aria-label="Блок кода"><span data-icon="code"></span></button><span class="format-label">MARKDOWN</span></div><textarea id="editor" spellcheck="false" aria-label="Текст заметки в Markdown" placeholder="Начните с одной мысли…"></textarea><div class="editor-hint"><span><kbd>[[</kbd> — связать с другой заметкой</span><span>Сохраняется автоматически</span></div></section>
+      <div id="editor-resizer" class="editor-resizer" role="separator" aria-label="Ширина редактора" aria-orientation="vertical" tabindex="0"></div>
+      <section id="reading-pane" class="reading-pane" aria-label="Просмотр заметки"><div class="paper-content"><div class="note-eyebrow"><span id="note-category">НАЧАЛО</span><span class="eyebrow-line"></span><span class="tiny-star">✧</span></div><article id="preview" class="prose"></article><footer class="note-end"><span></span><span data-icon="spark"></span><span></span></footer><div id="note-related" class="note-related"></div></div></section>
+    </div>
+    <section id="graph-view" class="graph-view" hidden aria-label="Карта связей"><div class="graph-heading"><div class="eyebrow">СОЗВЕЗДИЕ ЗАМЕТОК</div><h1>Всё связано.</h1><p>Одна мысль ведёт к другой. Нажмите на заметку, чтобы открыть её.</p></div><div id="graph-canvas" class="graph-canvas"></div><div class="graph-footer"><span class="graph-legend"><i></i>Текущая заметка</span><span id="graph-stats"></span><button class="quiet-button" data-action="library"><span data-icon="arrow-left"></span>К заметке</button></div></section>
+  </main>
+  <aside id="inspector" class="inspector" aria-label="Сведения о заметке"><div class="inspector-top"><span>КОНТЕКСТ</span><button class="icon-button" data-action="inspector" title="Скрыть сведения" aria-label="Скрыть сведения"><span data-icon="panel-right"></span></button></div><div class="inspector-scroll"><section><div class="inspector-heading"><span data-icon="list"></span><h2>На этой странице</h2></div><nav id="outline" class="outline" aria-label="Оглавление"></nav></section><section><div class="inspector-heading"><span data-icon="link"></span><h2>Обратные ссылки</h2><span id="backlink-count" class="count-badge">0</span></div><div id="backlinks"></div></section><section><div class="inspector-heading"><span data-icon="hash"></span><h2>Метки</h2></div><div id="tags" class="tags"></div></section><section class="mini-map-section"><div class="inspector-heading"><span data-icon="graph"></span><h2>Ближайшие мысли</h2><button class="icon-button" data-action="graph" title="Открыть карту связей" aria-label="Открыть карту связей"><span data-icon="arrow-up-right"></span></button></div><button id="mini-map" class="mini-map" data-action="graph" aria-label="Открыть карту связей"></button><p class="mini-map-caption">Связи появляются из <code>[[ссылок]]</code></p></section></div><div class="inspector-footer"><span class="small-orbit"></span><span>Собирайте мысли.<br><strong>Находите связи.</strong></span></div></aside>
+  <footer class="statusbar"><span id="save-status"><i class="saved-dot"></i>Сохранено в браузере</span><div class="status-right"><span id="word-count"></span><span id="char-count"></span><span class="status-format">Markdown <span>·</span> UTF-8</span><button data-action="focus" title="Режим фокуса"><span data-icon="focus"></span><span id="focus-label">Фокус</span></button></div></footer>
+</div>
+<button id="drawer-scrim" class="drawer-scrim" hidden aria-label="Закрыть боковую панель"></button>
+<div id="popover" class="popover" hidden></div>
+<dialog id="modal" class="modal"><div id="modal-content"></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<input id="import-input" type="file" accept=".md,.markdown,text/markdown,text/plain" multiple hidden>
+<script src="markdown.js?v=18b2666a1f97" defer></script>
+<script src="seed.js?v=1fb490266b21" defer></script>
+<script src="storage.js?v=bd5d8d942b41" defer></script>
+<script src="github.js?v=bf6c8821915b" defer></script>
+<script src="home.js?v=a252f2ce7d70" defer></script>
+<script src="workspace.js?v=7090e2ed4ca7" defer></script>
+<script src="app.js?v=c51ab9ece368" defer></script>
+</body>
+</html>

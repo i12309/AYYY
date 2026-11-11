@@ -36,7 +36,7 @@ function makePortal() {
 
 test('only active services are registered; focus is retired and the AI demo remains', () => {
   const { app } = makePortal();
-  assert.equal(app.services.length, 17);
+  assert.equal(app.services.length, 18);
   assert.ok(app.services.find(s => s.id === 'family'));
   assert.deepEqual(Array.from(app.services.filter(s=>s.group==='games'),s=>[s.id,s.name,s.route,s.param]),[['games','Игры','games',undefined]]);
   assert.equal(app.services.find(s=>s.id==='ai').name,'Терминал');
@@ -94,7 +94,7 @@ test('removed modules have no runtime imports or service links', () => {
       assert.doesNotMatch(html, new RegExp('href="#'+id+'"'));
     }
   });
-  assert.match(index, /nav-count">18<\/span>/);
+  assert.match(index, /nav-count">19<\/span>/);
   assert.doesNotMatch(boot, /result\.(?:tasks|notes|bookmarks|parcels|mailDrafts)\s*=/);
   assert.doesNotMatch(read('src/creative.js'), /register\('paint'/);
   assert.equal(fs.existsSync(path.join(ROOT, 'src/productivity.js')), false);

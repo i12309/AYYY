@@ -26,7 +26,7 @@ test('approved CRT design keeps one full-screen view and its three mode controls
   assert.doesNotMatch(html, /<header class="topbar"/);
   for (const mode of ['public','webgpu','demo'])
     assert.match(html, new RegExp('data-engine="' + mode + '"'));
-  assert.match(html, /src="providers\.js"/);
+  assert.match(html, /src="providers\.js(?:\?v=[\w-]+)?"/);
   assert.match(html, /id="stopBtn"/);
   assert.match(html, /СБОЙ ПОДКЛЮЧЕНИЯ/);
   assert.match(html, /new URLSearchParams\(window.location.search\)/);
