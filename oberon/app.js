@@ -169,14 +169,14 @@
     const children=state.folders.filter(f=>parent(f)===folder);
     for(const path of children){
       const closed=state.collapsed.includes(path), count=state.notes.filter(n=>n.path.startsWith(path+'/')).length;
-      html+=`<div role="group"><button class="tree-folder" data-folder="${esc(path)}" style="--depth:${depth}" role="treeitem" aria-expanded="${!closed}" title="${esc(path)}">${icon(closed?'chevron-right':'chevron-down','chevron')}<span class="folder-icon">${icon(closed?'folder':'folder-open')}</span><span class="folder-name">${esc(path.split('/').pop())}</span><span class="folder-count">${count||''}</span></button>${closed?'':treeHTML(path,depth+1)}</div>`;
+      html+=`<div role="group"><div class="tree-folder-row"><button type="button" class="tree-folder${selectedFolder===path?' selected':''}" data-folder="${esc(path)}" style="--depth:${depth}" role="treeitem" aria-expanded="${!closed}" aria-selected="${selectedFolder===path}" title="${esc(path)}">${icon(closed?'chevron-right':'chevron-down','chevron')}<span class="folder-icon">${icon(closed?'folder':'folder-open')}</span><span class="folder-name">${esc(path.split('/').pop())}</span><span class="folder-count">${count||''}</span></button><button type="button" class="tree-folder-add" data-action="new-subfolder" data-parent="${esc(path)}" title="Создать папку внутри ${esc(path)}" aria-label="Создать папку внутри ${esc(path)}">${icon('folder-plus')}</button></div>${closed?'':treeHTML(path,depth+1)}</div>`;
     }
     for(const note of state.notes.filter(n=>parent(n.path)===folder))html+=treeRow(note,depth+1);
     return html;
   }
   function renderLibrary(){
     $('#favorites').innerHTML=state.notes.filter(n=>n.favorite).map(n=>`<button class="favorite-row${n.id===state.active?' active':''}" data-note="${esc(n.id)}" title="${esc(title(n))}">${icon('star')}<span class="row-title">${esc(title(n))}</span></button>`).join('')||'<p class="root-empty">Закрепите важную заметку звёздочкой.</p>';
-    $('#tree').innerHTML=`<div class="tree-root" data-drop-root="true">${icon('chevron-down')}${icon('box')}<span>OBERON</span><span class="tree-count">${state.notes.length}</span></div>${treeHTML()}`;
+    $('#tree').innerHTML=`<button type="button" class="tree-root${selectedFolder===''?' selected':''}" role="treeitem" aria-selected="${selectedFolder===''}" data-select-root="true" data-drop-root="true" title="Выбрать корень OBERON">${icon('chevron-down')}${icon('box')}<span>OBERON</span><span class="tree-count">${state.notes.length}</span></button>${treeHTML()}`;
   }
   function renderTabs(){
     $('#tabs').innerHTML=state.tabs.map(id=>state.notes.find(n=>n.id===id)).filter(Boolean).map(n=>`<div class="tab${n.id===state.active?' active':''}"><button class="tab-open" role="tab" aria-selected="${n.id===state.active}" data-note="${esc(n.id)}" title="${esc(n.path)}">${icon('file')}<span class="tab-label">${esc(title(n))}</span></button><button class="tab-close" data-close-tab="${esc(n.id)}" title="Закрыть вкладку ${esc(title(n))}" aria-label="Закрыть вкладку ${esc(title(n))}">${icon('x')}</button></div>`).join('');
@@ -290,9 +290,10 @@
     for(let f=selectedFolder;f;f=parent(f))state.collapsed=state.collapsed.filter(x=>x!==f);
     return true;
   }
-  function newFolder(){
-    openDialog(dialogHeader('Новая папка','Немного порядка для близких мыслей.')+`<form id="folder-form"><div class="modal-body"><label class="modal-field"><span>Название</span><input id="folder-name" maxlength="100" placeholder="Например, Наблюдения" autofocus required></label><label class="modal-field"><span>Внутри папки</span><select id="folder-parent">${folderOptions('')}</select></label><p class="form-error" id="form-error"></p></div><div class="modal-footer"><button type="button" class="secondary-button" data-action="close-modal">Отмена</button><button class="primary-button" type="submit">${icon('folder-plus')}Создать папку</button></div></form>`);
-    $('#folder-form').onsubmit=e=>{e.preventDefault();const name=$('#folder-name').value.trim(),p=$('#folder-parent').value,path=(p?p+'/':'')+name;if(!validName(name)){$('#form-error').textContent='Введите имя без недопустимых символов и точки в конце. Имя .git зарезервировано.';return;}const problem=pathProblem(state,path,{folder:true});if(problem){$('#form-error').textContent=problem.message;return;}state.folders.push(path);selectedFolder=path;for(let f=p;f;f=parent(f))state.collapsed=state.collapsed.filter(x=>x!==f);closeDialog();renderLibrary();persist();toast('Папка создана. Новая заметка появится в ней.');};
+  function newFolder(parentFolder=selectedFolder){
+    const destination=parentFolder&&state.folders.includes(parentFolder)?parentFolder:'';
+    openDialog(dialogHeader('Новая папка',destination?'Внутри OBERON / '+destination:'В корне OBERON')+`<form id="folder-form"><div class="modal-body"><label class="modal-field"><span>Название</span><input id="folder-name" maxlength="100" placeholder="Например, Наблюдения" autofocus required></label><label class="modal-field"><span>Внутри папки</span><select id="folder-parent">${folderOptions(destination)}</select></label><p class="form-error" id="form-error"></p></div><div class="modal-footer"><button type="button" class="secondary-button" data-action="close-modal">Отмена</button><button class="primary-button" type="submit">${icon('folder-plus')}Создать папку</button></div></form>`);
+    $('#folder-form').onsubmit=e=>{e.preventDefault();const name=$('#folder-name').value.trim(),p=$('#folder-parent').value,path=(p?p+'/':'')+name;if(!validName(name)){$('#form-error').textContent='Введите имя без недопустимых символов и точки в конце. Имя .git зарезервировано.';return;}const problem=pathProblem(state,path,{folder:true});if(problem){$('#form-error').textContent=problem.message;return;}state.folders.push(path);selectedFolder=path;for(let f=path;f;f=parent(f))state.collapsed=state.collapsed.filter(x=>x!==f);closeDialog();renderLibrary();persist();toast('Папка создана в OBERON / '+path);};
   }
   function deleteNote(){
     const note=active();if(!note)return;
@@ -381,7 +382,7 @@
   function toggleFocus(){const is=app.classList.toggle('focus');$('#focus-label').textContent=is?'Выйти из фокуса':'Фокус';closeDrawers();if(view==='graph')renderGraph();}
   const actions={
     vaults:()=>W.home(), home:()=>openNote(state.notes.find(n=>n.id===seed.active)?.id||state.notes[0]?.id),
-    new:()=>noteDialog(), 'new-folder':newFolder,
+    new:()=>noteDialog(), 'new-folder':()=>newFolder(), 'new-subfolder':button=>newFolder(button.dataset.parent),
     search:()=>search(), graph:()=>{view='graph';closeDrawers();renderView();},library:()=>{view='library';closeDrawers();renderView();},
     github:()=>W.connection(), theme:toggleTheme,settings,help,
     today:daily,import:()=>$('#import-input').click(),export:()=>exportVault(state),download:downloadNote,
@@ -397,6 +398,7 @@
     const searchNote=e.target.closest('[data-search-note]');if(searchNote){const id=searchNote.dataset.searchNote;closeDialog();openNote(id);return;}
     const tabClose=e.target.closest('[data-close-tab]');if(tabClose){closeTab(tabClose.dataset.closeTab);return;}
     const note=e.target.closest('[data-note]');if(note){openNote(note.dataset.note);return;}
+    if(e.target.closest('[data-select-root]')){selectedFolder='';renderLibrary();return;}
     const folder=e.target.closest('[data-folder]');if(folder){selectedFolder=folder.dataset.folder;state.collapsed=state.collapsed.includes(selectedFolder)?state.collapsed.filter(f=>f!==selectedFolder):[...state.collapsed,selectedFolder];renderLibrary();persist();return;}
     const mode=e.target.closest('.view-switch [data-mode]');if(mode){setMode(mode.dataset.mode);return;}
     const formatting=e.target.closest('[data-format]');if(formatting){format(formatting.dataset.format);return;}

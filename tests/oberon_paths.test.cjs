@@ -43,3 +43,23 @@ test('import names stay a single safe filename and pass the same collision check
   assert.equal(importName('picture.png'),null);
   assert.equal(availableNotePath(vault([],['Импорт/A.md']),'Импорт/A.md').path,'Импорт/A (2).md');
 });
+
+test('multiple nested folders and Markdown notes coexist without overwriting parents',()=>{
+  const current=vault(['Работа/Черновик.md'],['Работа']);
+  assert.equal(pathProblem(current,'Работа/Проекты',{folder:true}),null);
+  current.folders.push('Работа/Проекты');
+  assert.equal(pathProblem(current,'Работа/Проекты/Проект А',{folder:true}),null);
+  current.folders.push('Работа/Проекты/Проект А');
+  assert.equal(pathProblem(current,'Работа/Проекты/Проект А/Заметки.md'),null);
+  assert.equal(pathProblem(current,'Работа/Проекты',{folder:true}).code,'NAME_TAKEN');
+  assert.equal(pathProblem(current,'Работа/Черновик.md/Вложенная',{folder:true}).code,'FILE_PARENT');
+});
+
+test('folder creation starts inside the selected parent and exposes a child-folder action',()=>{
+  const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'../oberon/app.js'),'utf8');
+  assert.match(source,/function newFolder\(parentFolder=selectedFolder\)/);
+  assert.match(source,/folderOptions\(destination\)/);
+  assert.match(source,/data-action="new-subfolder"/);
+  assert.match(source,/newFolder\(button\.dataset\.parent\)/);
+  assert.match(source,/data-select-root="true"/);
+});

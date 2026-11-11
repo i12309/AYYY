@@ -51,3 +51,15 @@
 .modal-footer button{min-height:36px}
 @media(max-width:760px){.portal-link{font-size:24px}.github-status{max-width:34px}.connection-fields{grid-template-columns:1fr;gap:0}.conflict-versions{grid-template-columns:1fr}.statusbar #save-status{max-width:60vw;white-space:nowrap}.connection-summary{font-size:11px;gap:11px}.modal-footer{padding:14px 18px;gap:7px}.modal-footer button{font-size:11px;padding:9px 11px}}
 @supports(padding:env(safe-area-inset-bottom)){.app{grid-template-rows:67px minmax(0,1fr) calc(28px + env(safe-area-inset-bottom))}.statusbar{padding-bottom:env(safe-area-inset-bottom)}.drawer-scrim{bottom:calc(28px + env(safe-area-inset-bottom))}@media(max-width:1020px){.app.show-inspector .inspector{bottom:calc(28px + env(safe-area-inset-bottom))}}@media(max-width:760px){.app{grid-template-rows:60px minmax(0,1fr) calc(28px + env(safe-area-inset-bottom))}.app.show-sidebar .sidebar{bottom:calc(28px + env(safe-area-inset-bottom))}}}
+
+/* A selected folder is the default parent; each folder also has a child-folder action. */
+.tree-root{width:100%;text-align:left;border-radius:4px}
+.tree-root:hover{background:#ffffff05}
+.tree-root.selected{color:#e8d3b4}
+.tree-folder-row{position:relative;min-width:0}
+.tree-folder-row>.tree-folder{padding-right:38px}
+.tree-folder.selected{background:#d8b58d14;color:#e8d3b4}
+.tree-folder-add{position:absolute;top:3px;right:3px;display:grid;place-items:center;width:27px;height:27px;border-radius:4px;color:#c2ab8e;opacity:.65}
+.tree-folder-add svg{width:14px;height:14px}
+.tree-folder-add:hover,.tree-folder-add:focus-visible{opacity:1;background:#d8b58d21;color:#f1d9b9}
+@media(hover:none){.tree-folder-add{opacity:1}}
