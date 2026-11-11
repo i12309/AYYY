@@ -56,13 +56,13 @@ with sync_playwright() as pw:
     unlock.locator('[name=passphrase]').fill('synthetic-wrong-passphrase')
     unlock.locator('[name=remember]').check()
     unlock.locator('[type=submit]').click()
-    unlock.locator('[data-form-error]').wait_for()
+    p.get_by_text('Неверная фраза доступа либо повреждён архив.',exact=True).wait_for()
     assert not p.evaluate('(k)=>sessionStorage.getItem(k)',SESSION)
     print('PASS wrong passphrase never grants temporary access',flush=True)
     unlock.locator('[name=passphrase]').fill(PHRASE)
     unlock.locator('[type=submit]').click()
     p.locator('.metric').first.wait_for()
-    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',SESSION)
+    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',arg=SESSION)
     assert p.evaluate("""async()=>{
       const request=indexedDB.open('ayyy-human-temporary-unlock-v1');
       const db=await new Promise(resolve=>request.onsuccess=()=>resolve(request.result));
@@ -90,7 +90,7 @@ with sync_playwright() as pw:
     unlock.locator('[name=remember]').check()
     unlock.locator('[type=submit]').click()
     p.locator('.metric').first.wait_for()
-    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',SESSION)
+    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',arg=SESSION)
     # Simulate 31 minutes without sleeping.
     p.evaluate("""key=>{
       const lease=JSON.parse(sessionStorage.getItem(key));
@@ -107,7 +107,7 @@ with sync_playwright() as pw:
     unlock.locator('[name=remember]').check()
     unlock.locator('[type=submit]').click()
     p.locator('.metric').first.wait_for()
-    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',SESSION)
+    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',arg=SESSION)
     p.locator('.profile-entry').click()
     p.locator('[data-action=change-passphrase]').click()
     form=p.locator('[data-form=change-passphrase]')
