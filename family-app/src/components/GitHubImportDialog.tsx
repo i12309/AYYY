@@ -66,6 +66,7 @@ export function GitHubImportDialog({
             placeholder={authenticated?'Ключ подключён на время вкладки':'Токен с Contents: Read and write'}
             autoComplete="off" />
         </label>
+        <p className="field-hint">GitHub fine-grained token: Repository access → Only select repositories → выберите приватный репозиторий. Repository permissions → Contents → Read and write для синхронизации (для одного только чтения достаточно Read-only); Metadata → Read-only (автоматически). Другие разрешения не нужны. Нажмите Generate token. Запись разрешена во весь выбранный репозиторий. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Создать fine-grained token ↗</a></p>
         <p className="field-hint">
           <LockKeyhole size={13}/> Только приватный репозиторий. Токен остаётся в памяти вкладки
           и не записывается в файлы или браузерное хранилище.
