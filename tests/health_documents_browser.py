@@ -30,23 +30,34 @@ def pdf_objects(objects):
  for i,obj in enumerate(objects):offsets.append(len(output));output+=f'{i+1} 0 obj\n'.encode()+obj+b'\nendobj\n'
  at=len(output);output+=f'xref\n0 {len(objects)+1}\n0000000000 65535 f \n'.encode()+b''.join(f'{o:010} 00000 n \n'.encode() for o in offsets)+f'trailer << /Size {len(objects)+1} /Root 1 0 R >>\nstartxref\n{at}\n%%EOF'.encode()
  return output
-def labelled_pdf():
- header=['test','result','units','result date']
- pages=[[
-  ['Report date: 2026-11-23'],['Collection date:','9.11.2026'],header,
-  ['Synthetic collection marker','4','mg'],['Synthetic dated marker','5','mg','2026-11-10'],
- ],[
-  ['Collected: 2026-11-12'],['Collection date: 2026-11-13'],header,['Synthetic conflict marker','6','mg'],
- ]]
- objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>',
+def text_pdf(pages,columns):
+ kids=' '.join(f'{4+index*2} 0 R' for index in range(len(pages)))
+ objects=[b'<< /Type /Catalog /Pages 2 0 R >>',f'<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>'.encode(),
           b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
  for page in pages:
   commands=[f'BT /F1 12 Tf 1 0 0 1 {x} {750-30*index} Tm ({value}) Tj ET'
-            for index,row in enumerate(page) for x,value in zip([30,260,350,480],row)]
+            for index,row in enumerate(page) for x,value in zip(columns,row) if value]
   stream='\n'.join(commands).encode()
   objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 3 0 R >> >> /Contents {len(objects)+2} 0 R >>'.encode())
   objects.append(b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream')
  return pdf_objects(objects)
+def labelled_pdf():
+ header=['test','result','units','result date']
+ return text_pdf([[
+  ['Report date: 2026-11-23'],['Collection date:','9.11.2026'],header,
+  ['Synthetic collection marker','4','mg'],['Synthetic dated marker','5','mg','2026-11-10'],
+ ],[
+  ['Collected: 2026-11-12'],['Collection date: 2026-11-13'],header,['Synthetic conflict marker','6','mg'],
+ ]],[30,260,350,480])
+def previous_result_pdf():
+ header=['test','current result','previous result','units','reference range']
+ return text_pdf([[
+  ['Collection date: 2026-11-11'],header,
+  ['Synthetic PDF result','4','99','','1-5'],
+  ['Synthetic prior only','','8','mg','2-9'],header,
+  ['Synthetic empty history','6','','U/L','1-7'],
+  ['Performed by: Synthetic laboratory'],['Synthetic footer marker','50','40','mg','1-10'],
+ ]],[30,215,315,420,490])
 def scan_pdf(jpeg):
  commands=b'q 600 0 0 210 0 0 cm /Scan Do Q'
  def stream(attributes,data):
@@ -153,6 +164,25 @@ with sync_playwright() as pw:
  check('saved result shows the original printed sample date',
        'Дата забора в бланке' in p.locator('.analyte-origin').inner_text() and '9.11.2026' in p.locator('.analyte-origin').inner_text())
  p.locator('.sidebar button[data-tab=lab]').click()
+ upload('synthetic-previous-results.pdf',previous_result_pdf(),'application/pdf');draft()
+ positioned=p.locator('[data-form=document-review]')
+ check('PDF keeps a blank unit separate from the reference and historical value',
+       positioned.locator('[name="0:value"]').input_value()=='4' and positioned.locator('[name="0:unit"]').input_value()=='' and
+       positioned.locator('[name="0:referenceText"]').input_value()=='1-5' and
+       'previous result · 99' in positioned.locator('.health-import-row-source').inner_text())
+ positioned.locator('[data-import-row="1"]').click()
+ check('a previous-only PDF row has no proposed result and remains unselected',
+       positioned.locator('[name="1:value"]').input_value()=='' and not positioned.locator('[name=selected]').nth(1).is_checked() and
+       'previous result · 8' in positioned.locator('.health-import-row-source').inner_text())
+ positioned.locator('[data-import-row="2"]').click()
+ check('blank prior result preserves the current result and PDF ignores the repeated header and footer',
+       positioned.locator('[data-import-row]').count()==3 and positioned.locator('[name="2:value"]').input_value()=='6' and
+       positioned.locator('[name="2:unit"]').input_value()=='U/L' and positioned.locator('[name=selected]:checked').count()==2)
+ submit_review()
+ positioned.get_by_text('Сохранено результатов: 2 · Осталось строк: 1',exact=True).wait_for()
+ close_import()
+ check('only current values are saved from a PDF with historical columns',
+       'Synthetic PDF result' in p.locator('.analyte-groups').inner_text() and 'Synthetic prior only' not in p.locator('.analyte-groups').inner_text())
  matching=b'name;value;date;unit\nSYNTHETIC PDF MARKER;4,00;01.11.2026;mg\n'
  upload('another-format.csv',matching,'text/csv');draft()
  review=p.locator('[data-form=document-review]')

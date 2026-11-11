@@ -2,6 +2,55 @@
 (() => {
   'use strict';
   const M=window.HumanModel;
+  const aliases={
+    name:['name','test','analyte','показатель','название','наименование','анализ','исследование'],
+    value:['value','result','current result','результат','текущий результат','значение'],
+    previous:['previous','previous result','предыдущий','предыдущий результат'],
+    date:['date','result date','дата','дата результата'],unit:['unit','units','единица','единицы','ед.','ед. изм.','ед.изм.'],
+    low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],
+    referenceText:['reference','range','reference range','reference interval','reference values','референс','референсы',
+      'референсные','референсные значения','референсный интервал','норма','нормы','нормальные значения','условия референса из бланка'],
+    source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],
+    notes:['notes','comment','комментарий','примечание'],
+  };
+  const columnLabel=text=>text.trim().replace(/\s+/g,' ').replace(/:$/,'').trimEnd().toLocaleLowerCase('ru-RU');
+  const columnIndex=(labels,key)=>labels.findIndex(label=>aliases[key].includes(columnLabel(label)));
+  const phrases=new Set(Object.values(aliases).flat().filter(label=>label.includes(' ')));
+  const pdfFooter=/^(?:(?:исполнитель|результаты исследований не|performed by|these (?:test )?results (?:are not|should not))(?=\s|[:.!]|$)|внимание!)/iu;
+  function pdfHeadings(items){
+    const headings=[];
+    for(const item of items){
+      const last=headings.at(-1);
+      const combined=last?last.str+' '+item.str:'';
+      if(last&&item.x<=last.right+8&&phrases.has(columnLabel(combined))){
+        last.str=combined;last.right=item.right;
+      }else headings.push({...item});
+    }
+    return headings;
+  }
+  function pdfTable(name,lines){
+    const rows=lines.map(line=>line.items.map(item=>item.str));
+    for(const [index,line] of lines.entries()){
+      const headings=pdfHeadings(line.items);
+      const labels=headings.map(item=>item.str);
+      const matches=key=>labels.filter(label=>aliases[key].includes(columnLabel(label))).length;
+      if(matches('name')!==1||matches('value')!==1||headings.some((item,i)=>i>0&&item.x-headings[i-1].x<=4))continue;
+      rows[index]=labels;
+      let end=rows.length;
+      for(let i=index+1;i<rows.length;i++){
+        const text=rows[i].join(' ').trim();
+        if(pdfFooter.test(text)){end=i;break;}
+        const row=Array(headings.length).fill('');
+        for(const item of lines[i].items){
+          const column=Math.max(0,headings.findLastIndex(heading=>item.x>=heading.x-2));
+          row[column]=row[column]?row[column]+' '+item.str:item.str;
+        }
+        rows[i]=row;
+      }
+      return {name,rows,pdfLayout:{header:index+1,end}};
+    }
+    return {name,rows};
+  }
   const dateLike=/^(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\S+)?)?)?|\d{1,2}[./]\d{1,2}[./]\d{4})$/;
   const day=(year,month,date)=>[year,month.padStart(2,'0'),date.padStart(2,'0')].join('-');
   function date(value,order=''){
@@ -135,10 +184,12 @@
       for(const column of columns)dates.set(column,checkedDate(headings[column],order));
     }
     if(fallbackDate)checkedDate(fallbackDate,order);
-    const results=[];
-    for(let rowIndex=header;rowIndex<table.rows.length;rowIndex++){
+    const results=[],positioned=table.pdfLayout?.header===header?table.pdfLayout:null;
+    for(let rowIndex=header;rowIndex<(positioned?.end??table.rows.length);rowIndex++){
       const raw=table.rows[rowIndex],rawCells=table.provenance?.[rowIndex]||null;
       const cells=Object.fromEntries(fields.map(key=>[key,mapping[key]>=0?(raw[mapping[key]]||''):'']));
+      if(positioned&&(!cells.name.trim()&&columns.every(column=>!raw[column]?.trim())||
+        headings.every((heading,column)=>columnLabel(heading)===columnLabel(raw[column]||''))))continue;
       for(const column of columns){
         const value=raw[column]||'';
         if(layout==='dates_in_columns'&&!value.trim())continue;
@@ -172,5 +223,5 @@
     if(!results.length)throw Error('После заголовка нет результатов.');
     return results;
   }
-  window.HumanImportTable={date,checkedDate,pdfCollectionDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
+  window.HumanImportTable={date,checkedDate,columnIndex,pdfTable,pdfCollectionDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
 })();

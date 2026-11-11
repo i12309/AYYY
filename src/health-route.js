@@ -19,7 +19,7 @@
   }
   app.register('health',{
     title:'Здоровье',
-    render(){const href=source+'?v=human-951a33893491'+(app.param==='demo'?'&demo=1':'');return '<iframe class="ayyy-health-frame" id="ayyy-health-frame" title="HUMAN · личный журнал здоровья" src="'+app.escape(href)+'" loading="eager"></iframe>';},
+    render(){const href=source+'?v=human-057fedf73a24'+(app.param==='demo'?'&demo=1':'');return '<iframe class="ayyy-health-frame" id="ayyy-health-frame" title="HUMAN · личный журнал здоровья" src="'+app.escape(href)+'" loading="eager"></iframe>';},
     mount(){const frame=document.getElementById('ayyy-health-frame');return ()=>{if(frame)frame.src='about:blank';};}
   });
 })();

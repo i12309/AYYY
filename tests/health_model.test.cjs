@@ -112,6 +112,24 @@ test('PDF sample dates require an explicit label and one valid calendar day',()=
   }
 });
 
+test('PDF column positions keep split headings and missing current values separate',()=>{
+  const T=model().importTable;
+  const line=(...cells)=>({items:cells.map(([x,str,width=12])=>({x,right:x+width,str}))});
+  const table=T.pdfTable('Страница 1',[
+    line([10,'Дата забора: 08.11.2026']),
+    line([10,'Исследование'],[125,'Результат'],[220,'Предыдущий',48],[271,'результат'],[350,'Ед. изм.']),
+    line([10,'Синтетический показатель'],[220,'42'],[350,'мг']),
+    line([10,'Исполнитель: Тест']),line([10,'Синтетический текст'],[125,'12']),
+  ]);
+  assert.deepEqual({...table.pdfLayout},{header:2,end:3});
+  assert.equal(T.columnIndex(table.rows[1],'value'),1);
+  assert.deepEqual([...table.rows[2]],['Синтетический показатель','','42','мг']);
+  const [draft]=T.draft(table,{hash:'synthetic',sheet:0,header:2,mapping:{name:0,value:1,unit:3},layout:'rows'},['name','value','unit'],new Set());
+  assert.equal(draft.item.value,'');
+  assert.ok(draft.problem);
+  assert.equal(draft.row,3);
+});
+
 test('partial dates and censored values retain their original meaning',()=>{
   const m=model(),base={name:'Synthetic CRP',unit:'мг/л',value:'< 0,1'};
   const year=m.checkLab({...base,date:'2026',datePrecision:'year'});

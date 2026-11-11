@@ -78,10 +78,19 @@
   for(let n=1;n<=d.numPages;n++){
    signal?.throwIfAborted();
    const p=await d.getPage(n),items=(await p.getTextContent()).items.filter(x=>x.str?.trim()),lines=[];if(items.length>20000||items.reduce((n,x)=>n+x.str.length,0)>2000000)throw Error('Слишком много текста на странице PDF.');
-   for(const item of items){const y=item.transform[5];let line=lines.find(l=>Math.abs(l.y-y)<3);if(!line){line={y,items:[]};lines.push(line);}line.items.push(item);}
-   const rows=lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(x=>x.str));if(rows.some(r=>r.length>100))throw Error('На странице PDF больше 100 колонок.');
-   let table={name:'Страница '+n,rows};
-   if(!rows.length&&scanned<10&&(await p.getOperatorList()).fnArray.some(op=>imageOps.has(op))){
+   items.sort((a,b)=>b.transform[5]-a.transform[5]);
+   for(const item of items){
+    const x=item.transform[4],y=item.transform[5];
+    let line=lines.at(-1);
+    if(!line||line.y-y>=3){line={y,items:[]};lines.push(line);}
+    line.items.push({x,right:x+item.width,str:item.str});
+   }
+   for(const line of lines){
+    if(line.items.length>100)throw Error('На странице PDF больше 100 колонок.');
+    line.items.sort((a,b)=>a.x-b.x);
+   }
+   let table=HumanImportTable.pdfTable('Страница '+n,lines);
+   if(!lines.length&&scanned<10&&(await p.getOperatorList()).fnArray.some(op=>imageOps.has(op))){
     scanned++;
     try{table=await scanPage(p,n,{signal,onProgress:status=>onProgress?.(`Страница ${n} из ${d.numPages} · ${status}`)});}
     catch(error){signal?.throwIfAborted();table.ocrError=error.message||'Не удалось распознать страницу.';}

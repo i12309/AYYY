@@ -3,8 +3,6 @@
  'use strict';
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['referenceText','Условия референса из бланка'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
- const aliases={name:['name','test','analyte','показатель','название','наименование','анализ','исследование'],value:['value','result','результат','значение'],date:['date','result date','дата','дата результата'],unit:['unit','units','единица','единицы','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],referenceText:['reference','reference range','reference interval','reference values','референс','референсы','референсные значения','референсный интервал','норма','нормы','нормальные значения','условия референса из бланка'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
- const columnIndex=(labels,key)=>labels.findIndex(label=>aliases[key].includes(label.trim().toLocaleLowerCase('ru-RU')));
  const sameUnitChoice=(option,choice)=>option.unit===choice.unit&&option.settingsVersion===choice.settingsVersion&&
   option.observationId===choice.observationId&&option.observationUpdatedAt===choice.observationUpdatedAt;
  function open(files,{V,M,body,signal,close,commit,getDoc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
@@ -224,7 +222,8 @@
   const manualDate=()=>pdf?pageFallbacks[sheet]:fallbackDate;
   function suggestedHeader(table){
    if(!pdf)return 1;
-   const index=table.rows.findIndex(labels=>columnIndex(labels,'name')>=0&&columnIndex(labels,'value')>=0);
+   if(table.pdfLayout)return table.pdfLayout.header;
+   const index=table.rows.findIndex(labels=>T.columnIndex(labels,'name')>=0&&T.columnIndex(labels,'value')>=0);
    return index<0?1:index+1;
   }
   function sourceDocument(doc){
@@ -284,7 +283,7 @@
    const content=frame('Сопоставление колонок'),labels=table.rows[header-1]||[],width=Math.max(0,...table.rows.map(r=>r.length));
    content.append(queueLink());
    draftActions(content,()=>!busy);
-   mapping??=Object.fromEntries(fields.map(([key])=>[key,columnIndex(labels,key)]));
+   mapping??=Object.fromEntries(fields.map(([key])=>[key,T.columnIndex(labels,key)]));
    layout??=T.suggestedLayout(labels,mapping);
    const hint=pdf&&layout==='rows'?T.pdfCollectionDate(table.rows):null;
    const error=V.h('p',{class:'error',role:'alert',hidden:true});
@@ -300,6 +299,7 @@
      'Дата забора на этой странице требует проверки. При необходимости введите дату вручную.':
      'Дата забора на этой странице — '+hint.raw+'. Сверьте её с оригиналом.'):null,
     V.h('p',{class:'health-note'},'Поддерживаются даты ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ГГГГ-ММ и ГГГГ. Из Excel читаются сохранённые результаты формул.'),
+    pdf&&T.columnIndex(labels,'previous')>=0?V.h('p',{class:'health-note'},'Предыдущие результаты видны в исходном фрагменте. Для импорта предложена колонка текущих результатов.'):null,
     table.ocr?V.h('p',{class:'health-note'},'Текст распознан с изображения. Сверьте колонки, значения и даты с оригиналом.'):null,
     sourcePreview(),scanStatus,error,V.table(['Строка',...Array.from({length:width},(_,i)=>String(i+1))],table.rows.slice(0,12).map((row,i)=>[i+1,...row]))
    ].filter(Boolean),'Создать черновик');
@@ -347,6 +347,7 @@
    content.append(queueLink());
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
+   const requiresSelection=table.ocr||pdf&&table.pdfLayout?.header!==header;
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
    let unitDoc=doc,unitIndex=A.unitHistoryIndex(doc),unitDocumentId=documentId;
    const choices=[],refreshRows=[],captureRows=[],selection=[];
@@ -462,7 +463,7 @@
      showDecision();
     }
     refreshUnit();refreshReference();refreshMatches();
-    checked.checked=!draft.duplicate&&(savedRow?.selected??(!draft.manual&&!table.ocr&&!draft.problem&&!candidates.length));
+    checked.checked=!draft.duplicate&&(savedRow?.selected??(!draft.manual&&!requiresSelection&&!draft.problem&&!candidates.length));
     if(savedRow&&checked.checked){
      withinFile=savedRow.repeated||savedRow.decision==='separate';refreshMatches(false);
      if(Array.from(decision.options).some(option=>option.value===savedRow.decision))decision.value=savedRow.decision;
@@ -480,7 +481,7 @@
     choices[index]=(matches,repeated)=>{candidates=matches;withinFile=repeated;showDecision();};
     captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem,unitChoice,unitReviewed,autoReference}));
     selection.push({checked,refresh:()=>refreshMatches(false),eligible:()=>{
-     if(draft.duplicate||draft.manual||table.ocr||candidates.length||withinFile||problems[index])return false;
+     if(draft.duplicate||draft.manual||requiresSelection||candidates.length||withinFile||problems[index])return false;
      const row=values();
      try{M.checkLab({...row,...T.checkedDate(row.date,order)});return true;}catch{return false;}
     }});
@@ -504,7 +505,8 @@
       const cell=draft.rawCells?.find(raw=>raw.column===column);
       if(!value&&!cell?.formula)return '';
       const formula=cell?.formula?` (формула: ${cell.formula})`:'';
-      return `${cell?.address||`Колонка ${column+1}`} · ${value}${formula}`;
+      const label=table.pdfLayout?.header===header?table.rows[header-1][column]:null;
+      return `${cell?.address||label||`Колонка ${column+1}`} · ${value}${formula}`;
      }).filter(Boolean);
      if(draft.collectionDate)source.unshift(`${draft.collectionDate.label} · ${draft.collectionDate.raw}`);
      if(layout==='dates_in_columns'&&draft.sourceDate){
@@ -571,8 +573,8 @@
    },{disabled:drafts.length>=5000});
    const form=V.form('document-review',[
     V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
-    table.ocr||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
-    V.h('div',{class:'health-import-selection'},table.ocr||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
+    requiresSelection||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
+    V.h('div',{class:'health-import-selection'},requiresSelection||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
      action('Снять выбор','import-clear-selection',()=>selectRows(false),{class:'small'}),selectionStatus),result,
     V.h('div',{class:'health-import-review'},V.h('section',{class:'health-import-rows'},V.h('h3',{},'Показатели'),pendingRows,savedGroup),editor),error
    ].filter(Boolean),'Сохранить выбранные результаты');content.append(action('Вернуться к колонкам','import-back',()=>{if(!busy)choose();}),addRow,form);
