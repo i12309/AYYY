@@ -174,17 +174,22 @@ def run(browser, directory):
     before=p.evaluate(draft_state)
     mapping.locator('[type=submit]').click()
     review(p).locator('[name=selected]').last.uncheck()
+    review(p).locator('[data-import-row="1"]').click()
     review(p).locator('[name="1:value"]').fill('20.25')
+    review(p).get_by_text('Референс, лаборатория и дополнительные поля',exact=True).click()
+    review(p).locator('[name="1:notes"]').fill('Synthetic pending note')
     confirm_review(p)
     p.get_by_text('Сохранено результатов: 1 · Осталось строк: 1',exact=True).wait_for()
     after=p.evaluate(draft_state)
     assert before['revision']!=after['revision'] and before['hash']==after['hash']
     p.reload();unlock(p,NEW);lab(p);resume(p)
-    assert review(p).locator('[name=selected]').first.is_disabled() and not review(p).locator('[name=selected]').last.is_checked()
+    assert review(p).locator('[name=selected][value="0"]').is_disabled() and not review(p).locator('[name=selected][value="1"]').is_checked()
     assert not review(p).locator('[name=profileConfirmed]').is_checked()
     assert review(p).locator('[name="1:value"]').input_value()=='20.25'
+    review(p).get_by_text('Референс, лаборатория и дополнительные поля',exact=True).click()
+    assert review(p).locator('[name="1:notes"]').input_value()=='Synthetic pending note'
     assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==0
-    review(p).locator('[name=selected]').last.check();confirm_review(p)
+    review(p).locator('[name=selected][value="1"]').check();confirm_review(p)
     p.locator('#health-import-page').wait_for(state='hidden')
     assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
     assert p.locator('.group-name').filter(has_text='Synthetic accepted marker').count()==1

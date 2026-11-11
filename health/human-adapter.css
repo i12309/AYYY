@@ -50,12 +50,23 @@
 .health-import-workspace .field{grid-template-columns:minmax(0,1fr);overflow:clip}
 .health-import-workspace .field>select,.health-import-workspace .field>input{min-width:0;max-width:100%}
 .health-import-workspace .field>select{overflow:hidden;text-overflow:ellipsis}
-.health-import-review{min-width:0;max-width:100%}
-.health-import-review input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:0}
-.health-import-review input:not([type=checkbox]){min-width:150px}
-.health-import-review td>span>small{display:block;min-width:160px;color:var(--muted)}
-.health-import-review td>span>.import-row-warning{color:var(--red-ink)}
-.health-import-review select{max-width:260px;margin-top:6px}
+.health-import-review{display:grid;grid-template-columns:minmax(210px,.85fr) minmax(0,1.15fr);gap:16px;align-items:start;min-width:0}
+.health-import-rows,.health-import-row-editor{min-width:0}
+.health-import-review h3{margin:0 0 7px;font-size:13px}
+.health-import-row-list{list-style:none;margin:0;padding:0;max-height:clamp(180px,52vh,520px);overflow:auto;scrollbar-width:thin}
+.health-import-row{display:flex;align-items:flex-start;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px}
+.health-import-row:has([aria-pressed=true]){border-color:var(--blue);background:var(--blue-soft)}
+.health-import-review .health-import-row input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:1px 0 0;flex:none}
+.health-import-row button{display:grid;gap:3px;padding:0;min-width:0;flex:1;border:0;background:none;text-align:left;color:var(--text);overflow-wrap:anywhere}
+.health-import-row button span,.health-import-row button small{font-size:11px;color:var(--muted)}
+.health-import-review .import-row-warning{color:var(--red-ink)}
+.health-import-row-source,.health-import-row-extra,.health-import-saved-rows{border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:8px 0;min-width:0}
+.health-import-review summary{cursor:pointer;font-size:12px;font-weight:600}
+.health-import-row-source pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border-radius:5px;padding:8px;margin:8px 0 0;max-height:140px;overflow:auto;font-size:11px}
+.health-import-row-editor .health-form-row{align-items:start}
+.health-import-row-extra .health-form-row{margin-top:8px}
+.health-import-row-editor .health-import-decision{margin:8px 0}
+@media(max-width:700px){.health-import-review{grid-template-columns:minmax(0,1fr)}.health-import-row-list{max-height:220px}}
 .health-import-selection{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .health-import-selection .health-note{margin:0}
 .health-import-file{overflow-wrap:anywhere}

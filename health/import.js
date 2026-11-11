@@ -320,7 +320,7 @@
     review();
    }catch(err){error.hidden=false;error.textContent=err.message;}});
   }
-  function review(savedRows=[]){
+  function review(savedRows=[],preferredRow){
    const doc=getDoc(),documentId=sourceDocument(doc)?.id;
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
    const result=V.h('p',{class:'health-note','data-import-result':true,role:'status',hidden:true});
@@ -330,6 +330,13 @@
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
    const choices=[],refreshRows=[],captureRows=[],selection=[];
    const problems=savedRows.map(row=>row?.problem);
+   const pendingRows=V.h('ul',{class:'health-import-row-list','aria-label':'Строки к проверке'});
+   const savedList=V.h('ul',{class:'health-import-row-list','aria-label':'Сохранённые строки'});
+   const savedLabel=V.h('summary');
+   const savedGroup=V.h('details',{class:'health-import-saved-rows',hidden:true},savedLabel,savedList);
+   const rowContent=V.h('div');
+   const editor=V.h('section',{id:'health-import-row-editor',class:'health-import-row-editor','aria-label':'Проверка результата'},rowContent,sourcePreview());
+   let activeRow=-1;
    const selectionStatus=V.h('span',{class:'health-note',role:'status'});
    const confirmation=V.h('input',{type:'checkbox',name:'profileConfirmed',checked:profileConfirmed,required:true});
    const profile=typeof doc.profile.name==='string'?doc.profile.name.trim():'';
@@ -349,16 +356,29 @@
     const caption=V.h('small',{class:'import-classification'});
     const checked=V.h('input',{type:'checkbox',name:'selected',value:String(index),disabled:draft.duplicate,
       'aria-label':`Сохранить · ${rowLabel}`});
-    const hint=V.h('small');
+    const rowName=V.h('strong'),rowSummary=V.h('span'),hint=V.h('small'),editorHint=V.h('p',{class:'health-note',hidden:true});
+    const rowButton=V.h('button',{type:'button','aria-controls':editor.id,'aria-pressed':'false','data-import-row':index},rowName,rowSummary,hint);
+    rowButton.addEventListener('click',()=>{if(!busy&&!persisting&&active())showRow(index,true);});
+    const rowItem=V.h('li',{class:'health-import-row'},checked,rowButton);
     const decision=V.h('select',{name:index+':decision',hidden:true,'aria-label':`Действие при совпадении · ${rowLabel}`});
+    const decisionField=V.h('label',{class:'field health-import-decision',hidden:true},V.h('span',{},'Действие при совпадении'),decision);
+    const editorTitle=V.h('h3',{tabindex:-1});
     let candidates=[],withinFile=false;
     function showDecision(){
      const value=decision.value;
      const possible=candidates.length>0||withinFile;
      const issue=problems[index]??draft.problem;
-     hint.textContent=draft.duplicate?'Уже импортирована':issue||(possible?(candidates.length?'Возможный дубль в журнале':'Совпадение требует проверки'):draft.sourceDate);
-     hint.classList.toggle('import-row-warning',!draft.duplicate&&!!(issue||possible));
-     decision.hidden=!(checked.checked&&possible);
+     const warning=!draft.duplicate&&!!(issue||possible);
+     const message=draft.duplicate?'Уже импортирована':issue||(possible?(candidates.length?'Возможный дубль в журнале':'Совпадение требует проверки'):'');
+     rowName.textContent=controls.get('name').value.trim()||rowLabel;
+     const result=[controls.get('value').value.trim(),controls.get('unit').value.trim()].filter(Boolean).join(' ');
+     rowSummary.textContent=`${result||'Без результата'} · ${controls.get('date').value.trim()||'Дата неизвестна'}`;
+     hint.textContent=editorHint.textContent=message;
+     hint.hidden=editorHint.hidden=!message;
+     hint.classList.toggle('import-row-warning',warning);
+     editorHint.classList.toggle('import-row-warning',warning);
+     editorTitle.textContent=draft.duplicate?'Сохранённая строка':'Проверка строки';
+     decision.hidden=decisionField.hidden=!(checked.checked&&possible);
      decision.replaceChildren();
      if(decision.hidden)return;
      decision.append(V.h('option',{value:''},'Выберите действие'),V.h('option',{value:'separate'},'Сохранить отдельно'));
@@ -409,17 +429,58 @@
     controls.get('name').addEventListener('input',showClassification);
     controls.get('unit').addEventListener('input',showClassification);
     showClassification();
-    return [
-     checked,
-     V.h('span',{},draft.manual?`Вручную ${draft.manual}`:`${draft.row} / ${draft.column}`,hint,decision),
-     ...fields.map(([key])=>key==='name'?V.h('div',{},controls.get(key),caption):controls.get(key)),
-    ];
+    const field=(key,label)=>V.h('label',{class:'field'},V.h('span',{},label),controls.get(key),key==='name'?caption:null);
+    function showEditor(){
+     const source=draft.raw.map((value,column)=>{
+      const cell=draft.rawCells?.find(raw=>raw.column===column);
+      if(!value&&!cell?.formula)return '';
+      const formula=cell?.formula?` (формула: ${cell.formula})`:'';
+      return `${cell?.address||`Колонка ${column+1}`} · ${value}${formula}`;
+     }).filter(Boolean);
+     if(layout==='dates_in_columns'&&draft.sourceDate){
+      const header=draft.headerCell?.address||`Заголовок колонки ${draft.column}`;
+      source.unshift(`${header} · ${draft.sourceDate}`);
+     }
+     const sourceDetails=source.length?V.h('details',{class:'health-import-row-source',open:true},V.h('summary',{},'Исходный фрагмент'),V.h('pre',{},source.join('\n'))):null;
+     rowContent.replaceChildren(editorTitle,V.h('p',{class:'health-note'},`${table.name} · ${rowLabel}`),sourceDetails,editorHint,decisionField,
+      V.h('div',{class:'health-form-row'},fields.slice(0,4).map(([key,label])=>field(key,label))),
+      V.h('details',{class:'health-import-row-extra'},V.h('summary',{},'Референс, лаборатория и дополнительные поля'),
+       V.h('div',{class:'health-form-row'},fields.slice(4).map(([key,label])=>field(key,label)))));
+    }
+    return {rowItem,rowButton,showEditor};
    });
+   function syncRows(){
+    let savedCount=0;
+    for(const [index,{rowItem}] of rows.entries()){
+     const saved=drafts[index].duplicate;
+     if(saved)savedCount++;
+     const list=saved?savedList:pendingRows;
+     if(rowItem.parentNode!==list)list.append(rowItem);
+    }
+    savedGroup.hidden=!savedCount;
+    savedLabel.textContent=`Сохранено (${savedCount})`;
+   }
+   function showRow(index,focus=false){
+    if(index<0||index>=rows.length)return;
+    if(index!==activeRow){
+     if(activeRow>=0)rows[activeRow].rowButton.setAttribute('aria-pressed','false');
+     activeRow=index;
+     if(drafts[index].duplicate)savedGroup.open=true;
+     rows[index].rowButton.setAttribute('aria-pressed','true');
+     rows[index].showEditor();
+    }
+    if(focus)rowContent.querySelector('h3').focus();
+   }
+   function showNextReview(){
+    const problem=drafts.findIndex((draft,index)=>!draft.duplicate&&selection[index].checked.checked&&problems[index]);
+    if(problem>=0)showRow(problem);
+    else if(drafts[activeRow]?.duplicate)showRow(drafts.findIndex(draft=>!draft.duplicate));
+   }
    entry.refreshReview=()=>{
     const current=getDoc();indexOfResults=T.duplicateIndex(current.observations);coordinates=T.importedCoordinates(current);
-    refreshRows.forEach(refresh=>refresh());updateSelection();
+    refreshRows.forEach(refresh=>refresh());syncRows();updateSelection();
    };
-   entry.capture=()=>({...editorState(),review:captureRows.map(capture=>capture())});
+   entry.capture=()=>({...editorState(),activeRow,review:captureRows.map(capture=>capture())});
    function selectRows(selectReady){
     if(busy)return;
     for(const row of selection){
@@ -432,21 +493,22 @@
     if(busy||drafts.length>=5000)return;
     const edits=captureRows.map(capture=>capture()),id=M.id();
     manualIds.push(id);drafts.push(manualDraft(id,manualIds.length,T.importedCoordinates(getDoc())));
-    review(edits);
+    review(edits,drafts.length-1);
     body.querySelector(`[name="${drafts.length-1}:name"]`)?.focus();
    },{disabled:drafts.length>=5000});
    const form=V.form('document-review',[
     V.h('p',{class:'health-note health-import-file'},(entry.relativePath||original.name)+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
     table.ocr||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
-    sourcePreview(),
     V.h('div',{class:'health-import-selection'},table.ocr||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
      action('Снять выбор','import-clear-selection',()=>selectRows(false),{class:'small'}),selectionStatus),result,
-    V.h('div',{class:'health-import-review'},V.table(['Сохранить','Строка / колонка',...fields.map(x=>x[1])],rows)),error
+    V.h('div',{class:'health-import-review'},V.h('section',{class:'health-import-rows'},V.h('h3',{},'Показатели'),pendingRows,savedGroup),editor),error
    ].filter(Boolean),'Сохранить выбранные результаты');content.append(action('Вернуться к колонкам','import-back',()=>{if(!busy)choose();}),addRow,form);
    form.querySelector('.health-form-actions').prepend(V.h('label',{class:'health-import-profile'},confirmation,
     profile?V.h('span',{},'Результаты относятся к профилю ',V.h('strong',{},profile)):'Результаты относятся к открытому профилю'));
    const submit=form.querySelector('[type=submit]');
    confirmation.addEventListener('change',()=>{profileConfirmed=confirmation.checked;updateSelection();});
+   syncRows();
+   showRow(Number.isInteger(preferredRow)&&rows[preferredRow]?preferredRow:Math.max(0,drafts.findIndex(draft=>!draft.duplicate)));
    updateSelection();
    form.addEventListener('submit',async e=>{
     e.preventDefault();e.stopPropagation();
@@ -509,6 +571,7 @@
      });
      if(!active())return;
      entry.refreshReview();
+     showNextReview();
      const remaining=drafts.filter((draft,index)=>!draft.duplicate&&(!draft.manual||
       edits[index].selected||Object.values(edits[index].values).some(value=>value.trim()))).length;
      entry.savedCount=(entry.savedCount||0)+created;
@@ -525,12 +588,12 @@
       entry.done=entry.savedCount;entry.original=entry.refreshReview=entry.capture=null;entry.error=null;queue();
      }
     }catch(err){
-     if(active()){entry.refreshReview();error.hidden=false;error.textContent=err.message;}
+     if(active()){entry.refreshReview();showNextReview();error.hidden=false;error.textContent=err.message;}
     }finally{busy=false;form.inert=false;}
    });
   }
   if(Array.isArray(restored.review)){
-   drafts=createDrafts();review(restored.review);
+   drafts=createDrafts();review(restored.review,restored.activeRow);
   }else choose();
   }
   const ready=single?load(entries[0]):Promise.resolve(queue());

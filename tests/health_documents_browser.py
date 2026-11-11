@@ -75,11 +75,18 @@ with sync_playwright() as pw:
  upload('synthetic.xlsx',payload,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',p.locator('#health-dialog [data-action=csv]'))
  check('manual form opens the full import page and releases the dialog',workspace.is_visible() and not p.locator('#health-dialog').is_visible())
  check('XLSX cached formula read without execution','Synthetic XLSX marker' in p.locator('[data-form=document-mapping]').inner_text())
- draft();check('review uses wide workspace',workspace.bounding_box()['width']>=1100);check('table scroll stays inside the page',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
+ draft();check('review uses wide workspace',workspace.bounding_box()['width']>=1100);check('review stays inside the page',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
  first_review=p.locator('[data-form=document-review]')
  check('confirmation names the open profile and starts unchecked',first_review.get_by_label('Результаты относятся к профилю Анна Примерова').is_visible() and first_review.locator('[type=submit]').is_disabled())
  first_review.dispatch_event('submit')
  p.locator('[name="0:value"]').fill('3.5')
+ check('source shows the original cell and cached value beside the editable result',
+       'B2 · 3 (формула: 1+2)' in first_review.locator('.health-import-row-source pre').inner_text() and
+       first_review.locator('[name="0:value"]').input_value()=='3.5')
+ p.set_viewport_size({'width':360,'height':900})
+ check('the row list and editor stack without horizontal overflow on phones',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth') and
+       first_review.locator('.health-import-rows').bounding_box()['y']<first_review.locator('.health-import-row-editor').bounding_box()['y'])
+ p.set_viewport_size({'width':1440,'height':1000})
  p.locator('.sidebar button[data-tab=overview]').click();p.locator('.sidebar button[data-tab=lab]').click()
  check('submitting without profile confirmation cannot save results',p.locator('.analyte-groups tbody tr').count()==baseline and not workspace.is_visible())
  p.locator('[data-action=continue-import]').click()
@@ -94,6 +101,9 @@ with sync_playwright() as pw:
  manual.locator('[name="0:name"]').fill('Synthetic manual PDF marker')
  manual.locator('[name="0:value"]').fill('4.2')
  p.locator('[data-action=import-add-manual]').click()
+ check('adding a manual row opens its editor without inventing source coordinates',
+       manual.locator('[name="1:name"]').evaluate('(field)=>field===document.activeElement') and not manual.locator('.health-import-row-source').count())
+ manual.locator('[data-import-row="0"]').click()
  check('adding a manual row preserves edits and leaves both rows unselected',manual.locator('[name="0:value"]').input_value()=='4.2' and manual.locator('[name=selected]').count()==2 and manual.locator('[name=selected]:checked').count()==0)
  manual.locator('[name=selected]').first.check();save()
  p.locator('.group-name').filter(has_text='Synthetic manual PDF marker').click()
@@ -143,7 +153,12 @@ with sync_playwright() as pw:
  repeated=b'name;value;date;unit\nSynthetic in-file marker;4;2026-11-02;mg\nSynthetic in-file marker;4;2026-11-02;mg'
  upload('repeated-rows.csv',repeated,'text/csv');draft();submit_review()
  review.get_by_text('Сохранено результатов: 1 · Осталось строк: 1',exact=True).wait_for()
- check('the first matching row is saved and the second requires a decision',review.locator('[name=selected]').first.is_disabled() and review.locator('[name="1:decision"]').is_visible())
+ check('the first matching row is saved and the second requires a decision',review.locator('[name=selected][value="0"]').is_disabled() and review.locator('[name="1:decision"]').is_visible())
+ review.get_by_text('Сохранено (1)',exact=True).click()
+ review.locator('[data-import-row="0"]').click()
+ check('a saved row can be inspected with editing disabled',review.locator('[name="0:value"]').is_disabled() and
+       review.locator('.health-import-row-source pre').is_visible())
+ review.locator('[data-import-row="1"]').click()
  review.locator('[name="1:decision"]').select_option('separate');save()
  p.locator('.group-name').filter(has_text='Synthetic in-file marker').click()
  check('partial confirmation can explicitly add the second measurement',p.locator('.analyte-history tbody tr').count()==2)
@@ -155,7 +170,7 @@ with sync_playwright() as pw:
  check('bulk selection only checks valid mapped rows',review.locator('[name=selected]').first.is_checked() and not review.locator('[name=selected]').last.is_checked())
  review.locator('[name=selected]').last.check();submit_review()
  review.get_by_text('Сохранено результатов: 1 · Осталось строк: 1',exact=True).wait_for()
- check('an invalid selected row stays editable while the valid one is saved',review.locator('[name="1:date"]').is_enabled() and review.locator('.import-row-warning').count()==1)
+ check('an invalid selected row stays editable while the valid one is saved',review.locator('[name="1:date"]').is_enabled() and review.locator('.health-import-row-editor .import-row-warning').count()==1)
  review.locator('[name="1:date"]').fill('2026-02-28');save()
  p.locator('.group-name').filter(has_text='Synthetic censored').click();check('unknown date and censoring retained','Дата неизвестна' in p.locator('.analyte-source').inner_text() and '<0.1' in p.locator('.analyte-source').inner_text())
  p.locator('.sidebar button[data-tab=lab]').click();p.locator('.group-name').filter(has_text='Synthetic XLSX marker').click()
@@ -176,8 +191,13 @@ with sync_playwright() as pw:
  mapping.locator('[type=submit]').click()
  check('slash dates require explicit order',mapping.get_by_role('alert').is_visible())
  mapping.locator('[name=dateOrder]').select_option('dmy');draft()
- check('wide dates expand source cells and skip blanks',p.locator('[name=selected]:checked').count()==3 and
-       [p.locator(f'[name="{i}:date"]').input_value() for i in range(3)]==['2026-06-05','2026-06-08','2026-06-08'])
+ dates=[]
+ for i in range(3):
+  review.locator(f'[data-import-row="{i}"]').press('Enter')
+  dates.append(p.locator(f'[name="{i}:date"]').input_value())
+ check('wide dates expand source cells and skip blanks',p.locator('[name=selected]:checked').count()==3 and dates==['2026-06-05','2026-06-08','2026-06-08'])
+ review.locator('[data-import-row="0"]').click()
+ check('source preserves the unnormalised column date','Заголовок колонки 3 · 05/06/2026' in review.locator('.health-import-row-source pre').inner_text())
  p.locator('[name="0:value"]').fill('12.25')
  with p.expect_file_chooser() as chooser:workspace.locator('[data-action=csv]').click()
  chooser.value.set_files([
