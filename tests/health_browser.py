@@ -119,6 +119,10 @@ with sync_playwright() as pw:
  for width in [360,390,640,768,1024,1440,1920]:
   v.set_viewport_size({'width':width,'height':900})
   check('landing has no horizontal overflow '+str(width),v.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+  if width in (360,1440):
+   for mode in ('github','restore','local'):
+    v.locator('[data-action=onboarding-tab][data-mode='+mode+']').click()
+    check('onboarding no overflow '+str(width)+' '+mode,v.evaluate('document.documentElement.scrollWidth<=innerWidth'))
  v.set_viewport_size({'width':1440,'height':1000})
  v.locator('[data-form=create] [name=password]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [name=repeat]').fill('synthetic-ui-passphrase');v.locator('[data-form=create] [type=submit]').click();v.wait_for_selector('.metric')
  v.locator('#health-header [data-action=quick-add]').click();v.locator('#health-dialog [data-action=new-vital]').click();fill_home_value(v,'120/80');v.locator('[data-form=record] [type=submit]').click();v.locator('#health-dialog').wait_for(state='hidden')
