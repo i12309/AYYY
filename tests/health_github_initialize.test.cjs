@@ -46,7 +46,7 @@ function backend({initialized=false,otherBranch=false,denyWrite=false}={}){
     if(endpoint===apiRoot+'/git/blobs'&&method==='POST'){
       if(denyWrite)return reply(403,{message:'Resource not accessible'});
       const bytes=Buffer.from(body.content,'base64');
-      const sha=createHash('sha1').update(Buffer.from('blob '+bytes.length+'\\0')).update(bytes).digest('hex');
+      const sha=createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0')).update(bytes).digest('hex');
       blobs.set(sha,bytes);
       return reply(201,{sha});
     }
