@@ -64,12 +64,18 @@
   assertActive(active);
   return entries;
  }
- async function prune(row,key,id){
-  const entries=await readMetadata(row,key),pending=entries.filter(entry=>entry.id!==id);
-  if(entries.length===pending.length)return row;
-  if(!pending.length)return null;
-  const next={vaultId:row.vaultId,salt:row.salt,revision:crypto.randomUUID(),files:row.files.filter(file=>file.id!==id)};
-  return metadata(next,pending,key);
+ async function updateEntry(row,key,id,changes){
+  const entries=await readMetadata(row,key),index=entries.findIndex(entry=>entry.id===id);
+  if(index<0)return row;
+  let files=row.files;
+  if(changes)entries[index]={...entries[index],...changes};
+  else{
+   entries.splice(index,1);
+   files=files.filter(file=>file.id!==id);
+  }
+  if(!entries.length)return null;
+  const next={vaultId:row.vaultId,salt:row.salt,revision:crypto.randomUUID(),files};
+  return metadata(next,entries,key);
  }
- window.HumanImportDraft={seal,open,prune};
+ window.HumanImportDraft={seal,open,updateEntry};
 })();

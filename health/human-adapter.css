@@ -38,8 +38,11 @@
 .health-import-review{min-width:0;max-width:100%}
 .health-import-review input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:0}
 .health-import-review input:not([type=checkbox]){min-width:150px}
-.health-import-review td>span>small{display:block;min-width:160px;color:var(--red-ink)}
+.health-import-review td>span>small{display:block;min-width:160px;color:var(--muted)}
+.health-import-review td>span>.import-row-warning{color:var(--red-ink)}
 .health-import-review select{max-width:260px;margin-top:6px}
+.health-import-selection{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.health-import-selection .health-note{margin:0}
 .health-linked-sources{list-style:none;padding:0;display:grid;gap:10px}
 .health-linked-sources p{margin:4px 0;overflow-wrap:anywhere}
 .health-import-queue{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--border)}

@@ -131,6 +131,34 @@ def run(browser):
     assert p.locator('.group-name').filter(has_text='Synthetic waiting draft marker').count()==1
     print('PASS rekey preserves the latest edits and successful imports remove only their completed files',flush=True)
 
+    partial=b'name;value;date;unit\nSynthetic accepted marker;10;2026-10-06;mg\nSynthetic pending marker;20;2026-10-06;mg'
+    with p.expect_file_chooser() as choose:p.locator('[data-action=csv]').click()
+    choose.value.set_files({'name':'partial.csv','mimeType':'text/csv','buffer':partial})
+    checkpoint(p)
+    draft_state='''async()=>{
+      const draft=await HumanStore.importDraft(await HumanStore.current());
+      const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',draft.files[0].bytes));
+      return {revision:draft.revision,hash:Array.from(hash)};
+    }'''
+    before=p.evaluate(draft_state)
+    mapping.locator('[type=submit]').click()
+    review(p).locator('[name=selected]').last.uncheck()
+    review(p).locator('[name="1:value"]').fill('20.25')
+    review(p).locator('[type=submit]').click()
+    p.get_by_text('Сохранено результатов: 1 · Осталось строк: 1',exact=True).wait_for()
+    after=p.evaluate(draft_state)
+    assert before['revision']!=after['revision'] and before['hash']==after['hash']
+    p.reload();unlock(p,NEW);lab(p);resume(p)
+    assert review(p).locator('[name=selected]').first.is_disabled() and not review(p).locator('[name=selected]').last.is_checked()
+    assert review(p).locator('[name="1:value"]').input_value()=='20.25'
+    assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==0
+    review(p).locator('[name=selected]').last.check();review(p).locator('[type=submit]').click()
+    p.locator('#health-dialog').wait_for(state='hidden')
+    assert p.evaluate('async()=>!(await HumanStore.importDraft(await HumanStore.current()))')
+    assert p.locator('.group-name').filter(has_text='Synthetic accepted marker').count()==1
+    assert p.locator('.group-name').filter(has_text='Synthetic pending marker').count()==1
+    print('PASS partial confirmation updates the encrypted checkpoint and retains unsaved edits without re-encrypting the file',flush=True)
+
     with p.expect_file_chooser() as choose:p.locator('[data-action=csv]').click()
     choose.value.set_files({'name':'delete-draft.csv','mimeType':'text/csv','buffer':SOURCE})
     mapping.locator('[name=date]').select_option('-1')

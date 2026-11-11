@@ -992,8 +992,8 @@
         const next=await HumanImportDraft.seal(id,salt,key,entries,active);
         return S.saveImportDraft(id,salt,existing?.revision??null,next,active);
       },
-      async prune(previous,entryId,active){
-        const next=await HumanImportDraft.prune(previous,key,entryId);
+      async updateEntry(previous,entryId,changes,active){
+        const next=await HumanImportDraft.updateEntry(previous,key,entryId,changes);
         if(next===previous)return previous;
         return S.saveImportDraft(id,salt,previous.revision,next,active);
       },

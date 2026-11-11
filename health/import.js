@@ -24,9 +24,14 @@
    return button;
   }
   const pending=()=>entries.filter(entry=>entry.done==null&&!entry.skipped);
-  async function prune(entry){
+  function draftMetadata(entry){
+   const source=entry.original;
+   return {parsed:source?{hash:source.hash,extension:source.extension,tables:source.tables}:null,
+    editor:entry.capture?.()??entry.editor??null};
+  }
+  async function updateCheckpoint(entry,changes=null){
    if(!checkpoint||!active())return;
-   try{checkpoint=await persistence.prune(checkpoint,entry.id,active);}
+   try{checkpoint=await persistence.updateEntry(checkpoint,entry.id,changes,active);}
    catch(error){draftNotice='Сохранённый черновик не обновился: '+error.message;if(active())notify?.(draftNotice);}
   }
   function draftActions(content,canSave=()=>true){
@@ -38,9 +43,7 @@
     status.textContent='Шифрование черновика…';
     let controls=[];
     try{
-     const snapshots=pending().map(entry=>({id:entry.id,name:entry.name,entry,
-      parsed:entry.original?structuredClone({hash:entry.original.hash,extension:entry.original.extension,tables:entry.original.tables}):null,
-      editor:structuredClone(entry.capture?.()??entry.editor??null)}));
+     const snapshots=pending().map(entry=>({id:entry.id,name:entry.name,entry,...structuredClone(draftMetadata(entry))}));
      controls=[...content.querySelectorAll('input:enabled,select:enabled,textarea:enabled')];
      for(const control of controls)control.disabled=true;
      const data=[];
@@ -75,7 +78,7 @@
       V.h('div',{class:'health-import-queue-actions'},action(entry.original?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void load(entry),{class:'small'}),
        action('Пропустить','import-skip-file',async()=>{
         persisting=true;
-        try{await prune(entry);}finally{persisting=false;}
+        try{await updateCheckpoint(entry);}finally{persisting=false;}
         if(!active())return;
         entry.file=entry.view=entry.original=entry.refreshReview=entry.capture=entry.editor=null;
         entry.error=null;entry.skipped=true;queue();
@@ -225,28 +228,36 @@
   }
   function review(savedRows=[]){
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
+   const result=V.h('p',{class:'health-note','data-import-result':true,role:'status',hidden:true});
    navigation(content);
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
    const doc=getDoc(),documentId=doc.documents.find(file=>file.sha256===original.hash)?.id;
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
-   const choices=[],refreshRows=[],captureRows=[];
+   const choices=[],refreshRows=[],captureRows=[],selection=[];
+   const problems=savedRows.map(row=>row?.problem);
+   const selectionStatus=V.h('span',{class:'health-note',role:'status'});
+   const updateSelection=()=>{selectionStatus.textContent=`Отмечено: ${selection.filter(row=>row.checked.checked).length}`;};
    const rows=drafts.map((draft,index)=>{
     const savedRow=savedRows[index];
+    draft.duplicate=alreadyImported(coordinates,draft);
     const rowLabel=draft.manual?`ручная строка ${draft.manual}`:`строка ${draft.row}, колонка ${draft.column}`;
     const controls=new Map(fields.map(([key,label])=>[key,V.h('input',{
-      name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],'aria-label':label+' · '+rowLabel,
+      name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],disabled:draft.duplicate,'aria-label':label+' · '+rowLabel,
     })]));
+    const values=()=>Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value]));
     const caption=V.h('small',{class:'import-classification'});
     const checked=V.h('input',{type:'checkbox',name:'selected',value:String(index),disabled:draft.duplicate,
       'aria-label':`Сохранить · ${rowLabel}`});
-    const hint=V.h('small',{},draft.duplicate?'Уже импортирована':draft.problem||draft.sourceDate);
+    const hint=V.h('small');
     const decision=V.h('select',{name:index+':decision',hidden:true,'aria-label':`Действие при совпадении · ${rowLabel}`});
     let candidates=[],withinFile=false;
     function showDecision(){
      const value=decision.value;
      const possible=candidates.length>0||withinFile;
-     hint.textContent=draft.duplicate?'Уже импортирована':possible?(candidates.length?'Возможный дубль в журнале':'Совпадение требует проверки'):draft.problem||draft.sourceDate;
+     const issue=problems[index]??draft.problem;
+     hint.textContent=draft.duplicate?'Уже импортирована':issue||(possible?(candidates.length?'Возможный дубль в журнале':'Совпадение требует проверки'):draft.sourceDate);
+     hint.classList.toggle('import-row-warning',!draft.duplicate&&!!(issue||possible));
      decision.hidden=!(checked.checked&&possible);
      decision.replaceChildren();
      if(decision.hidden)return;
@@ -259,7 +270,7 @@
     }
     function refreshMatches(resetRepeated=true){
      if(draft.duplicate)return;
-     const row=Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value]));
+     const row=values();
      try{Object.assign(row,T.checkedDate(row.date,order));candidates=indexOfResults.matches(row,checked.checked?Infinity:1);}catch{candidates=[];}
      if(resetRepeated)withinFile=false;
      showDecision();
@@ -267,16 +278,26 @@
     refreshMatches();
     checked.checked=!draft.duplicate&&(savedRow?.selected??(!draft.manual&&!table.ocr&&!draft.problem&&!candidates.length));
     if(savedRow&&checked.checked){
-     withinFile=savedRow.decision==='separate';refreshMatches(false);
+     withinFile=savedRow.repeated||savedRow.decision==='separate';refreshMatches(false);
      if(Array.from(decision.options).some(option=>option.value===savedRow.decision))decision.value=savedRow.decision;
     }
-    checked.addEventListener('change',()=>refreshMatches(false));
-    for(const key of ['name','value','date','unit','low','high','source','material','method'])controls.get(key).addEventListener('input',()=>refreshMatches());
+    if(draft.duplicate)showDecision();
+    checked.addEventListener('change',()=>{refreshMatches(false);updateSelection();});
+    decision.addEventListener('change',()=>{problems[index]='';showDecision();});
+    for(const key of ['name','value','date','unit','low','high','source','material','method'])controls.get(key).addEventListener('input',()=>{
+     problems[index]='';refreshMatches();
+    });
     choices[index]=(matches,repeated)=>{candidates=matches;withinFile=repeated;showDecision();};
-    captureRows.push(()=>({values:Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value])),selected:checked.checked,decision:decision.value}));
+    captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem}));
+    selection.push({checked,refresh:()=>refreshMatches(false),eligible:()=>{
+     if(draft.duplicate||draft.manual||table.ocr||candidates.length||withinFile||problems[index])return false;
+     const row=values();
+     try{M.checkLab({...row,...T.checkedDate(row.date,order)});return true;}catch{return false;}
+    }});
     refreshRows.push(()=>{
      draft.duplicate=alreadyImported(coordinates,draft);
      checked.disabled=draft.duplicate;
+     for(const input of controls.values())input.disabled=draft.duplicate;
      if(draft.duplicate){checked.checked=false;showDecision();return;}
      refreshMatches(false);
     });
@@ -296,9 +317,18 @@
    });
    entry.refreshReview=()=>{
     const current=getDoc();indexOfResults=T.duplicateIndex(current.observations);coordinates=T.importedCoordinates(current);
-    refreshRows.forEach(refresh=>refresh());
+    refreshRows.forEach(refresh=>refresh());updateSelection();
    };
    entry.capture=()=>({...editorState(),review:captureRows.map(capture=>capture())});
+   function selectRows(selectReady){
+    if(busy)return;
+    for(const row of selection){
+     if(selectReady?(row.checked.checked||!row.eligible()):!row.checked.checked)continue;
+     row.checked.checked=selectReady;row.refresh();
+    }
+    updateSelection();
+   }
+   updateSelection();
    const addRow=action('Добавить строку вручную','import-add-manual',()=>{
     if(busy||drafts.length>=5000)return;
     const edits=captureRows.map(capture=>capture()),id=M.id();
@@ -310,61 +340,90 @@
     V.h('p',{class:'health-note'},original.name+' · '+original.tables[sheet].name+' · '+drafts.length+' строк. Исправьте значения и отметьте строки для сохранения. Исходный файл и происхождение каждой строки сохранятся в зашифрованном журнале.'),
     table.ocr||manualIds.length?V.h('p',{class:'health-note'},'Отметьте каждый результат, который вы сверили с оригиналом.'):null,
     sourcePreview(),
+    V.h('div',{class:'health-import-selection'},table.ocr||manualMode?null:action('Выбрать готовые','import-select-ready',()=>selectRows(true),{class:'small'}),
+     action('Снять выбор','import-clear-selection',()=>selectRows(false),{class:'small'}),selectionStatus),result,
     V.h('div',{class:'health-import-review'},V.table(['Сохранить','Строка / колонка',...fields.map(x=>x[1])],rows)),error
    ].filter(Boolean),'Сохранить выбранные результаты');content.append(action('Вернуться к колонкам','import-back',()=>{if(!busy)choose();}),addRow,form);
-   form.addEventListener('submit',async e=>{e.preventDefault();e.stopPropagation();if(busy||persisting||!active())return;busy=true;const submit=form.querySelector('[type=submit]');submit.disabled=true;try{
-    const input=new FormData(form),indices=input.getAll('selected').map(Number),records=[];
-    if(!indices.length)throw Error('Выберите хотя бы одну строку.');
-    for(const i of indices){const draft=drafts[i];if(!draft||draft.duplicate)throw Error('Неверная строка импорта.');const item=Object.fromEntries(fields.map(([key])=>[key,String(input.get(i+':'+key)||'')]));
-     try{
-      Object.assign(item,T.checkedDate(item.date,order));
-      records.push({index:i,decision:String(input.get(i+':decision')||''),record:{...M.checkLab(item),importKey:draft.importKey,provenance:{filename:original.name,sha256:original.hash,sheet:table.name,
-       row:draft.row,column:draft.column,sourceCell:draft.importKey,sourceDate:draft.sourceDate,headerCell:draft.headerCell,
-       raw:draft.raw,rawCells:draft.rawCells,method:draft.manual?'manual':table.ocr?'ocr-tesseract':original.extension}}});
-     }catch(err){throw Error((draft.manual?'Ручная строка '+draft.manual:'Строка '+draft.row)+'. '+err.message);}}
-    const mime={pdf:'application/pdf',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',csv:'text/csv',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg'}[original.extension];
-    const attachment={id:M.id(),name:M.text(original.name,255),title:M.text(original.name,255),date:new Date().toISOString().slice(0,10),mime,sha256:original.hash,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-    let created=0,linked=0;
-    await commit(async(doc,stageDocument)=>{
-     if(!active()||doc.id!==identity)throw Error('Импорт закрыт или журнал сменился.');
-     const imported=T.importedCoordinates(doc);
-     if(indices.some(i=>alreadyImported(imported,drafts[i])))
-      throw Error('Эти строки уже импортированы. Откройте проверку заново.');
-     const duplicates=T.duplicateIndex(doc.observations),existing=new Set(doc.observations.map(row=>row.id));
-     const accepted=records.map(({index,decision,record})=>{
-      const candidates=duplicates.matches(record),saved=candidates.filter(row=>existing.has(row.id));
-      const target=decision.startsWith('link:')?decision.slice(5):'';
-      if(target?!saved.some(row=>row.id===target):candidates.length&&decision!=='separate'){
-       choices[index](saved,!!target||candidates.length>saved.length);
-       const draft=drafts[index];
-       throw Error(`${draft.manual?`Ручная строка ${draft.manual}`:`Строка ${draft.row}, колонка ${draft.column}`}. Проверьте совпадение и выберите действие.`);
+   form.addEventListener('submit',async e=>{
+    e.preventDefault();e.stopPropagation();
+    if(busy||persisting||!active())return;
+    busy=true;form.inert=true;error.hidden=true;result.hidden=true;
+    const needsReview=Error('Исправьте отмеченные строки или снимите с них выбор.');
+    try{
+     const edits=captureRows.map(capture=>capture()),records=[];
+     if(!edits.some(edit=>edit.selected))throw Error('Выберите хотя бы одну строку.');
+     for(const [index,edit] of edits.entries()){
+      const draft=drafts[index];
+      if(!edit.selected||draft.duplicate)continue;
+      try{
+       const item={...edit.values,...T.checkedDate(edit.values.date,order)};
+       records.push({index,decision:edit.decision,repeated:edit.repeated,record:{...M.checkLab(item),importKey:draft.importKey,
+        provenance:{filename:original.name,sha256:original.hash,sheet:table.name,row:draft.row,column:draft.column,
+         sourceCell:draft.importKey,sourceDate:draft.sourceDate,headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
+         method:draft.manual?'manual':table.ocr?'ocr-tesseract':original.extension}}});
+       problems[index]='';
+      }catch(err){problems[index]=err.message;}
+     }
+     if(!records.length)throw needsReview;
+     const mime={pdf:'application/pdf',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',csv:'text/csv',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg'}[original.extension];
+     const attachment={id:M.id(),name:M.text(original.name,255),title:M.text(original.name,255),date:new Date().toISOString().slice(0,10),mime,sha256:original.hash,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+     let created=0,linked=0;
+     await commit(async(doc,stageDocument)=>{
+      if(!active()||doc.id!==identity)throw Error('Импорт закрыт или журнал сменился.');
+      const imported=T.importedCoordinates(doc);
+      const duplicates=T.duplicateIndex(doc.observations),existing=new Set(doc.observations.map(row=>row.id));
+      const accepted=[];
+      for(const {index,decision,repeated,record} of records){
+       if(alreadyImported(imported,drafts[index]))continue;
+       const candidates=duplicates.matches(record),saved=candidates.filter(row=>existing.has(row.id));
+       const target=decision.startsWith('link:')?decision.slice(5):'';
+       if(target?!saved.some(row=>row.id===target):(candidates.length||repeated)&&decision!=='separate'){
+        problems[index]='Проверьте совпадение и выберите действие.';
+        choices[index](saved,repeated||!!target||candidates.length>saved.length);
+        continue;
+       }
+       if(!target)duplicates.add(record);
+       accepted.push({record,target});
       }
-      if(!target)duplicates.add(record);
-      return {record,target};
+      if(!accepted.length)throw needsReview;
+      let saved=doc.documents.find(d=>d.sha256===original.hash);
+      if(!saved){
+       saved=await stageDocument(attachment,original.bytes);
+       doc.documents.push(saved);
+      }
+      for(const {record,target} of accepted){
+       if(target){
+        (saved.importLinks??=[]).push({...record.provenance,observationId:target,verifiedAt:new Date().toISOString()});
+        linked++;
+        continue;
+       }
+       record.documentId=saved.id;
+       record.provenance.classification=A.classify(record,doc.analyteAliases);
+       doc.observations.push(record);
+       created++;
+      }
      });
-     let saved=doc.documents.find(d=>d.sha256===original.hash);
-     if(!saved){
-      saved=await stageDocument(attachment,original.bytes);
-      doc.documents.push(saved);
+     if(!active())return;
+     entry.refreshReview();
+     const remaining=drafts.filter((draft,index)=>!draft.duplicate&&(!draft.manual||
+      edits[index].selected||Object.values(edits[index].values).some(value=>value.trim()))).length;
+     entry.savedCount=(entry.savedCount||0)+created;
+     entry.linked=(entry.linked||0)+linked;
+     await updateCheckpoint(entry,remaining?draftMetadata(entry):null);
+     if(!active())return;
+     if(remaining){
+      const counts=[created?`Сохранено результатов: ${created}`:'',linked?`Связано источников: ${linked}`:'',`Осталось строк: ${remaining}`];
+      result.textContent=counts.filter(Boolean).join(' · ');result.hidden=false;
+      const draftStatus=content.querySelector('[data-import-draft-status]');
+      if(draftStatus)draftStatus.textContent=draftNotice;
+     }else if(single)dialog.close();
+     else{
+      entry.done=entry.savedCount;entry.original=entry.refreshReview=entry.capture=null;entry.error=null;queue();
      }
-     for(const {record,target} of accepted){
-      if(target){
-       (saved.importLinks??=[]).push({...record.provenance,observationId:target,verifiedAt:new Date().toISOString()});
-       linked++;
-       continue;
-      }
-      record.documentId=saved.id;
-      record.provenance.classification=A.classify(record,doc.analyteAliases);
-      doc.observations.push(record);
-      created++;
-     }
-    });
-    if(active())await prune(entry);
-    if(active()){
-     if(single)dialog.close();
-     else{entry.done=created;entry.linked=linked;entry.original=entry.refreshReview=entry.capture=null;entry.error=null;queue();}
-    }
-   }catch(err){error.hidden=false;error.textContent=err.message;}finally{busy=false;if(submit.isConnected)submit.disabled=false;}});
+    }catch(err){
+     if(active()){entry.refreshReview();error.hidden=false;error.textContent=err.message;}
+    }finally{busy=false;form.inert=false;}
+   });
   }
   if(Array.isArray(restored.review)){
    drafts=createDrafts();review(restored.review);
