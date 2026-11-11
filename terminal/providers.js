@@ -64,6 +64,13 @@
       if(!wllamaLibrary)wllamaLibrary=load(URLS.wllama).catch(e=>{wllamaLibrary=null;throw e;});
       return wllamaLibrary;
     }
+    // A tiny 55-byte executable WASM/SIMD module: run() extracts lane 0 (=7).
+    // Unlike Wllama.testBackendOps(), it works without COOP/COEP or a debug build.
+    const SIMD_SMOKE=Uint8Array.from([
+      0,97,115,109,1,0,0,0,1,5,1,96,0,1,127,3,2,1,0,
+      7,7,1,3,114,117,110,0,0,10,25,1,23,0,253,12,7,
+      ...Array(15).fill(0),253,27,0,11
+    ]);
     const interrupted=signal=>{
       if(signal?.aborted)throw new DOMException('Stopped','AbortError');
     };
@@ -96,7 +103,23 @@
         tell('LOCAL: проверка возможностей браузера (без загрузки модели)...');
         if(modelPreference==='pocket') {
           interrupted(signal);
-          await global.navigator.storage.getDirectory();
+          tell('CPU / GGUF: проверка WASM/SIMD...');
+          if(!global.WebAssembly.validate(SIMD_SMOKE))
+            return fail('WebAssembly SIMD не поддерживается этим браузером. Модель не скачивается.');
+          const probe=await global.WebAssembly.instantiate(SIMD_SMOKE);
+          if(probe?.instance?.exports?.run?.()!==7)
+            return fail('WebAssembly SIMD не выполняется корректно. Модель не скачивается.');
+          tell('CPU / GGUF: проверка записи в OPFS...');
+          const root=await global.navigator.storage.getDirectory();
+          if(typeof root.getFileHandle!=='function' || typeof root.removeEntry!=='function')
+            return fail('OPFS не поддерживает запись файлов моделей.');
+          const tmpName='.ayyy-local-probe-'+Date.now().toString(36)+'-'+
+            Math.random().toString(36).slice(2)+'.tmp';
+          try{
+            const file=await root.getFileHandle(tmpName,{create:true});
+            const writable=await file.createWritable();
+            try{await writable.write('AYYY');}finally{await writable.close();}
+          }finally{try{await root.removeEntry(tmpName);}catch(_){}}
           let estimate=null;
           try{estimate=await global.navigator.storage.estimate?.();}catch(_){}
           if(Number.isFinite(global.navigator?.deviceMemory)&&global.navigator.deviceMemory<2)
@@ -119,23 +142,13 @@
                 Math.max(0,Math.floor(available/(1024*1024)))+
                 ' МБ, для GGUF желательно не менее 240 МБ.');
           }
-          if(runtimeTest&&!pocketEngine) {
-            tell('CPU / GGUF: пробный запуск WASM-движка без весов (192 МБ пока не скачиваются)...');
-            const tester=new lib.Wllama({default:URLS.wllamaWasm},{allowOffline:true});
-            tester.setCompat?.('default');
-            try{
-              if(typeof tester.testBackendOps!=='function')
-                return fail('Текущий Wllama не поддерживает тест вычислительного движка.');
-              const result=await tester.testBackendOps(['-o','ADD']);
-              if(!result?.success)return fail('Пробный запуск Wllama завершился ошибкой ('+
-                (result?.retcode??'нет кода')+'). Модель не будет скачана.');
-            }finally{try{await tester.exit?.();}catch(_){}}
-          }
+          if(runtimeTest)
+            tell('CPU / GGUF: WASM/SIMD работает, OPFS доступно, библиотека Wllama загружена.');
           interrupted(signal);
           return {
             ok:true,engine:'CPU / WASM (1 поток)',cached:!!cached,
             modelName:'MNN-Pocket-0.3B Q4_1',sizeBytes:POCKET_BYTES,
-            warnings:[...warnings,'Проверка не гарантирует совместимость GGUF и достаточный объём оперативной памяти.']
+            warnings:[...warnings,'WASM/SIMD и OPFS проверены, но загрузка конкретного GGUF и объём оперативной памяти пока не подтверждены.']
           };
         }
         tell('WebGPU: проверка адаптера и устройства...');
@@ -280,7 +293,7 @@
         next.setCompat?.('default');
         try {
           await next.loadModelFromHF(POCKET,{
-            n_ctx:2048,n_threads:1,signal,
+            n_ctx:2048,n_threads:1,n_gpu_layers:0,signal,
             progressCallback:({loaded,total})=>{
               if(signal.aborted)return;
               const percent=total>0?Math.round(loaded/total*100)+'%':'загрузка...';
