@@ -126,9 +126,17 @@ with sync_playwright() as pw:
     p.reload()
     p.locator('[data-form=unlock]').wait_for()
     p.locator('[data-form=unlock] [name=passphrase]').fill(NEXT)
+    p.locator('[data-form=unlock] [name=remember]').check()
     p.locator('[data-form=unlock] [type=submit]').click()
     p.locator('.metric').first.wait_for()
-    print('PASS changing the phrase revokes temporary access without harming data',flush=True)
+    p.wait_for_function('(key)=>!!sessionStorage.getItem(key)',arg=SESSION)
+    p.locator('.profile-entry').click()
+    p.locator('.health-remember-status').wait_for()
+    p.locator('[data-action=forget-remember]').click()
+    assert not p.evaluate('(k)=>sessionStorage.getItem(k)',SESSION)
+    p.reload()
+    p.locator('[data-form=unlock]').wait_for()
+    print('PASS changing the phrase and the profile revoke control both work',flush=True)
 
     assert not failures,failures
     ctx.close()
