@@ -9,7 +9,7 @@ const transport=fs.readFileSync(path.join(__dirname,'..','health','github.js'),'
 const SHA=value=>value.repeat(40);
 const repo={owner:'example',repo:'private-health',branch:'main'};
 
-function backend({initialized=false,otherBranch=false,denyWrite=false}={}){
+function backend({initialized=false,otherBranch=false,denyWrite=false,headConflict=false}={}){
   let head=initialized?SHA('a'):null;
   let vault=null;
   let nextTree=[];
@@ -28,7 +28,7 @@ function backend({initialized=false,otherBranch=false,denyWrite=false}={}){
     if(endpoint===apiRoot&&method==='GET')
       return reply(200,{id:17,private:true,visibility:'private'});
     if(endpoint===apiRoot+'/git/ref/heads/main'&&method==='GET')
-      return head?reply(200,{object:{sha:head}}):reply(404,{message:'Not Found'});
+      return head?reply(200,{object:{sha:head}}):reply(headConflict?409:404,{message:'Empty repository'});
     if(endpoint===apiRoot+'/branches'&&method==='GET')
       return reply(200,head?[{name:'main'}]:otherBranch?[{name:'other'}]:[]);
     if(endpoint===apiRoot+'/contents/health-data/v2/.gitkeep'&&method==='PUT'){
@@ -102,6 +102,14 @@ test('completely empty repository receives a first commit and an encrypted HUMAN
   const writes=calls.filter(x=>x.method==='PATCH').length;
   await assert.rejects(()=>G.write(repo,envelope,null),/Конфликт/);
   assert.equal(calls.filter(x=>x.method==='PATCH').length,writes);
+});
+
+test('GitHub HTTP 409 for an empty Git database still allows creating the first journal',async()=>{
+  const {G}=backend({headConflict:true});
+  assert.equal(await G.verify(repo),true);
+  assert.equal(await G.read(repo),null);
+  await G.write(repo,envelope,null);
+  assert.equal((await G.read(repo)).envelope.vaultId,envelope.vaultId);
 });
 
 test('missing requested branch in an initialized repository is not treated as empty',async()=>{
