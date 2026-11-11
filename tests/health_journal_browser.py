@@ -44,6 +44,7 @@ with sync_playwright() as pw:
  def close(p):p.locator('#health-dialog [data-action=close-dialog]').click();p.locator('#health-dialog').wait_for(state='hidden')
  def unlock(p,phrase=OLD):p.locator('[data-form=unlock] [name=passphrase]').fill(phrase);p.locator('[data-form=unlock] [type=submit]').click();p.locator('.metric').first.wait_for()
  def restore(p,payload):
+  p.locator('[data-action=onboarding-tab][data-mode=restore]').click()
   p.locator('[data-form=import-vault] [name=file]').set_input_files({'name':'synthetic-current.human','mimeType':'application/octet-stream','buffer':payload});p.locator('[data-form=import-vault] [type=submit]').click()
  def rotate(p,current=OLD,new=NEW):
   tab(p,'profile');p.locator('[data-action=change-passphrase]').click();fill(p,'current',current);fill(p,'next',new);fill(p,'repeat',new)
