@@ -5,13 +5,32 @@
  const sexes={unknown:'Не указан',female:'Женский',male:'Мужской',intersex:'Интерсекс'};
  function profileFields(profile){return [V.field('Имя или псевдоним','name',profile.name||'','text',null,true),V.row(V.field('Дата рождения','birthDate',profile.birthDate||'','date'),V.field('Пол при рождении','sex',profile.sex||'unknown','select',Object.entries(sexes))),h('p',{class:'health-note','data-profile-age':'yes'}),h('div',{'data-profile-height':'yes'},V.field('Рост, см','heightCm',profile.heightCm??'')),V.field('Часовой пояс','timezone',profile.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC','text',null,true),V.field('Дополнительно','notes',profile.notes||'','textarea')];}
  function updateProfileForm(form){const zone=form.elements.timezone.value,birth=form.elements.birthDate.value,day=J.profileDay({timezone:zone}),age=J.ageOn(birth,day),box=form.querySelector('[data-profile-height]');form.elements.birthDate.max=day;box.hidden=age==null||age<20;form.elements.heightCm.disabled=box.hidden;form.elements.heightCm.setAttribute('inputmode','decimal');form.querySelector('[data-profile-age]').textContent=age==null?'':age<20?'Возраст: '+age+' лет. Рост записывается по датам в разделе «Показатели».':'Возраст: '+age+' лет. Основной рост можно исправить здесь.';}
- function profilePage(state){
-  const p=state.doc.profile,age=J.ageOn(p.birthDate,J.profileDay(p)),root=h('div',{class:'profile-page'},V.title('Мой профиль','Профиль и ваши данные.')),grid=h('div',{class:'settings-grid'});root.append(grid);
-  function card(title,tone,icon,contents){const box=V.card(null);box.classList.add('settings');box.append(h('div',{class:'section-heading tone-'+tone},h('h2',{},h('span',{class:'section-mark'}),title),V.icon(icon,19)),...contents);grid.append(box);return box;}
-  const facts=h('dl',{class:'metadata'}),add=(label,value)=>facts.append(h('dt',{},label),h('dd',{},value));add('Имя',p.name||'Профиль ещё не заполнен');add('Дата рождения',p.birthDate?V.date(p.birthDate)+(age!=null?' · '+age+' лет':''):'Не указана');add('Рост',age!=null&&age<20?V.button('История роста в «Показателях»','profile-growth',{class:'small'}):p.heightCm!=null?p.heightCm+' см':'Не указан');add('Пол при рождении',sexes[p.sex]||'Не указан');add('Часовой пояс',p.timezone||'Не указан');
-  card('Личные данные','blue','UserRound',[facts,p.notes?h('p',{class:'preserve'},p.notes):null,h('div',{class:'actions'},V.button('Редактировать профиль','edit-profile'),V.button(state.demo?'Выйти из демо':'Закрыть журнал',state.demo?'exit-demo':'lock'))].filter(Boolean));
-  card('Ваши данные','green','Download',[h('p',{class:'health-muted'},'Сохраните копию журнала вместе с исходными документами.'),state.demo?h('p',{class:'health-note'},'Демонстрационные данные существуют только в памяти.'):V.button('Экспортировать мои данные','backup')]);
-  for(const [title,tone,icon,description,target] of [['Медкарта','green','NotebookTabs','Аллергии и реакции, лекарства и добавки, прививки и хронические состояния.','medical'],['Документы','red','FileText','Бланки, заключения и исходные файлы. Просмотр и загрузка.','document'],['Приёмы и напоминания','yellow','Bell','Фактические приёмы и пропуски, ваше расписание и уведомления.','care'],['История журнала','yellow','History','Когда добавлены и исправлены ваши записи.','timeline']])card(title,tone,icon,[h('p',{class:'health-muted'},description),h('button',{class:'button',type:'button','data-tab':target},({medical:'Открыть медкарту',document:'Открыть документы',care:'Открыть приёмы и напоминания',timeline:'Открыть историю'})[target])]);
+ function profilePage(state,panels=[]){
+  const p=state.doc.profile,age=J.ageOn(p.birthDate,J.profileDay(p));
+  const root=h('div',{class:'profile-page'},V.title('Мой профиль','Личные данные, безопасность и синхронизация.'));
+  const left=h('div',{class:'health-profile-stack'}),right=h('div',{class:'health-profile-stack'});
+  const personal=V.card(null);
+  personal.classList.add('settings','health-profile-personal');
+  personal.append(h('div',{class:'section-heading tone-blue'},
+    h('h2',{},h('span',{class:'section-mark'}),'Личные данные'),V.icon('UserRound',19)));
+  const facts=h('dl',{class:'metadata'});
+  const add=(label,value)=>facts.append(h('dt',{},label),h('dd',{},value));
+  add('Имя',p.name||'Профиль ещё не заполнен');
+  add('Дата рождения',p.birthDate?V.date(p.birthDate)+(age!=null?' · '+age+' лет':''):'Не указана');
+  add('Рост',age!=null&&age<20?V.button('История роста в «Показателях»','profile-growth',{class:'small'}):p.heightCm!=null?p.heightCm+' см':'Не указан');
+  add('Пол при рождении',sexes[p.sex]||'Не указан');
+  add('Часовой пояс',p.timezone||'Не указан');
+  personal.append(facts);
+  if(p.notes)personal.append(h('p',{class:'preserve'},p.notes));
+  personal.append(h('div',{class:'health-profile-actions'},
+    V.button('Редактировать профиль','edit-profile'),
+    V.button(state.demo?'Выйти из демо':'Закрыть журнал',state.demo?'exit-demo':'lock')));
+  left.append(personal);
+  for(const panel of panels){
+    if(panel.classList.contains('profile-panel-github')||panel.classList.contains('profile-panel-conflict'))right.append(panel);
+    else left.append(panel);
+  }
+  root.append(h('div',{class:'health-profile-columns'},left,right));
   return root;
  }
  function visual(e){if(e.recordKind==='lab')return ['FlaskConical','blue'];if(e.recordKind==='genetic')return ['Dna','green'];if(e.recordKind==='document')return ['FileText','red'];if(e.recordKind==='meal')return ['Utensils','green'];if(e.recordKind==='activity-day')return ['Dumbbell','yellow'];if(e.recordKind==='profile')return ['UserRound','blue'];return ['History','yellow'];}
