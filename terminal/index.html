@@ -345,7 +345,7 @@
         <section class="engine-strip" aria-label="Источник ответа">
           <div class="engine-buttons" role="group" aria-label="Режим работы">
             <button class="engine-btn" type="button" data-engine="public" aria-pressed="false">PUBLIC / NET</button>
-            <button class="engine-btn" type="button" data-engine="webgpu" aria-pressed="false">LOCAL / WEBGPU</button>
+            <button class="engine-btn" type="button" data-engine="webgpu" aria-pressed="false">LOCAL / BROWSER</button>
             <button class="engine-btn active" type="button" data-engine="demo" aria-pressed="true">DEMO / OFFLINE</button>
           </div>
           <label class="engine-option" id="publicOption" hidden>ИСТОЧНИК
@@ -360,12 +360,13 @@
           <label class="engine-option" id="localOption" hidden>МОДЕЛЬ
             <select id="localModel" aria-label="Локальная модель">
               <option value="qwen">Qwen2 0.5B / LIGHT</option>
+               <option value="pocket">MNN-Pocket 0.3B / GGUF · 192 МБ</option>
               <option value="llama">Llama 3.2 1B</option>
               <option value="qwen15">Qwen2 1.5B</option>
             </select>
           </label>
           <span id="engineStatus" class="engine-status" role="status" aria-live="polite">DEMO / НЕТ ПОДКЛЮЧЕНИЯ</span>
-          <span id="engineInfo" class="engine-info">DEMO: ответы имитируются. В PUBLIC запросы уходят к выбранному внешнему сервису; WEBGPU загружает модель на устройство.</span>
+          <span id="engineInfo" class="engine-info">DEMO: ответы имитируются. PUBLIC отправляет запрос во внешний сервис; LOCAL запускает WebLLM или Wllama прямо в браузере.</span>
         </section>
         <section class="machine" aria-label="Нейронный терминал">
           <div class="machine-top"><span>AYYY DATA SYSTEMS <span style="opacity:.4">/</span> MODEL T-07 <span style="opacity:.4">/</span> MONOCHROME DISPLAY</span><span>SERIAL NO. 1984 - 026</span></div>
@@ -426,7 +427,7 @@
             </div>
           </div>
         </section>
-        <footer class="under"><span><b>AYYY / DIRECT CLIENT.</b> DEMO — имитация; PUBLIC — внешние сервисы; WEBGPU — модель в браузере. История не сохраняется.</span><span>DESIGNED FOR THE OLD FUTURE / 1984 → 2026</span></footer>
+        <footer class="under"><span><b>AYYY / DIRECT CLIENT.</b> DEMO — имитация; PUBLIC — внешние сервисы; LOCAL — WebLLM / Wllama в браузере. История не сохраняется.</span><span>DESIGNED FOR THE OLD FUTURE / 1984 → 2026</span></footer>
       </main>
     </div>
   </div>
@@ -501,18 +502,21 @@
         publicOption.hidden = engineMode !== 'public';
         spaceOption.hidden = engineMode !== 'public' || publicChoice.value !== 'hf';
         localOption.hidden = engineMode !== 'webgpu';
+        const pocketSelected = engineMode === 'webgpu' && localChoice.value === 'pocket';
         const label = engineMode === 'demo' ? 'DISABLED' :
-          engineMode === 'webgpu' ? (providers.hasWebGPU() ? 'WEBGPU' : 'NO GPU') :
+          engineMode === 'webgpu' ? (pocketSelected ? 'GGUF / WASM' : (providers.hasWebGPU() ? 'WEBGPU' : 'NO GPU')) :
           'PUBLIC';
         inferenceIndicator.textContent = label;
         inferenceIndicator.classList.toggle('amber',engineMode === 'demo');
         if (!working) setEngineStatus(engineMode === 'demo' ? 'DEMO / OFFLINE' :
-          engineMode === 'webgpu' ? (providers.hasWebGPU() ? 'WEBGPU / ДОСТУПЕН' : 'WEBGPU / НЕДОСТУПЕН') :
+          engineMode === 'webgpu' ? (pocketSelected ? 'GGUF / WLLAMA · 192 МБ' :
+            (providers.hasWebGPU() ? 'WEBGPU / ДОСТУПЕН' : 'WEBGPU / НЕДОСТУПЕН')) :
           'PUBLIC / ' + providerNames[publicChoice.value]);
         engineInfo.textContent = engineMode === 'demo' ?
           'DEMO: демонстрационные ответы. Нет модели, сети и сохранения истории.' :
-          engineMode === 'webgpu' ?
-          'WEBGPU: модель загружается на ваш GPU при первом запросе (сотни МБ / ГБ). Ответы не уходят на сервер; история только в этой вкладке.' :
+          engineMode === 'webgpu' ? (pocketSelected ?
+          'MNN-Pocket: 192 МБ GGUF Q4_1 с Hugging Face при первом запросе. Движок Wllama (не WebLLM): WebGPU при наличии, иначе WASM/CPU; модель кэшируется в браузере.' :
+          'WebLLM: модель загружается на ваш GPU при первом запросе (сотни МБ / ГБ). Ответы не уходят на сервер; история только в этой вкладке.') :
           'PUBLIC: запрос и контекст переписки отправляются выбранному внешнему сервису. Без ключа и прокси, возможны CORS, очередь и ограничения.';
       }
       function switchEngine(next) {
@@ -526,7 +530,8 @@
       }
       async function realReply(message, token) {
         const selectedMode = engineMode === 'webgpu' ? 'webgpu' : publicChoice.value;
-        const header = selectedMode === 'webgpu' ? 'AYYY / WEBGPU' :
+        const header = selectedMode === 'webgpu' ?
+          (localChoice.value === 'pocket' ? 'AYYY / GGUF' : 'AYYY / WEBLLM') :
           selectedMode === 'hf' ? 'AYYY / HF SPACE' : 'AYYY / OVH';
         const el = addMessage('assistant',header,'Подключение...');
         activeReply = el;
@@ -596,7 +601,7 @@
         header.style.whiteSpace = 'pre';
         const note = document.createElement('div');
         note.className = 'message-body boot-note';
-        note.textContent = 'Выберите PUBLIC, WEBGPU или DEMO над монитором.\nКоманды: /help, /status, /mode. История сообщений не сохраняется.';
+        note.textContent = 'Выберите PUBLIC, LOCAL или DEMO над монитором.\nКоманды: /help, /status, /mode. История сообщений не сохраняется.';
         article.append(art, header, note);
         log.append(article);
         addMessage('assistant', 'AYYY / TERMINAL', 'Слушаю вас, оператор. С чего начнём?');
@@ -614,7 +619,7 @@
           '│ /clear   очистить экран                   │',
           '│ /mode    переключить движок (public/webgpu/demo)',
           '└────────────────────────────────────────────┘',
-          'Выберите PUBLIC или WEBGPU для реальной генерации; DEMO имитирует ответы.'
+          'Выберите PUBLIC или LOCAL для реальной генерации; DEMO имитирует ответы.'
         ].join('\n');
         if (/^(\/status|status|статус)$/.test(lower)) return [
           '┌─ SYSTEM STATUS ────────────────────────────┐',
