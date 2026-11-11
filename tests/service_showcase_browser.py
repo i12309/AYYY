@@ -33,8 +33,8 @@ def test_directory(browser, url, width, height):
         page.goto(url + "/#directory")
         page.wait_for_selector(".sc-row--games")
         assert page.locator(".sc-row").count() == 10
-        gallery = page.locator(".sc-gallery")
-        assert gallery.evaluate("el => getComputedStyle(el).position") == "fixed"
+        gallery = page.locator(".sc-gallery-sticky")
+        assert gallery.evaluate("el => getComputedStyle(el).position") == "sticky"
 
         lighthouse = page.locator('[data-sc-picture="default"]')
         assert "is-visible" in lighthouse.get_attribute("class")
@@ -50,10 +50,14 @@ def test_directory(browser, url, width, height):
         picture = page.locator(".sc-gallery-image.is-visible")
         image_rect = picture.bounding_box()
         assert gallery_rect is not None and image_rect is not None
-        assert 20 <= gallery_rect["y"] <= 130, gallery_rect
-        assert gallery_rect["x"] + gallery_rect["width"] < card_rect["x"], (
+        assert 0 <= gallery_rect["y"] <= 130, gallery_rect
+        assert gallery_rect["x"] + gallery_rect["width"] + 12 < card_rect["x"], (
             gallery_rect, card_rect)
-        assert image_rect["y"] + image_rect["height"] > height * .6, image_rect
+        assert image_rect["y"] + image_rect["height"] > height * .55, image_rect
+        title_rect = page.locator(".sc-intro h1").bounding_box()
+        assert title_rect is not None
+        assert image_rect["x"] + image_rect["width"] < title_rect["x"] - 10, (
+            image_rect, title_rect)
         assert picture.get_attribute("data-sc-picture") == "games"
         assert picture.evaluate("el => el.complete && el.naturalWidth > 0")
 

@@ -239,7 +239,8 @@
         ${A.shoreChrome.navigation('directory')}
         <main class="sc-shell">
           <aside class="sc-gallery" aria-label="Иллюстрации сервисов" data-sc-active="default">
-            <div class="sc-gallery-frame">
+            <div class="sc-gallery-sticky">
+              <div class="sc-gallery-frame">
               <img class="sc-gallery-image is-visible" data-sc-picture="default" src="assets/lighthouse-watercolor.webp" width="1024" height="1536" alt="" decoding="async">
               ${available.map(service=>`<img class="sc-gallery-image" data-sc-picture="${esc(service.id)}" src="assets/service-stories/${esc(service.id)}.svg" width="640" height="880" alt="" decoding="async">`).join('')}
             </div>
@@ -247,7 +248,8 @@
             <div class="sc-gallery-caption" aria-live="polite" aria-atomic="true">
               <small data-sc-story-index>AYYY / ВАШ МАЯК</small>
               <h2 data-sc-story-title>У каждого дела свой ориентир</h2>
-              <p data-sc-story-text>Выберите направление справа. Его небольшая история появится здесь, вместо маяка.</p>
+              <p data-sc-story-text>Наведите на сервис — здесь появится его история.</p>
+            </div>
             </div>
           </aside>
           <section class="sc-catalog" aria-label="Каталог сервисов AYYY">
@@ -296,7 +298,7 @@
         gallery.dataset.scActive=next;
         galleryPictures.forEach(image=>image.classList.toggle('is-visible',image.dataset.scPicture===next));
         galleryTitle.textContent=next==='default'?'У каждого дела свой ориентир':scenes[next].title;
-        galleryText.textContent=next==='default'?'Выберите направление справа. Его небольшая история появится здесь, вместо маяка.':scenes[next].text;
+        galleryText.textContent=next==='default'?'Наведите на сервис — здесь появится его история.':scenes[next].text;
         const position=A.services.findIndex(service=>service.id===next);
         galleryIndex.textContent=next==='default'?'AYYY / ВАШ МАЯК':`AYYY / ${String(position+1).padStart(2,'0')} · ИСТОРИЯ СЕРВИСА`;
       };

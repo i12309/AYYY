@@ -62,10 +62,14 @@ test('compact list is half the former width and retains expandable descriptions'
  assert.match(source,/sc-card-cover/);
 });
 
-test('illustration stage stays fixed for long pages and never spills over cards',()=>{
-  const css=read('src/showcase.css');
-  assert.match(css,/\.sc-page \.sc-gallery \{\s*position:fixed/);
-  assert.match(css,/\.sc-page \.sc-gallery \{[\s\S]*?overflow:hidden/);
-  assert.match(css,/\.sc-page \.sc-gallery-frame \{\s*inset:0 0 126px/);
-  assert.match(css,/\.sc-page \.sc-gallery-caption \{[\s\S]*?overflow-wrap:break-word/);
+test('gallery uses a true grid column and a constrained sticky inner scene',()=>{
+  const css=read('src/showcase.css'),source=read('src/showcase.js');
+  assert.match(source,/class="sc-gallery-sticky"/);
+  assert.match(css,/\.sc-page \.sc-gallery \{\s*position:relative/);
+  assert.match(css,/\.sc-page \.sc-gallery-sticky \{\s*position:sticky/);
+  assert.match(css,/\.sc-page \.sc-gallery-frame \{[\s\S]*?overflow:hidden/);
+  assert.match(css,/width:min\(76%,420px\)/);
+  assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(0,min\(730px,56vw\)\)/);
+  assert.ok(!css.includes('position:fixed'), 'gallery should not float outside the grid');
+  assert.match(css, /@media \(max-width:980px\)/);
 });
