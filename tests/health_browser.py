@@ -53,7 +53,7 @@ with sync_playwright() as pw:
  p.set_viewport_size({'width':1440,'height':1000});OUT.mkdir(parents=True,exist_ok=True);p.locator('#health-notice').evaluate('(e)=>e.classList.remove("show")');capture(p,path=str(OUT/'analyte-1440.png'),full_page=True)
  p.locator('#health-global-search').fill('3.14');check('global search finds edited result','Холестерин ЛПНП' in p.locator('#health-root').inner_text())
  p.locator('#health-global-search').fill('')
- for tab in ['overview','vital','medical','diary','document','settings']:
+ for tab in ['overview','vital','medical','diary','document','profile']:
   p.locator('.sidebar button[data-tab='+tab+']').click();check('tab '+tab,p.locator('.health-heading h1').is_visible())
  p.locator('.sidebar button[data-tab=vital]').click()
  p.locator('[data-action=filter-records][data-value="Давление"]').click()
@@ -85,7 +85,7 @@ with sync_playwright() as pw:
   check('topbar fits width '+str(width),p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
   if width<768:
    p.locator('[data-action=toggle-menu]').click();check('mobile drawer '+str(width),p.locator('.sidebar').is_visible());p.keyboard.press('Escape')
-  for tab in ['overview','lab','vital','medical','diary','document','settings']:
+  for tab in ['overview','lab','vital','medical','diary','document','profile']:
    if width<768:p.locator('[data-action=toggle-menu]').click()
    p.locator('.sidebar button[data-tab='+tab+']').click()
    check('no page overflow '+str(width)+' '+tab,p.evaluate('document.documentElement.scrollWidth<=innerWidth'))
