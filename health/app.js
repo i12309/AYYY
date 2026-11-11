@@ -91,7 +91,8 @@
           V.field('Новая фраза шифрования (минимум 12 символов)','password','', 'password'),
           V.field('Повторите фразу','repeat','', 'password')
         ],'Создать хранилище в GitHub'),
-        V.h('p',{class:'health-note'},'Для первого сохранения токену нужны права Contents → Read and write. Фраза не передаётся в GitHub.'),
+        V.h('p',{class:'health-note'},'Фраза шифрования не передаётся в GitHub.'),
+        githubTokenGuide(false),
         V.button('Выбрать другой репозиторий','cancel-remote-setup',{class:'small'}))
       : V.form('download',[
         V.field('Приватный GitHub owner/repo','repo'),
