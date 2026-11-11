@@ -1470,7 +1470,9 @@
       await restoreTemporary(local,sessionRevision);
     }catch(e){if(revision===sessionRevision)root.replaceChildren(V.banner('Ошибка хранилища',e.message));}
   }
-  void H.sweep().catch(()=>{});
   if(new URLSearchParams(window.location?.search||'').get('demo')==='1')openDemo();
-  else void loadLocal();
+  else{
+    void H.sweep().catch(()=>{});
+    void loadLocal();
+  }
 })();
