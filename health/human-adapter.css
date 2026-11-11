@@ -520,3 +520,11 @@ body{font-size:14px}
 /* Explicit feedback and revocation for the opt-in 30-minute unlock. */
 .profile-page .health-remember-status{display:flex;align-items:center;gap:7px;margin:11px 0 0;color:var(--green-ink);font-size:11px;font-weight:600;line-height:1.45}
 .profile-page .health-remember-status svg{flex:none}
+
+/* The simpler unlock form can retain the explanation alongside it on smaller laptops. */
+@media(min-width:901px) and (max-width:1250px){
+ .health-intro-unlock{max-width:1120px}
+ .health-intro-unlock .health-intro-layout{grid-template-columns:minmax(0,1fr) minmax(260px,290px)}
+ .health-intro-unlock .health-marketing{grid-template-columns:minmax(0,1fr)}
+ .health-intro-unlock .health-marketing-features{grid-template-columns:minmax(0,1fr)}
+}
