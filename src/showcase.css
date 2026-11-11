@@ -1,7 +1,6 @@
 /* AYYY service directory — compact editorial catalogue and hover artwork. */
 .sc-page {background:var(--paper);--sc-ink:#233c43;--sc-muted:#6f807a}
-/* The parent .shore-page is a flex column: auto margins without an explicit
-   width shrink-wrap this grid and can collapse the illustration track to 0px. */
+/* Keep full width inside the portal flex column; do not collapse the art track. */
 .sc-shell {width:100%;min-width:0;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,690px);gap:clamp(28px,4vw,78px);align-items:start;max-width:1740px;margin:0 auto;padding:12px clamp(22px,4vw,76px) 66px}
 .sc-gallery {position:sticky;top:17px;align-self:start;height:calc(100svh - 35px);min-height:520px;isolation:isolate}
 .sc-gallery-frame {position:absolute;inset:0;overflow:hidden}
@@ -388,4 +387,18 @@
 }
 @media (prefers-reduced-motion:reduce) {
   .sc-page .sc-gallery-image {transition:none}
+}
+
+/* Approved service artwork. Each card is a distinct crop, not a scaled board. */
+.sc-card-cover img {inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:1}
+.sc-card-cover::after {display:none}
+.sc-card-number {padding:3px 5px;border-radius:4px;background:#fffdf2de;color:#25494c;top:8px;left:6px;letter-spacing:.07em;font-size:8px}
+.sc-card-visit {background:#fffef3db;color:#2c5355;right:7px;top:8px}
+.sc-row--oberon .sc-card-cover,.sc-row--ai .sc-card-cover {background:#101e23}
+.sc-row--oberon .sc-card-number,.sc-row--ai .sc-card-number {background:#0e1b23bd;color:#e9d5b6}
+.sc-row--ai .sc-card-number {color:#a7f7aa}
+.sc-row--oberon .sc-card-visit,.sc-row--ai .sc-card-visit {background:#0b1b24ba;border-color:#ffffff4d;color:#eddfc5}
+.sc-page .sc-gallery-image:not([data-sc-picture="default"]) {border-radius:12px}
+@media (min-width:981px) {
+  .sc-page .sc-gallery-image:not([data-sc-picture="default"]) {width:92%;max-width:420px;height:auto;max-height:100%}
 }

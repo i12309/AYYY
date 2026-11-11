@@ -128,17 +128,31 @@
 
   // The gallery is an illustrated short story for each real service.
   const scenes = {
-    oberon: {title:'Ночная мастерская мыслей',text:'Под светом лампы разрозненные заметки соединяются в карту знаний.'},
-    ai: {title:'Диалог в тихой лаборатории',text:'Светящийся терминал и сеть идей — место, где человек исследует возможности моделей.'},
-    search: {title:'Экспедиция за ответом',text:'На разложенной карте появляется маршрут от первого вопроса к нужной находке.'},
-    weather: {title:'Утро между солнцем и дождём',text:'Небо меняется — а вместе с ним меняются планы на день.'},
-    finance: {title:'Город и язык чисел',text:'За огнями окон — графики, курсы и решения, которые лучше принимать с контекстом.'},
-    mpp: {title:'План, который можно увидеть',text:'Строки задач превращаются в последовательность сроков, связей и этапов.'},
-    tools: {title:'Мастерская точных решений',text:'Чертёж, расчёт, цвет и текст — каждая мелочь получает свой инструмент.'},
-    family: {title:'История в корнях большого дерева',text:'Старый альбом открывается, и лица поколений снова оказываются рядом.'},
-    health: {title:'Тихая лаборатория наблюдений',text:'Показатели, документы и события собираются в понятную личную историю.'},
-    games: {title:'Вечер в комнате головоломок',text:'Простая партия становится маленьким приключением для внимания и воображения.'}
+    oberon: {title:'Орбита ваших идей',text:'Заметки, папки и связи — личное пространство OBERON в его собственных цветах.'},
+    health: {title:'История здоровья — в деталях',text:'Двойная спираль ДНК, анализы и наблюдения в единой медицинской карте.'},
+    weather: {title:'Небо, которое меняет планы',text:'Дерево, ветер и грозовые облака — погода в акварели и в прогнозе.'},
+    family: {title:'Семейная память',text:'Фотографии, документы и связи между поколениями складываются в историю семьи.'},
+    games: {title:'Вход в игровые миры',text:'Головоломки, аркады и настольные мотивы — выбирайте своё приключение.'},
+    finance: {title:'Валюты, металлы и рынки',text:'Золото, серебро, купюры и графики — финансовые данные в одном месте.'},
+    tools: {title:'Архитектура точных решений',text:'Финансовые расчёты и инженерные инструменты в общей мастерской.'},
+    mpp: {title:'Проект целиком',text:'Задачи, зависимости и сроки на диаграмме Ганта — без установки Microsoft Project.'},
+    search: {title:'Найдите нужное',text:'Документы, изображения, карты и знания — от запроса к результату.'},
+    ai: {title:'Нейронный терминал',text:'Зелёное свечение старого монитора и современные модели в браузере.'},
   };
+
+  // Approved artwork: separate full-size scenes and square card thumbnails.
+  const artwork = Object.freeze({
+    oberon: {hero:'assets/service-art/v1/oberon-hero.webp',card:'assets/service-art/v1/oberon-card.webp',width:850,height:958},
+    health: {hero:'assets/service-art/v1/health-hero.webp',card:'assets/service-art/v1/health-card.webp',width:850,height:958},
+    weather: {hero:'assets/service-art/v1/weather-hero.webp',card:'assets/service-art/v1/weather-card.webp',width:850,height:932},
+    family: {hero:'assets/service-art/v1/family-hero.webp',card:'assets/service-art/v1/family-card.webp',width:850,height:942},
+    games: {hero:'assets/service-art/v1/games-hero.webp',card:'assets/service-art/v1/games-card.webp',width:850,height:953},
+    finance: {hero:'assets/service-art/v1/finance-hero.webp',card:'assets/service-art/v1/finance-card.webp',width:850,height:998},
+    tools: {hero:'assets/service-art/v1/tools-hero.webp',card:'assets/service-art/v1/tools-card.webp',width:850,height:1010},
+    mpp: {hero:'assets/service-art/v1/mpp-hero.webp',card:'assets/service-art/v1/mpp-card.webp',width:850,height:939},
+    search: {hero:'assets/service-art/v1/search-hero.webp',card:'assets/service-art/v1/search-card.webp',width:850,height:961},
+    ai: {hero:'assets/service-art/v1/ai-hero.webp',card:'assets/service-art/v1/ai-card.webp',width:850,height:921},
+  });
 
   function linkFor(service) {
     return service.url ? {url:service.url, attributes:'target="_blank" rel="noopener noreferrer"'} :
@@ -153,7 +167,7 @@
     const action=service.id==='ai'?'Запустить':service.id==='games'?'Играть':'Открыть';
     return `<article class="sc-row sc-row--${id}" data-service-id="${id}">
       <a class="sc-card-cover" href="${esc(link.url)}" ${link.attributes} aria-label="${esc('Открыть: '+service.name)}">
-        <img src="assets/service-stories/${id}.svg" alt="" loading="lazy" decoding="async">
+        <img src="${esc(artwork[service.id].card)}" width="480" height="480" alt="" loading="lazy" decoding="async">
         <span class="sc-card-number">AYYY / ${String(index+1).padStart(2,'0')}</span>
         <span class="sc-card-visit">${icon('arrow-right',15)}</span>
       </a>
@@ -242,7 +256,7 @@
             <div class="sc-gallery-sticky">
               <div class="sc-gallery-frame">
               <img class="sc-gallery-image is-visible" data-sc-picture="default" src="assets/lighthouse-watercolor.webp" width="1024" height="1536" alt="" decoding="async">
-              ${available.map(service=>`<img class="sc-gallery-image" data-sc-picture="${esc(service.id)}" src="assets/service-stories/${esc(service.id)}.svg" width="640" height="880" alt="" decoding="async">`).join('')}
+              ${available.map(service=>`<img class="sc-gallery-image" data-sc-picture="${esc(service.id)}" src="${esc(artwork[service.id].hero)}" width="${artwork[service.id].width}" height="${artwork[service.id].height}" alt="" decoding="async">`).join('')}
             </div>
             <div class="sc-gallery-hint">${icon('sparkles',13)} Наведите на сервис</div>
             <div class="sc-gallery-caption" aria-live="polite" aria-atomic="true">
