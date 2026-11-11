@@ -4,6 +4,7 @@
   'use strict';
   const DIR='health-data/v2/';
   const PATH=DIR+'vault.json';
+  const MARKER=DIR+'.gitkeep';
   const objectPath=id=>DIR+'objects/'+id+'.bin';
   const C=window.HumanCrypto;
   const MAX_ENVELOPE=Math.ceil((C.MAX_METADATA+16)/3)*4+C.MAX_OBJECTS*70+2048;
@@ -83,10 +84,14 @@
     return data;
   }
   const branchPath=repo=>root(repo)+'/git/ref/heads/'+encodeURIComponent(repo.branch);
-  async function branchHead(repo){
-    const result=await api(branchPath(repo));
-    if(!result?.object?.sha)throw Error('Не удалось прочитать состояние ветки GitHub.');
-    return result.object.sha;
+  async function branchHead(repo,allowEmpty=false){
+    const result=await api(branchPath(repo),'GET',undefined,true);
+    if(result?.object?.sha)return result.object.sha;
+    if(allowEmpty){
+      const branches=await api(root(repo)+'/branches?per_page=1');
+      if(Array.isArray(branches)&&branches.length===0)return null;
+    }
+    throw Error('Ветка «'+repo.branch+'» не найдена в GitHub. Укажите существующую ветку.');
   }
   async function privateRepo(repo){
     const info=await api(root(repo));
@@ -96,7 +101,7 @@
   }
   async function verify(repo){
     await privateRepo(repo);
-    await branchHead(repo);
+    await branchHead(repo,true);
     return true;
   }
   function decodeEnvelope(bytes){
@@ -127,7 +132,8 @@
       'GET',undefined,true,'application/vnd.github.object+json');
   }
   async function read(repo,commit){
-    commit??=await branchHead(repo);
+    commit??=await branchHead(repo,true);
+    if(!commit)return null;
     const item=await contents(repo,PATH,commit);
     if(!item)return null;
     if(item.type!=='file'||typeof item.sha!=='string')throw new Error('Некорректный архив в GitHub.');
@@ -157,8 +163,27 @@
     requireSession();
     const repoId=await privateRepo(repo);
     requireSession();
-    const head=await branchHead(repo);
+    let head=await branchHead(repo,true);
     requireSession();
+    // GitHub's Git Data API cannot write to a repository with zero commits.
+    // Initialize its first commit using the Contents API, then keep all actual
+    // HUMAN data in the normal atomic encrypted Git tree commit below.
+    if(!head){
+      if(expectedSha!==null&&expectedSha!==undefined){
+        const error=Error('Удалённая ветка исчезла. Локальные данные не изменены.');
+        error.status=409;throw error;
+      }
+      const prepared=await api(apiRoot+'/contents/'+MARKER,'PUT',{
+        message:'health: prepare encrypted storage [skip ci]',
+        content:C.base64(encoder.encode('HUMAN encrypted storage\n')),
+        branch:repo.branch,
+      });
+      requireSession();
+      if(prepared?.content?.path!==MARKER||!prepared?.commit?.sha)
+        throw Error('GitHub не подтвердил создание начальной ветки.');
+      head=await branchHead(repo);
+      requireSession();
+    }
     const latest=await read(repo,head);
     requireSession();
     if((latest?.sha||null)!==expectedSha){
