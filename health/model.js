@@ -33,6 +33,10 @@
     return {...original,low,high,unit:text(input.unit,100),note:text(input.note,2000),useReference:input.useReference==='yes',updatedAt:new Date().toISOString()};
   }
   function referenceRow(row,preferences){return preferences?.useReference&&preferences.unit===row.unit?{...row,low:preferences.low,high:preferences.high}:row;}
+  function labValueKind(value){
+    const raw=String(value??'').trim();
+    return number(raw)!==null?'quantity':/^[<>≤≥]/.test(raw)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(raw)?'range':'qualitative';
+  }
   function checkLab(input,original){
     for(const [key,max] of Object.entries({name:200,value:8000,canonicalName:200,unit:100,low:100,high:100,source:1000,material:1000,method:1000,notes:8000}))if(String(input[key]??'').trim().length>max)throw new Error('Поле '+key+' превышает '+max+' символов. Сократите его перед сохранением.');
     const name=text(input.name,200),value=text(input.value,8000);
@@ -42,7 +46,7 @@
       throw new Error('Референсы должны содержать числа или оставаться пустыми.');
     if(low&&high&&number(low)>number(high))throw new Error('Нижняя граница больше верхней.');
     const row={...original,id:original?.id||id(),...observationDate(input.date,input.datePrecision),name,value,
-      canonicalName:text(input.canonicalName,200),reviewStatus:'confirmed_manual',valueKind:number(value)!==null?'quantity':/^[<>≤≥]/.test(value)?'censored':/^[+-]?[\d.,]+\s*[-–]\s*[+-]?[\d.,]+$/.test(value)?'range':'qualitative',
+      canonicalName:text(input.canonicalName,200),reviewStatus:'confirmed_manual',valueKind:labValueKind(value),
       unit:text(input.unit,100),low,high,source:text(input.source,1000),
       material:text(input.material,1000),method:text(input.method,1000),
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
@@ -169,6 +173,6 @@
     });
     return {records,errors};
   }
-  window.HumanModel={clinical,clinicalStatuses,partialDate,id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,checkLab,checkVital,checkMedical,checkMedication,
+  window.HumanModel={clinical,clinicalStatuses,partialDate,id,text,isoDate,number,timestamp,observationDate,checkPreferences,referenceRow,labValueKind,checkLab,checkVital,checkMedical,checkMedication,
     checkDiary,groupKey,groups,status,numericRows,chartRows,recent,parseCSV};
 })();

@@ -58,6 +58,7 @@ test('unit history cannot be reused after a change of context or inferred from a
   const doc={observations:[anchor,exact,other,derived],documents:[]};
   const [choice]=A.unitOptions(doc,anchor);
   assert.equal(A.unitOptions(doc,anchor).length,1);
+  assert.deepEqual(A.unitOptions(doc,anchor,A.unitHistoryIndex(doc)),A.unitOptions(doc,anchor));
   assert.equal(choice.observationId,exact.id);
   const censored=M.checkLab({...input,value:'<2'});
   assert.equal(A.unitOptions(doc,censored)[0].unit,'U/L');

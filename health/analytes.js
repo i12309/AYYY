@@ -59,17 +59,29 @@
   function effectiveUnit(row,rules){
     return reportedUnit(row)||(unitEligible(row)&&row.unitHistory?.context===context(row,rules)?row.unitHistory.unit:'');
   }
-  function unitOptions(doc,row){
+  const isUnitSource=row=>reportedUnit(row)&&!row.unitHistory&&row.reviewStatus!=='draft'&&row.valueKind==='quantity';
+  function unitHistoryIndex(doc){
+    const items=new Map(),rules=doc.analyteAliases||{};
+    for(const row of doc.observations){
+      if(!isUnitSource(row))continue;
+      const key=context(row,rules);
+      if(!items.has(key))items.set(key,[]);
+      items.get(key).push(row);
+    }
+    return items;
+  }
+  function unitOptions(doc,row,index){
     if(reportedUnit(row)||!unitEligible(row)||row.reviewStatus==='draft')return [];
     const rules=doc.analyteAliases||{},match=classify(row,rules),key=context(row,rules,match);
-    const setting=doc.analytePreferences?.[defaultKey(row,rules)];
+    const setting=doc.analytePreferences?.['unit:'+key];
     if(setting?.unit&&compatibleUnit(match.id,setting.unit))
       return [{unit:setting.unit,settingsVersion:setting.version,reason:setting.reason}];
     const found=new Map();
-    for(const other of doc.observations){
+    const history=index?(index.get(key)||[]):doc.observations;
+    for(const other of history){
       const unit=reportedUnit(other);
-      if(other.id===row.id||!unit||!compatibleUnit(match.id,unit)||found.has(unit)||other.unitHistory||
-         other.reviewStatus==='draft'||other.valueKind!=='quantity'||context(other,rules)!==key)continue;
+      if(other.id===row.id||!compatibleUnit(match.id,unit)||found.has(unit)||
+         (!index&&(!isUnitSource(other)||context(other,rules)!==key)))continue;
       found.set(unit,{unit,observationId:other.id,observationDate:other.date,observationUpdatedAt:other.updatedAt});
     }
     return [...found.values()].sort((a,b)=>a.unit.localeCompare(b.unit,'ru'));
@@ -112,5 +124,5 @@
       row.source,row.provenance?.filename].join(' '));
   }
   window.HumanAnalytes={version,catalog,byId,normalize,classify,context,favoriteKey,defaultKey,unitEligible,effectiveUnit,
-    unitOptions,aliasKey,findRule,applyAlias,setDefault,searchText};
+    unitOptions,unitHistoryIndex,aliasKey,findRule,applyAlias,setDefault,searchText};
 })();

@@ -80,6 +80,8 @@
     if(file){
       entries.push(['Источник',[file.filename,file.sheet,file.row?'строка '+file.row:'',file.column?'колонка '+file.column:''].filter(Boolean).join(' · ')]);
       if(file.sourceDate)entries.push(['Дата в источнике',file.sourceDate]);
+      if(typeof file.originalUnit==='string'&&(row.unitHistory||file.originalUnit.trim()!==row.unit))
+        entries.push(['Единица в источнике',file.originalUnit||'Не указана']);
       if(file.method==='ocr-tesseract')entries.push(['Способ импорта','Распознавание скана']);
       if(file.method==='manual')entries.push(['Способ импорта','Введено вручную из бланка']);
       if(file.classification)entries.push(['При импорте',file.classification.name+' · '+names[file.classification.basis]]);

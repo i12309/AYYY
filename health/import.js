@@ -4,6 +4,8 @@
  const A=window.HumanAnalytes,T=window.HumanImportTable;
  const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
  const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
+ const sameUnitChoice=(option,choice)=>option.unit===choice.unit&&option.settingsVersion===choice.settingsVersion&&
+  option.observationId===choice.observationId&&option.observationUpdatedAt===choice.observationUpdatedAt;
  function open(files,{V,M,body,signal,close,commit,getDoc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
   const identity=getDoc()?.id;if(!identity)throw Error('Сначала откройте журнал.');
   const newEntries=(list,documentId)=>list.map(file=>({id:M.id(),name:file.name,relativePath:file.webkitRelativePath||undefined,file,sourceDocumentId:documentId}));
@@ -328,6 +330,7 @@
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
+   let unitDoc=doc,unitIndex=A.unitHistoryIndex(doc),unitDocumentId=documentId;
    const choices=[],refreshRows=[],captureRows=[],selection=[];
    const problems=savedRows.map(row=>row?.problem);
    const pendingRows=V.h('ul',{class:'health-import-row-list','aria-label':'Строки к проверке'});
@@ -352,6 +355,9 @@
     const controls=new Map(fields.map(([key,label])=>[key,V.h('input',{
       name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],disabled:draft.duplicate,'aria-label':label+' · '+rowLabel,
     })]));
+    const sourceUnit=String(draft.item.unit??''),unitField=controls.get('unit');
+    const unitInfo=V.h('div',{class:'health-import-unit-info','data-import-unit-info':true,hidden:true});
+    let unitChoice=savedRow?.unitChoice??null,unitReviewed=savedRow?.unitReviewed===true;
     const values=()=>Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value]));
     const caption=V.h('small',{class:'import-classification'});
     const checked=V.h('input',{type:'checkbox',name:'selected',value:String(index),disabled:draft.duplicate,
@@ -364,6 +370,38 @@
     const decisionField=V.h('label',{class:'field health-import-decision',hidden:true},V.h('span',{},'Действие при совпадении'),decision);
     const editorTitle=V.h('h3',{tabindex:-1});
     let candidates=[],withinFile=false;
+    function refreshUnit(){
+     if(draft.duplicate||sourceUnit.trim()||(!unitChoice&&unitField.value.trim())){unitInfo.hidden=true;return;}
+     const input=values();
+     const row={...input,unit:'',valueKind:M.labValueKind(input.value),documentId:unitDocumentId};
+     const context=A.context(row,unitDoc.analyteAliases);
+     const options=input.name.trim()?A.unitOptions(unitDoc,row,unitIndex):[];
+     if(unitChoice&&(unitChoice.context!==context||!options.some(option=>sameUnitChoice(option,unitChoice)))){
+      unitChoice=null;unitField.value='';unitReviewed=true;
+     }
+     function assign(option){
+      unitChoice={...option,context};unitField.value=option.unit;
+     }
+     if(!unitChoice&&!unitReviewed&&options.length===1)assign(options[0]);
+     if(activeRow!==index)return;
+     unitInfo.hidden=!unitChoice&&!options.length;
+     unitInfo.replaceChildren();
+     if(unitChoice){
+      const label=unitChoice.settingsVersion?'Из настроек показателя':'Из истории';
+      unitInfo.append(V.h('span',{class:'health-note'},`${label} · в бланке не указана`),action('Снять подстановку','import-clear-unit',()=>{
+       if(busy)return;
+       unitChoice=null;unitField.value='';unitReviewed=true;problems[index]='';refreshUnit();refreshMatches();showClassification();
+       unitField.focus();
+      },{class:'small'}));
+     }else if(options.length){
+      unitInfo.append(V.h('span',{class:'health-note'},options[0].settingsVersion?'Из настроек показателя':'Единицы из истории'),
+       ...options.map(option=>action(option.unit,'import-choose-unit',()=>{
+        if(busy)return;
+        assign(option);unitReviewed=true;problems[index]='';refreshUnit();refreshMatches();showClassification();
+        unitField.focus();
+       },{class:'small'})));
+     }
+    }
     function showDecision(){
      const value=decision.value;
      const possible=candidates.length>0||withinFile;
@@ -383,7 +421,7 @@
      if(decision.hidden)return;
      decision.append(V.h('option',{value:''},'Выберите действие'),V.h('option',{value:'separate'},'Сохранить отдельно'));
      for(const candidate of candidates){
-      const label=[candidate.name,candidate.value+' '+(candidate.unit||''),V.date(candidate.date),candidate.provenance?.filename||candidate.source].filter(Boolean).join(' · ');
+      const label=[candidate.name,candidate.value+' '+A.effectiveUnit(candidate,unitDoc.analyteAliases),V.date(candidate.date),candidate.provenance?.filename||candidate.source].filter(Boolean).join(' · ');
       decision.append(V.h('option',{value:'link:'+candidate.id},'Связать с записью «'+label+'»'));
      }
      decision.value=Array.from(decision.options).some(option=>option.value===value)?value:'';
@@ -391,11 +429,12 @@
     function refreshMatches(resetRepeated=true){
      if(draft.duplicate)return;
      const row=values();
+     if(unitChoice)row.unit='';
      try{Object.assign(row,T.checkedDate(row.date,order));candidates=indexOfResults.matches(row,checked.checked?Infinity:1);}catch{candidates=[];}
      if(resetRepeated)withinFile=false;
      showDecision();
     }
-    refreshMatches();
+    refreshUnit();refreshMatches();
     checked.checked=!draft.duplicate&&(savedRow?.selected??(!draft.manual&&!table.ocr&&!draft.problem&&!candidates.length));
     if(savedRow&&checked.checked){
      withinFile=savedRow.repeated||savedRow.decision==='separate';refreshMatches(false);
@@ -405,10 +444,12 @@
     checked.addEventListener('change',()=>{refreshMatches(false);updateSelection();});
     decision.addEventListener('change',()=>{problems[index]='';showDecision();});
     for(const key of ['name','value','date','unit','low','high','source','material','method'])controls.get(key).addEventListener('input',()=>{
+     if(key==='unit'){unitChoice=null;unitReviewed=true;}
+     if(['name','value','unit','material','method'].includes(key)){refreshUnit();showClassification();}
      problems[index]='';refreshMatches();
     });
     choices[index]=(matches,repeated)=>{candidates=matches;withinFile=repeated;showDecision();};
-    captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem}));
+    captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem,unitChoice,unitReviewed}));
     selection.push({checked,refresh:()=>refreshMatches(false),eligible:()=>{
      if(draft.duplicate||draft.manual||table.ocr||candidates.length||withinFile||problems[index])return false;
      const row=values();
@@ -418,16 +459,15 @@
      draft.duplicate=alreadyImported(coordinates,draft);
      checked.disabled=draft.duplicate;
      for(const input of controls.values())input.disabled=draft.duplicate;
+     refreshUnit();showClassification();
      if(draft.duplicate){checked.checked=false;showDecision();return;}
      refreshMatches(false);
     });
     function showClassification(){
      const name=controls.get('name').value,unit=controls.get('unit').value;
-     const match=A.classify({name,unit,documentId},doc.analyteAliases);
+     const match=A.classify({name,unit,documentId:unitDocumentId},unitDoc.analyteAliases);
      caption.textContent=!name.trim()?'':match.basis==='source'?'Название из бланка':match.name;
     }
-    controls.get('name').addEventListener('input',showClassification);
-    controls.get('unit').addEventListener('input',showClassification);
     showClassification();
     const field=(key,label)=>V.h('label',{class:'field'},V.h('span',{},label),controls.get(key),key==='name'?caption:null);
     function showEditor(){
@@ -443,9 +483,10 @@
      }
      const sourceDetails=source.length?V.h('details',{class:'health-import-row-source',open:true},V.h('summary',{},'Исходный фрагмент'),V.h('pre',{},source.join('\n'))):null;
      rowContent.replaceChildren(editorTitle,V.h('p',{class:'health-note'},`${table.name} · ${rowLabel}`),sourceDetails,editorHint,decisionField,
-      V.h('div',{class:'health-form-row'},fields.slice(0,4).map(([key,label])=>field(key,label))),
+      V.h('div',{class:'health-form-row'},fields.slice(0,4).map(([key,label])=>key==='unit'?V.h('div',{},field(key,label),unitInfo):field(key,label))),
       V.h('details',{class:'health-import-row-extra'},V.h('summary',{},'Референс, лаборатория и дополнительные поля'),
        V.h('div',{class:'health-form-row'},fields.slice(4).map(([key,label])=>field(key,label)))));
+     refreshUnit();
     }
     return {rowItem,rowButton,showEditor};
    });
@@ -478,6 +519,8 @@
    }
    entry.refreshReview=()=>{
     const current=getDoc();indexOfResults=T.duplicateIndex(current.observations);coordinates=T.importedCoordinates(current);
+    unitDoc=current;unitIndex=A.unitHistoryIndex(current);
+    unitDocumentId=current.documents.find(file=>entry.sourceDocumentId?file.id===entry.sourceDocumentId:file.sha256===original.hash)?.id;
     refreshRows.forEach(refresh=>refresh());syncRows();updateSelection();
    };
    entry.capture=()=>({...editorState(),activeRow,review:captureRows.map(capture=>capture())});
@@ -522,10 +565,10 @@
       const draft=drafts[index];
       if(!edit.selected||draft.duplicate)continue;
       try{
-       const item={...edit.values,...T.checkedDate(edit.values.date,order)};
-       records.push({index,decision:edit.decision,repeated:edit.repeated,record:{...M.checkLab(item),importKey:draft.importKey,
+       const item={...edit.values,...T.checkedDate(edit.values.date,order),unit:edit.unitChoice?'':edit.values.unit};
+       records.push({index,decision:edit.decision,repeated:edit.repeated,unitChoice:edit.unitChoice,record:{...M.checkLab(item),importKey:draft.importKey,
         provenance:{filename:original.name,sha256:original.hash,sheet:table.name,row:draft.row,column:draft.column,
-         sourceCell:draft.importKey,sourceDate:draft.sourceDate,headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
+         sourceCell:draft.importKey,sourceDate:draft.sourceDate,originalUnit:draft.item.unit||'',headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
          method:draft.manual?'manual':table.ocr?'ocr-tesseract':original.extension}}});
        problems[index]='';
       }catch(err){problems[index]=err.message;}
@@ -538,21 +581,32 @@
       if(!active()||doc.id!==identity)throw Error('Импорт закрыт или журнал сменился.');
       const imported=T.importedCoordinates(doc);
       const duplicates=T.duplicateIndex(doc.observations),existing=new Set(doc.observations.map(row=>row.id));
+      let saved=sourceDocument(doc);
+      const history=records.some(item=>item.unitChoice)?A.unitHistoryIndex(doc):null;
       const accepted=[];
-      for(const {index,decision,repeated,record} of records){
+      for(const {index,decision,repeated,unitChoice,record} of records){
        if(alreadyImported(imported,drafts[index]))continue;
-       const candidates=duplicates.matches(record),saved=candidates.filter(row=>existing.has(row.id));
+       if(unitChoice){
+        const row={...record,documentId:saved?.id};
+        const context=A.context(row,doc.analyteAliases);
+        const current=A.unitOptions(doc,row,history).find(option=>sameUnitChoice(option,unitChoice));
+        if(!current||unitChoice.context!==context){
+         problems[index]='Единица из истории или настроек изменилась. Проверьте и выберите её снова.';
+         continue;
+        }
+        record.unitHistory={...current,context,assignedAt:new Date().toISOString()};
+       }
+       const candidates=duplicates.matches(record),known=candidates.filter(row=>existing.has(row.id));
        const target=decision.startsWith('link:')?decision.slice(5):'';
-       if(target?!saved.some(row=>row.id===target):(candidates.length||repeated)&&decision!=='separate'){
+       if(target?!known.some(row=>row.id===target):(candidates.length||repeated)&&decision!=='separate'){
         problems[index]='Проверьте совпадение и выберите действие.';
-        choices[index](saved,repeated||!!target||candidates.length>saved.length);
+        choices[index](known,repeated||!!target||candidates.length>known.length);
         continue;
        }
        if(!target)duplicates.add(record);
        accepted.push({record,target});
       }
       if(!accepted.length)throw needsReview;
-      let saved=sourceDocument(doc);
       if(!saved){
        saved=await stageDocument(attachment,original.bytes);
        doc.documents.push(saved);

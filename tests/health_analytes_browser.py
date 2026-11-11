@@ -16,19 +16,30 @@ def run(page):
     def lab():
         page.locator('.sidebar button[data-tab=lab]').click()
 
-    def import_file(name, rows, match=None):
+    def select_files(entries):
         lab()
         with page.expect_file_chooser() as chooser:
             page.locator('[data-action=csv]').click()
-        chooser.value.set_files({'name':name,'mimeType':'text/csv','buffer':(HEADER+rows).encode()})
+        chooser.value.set_files([{'name':name,'mimeType':'text/csv','buffer':(HEADER+rows).encode()} for name,rows in entries])
+
+    def prepare_review():
         page.locator('[data-form=document-mapping] [type=submit]').click()
         review = page.locator('[data-form=document-review]')
         review.wait_for()
-        if match:
-            assert match in review.locator('.import-classification').first.inner_text()
+        return review
+
+    def confirm_review(review):
         review.locator('[name=profileConfirmed]').check()
         review.locator('[type=submit]').click()
-        page.locator('#health-import-page').wait_for(state='hidden')
+
+    def import_file(name, rows, match=None):
+        select_files([(name,rows)])
+        review = prepare_review()
+        if match:
+            assert match in review.locator('.import-classification').first.inner_text()
+        confirm_review(review)
+        page.wait_for_function("()=>!document.querySelector('#health-import-page') || !!document.querySelector('[data-form=document-review] [role=alert]:not([hidden])')")
+        assert not page.locator('#health-import-page').count(), review.inner_text()
 
     def open_record(filename):
         lab()
@@ -96,8 +107,14 @@ def run(page):
 
     import_file('other-context.csv','ALT;6;IU/L;urine;M1;2026-11-03\nALT;7;kU/L;serum;M2;2026-11-04\n','АЛТ')
     import_file('missing-unit.csv','ALT;8;;serum;M1;2026-11-05\n','АЛТ')
+    measured = snapshot()['observations'][-1]
+    assert measured['unit']=='' and measured['unitHistory']['unit']=='U/L' and measured['unitHistory']['observationId']
+    assert measured['provenance']['originalUnit']==''
     open_record('missing-unit.csv')
+    assert 'Единица в источнике' in page.locator('.analyte-origin').inner_text()
+    page.locator('[data-action=clear-history-unit]').click()
     choice = page.locator('[data-form=analyte-unit] [name=unit]')
+    choice.wait_for()
     assert choice.locator('option').all_text_contents() == ['Выберите единицу','U/L · из истории']
     default_unit('U/L','Synthetic default reason')
     assert choice.locator('option').all_text_contents() == ['Выберите единицу','U/L · из настроек']
@@ -169,6 +186,75 @@ def run(page):
     assert page.locator('.labs-mode').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
     assert page.locator('.health-import-resume').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
     print('PASS inclusive dates, partial dates, unfiltered detail, and 50-result pages',flush=True)
+
+    page.set_viewport_size({'width':1440,'height':1000})
+    import_file('unit-source-a.csv','Synthetic unit match;10;U-A;serum;M1;2026-11-01\n')
+    import_file('unit-source-b.csv','Synthetic unit match;20;U-B;serum;M1;2026-11-02\n')
+    select_files([('unit-choice.csv','Synthetic unit match;30;;serum;M1;2026-11-03\n'
+        'Synthetic unit match;31;;urine;M1;2026-11-04\nSynthetic unit match;qualitative;;serum;M1;2026-11-05\n'
+        'Synthetic unit match;32;U-original;serum;M1;2026-11-06\n'),('other-draft.csv','Other marker;33;mg;;;2026-11-07\n')])
+    unit_tab=page.get_by_role('tab',name='unit-choice.csv',exact=True)
+    other_tab=page.get_by_role('tab',name='other-draft.csv',exact=True)
+    unit_tab.click();review=prepare_review()
+    hints=review.locator('[data-import-unit-info]')
+    assert review.locator('[name="0:unit"]').input_value()==''
+    assert hints.locator('[data-action=import-choose-unit]').all_text_contents()==['U-A','U-B']
+    page.set_viewport_size({'width':360,'height':900})
+    assert page.locator('#health-import-page').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
+    page.set_viewport_size({'width':1440,'height':1000})
+    hints.get_by_role('button',name='U-B',exact=True).click()
+    for row,expected in [(1,''),(2,''),(3,'U-original')]:
+        review.locator(f'[data-import-row="{row}"]').click()
+        assert review.locator(f'[name="{row}:unit"]').input_value()==expected and not hints.is_visible()
+    review.locator('[data-import-row="0"]').click()
+    page.locator('[data-action=save-import-draft]').click()
+    page.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+    other_tab.click();page.locator('[data-form=document-mapping]').wait_for()
+    page.reload();unlock.locator('[name=passphrase]').fill(PHRASE);unlock.locator('[type=submit]').click()
+    page.locator('.metric').first.wait_for();lab();page.locator('[data-action=open-import-draft]').click()
+    unit_tab.click()
+    assert review.locator('[name="0:unit"]').input_value()=='U-B' and 'Из истории' in hints.inner_text()
+    assert not review.locator('[name=profileConfirmed]').is_checked()
+    confirm_review(review);page.get_by_text('Сохранено результатов: 4',exact=True).wait_for()
+    imported={row['value']:row for row in snapshot()['observations'] if row.get('provenance',{}).get('filename')=='unit-choice.csv'}
+    assert imported['30']['unit']=='' and imported['30']['unitHistory']['unit']=='U-B'
+    assert all('unitHistory' not in imported[key] for key in ['31','qualitative','32'])
+    assert imported['32']['unit']==imported['32']['provenance']['originalUnit']=='U-original'
+    other_tab.click();confirm_review(prepare_review());page.get_by_text('Сохранено результатов: 1',exact=True).wait_for()
+    page.locator('[data-action=close-import]').click()
+    print('PASS compatible unit choices and explicit source units survive encrypted draft reload and import',flush=True)
+
+    open_record('unit-source-a.csv');default_unit('U-setting','Synthetic preferred unit')
+    select_files([('unit-settings.csv','Synthetic unit match;40;;serum;M1;2026-11-08\n')])
+    review=prepare_review()
+    unit=review.locator('[name="0:unit"]')
+    assert unit.input_value()=='U-setting' and 'Из настроек показателя' in hints.inner_text()
+    hints.locator('[data-action=import-clear-unit]').click()
+    assert unit.input_value()==''
+    page.locator('[data-action=save-import-draft]').click()
+    page.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+    page.reload();unlock.locator('[name=passphrase]').fill(PHRASE);unlock.locator('[type=submit]').click()
+    page.locator('.metric').first.wait_for();lab();page.locator('[data-action=open-import-draft]').click()
+    assert unit.input_value()==''
+    hints.get_by_role('button',name='U-setting',exact=True).click()
+    review.get_by_text('Референс, лаборатория и дополнительные поля',exact=True).click()
+    material=review.locator('[name="0:material"]')
+    material.fill('urine')
+    assert unit.input_value()=='' and not hints.is_visible()
+    material.fill('serum')
+    assert unit.input_value()==''
+    hints.get_by_role('button',name='U-setting',exact=True).click()
+    open_record('unit-source-a.csv');default_unit('U-new','Synthetic updated preferred unit')
+    lab();page.locator('[data-action=continue-import]').click()
+    confirm_review(review)
+    review.locator('.health-import-row-editor .import-row-warning').filter(has_text='Единица из истории или настроек изменилась').wait_for()
+    assert unit.input_value()=='' and not any(row['value']=='40' and row['name']=='Synthetic unit match' for row in snapshot()['observations'])
+    hints.get_by_role('button',name='U-new',exact=True).click();confirm_review(review)
+    page.locator('#health-import-page').wait_for(state='hidden')
+    measured=snapshot()['observations'][-1]
+    assert measured['value']=='40' and measured['unit']=='' and measured['unitHistory']['unit']=='U-new'
+    assert measured['unitHistory']['settingsVersion']==2 and measured['provenance']['originalUnit']==''
+    print('PASS settings take priority, clearing is respected, and a stale assignment requires a fresh choice',flush=True)
 
 
 if __name__ == '__main__':

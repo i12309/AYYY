@@ -64,6 +64,7 @@
 .health-import-review summary{cursor:pointer;font-size:12px;font-weight:600}
 .health-import-row-source pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border-radius:5px;padding:8px;margin:8px 0 0;max-height:140px;overflow:auto;font-size:11px}
 .health-import-row-editor .health-form-row{align-items:start}
+.health-import-unit-info{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin-top:5px;overflow-wrap:anywhere}
 .health-import-row-extra .health-form-row{margin-top:8px}
 .health-import-row-editor .health-import-decision{margin:8px 0}
 @media(max-width:700px){.health-import-review{grid-template-columns:minmax(0,1fr)}.health-import-row-list{max-height:220px}}
