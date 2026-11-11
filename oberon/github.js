@@ -182,7 +182,18 @@
             limitedUntil=retry>0?Date.now()+retry*1000:reset>Date.now()?reset:Date.now()+60000;
             throw rateError();
           }
-          throw problem('FORBIDDEN','GitHub не разрешил действие. Проверьте доступ токена к репозиторию и разрешение Contents: Read and write.',{status:response.status});
+          // A GitHub PAT never appears in a persisted or visible diagnostic.
+          const operation=method+' '+(path||'/');
+          const rawMessage=typeof payload?.message==='string'?payload.message:'';
+          const githubMessage=(secret?rawMessage.replaceAll(secret,'[скрыто]'):rawMessage)
+            .replace(/\s+/g,' ').slice(0,240);
+          const required=String(response.headers.get('x-accepted-github-permissions')||'')
+            .replace(/[^a-zA-Z0-9=;, :_-]/g,'').slice(0,120);
+          const diagnostic='GitHub отклонил '+operation+' (HTTP 403).'
+            +(githubMessage?' Ответ GitHub: '+githubMessage+'.':'')
+            +(required?' Требуемые права: '+required+'.':'')
+            +' Проверьте выбранный репозиторий в токене и Contents: Read and write.';
+          throw problem('FORBIDDEN',diagnostic,{status:response.status,operation,githubMessage,requiredPermissions:required});
         }
         if (response.status===404) throw problem('NOT_FOUND','Репозиторий или ветка не найдены. Для приватного репозитория нужен токен с доступом к нему.',{status:404});
         if (response.status===409 || response.status===422) throw problem('HEAD_CHANGED','Ветка GitHub изменилась или защищена от прямой записи. Обновите хранилище и повторите синхронизацию.',{status:response.status});

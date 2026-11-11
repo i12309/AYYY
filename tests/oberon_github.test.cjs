@@ -272,3 +272,31 @@ test('repository identity and rate limits are enforced without exposing tokens t
   await assert.rejects(rate.client.verify(),e=>e.code==='RATE_LIMIT');assert.equal(rate.mock.calls.length,requests);
   assert.ok(!JSON.stringify(rate.client).includes('secret-token'));
 });
+
+test('GitHub 403 reports denied write operation and sanitized provider hint without leaking the PAT',async()=>{
+  const token='secret-test-token', {client,mock}=setup({'OBERON/a.md':'before'},token);
+  const base=await client.load(),local=clone(base);
+  local.notes[0].content='after';
+  const originalFetch=mock.fetch.bind(mock);
+  mock.options.reply=(request,server)=>{
+    if(request.method==='POST'&&request.pathname==='/git/blobs')
+      return server.response(403,{message:'Resource not accessible by personal access token ('+token+')'},
+        {'x-accepted-github-permissions':'contents=write'});
+    const saved=server.options.reply;
+    server.options.reply=null;
+    const result=originalFetch(request.url,request.opts);
+    server.options.reply=saved;
+    return result;
+  };
+  await assert.rejects(client.sync({base,local}),error=>{
+    assert.equal(error.code,'FORBIDDEN');
+    assert.ok(error.message.includes('POST /git/blobs (HTTP 403)'));
+    assert.match(error.message,/Resource not accessible by personal access token/);
+    assert.match(error.message,/contents=write/);
+    assert.doesNotMatch(error.message,/secret-test-token/);
+    assert.equal(error.operation,'POST /git/blobs');
+    assert.equal(error.requiredPermissions,'contents=write');
+    return true;
+  });
+  assert.equal(mock.currentText('OBERON/a.md'),'before','failed write must not alter the repository');
+});
