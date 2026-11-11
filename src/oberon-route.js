@@ -3,7 +3,7 @@
   'use strict';
   const app=window.AYYY;if(!app)return;
   const source=new URL('oberon/',document.baseURI).href;
-  const version='oberon-e1e1e99dd4c9';
+  const version='oberon-20d7ce75b03e';
   if(!document.getElementById('ayyy-oberon-shell')){
     const style=document.createElement('style');style.id='ayyy-oberon-shell';
     style.textContent=[
