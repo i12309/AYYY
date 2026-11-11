@@ -75,7 +75,7 @@ with sync_playwright() as pw:
  upload('synthetic.xlsx',payload,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',p.locator('#health-dialog [data-action=csv]'))
  check('manual form opens the full import page and releases the dialog',workspace.is_visible() and not p.locator('#health-dialog').is_visible())
  check('XLSX cached formula read without execution','Synthetic XLSX marker' in p.locator('[data-form=document-mapping]').inner_text())
- draft();check('review uses wide workspace',workspace.bounding_box()['width']>=1100);check('table scroll stays inside the page',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth'));(ROOT/'docs/health-ui').mkdir(parents=True,exist_ok=True);capture(p,path=str(ROOT/'docs/health-ui/import-review-1440.png'),full_page=True)
+ draft();check('review uses wide workspace',workspace.bounding_box()['width']>=1100);check('table scroll stays inside the page',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
  first_review=p.locator('[data-form=document-review]')
  check('confirmation names the open profile and starts unchecked',first_review.get_by_label('Результаты относятся к профилю Анна Примерова').is_visible() and first_review.locator('[type=submit]').is_disabled())
  first_review.dispatch_event('submit')
@@ -183,21 +183,42 @@ with sync_playwright() as pw:
  chooser.value.set_files([
   {'name':'broken.csv','mimeType':'text/csv','buffer':b'name;value\n"unfinished'},
   {'name':'wide-copy.csv','mimeType':'text/csv','buffer':wide},
+  {'name':'candidate.csv','mimeType':'text/csv','buffer':matching+b'\n\n'},
  ])
  queue.wait_for()
- check('files can be added while a draft is open',queue.locator('li').count()==3)
+ check('files can be added while a draft is open',queue.locator('li').count()==4)
  p.set_viewport_size({'width':360,'height':900})
  check('batch queue fits phone',workspace.evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
+ check('file tabs scroll inside the mobile workspace',workspace.get_by_role('tablist').evaluate('(e)=>e.scrollWidth>e.clientWidth'))
  p.set_viewport_size({'width':1440,'height':1000})
- open_entry('broken.csv');queue.wait_for()
+ def file_tab(name):return workspace.get_by_role('tab',name=name,exact=True)
+ open_entry('wide.csv')
+ file_tab('wide.csv').focus();file_tab('wide.csv').press('ArrowRight')
+ check('arrow keys focus the next file without changing the active draft',
+       file_tab('wide.csv').get_attribute('aria-selected')=='true' and file_tab('broken.csv').evaluate('(tab)=>tab===document.activeElement'))
+ file_tab('broken.csv').press('Enter')
+ workspace.get_by_role('alert').filter(has_text='Незакрытая кавычка CSV').wait_for()
+ check('an unreadable file shows its own error while other file tabs stay available',
+       file_tab('broken.csv').get_attribute('data-status')=='error' and file_tab('wide.csv').is_visible())
+ p.locator('[data-action=import-queue]').click();queue.wait_for()
  check('invalid file is isolated in the queue','Незакрытая кавычка CSV' in queue_entry('broken.csv').inner_text())
  queue_entry('broken.csv').locator('[data-action=import-skip-file]').click()
- open_entry('wide.csv')
+ file_tab('candidate.csv').click();draft()
+ review.locator('[name=selected]').check();review.locator('[name="0:decision"]').select_option('separate')
+ review.locator('[name=profileConfirmed]').check()
+ file_tab('wide.csv').click()
  check('batch retains unsaved edits',p.locator('[name="0:value"]').input_value()=='12.25')
- p.locator('[data-action=import-queue]').click();queue.wait_for();open_entry('wide.csv')
+ capture(p,path=str(ROOT/'docs/health-ui/import-review-1440.png'),full_page=True)
+ file_tab('candidate.csv').click()
+ check('direct switching retains selection, duplicate decision and profile confirmation',
+       review.locator('[name=selected]').is_checked() and review.locator('[name="0:decision"]').input_value()=='separate' and
+       review.locator('[name=profileConfirmed]').is_checked())
+ file_tab('wide.csv').click()
  submit_review();queue.wait_for()
  check('batch marks confirmed results per file','Сохранено результатов: 3' in queue_entry('wide.csv').inner_text())
- open_entry('wide-copy.csv');mapping.locator('[name=dateOrder]').select_option('dmy');draft()
+ file_tab('wide.csv').click()
+ check('a completed file tab shows a read-only result summary',workspace.get_by_role('tabpanel',name='wide.csv').get_by_text('Сохранено результатов: 3',exact=True).is_visible())
+ file_tab('wide-copy.csv').click();mapping.locator('[name=dateOrder]').select_option('dmy');draft()
  check('wide results are deduplicated by source cell',p.locator('[name=selected]:disabled').count()==3)
  close_import()
  encoded=p.evaluate('''()=>{

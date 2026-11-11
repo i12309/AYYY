@@ -32,9 +32,18 @@
 .health-pdf-pages canvas{display:block;max-width:100%;height:auto;margin:12px auto;border:1px solid var(--border)}
 .health-import-tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px;padding:10px 14px}
 .health-import-tools h2,.health-import-tools p{margin:0}
-.health-import-tools h2,.health-import-workspace>h2{font-size:15px}
+.health-import-tools h2,#health-import-file-panel>h2{font-size:15px}
 .health-import-workspace{padding:14px;min-width:0}
-.health-import-workspace>h2{margin:0 0 12px}
+#health-import-file-panel>h2{margin:0 0 12px}
+.health-import-file-tabs{display:flex;gap:4px;overflow-x:auto;margin:0 0 12px;padding:3px 2px 0;border-bottom:1px solid var(--border);scrollbar-width:thin}
+.health-import-file-tabs [role=tab]{display:grid;gap:3px;min-width:0;flex:1 0 130px;max-width:200px;padding:7px 9px;text-align:left;border:1px solid transparent;border-radius:7px 7px 0 0;background:var(--bg);color:var(--text)}
+.health-import-file-tabs [role=tab][aria-selected=true]{border-color:var(--border-strong);box-shadow:inset 0 2px var(--blue);background:var(--surface)}
+.health-import-file-tabs [role=tab]:focus-visible{outline-offset:-2px}
+.health-import-file-tabs strong,.health-import-file-tabs span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.health-import-file-tabs strong{font-size:12px;font-weight:600}
+.health-import-file-tabs span{font-size:10px;color:var(--muted)}
+.health-import-file-tabs [data-status=done] span{color:var(--green-ink)}
+.health-import-file-tabs [data-status=error] span{color:var(--red-ink)}
 .health-import-workspace .health-form,.health-import-workspace .health-form>*{min-width:0}
 .health-import-workspace .health-table-wrap{width:100%;max-width:100%;max-height:50vh;overflow:auto}
 .health-import-workspace .health-form-row{grid-template-columns:repeat(2,minmax(0,1fr))}

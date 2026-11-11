@@ -116,10 +116,13 @@ def run(browser, directory):
         noNames:!Object.keys(draft).includes('entries')&&!Object.keys(draft.files[0]).includes('name'),salt:draft.salt};
     }''',OLD)
     assert proof['encrypted'] and proof['rejected'] and proof['noNames'] and proof['files']==2 and proof['count']==proof['attachments']==0,proof
+    review(p).locator('[name="0:value"]').fill('15.50')
+    p.get_by_role('tab',name=next_path,exact=True).click()
+    p.locator('[data-form=document-mapping]').wait_for()
     p.reload();unlock(p,OLD);lab(p);resume(p)
-    entry(p,first_path).locator('[data-action=import-open-file]').click()
-    assert review(p).locator('[name="0:value"]').input_value()=='15.25' and not review(p).locator('[name=selected]').is_checked()
-    print('PASS folder paths distinguish same-name files and survive encrypted draft reload',flush=True)
+    p.get_by_role('tab',name=first_path,exact=True).click()
+    assert review(p).locator('[name="0:value"]').input_value()=='15.50' and not review(p).locator('[name=selected]').is_checked()
+    print('PASS switching updates the encrypted checkpoint and retains relative paths and edits after reload',flush=True)
 
     peer=page();peer.goto(BASE+'health/');unlock(peer,OLD);lab(peer);resume(peer)
     entry(peer,first_path).locator('[data-action=import-open-file]').click()

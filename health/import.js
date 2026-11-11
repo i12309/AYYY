@@ -14,7 +14,10 @@
   let single=entries.length===1,currentEntry=null,loading=false,busy=false;
   let checkpoint=saved?.checkpoint??null,persisting=false,draftNotice=saved?'Черновик открыт с этого устройства.':'';
   const active=()=>!signal.aborted&&isCurrent()&&getDoc()?.id===identity;
-  signal.addEventListener('abort',()=>{entries.length=0;body.replaceChildren();},{once:true});
+  const tablist=V.h('div',{class:'health-import-file-tabs',role:'tablist','aria-label':'Файлы импорта',hidden:single});
+  const panel=V.h('div',{id:'health-import-file-panel'}),tabs=new Map();
+  body.replaceChildren(tablist,panel);
+  signal.addEventListener('abort',()=>{entries.length=0;tabs.clear();body.replaceChildren();},{once:true});
   function validateSize(batch){
    if(batch.length>100||batch.reduce((size,entry)=>size+(entry.original?.bytes.byteLength??entry.file?.size??0),0)>128*1024*1024)
     throw Error('Выберите до 100 файлов общим размером до 128 МиБ.');
@@ -22,15 +25,70 @@
   function frame(title){
    const heading=V.h('h2',{tabindex:-1},title);
    const content=V.h('div',{class:'health-import-panel'},V.h('p',{class:'health-note','data-import-skipped':true,hidden:true}));
-   body.replaceChildren(heading,content);
+   panel.replaceChildren(heading,content);
    updateSkipped();
-   if(body.isConnected)heading.focus({preventScroll:true});
+   syncTabs();focusPanel();
    return content;
   }
   function updateSkipped(){
-   const note=body.querySelector('[data-import-skipped]');
+   const note=panel.querySelector('[data-import-skipped]');
    note.hidden=!skippedFiles;
    note.textContent=skippedFiles?`Пропущено файлов неподдерживаемых форматов: ${skippedFiles}`:'';
+  }
+  function focusPanel(){if(panel.isConnected&&!tablist.contains(document.activeElement))panel.querySelector('h2')?.focus({preventScroll:true});}
+  function savedCounts(entry){return [entry.savedCount?`Сохранено результатов: ${entry.savedCount}`:'',entry.linked?`Связано источников: ${entry.linked}`:''].filter(Boolean).join(' · ');}
+  function fileStatus(entry){
+   if(entry.skipped)return ['skipped','Пропущен'];
+   if(entry.done!=null)return ['done','Сохранён'];
+   if(loading&&currentEntry===entry)return ['review','Чтение файла'];
+   if(entry.error)return ['error','Ошибка чтения'];
+   return entry.original?['review','К проверке']:['waiting','Ожидает'];
+  }
+  function syncTabs(){
+   tablist.hidden=single;
+   if(single)return;
+   const focused=tablist.contains(document.activeElement)?document.activeElement:null;
+   for(const entry of entries){
+    const name=entry.relativePath||entry.name;
+    if(!tabs.has(entry)){
+     const status=V.h('span',{id:'health-import-status-'+entry.id});
+     const button=V.h('button',{type:'button',role:'tab',id:'health-import-tab-'+entry.id,'aria-controls':panel.id,
+      'aria-label':name,'aria-describedby':status.id,title:name},V.h('strong',{},name),status);
+     button.addEventListener('click',()=>{button.focus({preventScroll:true});void switchFile(entry);});
+     tabs.set(entry,{button,status});tablist.append(button);
+    }
+    const {button,status}=tabs.get(entry),[tone,label]=fileStatus(entry);
+    button.dataset.status=tone;
+    button.setAttribute('aria-selected',String(entry===currentEntry));
+    button.tabIndex=(focused?button===focused:entry===(currentEntry??entries[0]))?0:-1;
+    status.textContent=label;
+   }
+   if(currentEntry){
+    panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',tabs.get(currentEntry).button.id);
+   }else{panel.removeAttribute('role');panel.removeAttribute('aria-labelledby');}
+  }
+  tablist.addEventListener('keydown',event=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+   const buttons=[...tablist.children],index=buttons.indexOf(event.target);
+   if(index<0)return;
+   event.preventDefault();
+   const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+buttons.length+(event.key==='ArrowRight'?1:-1))%buttons.length;
+   buttons[next].focus({preventScroll:true});buttons[next].scrollIntoView({block:'nearest',inline:'nearest'});syncTabs();
+  });
+  tablist.addEventListener('focusout',event=>{if(!tablist.contains(event.relatedTarget))queueMicrotask(()=>{if(active())syncTabs();});});
+  function queueLink(){return action('К очереди','import-queue',()=>void switchFile(null),{hidden:single});}
+  function parkEditor(){if(currentEntry?.capture)currentEntry.view=[...panel.childNodes];}
+  async function switchFile(entry){
+   if(!active()||entry===currentEntry)return;
+   if(loading||busy||persisting){notify?.('Дождитесь окончания обработки текущего файла.');return;}
+   const leaving=currentEntry;
+   parkEditor();
+   if(checkpoint&&leaving?.capture){
+    persisting=true;panel.inert=true;
+    try{await updateCheckpoint(leaving,draftMetadata(leaving));}finally{persisting=false;panel.inert=false;}
+    if(!active())return;
+   }
+   if(entry)await load(entry);else queue();
   }
   function action(label,key,run,attrs={}){
    const button=V.button(label,key,attrs);
@@ -74,7 +132,7 @@
     finally{for(const control of controls)control.disabled=false;persisting=false;save.disabled=discard.disabled=false;discard.hidden=!checkpoint;status.textContent=draftNotice;}
    },{class:'small',hidden:!pending().length});
    const discard=action('Удалить сохранённый черновик','discard-import-draft',async()=>{
-    if(!canSave()||!checkpoint||!confirm('Удалить сохранённый черновик с этого устройства? Правки в открытом окне останутся до его закрытия.'))return;
+    if(!canSave()||!checkpoint||!confirm('Удалить сохранённый черновик с этого устройства? Правки останутся доступны до закрытия импорта.'))return;
     persisting=true;save.disabled=discard.disabled=true;
     try{await persistence.discard(checkpoint,active);checkpoint=null;draftNotice='Сохранённый черновик удалён.';}
     catch(error){draftNotice=error.message;}
@@ -86,11 +144,11 @@
    currentEntry=null;
    const content=frame('Очередь импорта');
    draftActions(content);
-   content.append(V.h('p',{class:'health-note'},persistence?'Проверяйте и сохраняйте результаты по каждому файлу. После закрытия окна доступна сохранённая версия черновика.':'Проверяйте и сохраняйте результаты по каждому файлу. В демо правки черновика доступны в открытом окне.'),
+   content.append(V.h('p',{class:'health-note'},persistence?'После закрытия импорта можно открыть сохранённый черновик.':'В демо правки доступны, пока открыт импорт.'),
     V.h('ul',{class:'health-import-queue'},entries.map(entry=>{
-     const status=entry.done!=null?[entry.done?`Сохранено результатов: ${entry.done}`:'',entry.linked?`Связано источников: ${entry.linked}`:''].filter(Boolean).join(' · '):entry.skipped?'Пропущен':entry.error||(entry.original?'Готов к проверке':'Ожидает');
+     const status=entry.done!=null?savedCounts(entry):entry.skipped?'Пропущен':entry.error||fileStatus(entry)[1];
      return V.h('li',{},V.h('div',{},V.h('strong',{},entry.relativePath||entry.name),V.h('small',{},status)),entry.done!=null||entry.skipped?null:
-      V.h('div',{class:'health-import-queue-actions'},action(entry.original?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void load(entry),{class:'small'}),
+      V.h('div',{class:'health-import-queue-actions'},action(entry.original?'Продолжить':entry.error?'Повторить':'Открыть','import-open-file',()=>void switchFile(entry),{class:'small'}),
        action('Пропустить','import-skip-file',async()=>{
         persisting=true;
         try{await updateCheckpoint(entry);}finally{persisting=false;}
@@ -100,20 +158,40 @@
        },{class:'small'})));
     })));
   }
+  function readError(entry,error){
+   entry.error=error.message;
+   const content=frame('Не удалось открыть файл');
+   content.append(V.h('p',{class:'health-import-file'},entry.relativePath||entry.name),V.h('p',{class:'error',role:'alert'},entry.error),
+    action('Повторить чтение','import-retry-file',()=>void load(entry)),queueLink());
+  }
   async function load(entry){
    currentEntry=entry;
-   if(entry.view){body.replaceChildren(...entry.view);entry.view=null;updateSkipped();entry.refreshReview?.();body.querySelector('h2')?.focus({preventScroll:true});return;}
+   if(entry.done!=null||entry.skipped){
+    const content=frame(entry.skipped?'Файл пропущен':'Файл обработан');
+    const counts=savedCounts(entry);
+    content.append(V.h('p',{class:'health-import-file'},entry.relativePath||entry.name));
+    if(counts)content.append(V.h('p',{class:'health-note'},counts));
+    content.append(queueLink());
+    return;
+   }
+   if(entry.view){
+    panel.replaceChildren(...entry.view);entry.view=null;updateSkipped();entry.refreshReview?.();
+    const draftStatus=panel.querySelector('[data-import-draft-status]'),discard=panel.querySelector('[data-action=discard-import-draft]');
+    if(draftStatus)draftStatus.textContent=draftNotice;
+    if(discard)discard.hidden=!checkpoint;
+    syncTabs();focusPanel();return;
+   }
    if(entry.original){
     try{edit(entry,entry.original);}catch(error){
      if(single){close();throw error;}
-     entry.error=error.message;queue();
+     readError(entry,error);
     }
     return;
    }
+   loading=true;entry.error=null;
    const content=frame('Чтение файла'),status=V.h('p',{class:'health-note',role:'status'},'Чтение '+(entry.relativePath||entry.name));
    content.append(status);
    const reader=new AbortController(),abort=()=>reader.abort();
-   loading=true;
    signal.addEventListener('abort',abort,{once:true});
    if(!single)content.append(action('Отменить чтение','import-cancel-read',abort));
    try{
@@ -127,9 +205,8 @@
    }catch(error){
     if(!active())return;
     if(single){close();throw error;}
-    entry.error=reader.signal.aborted?null:error.message;
-    queue();
-   }finally{loading=false;signal.removeEventListener('abort',abort);}
+    if(reader.signal.aborted)queue();else readError(entry,error);
+   }finally{loading=false;signal.removeEventListener('abort',abort);if(active())syncTabs();}
   }
   function edit(entry,original){
   const restored=entry.editor??{};
@@ -181,12 +258,6 @@
    });
    return details;
   }
-  function navigation(content){
-   content.append(action('К очереди','import-queue',()=>{
-    if(busy)return;
-    entry.view=[...body.childNodes];queue();
-   },{hidden:single}));
-  }
   function readOptions(form){
    const input=new FormData(form);
    order=String(input.get('dateOrder')||'');
@@ -199,7 +270,7 @@
    manualMode=false;manualIds=[];
    const table=original.tables[sheet];
    const content=frame('Сопоставление колонок'),labels=table.rows[header-1]||[],width=Math.max(0,...table.rows.map(r=>r.length));
-   navigation(content);
+   content.append(queueLink());
    draftActions(content,()=>!busy);
    mapping??=Object.fromEntries(fields.map(([key])=>[key,labels.findIndex(x=>(aliases[key]||[]).includes(x.trim().toLocaleLowerCase('ru-RU')))]));
    layout??=T.suggestedLayout(labels,mapping);
@@ -253,7 +324,7 @@
    const doc=getDoc(),documentId=sourceDocument(doc)?.id;
    const content=frame('Проверка перед сохранением'),error=V.h('p',{class:'error',role:'alert',hidden:true});
    const result=V.h('p',{class:'health-note','data-import-result':true,role:'status',hidden:true});
-   navigation(content);
+   content.append(queueLink());
    draftActions(content,()=>!busy);
    const table=original.tables[sheet];
    let indexOfResults=T.duplicateIndex(doc.observations),coordinates=T.importedCoordinates(doc);
@@ -467,10 +538,8 @@
    if(loading||persisting||busy)throw Error('Дождитесь окончания обработки текущего файла.');
    const added=newEntries(list,sourceDocumentId);
    validateSize([...entries,...added]);
-   if(currentEntry){
-    body.querySelector('[data-action=import-queue]')?.removeAttribute('hidden');
-    currentEntry.view=[...body.childNodes];
-   }
+   panel.querySelector('[data-action=import-queue]')?.removeAttribute('hidden');
+   parkEditor();
    entries.push(...added);
    skippedFiles+=skipped;
    single=false;
