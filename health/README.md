@@ -41,6 +41,7 @@
 ```powershell
 node --test tests/health_github_initialize.test.cjs tests/health_model.test.cjs tests/health_demo.test.cjs tests/health_care.test.cjs tests/health_diary.test.cjs tests/health_genetics.test.cjs tests/health_journal.test.cjs tests/health_recommendations.test.cjs
 python -X utf8 tests/run_health_browsers.py
+python -X utf8 tests/health_github_initialize_browser.py
 python -X utf8 tests/health_measurements_browser.py
 python -X utf8 tests/health_analytes_browser.py
 python -X utf8 tests/health_diary_browser.py
