@@ -92,9 +92,15 @@
       if(assigned.reason)entries.push(['Основание',assigned.reason]);
     }
     const details=V.h('dl',{class:'metadata'},entries.flatMap(([label,value])=>[V.h('dt',{},label),V.h('dd',{},value)]));
+    const linked=doc.documents.flatMap(document=>Array.isArray(document.importLinks)?document.importLinks
+      .filter(link=>link?.observationId===row.id).map(link=>V.h('li',{},
+        V.button('Открыть связанный источник','file-preview',{'data-id':document.id,class:'small'}),
+        V.h('p',{},[link.filename,link.sheet,`строка ${link.row}`,`колонка ${link.column}`].filter(Boolean).join(' · ')),
+        Array.isArray(link.raw)&&link.raw.length?V.h('details',{},V.h('summary',{},'Исходные значения'),V.h('p',{},link.raw.join(' · '))):null)):[]);
     return V.h('div',{class:'analyte-origin'},details,
       file?.raw?.length?V.h('details',{},V.h('summary',{},'Строка в исходном файле'),
-        V.h('p',{},file.raw.join(' · '))):null);
+        V.h('p',{},file.raw.join(' · '))):null,
+      linked.length?V.h('details',{},V.h('summary',{},`Связанные источники (${linked.length})`),V.h('ul',{class:'health-linked-sources'},linked)):null);
   }
 
   function unitChoice(doc,row){

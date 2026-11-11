@@ -33,8 +33,52 @@
   function sourceIdentity(hash,sheet,row,column){
     return hash+':'+sheet+':'+row+':'+column;
   }
-  function importedCoordinates(observations){
-    return new Set(observations.flatMap(row=>[row.importKey,row.provenance?.sourceCell].filter(Boolean)));
+  function importedCoordinates(doc){
+    const active=new Set(doc.observations.map(row=>row.id));
+    return new Set([
+      ...doc.observations.flatMap(row=>[row.importKey,row.provenance?.sourceCell].filter(Boolean)),
+      ...doc.documents.flatMap(file=>Array.isArray(file.importLinks)?file.importLinks.filter(link=>active.has(link?.observationId)).map(link=>link.sourceCell):[]),
+    ]);
+  }
+  const clean=value=>String(value??'').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('ru-RU');
+  function resultValue(value){
+    const text=String(value??'').trim();
+    const comparison=/^([<>]=?|[≤≥])\s*(.+)$/.exec(text);
+    const number=M.number(comparison?comparison[2]:text);
+    if(number===null)return clean(text);
+    const sign=comparison?.[1]||'';
+    return [sign==='≤'?'<=':sign==='≥'?'>=':sign,number];
+  }
+  function duplicateKey(row){
+    const name=clean(row.name),value=resultValue(row.value);
+    if(row.reviewStatus==='draft'||!name||value==='')return '';
+    const parsed=checkedDate(row.date);
+    const dateValue=parsed.datePrecision==='exact'?Date.parse(parsed.date):parsed.date;
+    const bound=raw=>M.number(raw)??clean(raw);
+    return JSON.stringify([name,parsed.datePrecision,dateValue,value,bound(row.low),bound(row.high)]);
+  }
+  function duplicateIndex(observations){
+    const items=new Map();
+    function key(row){try{return duplicateKey(row);}catch{return '';}}
+    function add(row){
+      const id=key(row);if(!id)return;
+      if(!items.has(id))items.set(id,[]);
+      items.get(id).push(row);
+    }
+    function matches(row,limit=Infinity){
+      const unit=value=>String(value??'').replace(/\s+/g,'');
+      const compatible=(a,b)=>!a||!b||a===b;
+      const found=[];
+      for(const existing of items.get(key(row))||[]){
+        if(!compatible(unit(row.unit),unit(existing.unit))||
+           !['source','material','method'].every(field=>compatible(clean(row[field]),clean(existing[field]))))continue;
+        found.push(existing);
+        if(found.length>=limit)break;
+      }
+      return found;
+    }
+    observations.forEach(add);
+    return {add,matches};
   }
   function draft(table,{hash,sheet,header,mapping,layout,order,fallbackDate},fields,imported){
     const headings=table.rows[header-1];
@@ -85,5 +129,5 @@
     if(!results.length)throw Error('После заголовка нет результатов.');
     return results;
   }
-  window.HumanImportTable={date,checkedDate,suggestedLayout,importedCoordinates,draft};
+  window.HumanImportTable={date,checkedDate,suggestedLayout,importedCoordinates,duplicateIndex,draft};
 })();
