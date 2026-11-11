@@ -3,7 +3,7 @@
   'use strict';
   const V=window.HumanView,M=window.HumanModel,C=window.HumanCrypto;
   const A=window.HumanAnalytes;
-  const S=window.HumanStore,G=window.HumanGithub,Merge=window.HumanSyncMerge;
+  const S=window.HumanStore,G=window.HumanGithub,Merge=window.HumanSyncMerge,H=window.HumanRemember;
   const root=document.getElementById('health-root');
   const header=document.getElementById('health-header');
   const dialog=document.getElementById('health-dialog');
@@ -36,21 +36,56 @@
   navMeta.genetics=['Dna','green','Ваши записи из генетических отчётов.'];
   navMeta.care=['Bell','yellow','Фактические события и ваши расписания.'];
   function nav(){return V.h('nav',{'aria-label':'Разделы'},tabs.filter(([id])=>id!=='profile').map(([id,label])=>V.h('button',{type:'button',class:'tone-'+navMeta[id][1]+(currentTab()===id?' active':''),'data-tab':id,'aria-current':currentTab()===id?'page':null},V.icon(navMeta[id][0]),label)));}
+  function rememberChoice(){
+    return V.h('label',{class:'health-remember'},
+      V.h('input',{type:'checkbox',name:'remember',value:'yes'}),
+      V.h('span',{},V.h('strong',{},'Не спрашивать фразу 30 минут'),
+        V.h('small',{},'В этой вкладке. «Закрыть журнал» отменяет доступ сразу.')));
+  }
+  function marketingPanel(){
+    const benefits=[
+      ['FlaskConical','Анализы и динамика','Храните результаты, следите за изменениями и сравнивайте показатели с референсами.'],
+      ['HeartPulse','Показатели и привычки','Записывайте давление, самочувствие, сон, питание и физическую активность.'],
+      ['NotebookTabs','Вся медкарта','Объединяйте назначения, лекарства, прививки, заключения и документы.'],
+      ['History','История здоровья','Смотрите хронологию событий и готовьте свои данные к консультации с врачом.']
+    ];
+    return V.h('aside',{class:'health-marketing','aria-label':'Возможности и защита HUMAN'},
+      V.h('section',{class:'health-marketing-card health-marketing-capabilities'},
+        V.h('p',{class:'health-marketing-kicker'},'HUMAN / ВАШ ЛИЧНЫЙ АРХИВ'),
+        V.h('h2',{},'Здоровье — в одной системе'),
+        V.h('p',{class:'health-marketing-lead'},'Не теряйте важные измерения и медицинские документы. Соберите историю здоровья, которой удобно пользоваться каждый день.'),
+        V.h('div',{class:'health-marketing-features'},benefits.map(([glyph,label,description])=>
+          V.h('div',{class:'health-marketing-feature'},V.icon(glyph,17),
+            V.h('div',{},V.h('strong',{},label),V.h('p',{},description)))))),
+      V.h('section',{class:'health-marketing-card health-marketing-security'},
+        V.h('div',{class:'health-marketing-lock'},V.icon('ShieldCheck',21),
+          V.h('h2',{},'Данные остаются под вашим контролем')),
+        V.h('p',{},'Журнал и вложения шифруются в браузере с помощью AES-256-GCM. В GitHub передаются только зашифрованные файлы.'),
+        V.h('p',{},'Вы сами выбираете приватный репозиторий. HUMAN работает без собственного сервера хранения медицинских данных.'),
+        V.h('p',{class:'health-marketing-disclaimer'},'Фраза шифрования не отправляется в GitHub. Временное открытие на 30 минут — только по вашему выбору. Берегите доступ к устройству и GitHub.')));
+  }
   function locked(){
     const outer=V.h('section',{class:'health-intro'});
+    const main=V.h('div',{class:'health-intro-main'});
+    const layout=V.h('div',{class:'health-intro-layout'},main,marketingPanel());
     if(state.local&&!state.picker){
       outer.classList.add('health-intro-unlock');
       outer.append(V.h('div',{class:'health-intro-top'},V.brand()));
-      const form=V.form('unlock',[V.field('Фраза доступа','passphrase','', 'password')],'Открыть');
-      outer.append(V.card(null,[
+      const form=V.form('unlock',[
+        V.field('Фраза доступа','passphrase','', 'password'),rememberChoice()
+      ],'Открыть');
+      main.append(V.card(null,[
         V.h('div',{class:'health-intro-panel'},V.h('span',{class:'health-overline'},'ЗАЩИЩЁННЫЙ ЖУРНАЛ'),
           V.h('h1',{},'Открыть журнал здоровья'),
           V.h('p',{class:'health-muted'},state.local.repo?
             VRepo(state.local.repo):'Данные находятся на этом устройстве.'),
-          form,V.button('Посмотреть демо','open-demo',{class:'small success'}),
-          V.button('Другой профиль','picker',{class:'small'}),
-          V.h('p',{class:'health-security'},'Пароль не хранится в браузере и не отправляется в GitHub.'))
+          form,
+          V.h('div',{class:'health-unlock-actions'},
+            V.button('Посмотреть демо','open-demo',{class:'small success'}),
+            V.button('Другой профиль','picker',{class:'small'})),
+          V.h('p',{class:'health-security'},'Фраза не сохраняется и не отправляется в GitHub. По вашему выбору браузер может временно хранить защищённый ключ.'))
       ]));
+      outer.append(layout);
       return outer;
     }
     const heading=V.h('div',{class:'health-intro-heading'},
@@ -67,7 +102,7 @@
         V.button('Открыть демо без регистрации','open-demo',{class:'primary health-demo-open'}))
     ]);
     sample.classList.add('health-demo-card');
-    outer.append(sample);
+    main.append(sample);
     if(state.profiles.length){
       const list=V.h('div',{class:'health-profile-picker'});
       for(const item of state.profiles){
@@ -76,11 +111,11 @@
         entry.className='health-profile-choice';
         list.append(entry);
       }
-      outer.append(V.card('Профили на этом устройстве',[list]));
+      main.append(V.card('Профили на этом устройстве',[list]));
     }
     const create=V.form('create',[
       V.field('Фраза шифрования (минимум 12 символов)','password','', 'password'),
-      V.field('Повторите фразу шифрования','repeat','', 'password')
+      V.field('Повторите фразу шифрования','repeat','', 'password'),rememberChoice()
     ],'Создать локальный журнал');
     const remoteSetup=state.pendingGitHub;
     const download=remoteSetup
@@ -89,7 +124,7 @@
           'Доступ к '+VRepo(remoteSetup.repo)+' подтверждён. Задайте фразу шифрования, чтобы создать здесь новый пустой журнал. Другие данные репозитория останутся без изменений.'),
         V.form('initialize-remote',[
           V.field('Новая фраза шифрования (минимум 12 символов)','password','', 'password'),
-          V.field('Повторите фразу','repeat','', 'password')
+          V.field('Повторите фразу','repeat','', 'password'),rememberChoice()
         ],'Создать хранилище в GitHub'),
         V.h('p',{class:'health-note'},'Фраза шифрования не передаётся в GitHub.'),
         githubTokenGuide(false),
@@ -103,7 +138,7 @@
     const githubCard=V.card('Подключить свой GitHub',[V.h('p',{class:'health-note'},
       remoteSetup?'Создание первого зашифрованного журнала в выбранном репозитории.':
         'HUMAN найдёт существующий журнал или предложит создать новый, даже если репозиторий пуст. Можно использовать тот же GitHub, что и для родословной.'),download]);
-    outer.append(V.h('div',{class:'health-intro-grid'+(remoteSetup?' health-intro-grid-single':'')},
+    main.append(V.h('div',{class:'health-intro-grid'+(remoteSetup?' health-intro-grid-single':'')},
       remoteSetup?githubCard:[
         V.card('Создать журнал на устройстве',[V.h('p',{class:'health-note'},
           'Фраза шифрования защищает медицинские данные. Это не пароль GitHub: она потребуется для открытия журнала на любом устройстве. HUMAN её не хранит.'),create]),
@@ -113,9 +148,10 @@
       V.form('import-vault',[V.field('Резервная копия .human','file','','file')],'Импортировать')
     ]);
     restore.classList.add('health-restore-card');
-    outer.append(restore);
-    outer.append(V.h('p',{class:'health-security'},
+    main.append(restore);
+    main.append(V.h('p',{class:'health-security'},
       'Личные данные не сохраняются в публичном репозитории AYYY.'));
+    outer.append(layout);
     return outer;
   }
   function githubTokenGuide(readOnly=false){
