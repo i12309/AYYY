@@ -1,6 +1,8 @@
 /* AYYY service directory — compact editorial catalogue and hover artwork. */
 .sc-page {background:var(--paper);--sc-ink:#233c43;--sc-muted:#6f807a}
-.sc-shell {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,690px);gap:clamp(28px,4vw,78px);align-items:start;max-width:1740px;margin:0 auto;padding:12px clamp(22px,4vw,76px) 66px}
+/* The parent .shore-page is a flex column: auto margins without an explicit
+   width shrink-wrap this grid and can collapse the illustration track to 0px. */
+.sc-shell {width:100%;min-width:0;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,690px);gap:clamp(28px,4vw,78px);align-items:start;max-width:1740px;margin:0 auto;padding:12px clamp(22px,4vw,76px) 66px}
 .sc-gallery {position:sticky;top:17px;align-self:start;height:calc(100svh - 35px);min-height:520px;isolation:isolate}
 .sc-gallery-frame {position:absolute;inset:0;overflow:hidden}
 .sc-gallery-image {position:absolute;left:0;top:0;width:100%;height:calc(100% - 112px);max-height:880px;object-fit:contain;object-position:center center;opacity:0;transform:translateY(8px) scale(.98);transition:opacity .32s ease,transform .5s ease;pointer-events:none}
@@ -177,7 +179,7 @@
  */
 @media (min-width:981px) {
   .sc-page .sc-shell {
-    grid-template-columns:minmax(0,1fr) minmax(0,min(730px,56vw));
+    grid-template-columns:clamp(260px,26vw,440px) minmax(0,1fr);
     gap:clamp(26px,3.3vw,55px);
     padding-inline:clamp(22px,3.4vw,68px);
     align-items:stretch;

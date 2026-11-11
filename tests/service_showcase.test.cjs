@@ -52,9 +52,10 @@ test('ten illustrated stories replace the lighthouse on hover, then restore it',
  assert.match(source,/grid\.addEventListener\('focusin',focusIn\)/);
  assert.match(source,/showScene\(null\)/);
 });
-test('compact list is half the former width and retains expandable descriptions',()=>{
+test('compact rows fill the available right-hand width and retain descriptions',()=>{
  const css=read('src/showcase.css'),source=read('src/showcase.js');
- assert.match(css,/minmax\(0,690px\)/);
+ assert.match(css,/\.sc-shell\s*\{[^}]*width:100%/);
+ assert.match(css,/\.sc-shell\s*\{[^}]*min-width:0/);
  assert.match(css,/\.sc-row\s*\{[^}]*min-height:168px/);
  assert.match(css,/position:sticky/);
  assert.match(source,/<details class="sc-card-more">/);
@@ -69,7 +70,7 @@ test('gallery uses a true grid column and a constrained sticky inner scene',()=>
   assert.match(css,/\.sc-page \.sc-gallery-sticky \{\s*position:sticky/);
   assert.match(css,/\.sc-page \.sc-gallery-frame \{[\s\S]*?overflow:hidden/);
   assert.match(css,/width:min\(76%,420px\)/);
-  assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(0,min\(730px,56vw\)\)/);
+  assert.match(css,/grid-template-columns:clamp\(260px,26vw,440px\) minmax\(0,1fr\)/);
   assert.ok(!css.includes('position:fixed'), 'gallery should not float outside the grid');
   assert.match(css, /@media \(max-width:980px\)/);
 });
