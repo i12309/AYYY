@@ -34,3 +34,14 @@ test('guide explains module-specific data and acknowledges repository-wide PAT a
 test('standalone build copies shared GitHub help directory to distribution',()=>{
   assert.match(read('src/build.py'),/'help'/);
 });
+
+test('all GitHub interfaces link to the shared illustrated guide',()=>{
+  const paths=['oberon/workspace.js','oberon/home.js','health/app.js','family-app/src/components/TreeDialogs.tsx',
+    'family-app/src/components/GitHubImportDialog.tsx','family-app/src/components/BackupControl.tsx',
+    'family-app/src/components/TreeChooser.tsx','family/assets/index-DAf5DgER.js'];
+  for(const file of paths)assert.ok(read(file).includes('../help/github/'),file+' should link to shared guide');
+  assert.ok(read('family/help/index.html').includes('../../help/github/'));
+  assert.ok(read('family-app/public/help/index.html').includes('../../help/github/'));
+  const compiled=read('family/assets/index-DAf5DgER.js');
+  assert.equal((compiled.match(/Инструкция с иллюстрациями ↗/g)||[]).length,3);
+});

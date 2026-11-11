@@ -211,7 +211,7 @@ export function BackupControl({
               placeholder={connected?'Токен подключён на время вкладки':'Fine-grained PAT · Contents: Read and write'}
               autoComplete="off" disabled={busy}/>
           </label>
-          <p className="field-hint">GitHub fine-grained token: Repository access → Only select repositories → выберите нужный приватный репозиторий. Repository permissions → Contents → Read and write; Metadata → Read-only (устанавливается автоматически). Другие разрешения не нужны. Нажмите Generate token и вставьте токен сюда. Запись разрешена во весь выбранный репозиторий, не только в папку сервиса. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Создать fine-grained token ↗</a></p>
+          <p className="field-hint">Для сохранения: Only select repositories → свой приватный репозиторий; Contents → Read and write. Metadata → Read-only включено автоматически. <a href="../help/github/" target="_blank" rel="noopener noreferrer">Инструкция с иллюстрациями ↗</a></p>
           <p className="field-hint"><LockKeyhole size={13}/> Токен остаётся только в памяти вкладки,
             не попадает в IndexedDB, localStorage, отчёты или GitHub-коммиты.</p>
           <div className="actions backup-actions">

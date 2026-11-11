@@ -202,7 +202,7 @@ export function TreeChooser({
           </div>
           <div className="ownership-actions">
             <a className="button secondary" href="help/">Как это работает</a>
-            <a className="ownership-github-link" href="help/#github">
+            <a className="ownership-github-link" href="../help/github/">
               Настроить GitHub <ArrowUpRight size={15} aria-hidden="true"/>
             </a>
           </div>

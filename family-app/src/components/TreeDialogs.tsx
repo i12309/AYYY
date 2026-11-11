@@ -128,7 +128,7 @@ export function TreeDialog({
             {storage==='github' && (
               <div className="gen-storage-connect">
                 <p className="field-hint"><ShieldCheck size={14}/> Нужен собственный приватный
-                  репозиторий с веткой main. <a href="help/#github" target="_blank"
+                  репозиторий с веткой main. <a href="../help/github/" target="_blank"
                   rel="noopener noreferrer">Как его создать</a></p>
                 <label className="field">Репозиторий GitHub
                   <input value={repository} onChange={event=>setRepository(event.target.value)}
@@ -151,7 +151,7 @@ export function TreeDialog({
                   <span><strong>Автоматически синхронизировать изменения</strong>
                     <small>После ~22 секунд без правок, пока вкладка открыта и токен подключён</small></span>
                 </label>
-                <p className="field-hint">GitHub fine-grained token: Repository access → Only select repositories → выберите нужный приватный репозиторий. Repository permissions → Contents → Read and write; Metadata → Read-only (устанавливается автоматически). Другие разрешения не нужны. Нажмите Generate token и вставьте токен сюда. Запись разрешена во весь выбранный репозиторий, не только в папку сервиса. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Создать fine-grained token ↗</a></p>
+                <p className="field-hint">Для сохранения: Only select repositories → свой приватный репозиторий; Contents → Read and write. Metadata → Read-only включено автоматически. <a href="../help/github/" target="_blank" rel="noopener noreferrer">Инструкция с иллюстрациями ↗</a></p>
                 <p className="field-hint">Токен не сохраняется на сервере или в браузерной базе.
                   После повторного открытия вкладки его потребуется ввести снова.</p>
               </div>

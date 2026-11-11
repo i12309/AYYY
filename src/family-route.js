@@ -3,7 +3,7 @@
   'use strict';
   const a=window.AYYY;
   if(!a)return;
-  const source=new URL('family/',document.baseURI).href+'?v=gen-beef01112026';
+  const source=new URL('family/',document.baseURI).href+'?v=gen-8895d76ee010';
   if(!document.getElementById('ayyy-family-shell')) {
     const style=document.createElement('style');
     style.id='ayyy-family-shell';
