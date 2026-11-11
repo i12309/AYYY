@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>Диалог в тихой лаборатории</title><desc>Ночной стол с экраном нейронного терминала, сетью узлов и мягким свечением</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#c3d8df"/><stop offset=".58" stop-color="#799ca9"/><stop offset="1" stop-color="#243f57"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="4" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#254c5a" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <ellipse cx="328" cy="669" rx="250" ry="55" fill="#0d2635" opacity=".25" filter="url(#shade)"/>
+ <path d="M89 695L558 694L535 729L107 729Z" fill="#294f5b" stroke="#335662" stroke-width="3"/>
+ <g stroke="#b9d2d6" stroke-width="2" opacity=".7"><path d="M104 194L156 142L204 189L252 142L313 168L383 115L443 177L509 152" fill="none"/><path d="M204 189L226 261L313 168L376 267L443 177L511 266" fill="none"/></g>
+ <g fill="#fbf7c8"><circle cx="104" cy="194" r="5"/><circle cx="156" cy="142" r="5"/><circle cx="204" cy="189" r="5"/><circle cx="252" cy="142" r="5"/><circle cx="313" cy="168" r="5"/><circle cx="383" cy="115" r="5"/><circle cx="443" cy="177" r="5"/><circle cx="509" cy="152" r="5"/></g>
+ <g transform="rotate(-6 322 441)"><rect x="139" y="266" width="365" height="319" rx="22" fill="#25424e" stroke="#c8d9d2" stroke-width="8"/><rect x="157" y="283" width="329" height="279" rx="12" fill="#092e40" stroke="#416c76" stroke-width="3"/>
+ <path d="M181 349H433M181 399H422M181 451H399" stroke="#245465" stroke-width="2"/><path d="M189 329L206 345L189 361" stroke="#9bdfcd" stroke-width="5" fill="none"/><path d="M218 344H346" stroke="#f4d7a0" stroke-width="5"/>
+ <path d="M190 411H389M190 428H365" stroke="#76b9ba" stroke-width="5"/><path d="M190 485H257" stroke="#c8e5d7" stroke-width="5"/><path d="M269 485H374" stroke="#89c8bd" stroke-width="5"/>
+ <circle cx="451" cy="315" r="5" fill="#c1dfb5"/><path d="M254 586H387L395 609H243Z" fill="#3a5964" stroke="#c0cfc7" stroke-width="4"/></g>
+ <path d="M184 619L459 619L511 672L136 672Z" fill="#acc4c1" stroke="#57787e" stroke-width="4"/><path d="M198 636H440M185 652H463" stroke="#6d9999" stroke-width="8" stroke-dasharray="14 6"/>
+ <ellipse cx="488" cy="628" rx="23" ry="11" fill="#f7e8cc" stroke="#607d78" stroke-width="3"/><path d="M465 625L470 591L508 591L511 629" fill="#f8efdc" stroke="#718f88" stroke-width="3"/>
+ <path d="M514 592Q543 596 522 615" fill="none" stroke="#718f88" stroke-width="5"/>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>

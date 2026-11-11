@@ -34,3 +34,30 @@ test('showcase has search, categories, individual info, and connection indicator
  for(const db of ['ayyy-health-v2','ayyy-family-v1','ayyy-oberon-v1']) assert.ok(source.includes(db));
  assert.doesNotMatch(html,/shore-catalog-grid/);
 });
+
+test('ten illustrated stories replace the lighthouse on hover, then restore it',()=>{
+ const {app}=setup(),html=app.views.directory.render(),source=read('src/showcase.js');
+ assert.match(html,/data-sc-picture="default"[^>]*assets\/lighthouse-watercolor\.webp/);
+ const previews=[...html.matchAll(/data-sc-picture="([a-z]+)"/g)].map(hit=>hit[1]);
+ assert.equal(previews.length,11);
+ assert.deepEqual(previews.slice(1),Array.from(app.services,s=>s.id));
+ for(const id of previews.slice(1)){
+   const filename='assets/service-stories/'+id+'.svg';
+   assert.ok(fs.existsSync(path.join(root,filename)),filename);
+   const svg=read(filename);
+   assert.ok(svg.includes('<svg')&&svg.includes('</svg>'),filename);
+ }
+ assert.match(source,/grid\.addEventListener\('pointerover',pointerOver\)/);
+ assert.match(source,/grid\.addEventListener\('pointerout',pointerOut\)/);
+ assert.match(source,/grid\.addEventListener\('focusin',focusIn\)/);
+ assert.match(source,/showScene\(null\)/);
+});
+test('compact list is half the former width and retains expandable descriptions',()=>{
+ const css=read('src/showcase.css'),source=read('src/showcase.js');
+ assert.match(css,/minmax\(0,690px\)/);
+ assert.match(css,/\.sc-row\s*\{[^}]*min-height:168px/);
+ assert.match(css,/position:sticky/);
+ assert.match(source,/<details class="sc-card-more">/);
+ assert.match(source,/data-sc-connection/);
+ assert.match(source,/sc-card-cover/);
+});

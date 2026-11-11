@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>Тихая лаборатория наблюдений</title><desc>Медицинский журнал, фонендоскоп и лента наблюдения за здоровьем</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#eef7ee"/><stop offset=".58" stop-color="#d4e6e6"/><stop offset="1" stop-color="#b2cfcd"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="11" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#78a6a2" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <ellipse cx="311" cy="673" rx="240" ry="43" fill="#82a7a4" opacity=".16" filter="url(#shade)"/>
+ <path d="M94 676L545 676L545 735L94 735Z" fill="#a9c8c3" stroke="#7ea9a3" stroke-width="4"/>
+ <g transform="rotate(-6 310 433)"><rect x="154" y="256" width="343" height="388" rx="11" fill="#fdfcf6" stroke="#8bb4ae" stroke-width="5"/>
+ <rect x="179" y="286" width="293" height="67" rx="6" fill="#e3f1eb"/>
+ <path d="M199 321H250L270 301L293 339L319 286L341 321H448" fill="none" stroke="#5f9d98" stroke-width="5"/>
+ <path d="M197 390H448M197 426H438M197 462H435M197 498H448M197 535H416M197 570H432" stroke="#bed7d0" stroke-width="4"/>
+ <circle cx="201" cy="603" r="9" fill="#b4cdbf"/><path d="M222 603H348" stroke="#94bcb2" stroke-width="5"/></g>
+ <path d="M127 252Q87 370 132 419Q174 460 235 400" fill="none" stroke="#436f78" stroke-width="14"/>
+ <path d="M132 253V201M187 252V201" stroke="#426d75" stroke-width="11"/>
+ <circle cx="133" cy="188" r="21" fill="#dbeee7" stroke="#426c75" stroke-width="9"/>
+ <circle cx="187" cy="188" r="21" fill="#dbeee7" stroke="#426c75" stroke-width="9"/>
+ <circle cx="236" cy="401" r="36" fill="#a7c8c2" stroke="#486f75" stroke-width="10"/><circle cx="236" cy="401" r="15" fill="#d9ede6"/>
+ <path d="M460 198V258M430 228H490" stroke="#a2c5b9" stroke-width="20"/>
+ <g fill="#cde6da" opacity=".65"><circle cx="507" cy="511" r="40"/><circle cx="100" cy="515" r="28"/></g>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>Вечер в комнате головоломок</title><desc>Настольные головоломки, деревянные фигурки и ретро-экран с игрой</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#f3e2d6"/><stop offset=".58" stop-color="#d9ccde"/><stop offset="1" stop-color="#a8afd0"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="12" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#867aab" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <ellipse cx="333" cy="674" rx="247" ry="49" fill="#756b86" opacity=".19" filter="url(#shade)"/>
+ <path d="M91 621L551 620L563 726L82 728Z" fill="#d0a992" stroke="#a88a85" stroke-width="5"/>
+ <g transform="rotate(-8 294 384)"><rect x="189" y="191" width="221" height="316" rx="21" fill="#6c7598" stroke="#535d82" stroke-width="6"/>
+ <rect x="214" y="220" width="170" height="165" rx="12" fill="#e4e0cf" stroke="#bdc4c9" stroke-width="5"/>
+ <path d="M233 342L273 302L310 342L346 286" fill="none" stroke="#7aa89d" stroke-width="15"/>
+ <circle cx="263" cy="268" r="16" fill="#dfb27d"/><circle cx="346" cy="349" r="13" fill="#c58d9f"/>
+ <path d="M235 430H285M260 405V455" stroke="#e1d7c5" stroke-width="13"/>
+ <circle cx="342" cy="432" r="16" fill="#e8b49a"/><circle cx="371" cy="465" r="14" fill="#aac6be"/></g>
+ <g transform="rotate(17 184 590)"><path d="M142 534H222V594H195V630H171V594H142Z" fill="#e7bf87" stroke="#c59a75" stroke-width="5"/><circle cx="181" cy="577" r="10" fill="#d6e0c2"/></g>
+ <g transform="rotate(-12 444 606)"><path d="M400 566H477V595Q454 583 454 609Q453 628 477 623V660H400V633Q421 639 420 617Q421 597 400 602Z" fill="#8bada8" stroke="#749695" stroke-width="5"/></g>
+ <g fill="#f7eee2" stroke="#aa97a2" stroke-width="4"><rect x="289" y="604" width="55" height="54" rx="7" transform="rotate(10 289 604)"/><rect x="359" y="623" width="54" height="55" rx="7" transform="rotate(-8 359 623)"/></g>
+ <g fill="#9684a1"><circle cx="312" cy="629" r="6"/><circle cx="385" cy="651" r="6"/><circle cx="369" cy="638" r="6"/><circle cx="398" cy="662" r="6"/></g>
+ <path d="M120 294L161 272M458 260L502 289M104 442L132 455M475 485L508 472" stroke="#fff4e4" stroke-width="6" opacity=".7"/>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>

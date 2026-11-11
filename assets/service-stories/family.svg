@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>История в корнях большого дерева</title><desc>Семейный дуб, на его ветвях фото рамки, на корнях старый альбом</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#f2e7cf"/><stop offset=".58" stop-color="#d3dfcb"/><stop offset="1" stop-color="#a9c9b2"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="10" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#688b74" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <path d="M309 687Q293 581 312 493Q274 434 244 392Q291 410 326 455Q362 387 407 374Q360 436 341 510L359 680Z" fill="#826f56" stroke="#6e806a" stroke-width="5"/>
+ <path d="M331 665L288 717L231 735M345 668L384 722L440 740M316 672L303 743" fill="none" stroke="#806f55" stroke-width="13"/>
+ <g fill="#a0bea1" stroke="#83a38a" stroke-width="2">
+ <ellipse cx="231" cy="332" rx="98" ry="88"/><ellipse cx="340" cy="267" rx="106" ry="95"/><ellipse cx="439" cy="344" rx="104" ry="98"/><ellipse cx="282" cy="392" rx="122" ry="76"/><ellipse cx="397" cy="419" rx="114" ry="75"/></g>
+ <g fill="#b8ceb0" opacity=".65"><circle cx="193" cy="306" r="41"/><circle cx="375" cy="245" r="49"/><circle cx="487" cy="367" r="47"/></g>
+ <g stroke="#6d8f7d" stroke-width="3" fill="none"><path d="M205 341V448M349 292V374M467 351V455"/></g>
+ <g stroke="#9b8b72" stroke-width="5" fill="#f8efdb">
+ <rect x="159" y="446" width="93" height="108" rx="5" transform="rotate(-7 159 446)"/>
+ <rect x="301" y="375" width="94" height="108" rx="5"/>
+ <rect x="426" y="449" width="94" height="108" rx="5" transform="rotate(8 426 449)"/></g>
+ <g fill="#b5c5b3"><circle cx="202" cy="484" r="18"/><path d="M179 530Q180 502 202 505Q224 504 231 530Z"/><circle cx="347" cy="412" r="18"/><path d="M326 460Q327 433 349 434Q370 434 375 460Z"/><circle cx="474" cy="488" r="18"/><path d="M451 536Q455 506 477 508Q500 509 503 536Z"/></g>
+ <path d="M124 717Q220 673 322 710Q414 665 516 718L516 779Q409 731 320 768Q219 733 124 781Z" fill="#f1e4c7" stroke="#9f9979" stroke-width="5"/><path d="M320 710V768M154 730Q235 704 293 738M349 737Q428 703 488 730" stroke="#c2b697" stroke-width="3" fill="none"/>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>

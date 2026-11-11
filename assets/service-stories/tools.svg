@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>Мастерская точных решений</title><desc>Расчётный стол с инженерной тетрадью, линейкой, циркулем и образцами цветов</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#f1efdb"/><stop offset=".58" stop-color="#d9e0cf"/><stop offset="1" stop-color="#b7cdb8"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="9" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#7f9a85" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <path d="M78 623Q317 605 565 619L550 744L87 740Z" fill="#a5b79e" stroke="#7f9b8c" stroke-width="4"/>
+ <g transform="rotate(-7 298 438)"><rect x="132" y="243" width="338" height="346" rx="11" fill="#fffaf0" stroke="#8eaa9e" stroke-width="5"/>
+ <path d="M158 300H447M158 342H447M158 384H447M158 426H447M158 468H447M158 510H447M205 268V559M251 268V559M297 268V559M343 268V559M389 268V559" stroke="#d5e2d9" stroke-width="2"/>
+ <path d="M200 507L246 470L278 492L331 387L367 409L418 312" fill="none" stroke="#c68d68" stroke-width="6"/>
+ <circle cx="283" cy="315" r="12" fill="#729ca0"/><path d="M283 315L294 277" stroke="#6c918e" stroke-width="4"/></g>
+ <g transform="rotate(12 170 590)"><rect x="91" y="497" width="136" height="192" rx="11" fill="#425e58" stroke="#6c8e7f" stroke-width="4"/><rect x="108" y="515" width="102" height="52" rx="4" fill="#b8d6c2"/><g fill="#d8e0c9"><circle cx="127" cy="592" r="10"/><circle cx="172" cy="592" r="10"/><circle cx="127" cy="629" r="10"/><circle cx="172" cy="629" r="10"/></g></g>
+ <path d="M425 629L496 434" stroke="#be9167" stroke-width="13"/><path d="M497 432L514 395L508 447" fill="#d8ad79" stroke="#7e987f" stroke-width="4"/>
+ <path d="M472 641L549 663L522 725L445 703Z" fill="#f5edda" stroke="#859e8b" stroke-width="3"/>
+ <rect x="463" y="654" width="22" height="22" fill="#ca927b"/><rect x="490" y="661" width="22" height="22" fill="#87aabb"/><rect x="474" y="681" width="22" height="22" fill="#b9bd83"/>
+ <path d="M380 177L425 210L462 161" fill="none" stroke="#83a395" stroke-width="5" opacity=".6"/>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>

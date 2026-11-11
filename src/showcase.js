@@ -126,21 +126,19 @@
     }
   };
 
-  function art(id) {
-    switch (id) {
-      case 'oberon': return `<div class="sc-art-scene sc-scene-oberon"><span class="sc-orbit sc-orbit-1"></span><span class="sc-orbit sc-orbit-2"></span><span class="sc-orbit sc-orbit-3"></span><img src="oberon/oberon-mark.svg" alt="" width="86" height="86" loading="lazy"></div>`;
-      case 'ai': return `<div class="sc-art-scene sc-scene-ai"><div class="sc-ai-window"><div class="sc-ai-lights"><i></i><i></i><i></i></div><span><b>›</b> ask something<span class="sc-ai-cursor">_</span></span><span><b>◈</b> thinking in tokens</span><span class="sc-ai-code">▰ ▰ ▰ ▰ ▱ ▱</span></div></div>`;
-      case 'search': return `<div class="sc-art-scene sc-scene-search"><span class="sc-search-ring sc-search-ring-1"></span><span class="sc-search-ring sc-search-ring-2"></span><span class="sc-search-ring sc-search-ring-3"></span><span class="sc-search-center">${icon('search',52)}</span><span class="sc-search-point sc-search-point-1"></span><span class="sc-search-point sc-search-point-2"></span></div>`;
-      case 'weather': return `<div class="sc-art-scene sc-scene-weather"><span class="sc-weather-rays"></span><span class="sc-weather-sun"></span><span class="sc-weather-cloud sc-weather-cloud-1"></span><span class="sc-weather-cloud sc-weather-cloud-2"></span><span class="sc-weather-land"></span></div>`;
-      case 'finance': return `<div class="sc-art-scene sc-scene-finance"><span class="sc-finance-symbol">€ / $</span><svg viewBox="0 0 340 155" preserveAspectRatio="none" aria-hidden="true"><path class="sc-finance-grid" d="M0 35H340M0 75H340M0 115H340M42 0V155M122 0V155M202 0V155M282 0V155"/><path class="sc-finance-fill" d="M0 115L43 113L89 95L136 104L177 69L216 76L257 39L300 49L340 19V155H0Z"/><path class="sc-finance-line" d="M0 115L43 113L89 95L136 104L177 69L216 76L257 39L300 49L340 19"/></svg></div>`;
-      case 'mpp': return `<div class="sc-art-scene sc-scene-mpp"><div class="sc-gantt"><div><i></i><b></b></div><div><i></i><b></b></div><div><i></i><b></b></div><div><i></i><b></b></div></div></div>`;
-      case 'tools': return `<div class="sc-art-scene sc-scene-tools"><span class="sc-tools-formula">f(x) = x² + 1</span><div class="sc-tools-grid"><span>${icon('calculator',24)}</span><span>${icon('ruler',24)}</span><span>${icon('percent',24)}</span><span>${icon('code',24)}</span></div></div>`;
-      case 'family': return `<div class="sc-art-scene sc-scene-family"><svg viewBox="0 0 270 160" aria-hidden="true"><path d="M135 27V64M63 91V69H206V91M63 91V122M135 69V122M206 91V122"/><circle cx="135" cy="23" r="17"/><circle cx="63" cy="128" r="17"/><circle cx="135" cy="128" r="17"/><circle cx="206" cy="128" r="17"/></svg></div>`;
-      case 'health': return `<div class="sc-art-scene sc-scene-health"><span class="sc-health-disc"></span><svg viewBox="0 0 320 140" aria-hidden="true"><path d="M0 72H62L82 72L104 29L129 118L152 58L169 72H320"/></svg></div>`;
-      case 'games': return `<div class="sc-art-scene sc-scene-games"><span class="sc-games-shape sc-games-shape-1"></span><span class="sc-games-shape sc-games-shape-2"></span><span class="sc-games-shape sc-games-shape-3"></span><span class="sc-games-shape sc-games-shape-4"></span><span class="sc-games-spark">✦</span></div>`;
-      default: return `<span class="sc-art-scene">${icon('grid',60)}</span>`;
-    }
-  }
+  // The gallery is an illustrated short story for each real service.
+  const scenes = {
+    oberon: {title:'Ночная мастерская мыслей',text:'Под светом лампы разрозненные заметки соединяются в карту знаний.'},
+    ai: {title:'Диалог в тихой лаборатории',text:'Светящийся терминал и сеть идей — место, где человек исследует возможности моделей.'},
+    search: {title:'Экспедиция за ответом',text:'На разложенной карте появляется маршрут от первого вопроса к нужной находке.'},
+    weather: {title:'Утро между солнцем и дождём',text:'Небо меняется — а вместе с ним меняются планы на день.'},
+    finance: {title:'Город и язык чисел',text:'За огнями окон — графики, курсы и решения, которые лучше принимать с контекстом.'},
+    mpp: {title:'План, который можно увидеть',text:'Строки задач превращаются в последовательность сроков, связей и этапов.'},
+    tools: {title:'Мастерская точных решений',text:'Чертёж, расчёт, цвет и текст — каждая мелочь получает свой инструмент.'},
+    family: {title:'История в корнях большого дерева',text:'Старый альбом открывается, и лица поколений снова оказываются рядом.'},
+    health: {title:'Тихая лаборатория наблюдений',text:'Показатели, документы и события собираются в понятную личную историю.'},
+    games: {title:'Вечер в комнате головоломок',text:'Простая партия становится маленьким приключением для внимания и воображения.'}
+  };
 
   function linkFor(service) {
     return service.url ? {url:service.url, attributes:'target="_blank" rel="noopener noreferrer"'} :
@@ -148,29 +146,34 @@
   }
 
   function serviceRow(service, index) {
-    const story = stories[service.id];
-    if (!story) return '';
-    const link = linkFor(service);
-    const favorite = A.favorites().includes(service.id);
-    const id = esc(service.id);
-    const name = esc(service.name);
+    const story=stories[service.id];
+    if(!story)return '';
+    const link=linkFor(service),favorite=A.favorites().includes(service.id);
+    const id=esc(service.id),name=esc(service.name);
+    const action=service.id==='ai'?'Запустить':service.id==='games'?'Играть':'Открыть';
     return `<article class="sc-row sc-row--${id}" data-service-id="${id}">
-      <div class="sc-visual">
-        <a class="sc-visual-link" href="${esc(link.url)}" ${link.attributes} aria-label="${esc('Открыть: '+service.name)}">
-          <span class="sc-visual-top"><span>AYYY / ${String(index+1).padStart(2,'0')}</span><span>${icon('arrow-right',17)}</span></span>
-          ${art(service.id)}
-          <span class="sc-visual-bottom"><span class="sc-visual-mark">${icon(service.icon,30)}</span><span class="sc-visual-word"><strong>${name}</strong><small>${esc(story.overline)}</small></span></span>
-        </a>
-      </div>
-      <div class="sc-info">
-        <div class="sc-info-head"><span class="sc-overline">${esc(story.eyebrow)}</span>
-          <button type="button" class="sc-favorite favorite-btn ${favorite?'selected':''}" data-favorite="${id}" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из избранного':'В избранное'}: ${name}" title="${favorite?'Убрать из избранного':'В избранное'}">${icon('star',18)}</button>
+      <a class="sc-card-cover" href="${esc(link.url)}" ${link.attributes} aria-label="${esc('Открыть: '+service.name)}">
+        <img src="assets/service-stories/${id}.svg" alt="" loading="lazy" decoding="async">
+        <span class="sc-card-number">AYYY / ${String(index+1).padStart(2,'0')}</span>
+        <span class="sc-card-visit">${icon('arrow-right',15)}</span>
+      </a>
+      <div class="sc-card-body">
+        <div class="sc-card-head">
+          <span class="sc-overline">${esc(story.eyebrow)}</span>
+          <button type="button" class="sc-favorite favorite-btn ${favorite?'selected':''}" data-favorite="${id}" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из избранного':'В избранное'}: ${name}" title="${favorite?'Убрать из избранного':'В избранное'}">${icon('star',16)}</button>
         </div>
-        <div class="sc-copy"><h2>${name}</h2><p class="sc-lead">${esc(story.lead)}</p><p class="sc-detail">${esc(story.detail)}</p><p class="sc-how"><strong>Как работает.</strong> ${esc(story.how)}</p></div>
-        <div class="sc-row-bottom"><div class="sc-features">${story.features.map(feature=>`<span>${esc(feature)}</span>`).join('')}</div>
-          <div class="sc-actions"><span class="sc-connection ${story.connect?'sc-can-connect':''}" ${story.connect?`data-sc-connection="${id}"`:''}>${icon(story.connect?'link':'check',14)} <span>${esc(story.connect||story.status)}</span></span>
-            <a class="sc-open" href="${esc(link.url)}" ${link.attributes}>${esc(story.action)} ${icon('arrow-right',17)}</a>
-          </div></div>
+        <a class="sc-card-name" href="${esc(link.url)}" ${link.attributes}><h2>${name}</h2></a>
+        <p class="sc-card-lead">${esc(story.lead)}</p>
+        <details class="sc-card-more"><summary>Что умеет и как работает</summary>
+          <div class="sc-card-detail-body">
+            <p>${esc(story.detail)}</p><p><strong>Как работает.</strong> ${esc(story.how)}</p>
+            <div class="sc-card-tags">${story.features.map(feature=>`<span>${esc(feature)}</span>`).join('')}</div>
+          </div>
+        </details>
+        <div class="sc-card-foot">
+          <span class="sc-connection ${story.connect?'sc-can-connect':''}" ${story.connect?`data-sc-connection="${id}"`:''} title="${esc(story.connect||story.status)}">${icon(story.connect?'link':'check',13)}<span>${esc(story.connect||story.status)}</span></span>
+          <a class="sc-open" href="${esc(link.url)}" ${link.attributes} aria-label="${esc(story.action)}">${action} ${icon('arrow-right',14)}</a>
+        </div>
       </div>
     </article>`;
   }
@@ -221,28 +224,43 @@
       text.textContent=names.length===1?`GitHub настроен · ${names[0]}`:`GitHub настроен · ${names.length} репозитория`;
       node.classList.add('sc-is-connected');
       node.classList.remove('sc-can-connect');
-      node.title='Привязка сохранена на этом устройстве. Текущая авторизация GitHub проверяется при открытии сервиса.';
+      node.title='Настроен GitHub: '+names.join(', ')+'. Авторизация проверяется при открытии сервиса.';
     }));
   }
 
   A.register('directory',{
     title:'Все сервисы',
     render(){
-      const count=A.services.filter(s=>stories[s.id]).length;
+      const available=A.services.filter(service=>scenes[service.id]);
+      const count=available.length;
       const selection=groups.some(group=>group[0]===A.catalogCategory)?A.catalogCategory:'all';
       A.catalogCategory=selection;
       return `<div class="shore-page shore-directory sc-page">
         ${A.shoreChrome.navigation('directory')}
         <main class="sc-shell">
-          <div class="sc-intro"><div><div class="sc-kicker"><span></span> КАТАЛОГ AYYY <span class="sc-kicker-dash">/</span> ${count} НАПРАВЛЕНИЙ</div>
-            <h1>У каждого дела<br><em>свой инструмент.</em></h1>
-            <p>Не набор одинаковых плиток, а небольшая коллекция разных по характеру сервисов. Откройте то, что нужно сейчас.</p>
-          </div><div class="sc-intro-drawing" aria-hidden="true"><span class="sc-intro-circle"></span><span class="sc-intro-circle"></span><span class="sc-intro-circle"></span><span class="sc-intro-sun">✳</span><span class="sc-intro-caption">FIND YOUR WAY / AYYY</span></div></div>
-          <div class="sc-toolbar"><label class="sc-search">${icon('search',20)}<input id="catalog-search" type="search" aria-label="Найти сервис" placeholder="Что хотите сделать? Название, задача или идея…" value="${esc(A.param||'')}" maxlength="150" autocomplete="off"><span id="sc-search-count">${count} сервисов</span></label>
-          <div class="sc-categories" role="group" aria-label="Категории сервисов">${groups.map(([id,label])=>`<button type="button" data-category="${id}" class="${id===selection?'active':''}" aria-pressed="${id===selection}">${id==='favorites'?icon('star',14):''}${esc(label)}</button>`).join('')}</div></div>
-          <div class="sc-list-top"><span id="catalog-count" aria-live="polite"></span><span class="sc-list-tip">${icon('star',13)} Отмечайте любимое</span></div>
-          <div id="catalog-grid" class="sc-list"></div>
-          <div class="sc-outro">${icon('lighthouse',23)} <div><strong>Ваш набор сервисов</strong><span>На главной можно закрепить до шести любимых направлений. Весь каталог всегда остаётся здесь.</span></div><a href="#home">На главную ${icon('arrow-right',16)}</a></div>
+          <aside class="sc-gallery" aria-label="Иллюстрации сервисов" data-sc-active="default">
+            <div class="sc-gallery-frame">
+              <img class="sc-gallery-image is-visible" data-sc-picture="default" src="assets/lighthouse-watercolor.webp" width="1024" height="1536" alt="" decoding="async">
+              ${available.map(service=>`<img class="sc-gallery-image" data-sc-picture="${esc(service.id)}" src="assets/service-stories/${esc(service.id)}.svg" width="640" height="880" alt="" decoding="async">`).join('')}
+            </div>
+            <div class="sc-gallery-hint">${icon('sparkles',13)} Наведите на сервис</div>
+            <div class="sc-gallery-caption" aria-live="polite" aria-atomic="true">
+              <small data-sc-story-index>AYYY / ВАШ МАЯК</small>
+              <h2 data-sc-story-title>У каждого дела свой ориентир</h2>
+              <p data-sc-story-text>Выберите направление справа. Его небольшая история появится здесь, вместо маяка.</p>
+            </div>
+          </aside>
+          <section class="sc-catalog" aria-label="Каталог сервисов AYYY">
+            <div class="sc-intro"><div class="sc-kicker"><span></span> КАТАЛОГ AYYY <span class="sc-kicker-dash">/</span> ${count} НАПРАВЛЕНИЙ</div>
+              <h1>Все сервисы</h1><p>Каждый сервис — отдельная история. Наведите курсор на карточку, чтобы увидеть её слева.</p>
+            </div>
+            <div class="sc-toolbar"><label class="sc-search">${icon('search',18)}<input id="catalog-search" type="search" aria-label="Найти сервис" placeholder="Название, задача или идея…" value="${esc(A.param||'')}" maxlength="150" autocomplete="off"><span id="sc-search-count">${count} сервисов</span></label>
+              <div class="sc-categories" role="group" aria-label="Категории сервисов">${groups.map(([id,label])=>`<button type="button" data-category="${id}" class="${id===selection?'active':''}" aria-pressed="${id===selection}">${id==='favorites'?icon('star',13):''}${esc(label)}</button>`).join('')}</div>
+            </div>
+            <div class="sc-list-top"><span id="catalog-count" aria-live="polite"></span><span class="sc-list-tip">${icon('star',12)} Отмечайте любимое</span></div>
+            <div id="catalog-grid" class="sc-list"></div>
+            <div class="sc-outro">${icon('lighthouse',20)}<div><strong>Ваши любимые направления</strong><span>На главной можно закрепить шесть сервисов; весь каталог всегда доступен здесь.</span></div><a href="#home">На главную ${icon('arrow-right',15)}</a></div>
+          </section>
         </main>
         ${A.shoreChrome.footer()}
       </div>`;
@@ -265,8 +283,55 @@
           return !q || [service.name,service.desc,service.id,story.eyebrow,story.lead,story.detail,story.how,story.keywords,...story.features].join(' ').toLocaleLowerCase('ru').includes(q);
         });
       };
+      const gallery=root.querySelector('.sc-gallery');
+      const galleryPictures=[...gallery.querySelectorAll('[data-sc-picture]')];
+      const galleryTitle=gallery.querySelector('[data-sc-story-title]');
+      const galleryText=gallery.querySelector('[data-sc-story-text]');
+      const galleryIndex=gallery.querySelector('[data-sc-story-index]');
+      let activeScene='default';
+      const showScene=id=>{
+        const next=Object.hasOwn(scenes,id)?id:'default';
+        if(next===activeScene || !root.isConnected)return;
+        activeScene=next;
+        gallery.dataset.scActive=next;
+        galleryPictures.forEach(image=>image.classList.toggle('is-visible',image.dataset.scPicture===next));
+        galleryTitle.textContent=next==='default'?'У каждого дела свой ориентир':scenes[next].title;
+        galleryText.textContent=next==='default'?'Выберите направление справа. Его небольшая история появится здесь, вместо маяка.':scenes[next].text;
+        const position=A.services.findIndex(service=>service.id===next);
+        galleryIndex.textContent=next==='default'?'AYYY / ВАШ МАЯК':`AYYY / ${String(position+1).padStart(2,'0')} · ИСТОРИЯ СЕРВИСА`;
+      };
+      const hoveredRow=target=>target instanceof Element?target.closest('.sc-row'):null;
+      const pointerOver=event=>{
+        if(event.pointerType==='touch')return;
+        const row=hoveredRow(event.target);
+        if(row && grid.contains(row))showScene(row.dataset.serviceId);
+      };
+      const pointerOut=event=>{
+        if(event.pointerType==='touch')return;
+        const row=hoveredRow(event.target);
+        if(!row || row.contains(event.relatedTarget))return;
+        const next=hoveredRow(event.relatedTarget);
+        showScene(next && grid.contains(next)?next.dataset.serviceId:null);
+      };
+      const focusIn=event=>{
+        const row=hoveredRow(event.target);
+        if(row && grid.contains(row))showScene(row.dataset.serviceId);
+      };
+      const focusOut=event=>{
+        const row=hoveredRow(event.target);
+        if(!row || row.contains(event.relatedTarget))return;
+        const next=hoveredRow(event.relatedTarget);
+        showScene(next && grid.contains(next)?next.dataset.serviceId:null);
+      };
+      grid.addEventListener('pointerover',pointerOver);
+      grid.addEventListener('pointerout',pointerOut);
+      const pointerLeave=()=>showScene(null);
+      grid.addEventListener('pointerleave',pointerLeave);
+      grid.addEventListener('focusin',focusIn);
+      grid.addEventListener('focusout',focusOut);
       const refresh=()=>{
         const list=visible();
+        showScene(null);
         const all=A.services.filter(s=>stories[s.id]).length;
         const currentGroup=groups.find(group=>group[0]===A.catalogCategory)?.[1]||'Все направления';
         count.textContent=`${list.length} из ${all} · ${currentGroup}`;
@@ -299,6 +364,11 @@
       document.addEventListener('visibilitychange',onVisibility);
       refresh();
       return ()=>{
+        grid.removeEventListener('pointerover',pointerOver);
+        grid.removeEventListener('pointerleave',pointerLeave);
+        grid.removeEventListener('pointerout',pointerOut);
+        grid.removeEventListener('focusin',focusIn);
+        grid.removeEventListener('focusout',focusOut);
         document.removeEventListener('ayyy:favorites',onFavorites);
         document.removeEventListener('visibilitychange',onVisibility);
       };

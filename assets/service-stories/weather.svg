@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 880" width="640" height="880">
+ <title>Утро между солнцем и дождём</title><desc>Долина, деревья, солнечный свет и облака с дождем</desc>
+ <defs>
+ <linearGradient id="wash" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#f9eac4"/><stop offset=".58" stop-color="#c9ddd6"/><stop offset="1" stop-color="#a7c6bd"/></linearGradient>
+ <radialGradient id="spot"><stop stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+ <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="3" seed="6" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
+ <filter id="shade" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+ </defs>
+ <rect x="0" y="0" width="640" height="880" fill="none"/>
+ <ellipse cx="322" cy="428" rx="267" ry="350" fill="url(#wash)" opacity=".68"/>
+ <ellipse cx="210" cy="237" rx="180" ry="220" fill="url(#spot)" opacity=".6"/>
+ <path d="M100 760Q182 793 305 774T537 754" fill="none" stroke="#618c87" stroke-width="1.3" opacity=".28"/>
+ <g stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="413" cy="232" r="94" fill="#f0c684" opacity=".66"/><circle cx="413" cy="232" r="61" fill="#f8e5a7"/>
+ <path d="M91 463Q191 366 309 421T551 414L551 671L87 672Z" fill="#c5d7bb" opacity=".9"/>
+ <path d="M70 524Q191 438 298 510T573 479L574 695L69 694Z" fill="#9fbea9" opacity=".9"/>
+ <path d="M69 630Q157 566 254 601T560 570L569 746L62 745Z" fill="#719e94" opacity=".79"/>
+ <path d="M133 291Q160 254 199 268Q219 209 281 238Q312 222 335 262Q396 277 367 313L139 313Z" fill="#f9fcf4" fill-opacity=".86" stroke="#b2c7bd" stroke-width="2"/>
+ <path d="M196 333L186 370M236 336L226 375M276 335L265 373M318 333L309 366" stroke="#70aaba" stroke-width="5" opacity=".8"/>
+ <path d="M155 618L153 416M152 483L102 453M153 498L195 462" fill="none" stroke="#577b6c" stroke-width="14"/>
+ <path d="M154 445Q77 456 102 389Q72 343 126 332Q135 279 173 310Q226 300 230 357Q254 393 215 420Q218 469 154 445Z" fill="#739b84" stroke="#648771" stroke-width="3"/>
+ <path d="M471 641L471 490M471 541L429 512M470 518L512 491" stroke="#5f7d6e" stroke-width="13" fill="none"/>
+ <path d="M470 511Q414 514 420 464Q380 442 414 412Q405 357 459 359Q485 331 512 361Q560 379 532 421Q555 471 515 484Q507 509 470 511Z" fill="#719d84"/>
+ <path d="M182 694Q318 633 457 697" fill="none" stroke="#e6e1bf" stroke-width="13" opacity=".55"/>
+ <path d="M330 570Q350 538 369 545Q383 563 396 585" fill="none" stroke="#e5ebd5" stroke-width="4"/>
+</g>
+ <rect x="24" y="32" width="592" height="788" fill="#fff" filter="url(#paper)" opacity=".37" pointer-events="none"/>
+ </svg>
