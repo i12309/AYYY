@@ -132,7 +132,7 @@ try:
    form.wait_for(timeout=60000)
    return form
   def pull(page):
-   page.locator('.sidebar button[data-tab=settings]').click()
+   page.locator('.sidebar button[data-tab=profile]').click()
    page.locator('#health-notice').evaluate('(e)=>e.textContent=""')
    page.locator('[data-action=sync]').click()
    page.wait_for_function("() => document.querySelector('#health-notice').textContent.trim() !== ''",timeout=60000)
@@ -204,7 +204,7 @@ try:
   assert 'Synthetic edited before deletion' not in pb.locator('.care-list').inner_text()
   print('PASS edit versus delete stayed unresolved until the local deletion was selected',flush=True)
   rotated='synthetic-rotated-roundtrip-phrase'
-  pb.locator('.sidebar button[data-tab=settings]').click();pb.locator('[data-action=change-passphrase]').click()
+  pb.locator('.sidebar button[data-tab=profile]').click();pb.locator('[data-action=change-passphrase]').click()
   for field,value in [('current',params['passphrase']),('next',rotated),('repeat',rotated)]:pb.locator('#health-dialog [name='+field+']').fill(value)
   pb.locator('#health-dialog [type=submit]').click();pb.locator('#health-dialog').wait_for(state='hidden');synced(pb)
   rekeyed=pb.evaluate('''async p=>{const remote=await HumanGithub.read(p.repo),opened=await HumanCrypto.unlock(remote.envelope,p.rotated);let oldRejected=false;try{await HumanCrypto.unlock(remote.envelope,p.passphrase);}catch{oldRejected=true;}return oldRejected&&opened.doc.reminders.some(r=>r.title==='Synthetic GitHub version')&&opened.doc.timeline.some(x=>x.kind==='security');}''',{**params,'rotated':rotated})
