@@ -93,6 +93,14 @@
     return h('div',{class:'health-table-wrap'},
       h('table',{class:'health-table'},h('thead',{},head),body));
   }
+  function referenceLabel(row,empty='—'){
+    return row.low||row.high?`${row.low||'—'} — ${row.high||'—'}`:row.referenceText?'Условия из бланка':empty;
+  }
+  function referenceCell(row){
+    if(!row.referenceText)return referenceLabel(row);
+    return h('div',{},row.low||row.high?referenceLabel(row):null,
+      h('details',{class:'measurement-reference-text'},h('summary',{},'Условия из бланка'),h('p',{class:'preserve'},row.referenceText)));
+  }
   function buttons(kind,item,editable=true){
     return h('div',{class:'health-actions'},
       editable?button('Редактировать','edit',{class:'small','data-kind':kind,'data-id':item.id}):null,
@@ -132,7 +140,7 @@
       const rows=latest.map(x=>h('tr',{},
         h('td',{class:'observation-name'},h('button',{class:'table-name','data-action':'edit','data-kind':'lab','data-id':x.id},x.name),h('small',{class:'mobile-lab-meta'},date(x.date))),
         h('td',{class:'observation-value'},h('strong',{},x.value),h('span',{class:'unit'},x.unit)),
-        h('td',{class:'observation-reference'},x.low||x.high?[x.low||'—',x.high||'—'].join(' — '):'Не указан'),
+        h('td',{class:'observation-reference'},referenceLabel(x,'Не указан')),
         h('td',{class:'observation-status'},status(x))));
       recent.append(h('div',{class:'table-wrap'},h('table',{class:'observations-table overview-table'},h('thead',{},h('tr',{},['Показатель','Результат','Референс','Статус'].map((s,i)=>h('th',{scope:'col',class:i===2?'observation-reference':null},s)))),h('tbody',{},rows))),h('p',{class:'table-summary'},h('span',{},'Последний результат: '+date(latest[0].date)),h('span',{},latest.length+' из '+d.observations.length)));
     }
@@ -276,7 +284,7 @@
           h('td',{},h('strong',{},g.latest.value),h('span',{class:'unit'},g.unit),h('div',{class:'lab-status'},status(g.effectiveLatest)),
             h('small',{class:'mobile-count'},'Измерений: '+g.rows.length)),
           h('td',{},h('strong',{},average),values.length?h('span',{class:'unit'},g.unit):null,h('small',{},values.length+' из '+g.rows.length)),
-          h('td',{},g.effectiveLatest.low||g.effectiveLatest.high?(g.effectiveLatest.low||'—')+' — '+(g.effectiveLatest.high||'—'):'—'),
+          h('td',{},referenceCell(g.effectiveLatest)),
           h('td',{},h('span',{class:'measurement-count'},g.rows.length)),h('td',{},date(g.latest.date))));
       }
       grouped.append(body);box.append(filtered.length?h('div',{class:'table-wrap'},grouped):empty('Показателей по этим условиям нет.'));
@@ -291,12 +299,11 @@
     const raw=doc.observations.find(row=>row.id===current.id);
     const numeric=M.numericRows(g.rows),average=numeric.length?numeric.reduce((sum,x)=>sum+M.number(x.value),0)/numeric.length:null;
     const fmt=n=>n===null?'—':new Intl.NumberFormat('ru-RU',{maximumSignificantDigits:6}).format(n);
-    const reference=x=>(x.low||'—')+' — '+(x.high||'—');
     const page=h('article',{class:'analyte-page','aria-label':'Страница показателя'});
     page.append(h('section',{class:'analyte-statistics','aria-label':'Сводка показателя'},[
       ['blue','Activity','Последний результат',g.latest.value+' '+g.unit,date(g.latest.date)],
       ['green','TrendingUp','Среднее значение',fmt(average)+' '+g.unit,numeric.length+' из '+g.rows.length+' измерений'],
-      ['red','ShieldCheck',g.preferences.useReference?'Общий референс':'Референс последней записи',reference(g.effectiveLatest),g.unit],
+      ['red','ShieldCheck',g.preferences.useReference?'Общий референс':'Референс последней записи',referenceLabel(g.effectiveLatest),g.unit],
       ['yellow','LayoutGrid','Всего измерений',g.rows.length,'Вся история показателя']
     ].map(([tone,glyph,label,value,note])=>{const svg=icon(glyph,22);svg.classList.add('stat-icon');return h('div',{class:'analyte-stat stat-'+tone},svg,h('div',{},h('small',{},label),h('strong',{class:tone==='red'?'reference-summary':''},value),h('small',{},note)));})));
     page.append(h('details',{class:'analyte-explanation'},h('summary',{},'Как читать эти данные'),h('p',{},'Среднее рассчитано по точным числовым результатам этой группы. Разные единицы, материалы и методы не смешиваются. Референсы сохранены у каждого измерения. Выберите точку или дату в таблице, чтобы увидеть её источник.')));
@@ -314,7 +321,8 @@
     page.append(h('details',{class:'analyte-settings'},h('summary',{},'Общие настройки показателя'),settings,AV.preferredUnit(doc,raw)));
     const plot=card('Динамика',[chart(g,{selected:current.id,interactive:true}),h('p',{class:'chart-reference-note'},'Среднее: '+fmt(average)+' '+g.unit+' · '+numeric.length+' измерений')]);plot.classList.add('analyte-chart');
     const metadata=h('dl',{class:'metadata'});
-    for(const [label,value] of [['Показатель в бланке',current.name],['Дата',date(current.date)],['Результат',raw.value+' '+raw.unit],['Референс',reference(current)],['Источник',current.source],['Материал',current.material],['Метод',current.method],['Примечание',current.notes]])metadata.append(h('dt',{},label),h('dd',{},value||'Не указан'));
+    for(const [label,value] of [['Показатель в бланке',current.name],['Дата',date(current.date)],['Результат',raw.value+' '+raw.unit],['Референс',referenceLabel(current)],['Источник',current.source],['Материал',current.material],['Метод',current.method],['Примечание',current.notes]])metadata.append(h('dt',{},label),h('dd',{},value||'Не указан'));
+    if(current.referenceText)metadata.append(h('dt',{},'Условия референса из бланка'),h('dd',{class:'preserve'},current.referenceText));
     const source=card('Выбранное измерение',[status(current),metadata,AV.origin(doc,raw),AV.unitChoice(doc,raw),
       button('Редактировать','edit',{'data-kind':'lab','data-id':current.id})]);
     source.classList.add('analyte-source');
@@ -323,7 +331,7 @@
     page.append(h('div',{class:'analyte-chart-layout'},plot,source));
     page.append(AV.classification(doc,raw));
     const history=card('История · '+g.rows.length,[table(['Дата','Значение','Референс','Источник','Действия'],g.rows.map(x=>[
-      button(date(x.date),'select-observation',{'data-id':x.id,'aria-pressed':String(x.id===current.id),class:'small'}),h('span',{},h('strong',{},x.value+' '+x.unit),status(x)),reference(x),x.source||'—',buttons('lab',x)
+      button(date(x.date),'select-observation',{'data-id':x.id,'aria-pressed':String(x.id===current.id),class:'small'}),h('span',{},h('strong',{},x.value+' '+x.unit),status(x)),referenceCell(x),x.source||'—',buttons('lab',x)
     ]))]);history.classList.add('analyte-history');page.append(history);section.append(page);
     return section;
   }

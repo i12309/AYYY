@@ -39,6 +39,8 @@
   }
   function checkLab(input,original){
     for(const [key,max] of Object.entries({name:200,value:8000,canonicalName:200,unit:100,low:100,high:100,source:1000,material:1000,method:1000,notes:8000}))if(String(input[key]??'').trim().length>max)throw new Error('Поле '+key+' превышает '+max+' символов. Сократите его перед сохранением.');
+    const referenceText=String(input.referenceText??original?.referenceText??'');
+    if(referenceText.length>8000)throw new Error('Условия референса превышают 8000 символов. Сократите текст перед сохранением.');
     const name=text(input.name,200),value=text(input.value,8000);
     if(!name || !value)throw new Error('Название показателя и результат обязательны.');
     const low=text(input.low,100),high=text(input.high,100);
@@ -51,6 +53,8 @@
       material:text(input.material,1000),method:text(input.method,1000),
       notes:text(input.notes,8000),createdAt:original?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()};
+    if(referenceText.trim())row.referenceText=referenceText;
+    else delete row.referenceText;
     if(row.unitHistory&&(row.unit||!A.unitEligible(row)||
        ['name','canonicalName','material','method'].some(key=>row[key]!==original?.[key])))delete row.unitHistory;
     return row;

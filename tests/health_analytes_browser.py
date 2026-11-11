@@ -16,11 +16,11 @@ def run(page):
     def lab():
         page.locator('.sidebar button[data-tab=lab]').click()
 
-    def select_files(entries):
+    def select_files(entries,header=HEADER):
         lab()
         with page.expect_file_chooser() as chooser:
             page.locator('[data-action=csv]').click()
-        chooser.value.set_files([{'name':name,'mimeType':'text/csv','buffer':(HEADER+rows).encode()} for name,rows in entries])
+        chooser.value.set_files([{'name':name,'mimeType':'text/csv','buffer':(header+rows).encode()} for name,rows in entries])
 
     def prepare_review():
         page.locator('[data-form=document-mapping] [type=submit]').click()
@@ -255,6 +255,74 @@ def run(page):
     assert measured['value']=='40' and measured['unit']=='' and measured['unitHistory']['unit']=='U-new'
     assert measured['unitHistory']['settingsVersion']==2 and measured['provenance']['originalUnit']==''
     print('PASS settings take priority, clearing is respected, and a stale assignment requires a fresh choice',flush=True)
+
+    simple='U/L 1,0 – 3,0 Оборудование Synthetic analyser'
+    conditional='Группа A: 1–3.\nГруппа B: 4–6.'
+    edited='5 - 9 Оборудование Synthetic edited'
+    rows=(f'Synthetic reference simple;2;U/L;;;2026-11-01;"{simple}";;\n'
+          f'Synthetic reference conditional;5;U/L;;;2026-11-02;"{conditional}";;\n'
+          'Synthetic reference explicit;6;U/L;;;2026-11-03;2 - 4;0;10\n'
+          'Synthetic reference edited;8;U/L;;;2026-11-04;7 - 9;;\n')
+    select_files([('reference-source.csv',rows)],header=HEADER.rstrip('\n')+';Референсные значения;low;high\n')
+    mapping=page.locator('[data-form=document-mapping]')
+    assert mapping.locator('[name=referenceText]').input_value()=='6'
+    review=prepare_review()
+
+    def reference_fields(index):
+        review.locator(f'[data-import-row="{index}"]').click()
+        review.locator('.health-import-row-extra summary').click()
+        return [review.locator(f'[name="{index}:{key}"]') for key in ('low','high','referenceText')]
+
+    low,high,reference=reference_fields(0)
+    assert [field.input_value() for field in (low,high,reference)]==['1,0','3,0',simple]
+    review.locator('[name="0:unit"]').fill('U-X')
+    assert low.input_value()==high.input_value()=='' and reference.input_value()==simple
+    review.locator('[name="0:unit"]').fill('U/L')
+    assert [low.input_value(),high.input_value()]==['1,0','3,0']
+    low,high,reference=reference_fields(1)
+    assert low.input_value()==high.input_value()=='' and reference.input_value()==conditional
+    low,high,reference=reference_fields(2)
+    assert [field.input_value() for field in (low,high,reference)]==['0','10','2 - 4']
+    low,high,reference=reference_fields(3)
+    low.fill('6');reference.fill(edited)
+    assert high.input_value()=='9'
+    page.locator('[data-action=save-import-draft]').click()
+    page.get_by_text('Черновик зашифрован и сохранён на этом устройстве.',exact=True).wait_for()
+    page.reload();unlock.locator('[name=passphrase]').fill(PHRASE);unlock.locator('[type=submit]').click()
+    page.locator('.metric').first.wait_for();lab();page.locator('[data-action=open-import-draft]').click()
+    assert review.locator('[data-import-row="3"]').get_attribute('aria-pressed')=='true'
+    low,high,reference=reference_fields(3)
+    assert [field.input_value() for field in (low,high,reference)]==['6','9',edited]
+    confirm_review(review);page.locator('#health-import-page').wait_for(state='hidden')
+    imported={row['name']:row for row in snapshot()['observations'] if row.get('provenance',{}).get('filename')=='reference-source.csv'}
+    saved=imported['Synthetic reference conditional']
+    assert saved['referenceText']==saved['provenance']['originalReference']==conditional and saved['low']==saved['high']==''
+    assert imported['Synthetic reference simple']['low']=='1,0' and imported['Synthetic reference simple']['high']=='3,0'
+    assert imported['Synthetic reference explicit']['low']=='0' and imported['Synthetic reference explicit']['high']=='10'
+    saved_edit=imported['Synthetic reference edited']
+    assert saved_edit['referenceText']==edited and saved_edit['provenance']['originalReference']=='7 - 9' and saved_edit['low']=='6'
+    assert page.evaluate('''async phrase=>{
+      const {envelope}=await HumanStore.get(await HumanStore.current()),{doc}=await HumanCrypto.unlock(envelope,phrase);
+      return HumanRecommendations.data(doc).observations.find(row=>row.name==='Synthetic reference conditional').referenceText;
+    }''',PHRASE)==conditional
+    page.locator('[data-search=labs]').fill('Synthetic reference conditional')
+    details=page.locator('.analyte-groups .measurement-reference-text')
+    details.locator('summary').click()
+    assert details.locator('p').text_content()==conditional and 'Без оценки' in page.locator('.analyte-groups').inner_text()
+    page.locator('.group-name').click()
+    panel=page.locator('.analyte-source')
+    assert panel.locator('dd.preserve').text_content()==conditional
+    page.set_viewport_size({'width':360,'height':900})
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    page.set_viewport_size({'width':1440,'height':1000})
+    panel.locator('[data-action=edit]').click()
+    form=page.locator('#health-dialog [data-form=record]')
+    assert form.locator('[name=referenceText]').input_value()==conditional
+    form.locator('[name=referenceText]').fill(conditional+'\nSynthetic clarification')
+    form.locator('[type=submit]').click();page.locator('#health-dialog').wait_for(state='hidden')
+    assert panel.locator('dd.preserve').text_content()==conditional+'\nSynthetic clarification'
+    assert panel.locator('.analyte-origin .preserve').text_content()==conditional
+    print('PASS source reference conditions, reviewed bounds and original wording survive import and journal editing',flush=True)
 
 
 if __name__ == '__main__':

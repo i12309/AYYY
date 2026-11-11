@@ -268,7 +268,9 @@
   }
   function reviewObservation(contextId,id){
     const context=state.doc.recommendationContexts.find(c=>c.id===contextId),row=context?.data.observations.find(r=>r.id===id);if(!row)throw Error('Анализ отсутствует в исходном снимке.');
-    const current=state.doc.observations.find(r=>r.id===id);careDialog('Анализ из снимка',V.h('div',{class:'review-observation'},V.h('p',{class:'health-note'},'Сведения на момент подготовки пакета. Последующие исправления и удаление не меняют исходный снимок.'),V.table(['Поле','Сведения'],[['Показатель',row.name],['Дата',V.date(row.date)],['Результат',row.value],['Единица',row.unit||'Неизвестна'],['Материал',row.material||'Не указан'],['Метод',row.method||'Не указан'],['Лаборатория / источник',row.source||'Не указан'],['Нижний референс',row.low||'Не указан'],['Верхний референс',row.high||'Не указан']]),row.notes?V.h('p',{class:'preserve'},row.notes):null,current?V.button('Открыть текущую запись','review-current-observation',{'data-id':id}):V.h('p',{class:'health-note'},'Текущая запись удалена; её исходные сведения сохранены только в снимке.')));
+    const current=state.doc.observations.find(r=>r.id===id);careDialog('Анализ из снимка',V.h('div',{class:'review-observation'},V.h('p',{class:'health-note'},'Сведения на момент подготовки пакета. Последующие исправления и удаление не меняют исходный снимок.'),V.table(['Поле','Сведения'],[['Показатель',row.name],['Дата',V.date(row.date)],['Результат',row.value],['Единица',row.unit||'Неизвестна'],['Материал',row.material||'Не указан'],['Метод',row.method||'Не указан'],['Лаборатория / источник',row.source||'Не указан'],['Нижний референс',row.low||'Не указан'],['Верхний референс',row.high||'Не указан']]),
+      row.referenceText?V.h('details',{},V.h('summary',{},'Условия референса из бланка'),V.h('p',{class:'preserve'},row.referenceText)):null,
+      row.notes?V.h('p',{class:'preserve'},row.notes):null,current?V.button('Открыть текущую запись','review-current-observation',{'data-id':id}):V.h('p',{class:'health-note'},'Текущая запись удалена; её исходные сведения сохранены только в снимке.')));
   }
   async function openTimelineEvent(id){
     const event=state.doc.timeline.find(e=>e.id===id);if(!event)throw Error('Событие не найдено.');const row=window.HumanJournal.findRecord(state.doc,event),kind=event.recordKind;
@@ -396,6 +398,7 @@
       f('Показатель в бланке','name',x.name||''),f('Имя для группировки (необязательно)','canonicalName',x.canonicalName||''),
       r(f('Единица','unit',x.unit||''),f('Лаборатория','source',x.source||'')),
       r(f('Референс от','low',x.low||''),f('Референс до','high',x.high||'')),
+      f('Условия референса из бланка','referenceText',x.referenceText||'','textarea'),
       r(f('Материал','material',x.material||''),f('Метод','method',x.method||'')),
       f('Комментарий','notes',x.notes||'','textarea')
     ];

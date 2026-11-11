@@ -66,6 +66,7 @@
 .health-import-row-editor .health-form-row{align-items:start}
 .health-import-unit-info{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin-top:5px;overflow-wrap:anywhere}
 .health-import-row-extra .health-form-row{margin-top:8px}
+.health-import-row-extra .field:has(textarea){grid-column:1/-1}
 .health-import-row-editor .health-import-decision{margin:8px 0}
 @media(max-width:700px){.health-import-review{grid-template-columns:minmax(0,1fr)}.health-import-row-list{max-height:220px}}
 .health-import-selection{display:flex;flex-wrap:wrap;align-items:center;gap:6px}

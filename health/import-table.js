@@ -26,6 +26,21 @@
       throw Error('Выберите порядок дня и месяца для дат через /.');
     return M.observationDate(parsed,precision(parsed));
   }
+  const referenceRange=/^([+-]?\d+(?:[.,]\d+)?)\s*[-–—]\s*([+-]?\d+(?:[.,]\d+)?)(?:\s+([\s\S]+))?$/;
+  const additionalRange=/\d\s*[-–—]\s*[+-]?\d/;
+  const referenceExplanations=['оборудование ','при исследовании крови ','рекомендуемые пороговые значения','нижний диагностический порог','(чем ниже тем хуже)'];
+  function referenceInterval(value,unit){
+    let text=String(value??'').trim();
+    const reported=String(unit??'').trim();
+    if(reported&&text.startsWith(reported)&&/\s/.test(text.charAt(reported.length)))text=text.slice(reported.length).trim();
+    const match=referenceRange.exec(text);
+    if(!match)return null;
+    const [,low,high,tail='']=match;
+    const suffix=tail.trim().toLocaleLowerCase('ru-RU');
+    if(suffix&&tail.trim()!==reported&&(!referenceExplanations.some(prefix=>suffix.startsWith(prefix))||additionalRange.test(suffix)))return null;
+    const from=M.number(low),to=M.number(high);
+    return from!==null&&to!==null&&from<=to?{low,high}:null;
+  }
   function suggestedLayout(labels,mapping){
     return mapping.value<0&&labels.some((value,index)=>index!==mapping.name&&dateLike.test(value.trim()))
       ?'dates_in_columns':'rows';
@@ -105,6 +120,8 @@
         const row=table.rowNumbers?.[rowIndex]||rowIndex+1;
         const sourceCell=sourceIdentity(hash,sheet,row,column+1),previousKey=hash+':'+sheet+':'+(rowIndex+1);
         const item={...cells,value};
+        const autoReference=!String(item.low??'').trim()&&!String(item.high??'').trim();
+        if(autoReference)Object.assign(item,referenceInterval(item.referenceText,item.unit));
         const sourceDate=layout==='dates_in_columns'?headings[column]:item.date;
         item.date=dates.get(column)?.date||date(sourceDate||fallbackDate,order);
         item.datePrecision=precision(item.date);
@@ -120,7 +137,7 @@
         }catch(error){problem=error.message;}
         if(results.length>=5000)throw Error('Не больше 5000 результатов за импорт.');
         results.push({
-          item,problem,duplicate:imported.has(sourceCell)||imported.has(previousKey),importKey:sourceCell,previousKey,
+          item,problem,autoReference,duplicate:imported.has(sourceCell)||imported.has(previousKey),importKey:sourceCell,previousKey,
           row,column:column+1,sourceDate,raw,rawCells,
           headerCell:layout==='dates_in_columns'?table.provenance?.[header-1]?.find(cell=>cell.column===column)||null:null,
         });
@@ -129,5 +146,5 @@
     if(!results.length)throw Error('После заголовка нет результатов.');
     return results;
   }
-  window.HumanImportTable={date,checkedDate,suggestedLayout,importedCoordinates,duplicateIndex,draft};
+  window.HumanImportTable={date,checkedDate,referenceInterval,suggestedLayout,importedCoordinates,duplicateIndex,draft};
 })();

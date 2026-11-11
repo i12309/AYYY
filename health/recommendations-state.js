@@ -30,7 +30,7 @@
   for(const [key,value] of Object.entries(answers)){if(!allowed.has(key)||typeof value!=='string'||Array.from(value).length>4000)throw Error('Неизвестный вопрос или ответ длиннее 4000 символов.');next[key]=value.trim();}
   const out={id:M.id(),version:old.version+1,updated_at:new Date(now).toISOString(),basis:'self_report',answers:next};doc.recommendationIntakes.push(out);return out;
  }
- const observationKeys=['id','name','canonicalName','date','datePrecision','value','valueKind','unit','low','high','source','material','method','notes','reviewStatus','unitHistory'];
+ const observationKeys=['id','name','canonicalName','date','datePrecision','value','valueKind','unit','low','high','referenceText','source','material','method','notes','reviewStatus','unitHistory'];
  function page(items,limit,clean){return {items:items.slice(0,limit).map(clean),total:items.length,limit,offset:0};}
  function data(doc,now=new Date()){
   const current=intake(doc),all=M.groups(doc.observations,doc.analytePreferences,doc.analyteAliases),observations=M.recent(doc.observations,1000).map(r=>pick(r,observationKeys));

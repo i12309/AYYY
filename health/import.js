@@ -2,8 +2,8 @@
 (() => {
  'use strict';
  const A=window.HumanAnalytes,T=window.HumanImportTable;
- const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
- const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
+ const fields=[['name','Показатель'],['value','Результат'],['date','Дата'],['unit','Единица'],['low','Референс от'],['high','Референс до'],['referenceText','Условия референса из бланка'],['source','Лаборатория'],['material','Материал'],['method','Метод'],['notes','Примечание']];
+ const aliases={name:['name','показатель','название','анализ'],value:['value','result','результат','значение'],date:['date','дата'],unit:['unit','единица','ед.изм.'],low:['low','min','мин','нижняя граница'],high:['high','max','макс','верхняя граница'],referenceText:['reference','reference range','reference interval','reference values','референс','референсы','референсные значения','референсный интервал','норма','нормы','нормальные значения','условия референса из бланка'],source:['source','laboratory','источник','лаборатория'],material:['material','материал'],method:['method','метод'],notes:['notes','комментарий','примечание']};
  const sameUnitChoice=(option,choice)=>option.unit===choice.unit&&option.settingsVersion===choice.settingsVersion&&
   option.observationId===choice.observationId&&option.observationUpdatedAt===choice.observationUpdatedAt;
  function open(files,{V,M,body,signal,close,commit,getDoc,isCurrent,persistence,saved,sourceDocumentId,skippedFiles=0,notify}){
@@ -226,7 +226,7 @@
   }
   function manualDraft(id,index,imported){
    const importKey=`${original.hash}:${sheet}:manual:${id}`;
-   return {item:Object.fromEntries(fields.map(([key])=>[key,''])),manual:index+1,importKey,previousKey:'',
+   return {item:Object.fromEntries(fields.map(([key])=>[key,''])),manual:index+1,autoReference:true,importKey,previousKey:'',
     duplicate:imported.has(importKey),row:null,column:null,sourceDate:'',raw:[],rawCells:null,headerCell:null};
   }
   function alreadyImported(coordinates,draft){
@@ -352,12 +352,14 @@
     const savedRow=savedRows[index];
     draft.duplicate=alreadyImported(coordinates,draft);
     const rowLabel=draft.manual?`ручная строка ${draft.manual}`:`строка ${draft.row}, колонка ${draft.column}`;
-    const controls=new Map(fields.map(([key,label])=>[key,V.h('input',{
+    const controls=new Map(fields.map(([key,label])=>[key,V.h(key==='referenceText'?'textarea':'input',{
       name:index+':'+key,value:savedRow?.values?.[key]??draft.item[key],disabled:draft.duplicate,'aria-label':label+' · '+rowLabel,
+      rows:key==='referenceText'?3:null,
     })]));
     const sourceUnit=String(draft.item.unit??''),unitField=controls.get('unit');
     const unitInfo=V.h('div',{class:'health-import-unit-info','data-import-unit-info':true,hidden:true});
     let unitChoice=savedRow?.unitChoice??null,unitReviewed=savedRow?.unitReviewed===true;
+    let autoReference=savedRow?.autoReference??(draft.autoReference&&!savedRow?.values?.low&&!savedRow?.values?.high);
     const values=()=>Object.fromEntries(Array.from(controls,([key,input])=>[key,input.value]));
     const caption=V.h('small',{class:'import-classification'});
     const checked=V.h('input',{type:'checkbox',name:'selected',value:String(index),disabled:draft.duplicate,
@@ -370,6 +372,13 @@
     const decisionField=V.h('label',{class:'field health-import-decision',hidden:true},V.h('span',{},'Действие при совпадении'),decision);
     const editorTitle=V.h('h3',{tabindex:-1});
     let candidates=[],withinFile=false;
+    function refreshReference(){
+     if(!autoReference||draft.duplicate)return;
+     const unit=unitChoice?'':unitField.value.trim();
+     const interval=sourceUnit.trim()&&sourceUnit.trim()!==unit?null:T.referenceInterval(controls.get('referenceText').value,unit);
+     controls.get('low').value=interval?.low??'';
+     controls.get('high').value=interval?.high??'';
+    }
     function refreshUnit(){
      if(draft.duplicate||sourceUnit.trim()||(!unitChoice&&unitField.value.trim())){unitInfo.hidden=true;return;}
      const input=values();
@@ -434,7 +443,7 @@
      if(resetRepeated)withinFile=false;
      showDecision();
     }
-    refreshUnit();refreshMatches();
+    refreshUnit();refreshReference();refreshMatches();
     checked.checked=!draft.duplicate&&(savedRow?.selected??(!draft.manual&&!table.ocr&&!draft.problem&&!candidates.length));
     if(savedRow&&checked.checked){
      withinFile=savedRow.repeated||savedRow.decision==='separate';refreshMatches(false);
@@ -443,13 +452,15 @@
     if(draft.duplicate)showDecision();
     checked.addEventListener('change',()=>{refreshMatches(false);updateSelection();});
     decision.addEventListener('change',()=>{problems[index]='';showDecision();});
-    for(const key of ['name','value','date','unit','low','high','source','material','method'])controls.get(key).addEventListener('input',()=>{
+    for(const key of ['name','value','date','unit','low','high','referenceText','source','material','method'])controls.get(key).addEventListener('input',()=>{
      if(key==='unit'){unitChoice=null;unitReviewed=true;}
+     if(key==='low'||key==='high')autoReference=false;
      if(['name','value','unit','material','method'].includes(key)){refreshUnit();showClassification();}
+     if(key==='referenceText'||key==='unit')refreshReference();
      problems[index]='';refreshMatches();
     });
     choices[index]=(matches,repeated)=>{candidates=matches;withinFile=repeated;showDecision();};
-    captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem,unitChoice,unitReviewed}));
+    captureRows.push(()=>({values:values(),selected:checked.checked,decision:decision.value,repeated:withinFile,problem:problems[index]??draft.problem,unitChoice,unitReviewed,autoReference}));
     selection.push({checked,refresh:()=>refreshMatches(false),eligible:()=>{
      if(draft.duplicate||draft.manual||table.ocr||candidates.length||withinFile||problems[index])return false;
      const row=values();
@@ -459,7 +470,7 @@
      draft.duplicate=alreadyImported(coordinates,draft);
      checked.disabled=draft.duplicate;
      for(const input of controls.values())input.disabled=draft.duplicate;
-     refreshUnit();showClassification();
+     refreshUnit();refreshReference();showClassification();
      if(draft.duplicate){checked.checked=false;showDecision();return;}
      refreshMatches(false);
     });
@@ -568,7 +579,8 @@
        const item={...edit.values,...T.checkedDate(edit.values.date,order),unit:edit.unitChoice?'':edit.values.unit};
        records.push({index,decision:edit.decision,repeated:edit.repeated,unitChoice:edit.unitChoice,record:{...M.checkLab(item),importKey:draft.importKey,
         provenance:{filename:original.name,sha256:original.hash,sheet:table.name,row:draft.row,column:draft.column,
-         sourceCell:draft.importKey,sourceDate:draft.sourceDate,originalUnit:draft.item.unit||'',headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
+        sourceCell:draft.importKey,sourceDate:draft.sourceDate,originalUnit:draft.item.unit||'',originalReference:draft.item.referenceText||'',
+        headerCell:draft.headerCell,raw:draft.raw,rawCells:draft.rawCells,
          method:draft.manual?'manual':table.ocr?'ocr-tesseract':original.extension}}});
        problems[index]='';
       }catch(err){problems[index]=err.message;}

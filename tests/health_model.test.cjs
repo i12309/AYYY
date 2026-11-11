@@ -9,9 +9,9 @@ const root=path.join(__dirname,'..');
 const script=name=>fs.readFileSync(path.join(root,name),'utf8');
 function model(){
   const w={},ctx={window:w,crypto:{randomUUID:()=>String(Math.random()).slice(2)}};
-  for(const file of ['analyte-catalog','analytes','model','health-state'])
+  for(const file of ['analyte-catalog','analytes','model','health-state','import-table'])
     vm.runInNewContext(script('health/'+file+'.js'),ctx);
-  return Object.assign(w.HumanModel,{health:w.HumanHealth,analytes:w.HumanAnalytes});
+  return Object.assign(w.HumanModel,{health:w.HumanHealth,analytes:w.HumanAnalytes,importTable:w.HumanImportTable});
 }
 test('all static HUMAN scripts parse',()=>{
   for(const path of ['health/crypto.js','health/store.js','health/github.js',
@@ -78,6 +78,20 @@ test('reference rules handle zero, partial bounds and qualitative results',()=>{
   assert.equal(m.status({value:'положительно',unit:'ммоль/л',low:'',high:'3'}),'unknown');
   assert.equal(m.status({value:'3',unit:'ммоль/л',low:'',high:''}),'unknown');
   assert.equal(m.status({value:'8',unit:'',low:'0',high:'5'}),'unknown');
+});
+test('only a single unambiguous source interval becomes numeric reference bounds',()=>{
+  const m=model(),parse=m.importTable.referenceInterval;
+  const valid=[['-2,0 – 4,5','-2,0','4,5'],['U/L 5.46 — 16.2','5.46','16.2'],
+    ['2 - 9.4 Оборудование Synthetic analyser','2','9.4'],['2–4 U/L','2','4'],
+    ['22 - 275 Рекомендуемые пороговые значения: <15 без воспаления','22','275']];
+  for(const [text,low,high] of valid)assert.deepEqual({...parse(text,'U/L')},{low,high},text);
+  for(const text of ['<1,0 U/L','1 - 3 дети; 4 - 6 взрослые','2–4 mg/L','10 - 1','0,3-0,5 U/L - умеренный риск',
+    '48 - 78 При исследовании крови 12 – 24 для другой группы'])assert.equal(parse(text,'U/L'),null,text);
+  const text='Для группы A: 1–3.\nДля группы B: 4–6.';
+  const row=m.checkLab({name:'Synthetic reference',value:'8',date:'2026-11-01',unit:'U/L',referenceText:text});
+  assert.equal(row.referenceText,text);
+  assert.equal(m.status(row),'unknown');
+  assert.equal(m.checkLab({...row,referenceText:''},row).referenceText,undefined);
 });
 test('impossible dates are rejected rather than silently normalised',()=>{
   const m=model();

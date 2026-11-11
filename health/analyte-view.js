@@ -82,6 +82,8 @@
       if(file.sourceDate)entries.push(['Дата в источнике',file.sourceDate]);
       if(typeof file.originalUnit==='string'&&(row.unitHistory||file.originalUnit.trim()!==row.unit))
         entries.push(['Единица в источнике',file.originalUnit||'Не указана']);
+      if(typeof file.originalReference==='string'&&file.originalReference.trim()&&file.originalReference!==row.referenceText)
+        entries.push(['Референс в источнике',V.h('div',{class:'preserve'},file.originalReference)]);
       if(file.method==='ocr-tesseract')entries.push(['Способ импорта','Распознавание скана']);
       if(file.method==='manual')entries.push(['Способ импорта','Введено вручную из бланка']);
       if(file.classification)entries.push(['При импорте',file.classification.name+' · '+names[file.classification.basis]]);
