@@ -30,9 +30,12 @@ with sync_playwright() as pw:
     page=context.new_page()
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.goto(BASE+'health/')
-    page.locator('[data-form=download]').wait_for()
+    page.locator('[data-form=create]').wait_for()
     assert 'Фраза шифрования' in page.locator('[data-form=create]').inner_text()
-    assert 'не пароль GitHub' in page.locator('.health-intro-grid').inner_text()
+    assert page.locator('[data-form=download]').count()==0
+    page.locator('[data-action=onboarding-tab][data-mode=github]').click()
+    page.locator('[data-form=download]').wait_for()
+    assert page.locator('[data-form=create]').count()==0
 
     # The transport is mocked; the test does not read tokens or contact GitHub.
     page.evaluate("""() => {
@@ -50,8 +53,10 @@ with sync_playwright() as pw:
         form.locator('[type=submit]').click()
         page.locator('[data-form=initialize-remote]').wait_for()
         assert 'В репозитории пока нет журнала' in page.locator('.health-github-setup').inner_text()
-        assert page.locator('.health-intro-grid-single').count()==1
+        assert page.locator('.health-onboarding [role=tabpanel]').count()==1
+        assert page.locator('[data-action=onboarding-tab][data-mode=github]').get_attribute('aria-selected')=='true'
         assert page.locator('[data-form=create]').count()==0
+        assert page.locator('[data-form=download]').count()==0
 
     connect()
     assert page.evaluate('HumanGithub.hasToken()')
