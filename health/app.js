@@ -422,6 +422,7 @@
       }
       const fresh=await S.get(id);if(!active()||!fresh||!S.sameEnvelope(fresh.envelope,before.envelope))throw Error('Журнал изменился во время смены фразы. Повторите действие.');
       const saved=await S.save({...fresh,envelope,dirty:true},fresh,objects,draftUpdate);channel?.postMessage({client:clientId,vaultId:id});if(!active())return;
+      void H.forget(id);
       state.local=saved;state.doc=doc;state.key=encrypted.key;sessionRevision++;syncRun++;keyChangeRun++;state.syncBusy=false;state.rekeyBusy=false;dialog.close();render();if(saved.repo&&G.hasToken())scheduleSync();toast('Журнал зашифрован новой фразой доступа.');
     });writeQueue=run.catch(()=>{});
     try{await run;}finally{if(runId===keyChangeRun&&state.local?.id===id){state.rekeyBusy=false;renderHeader();if(state.doc&&state.local.dirty&&state.local.repo&&G.hasToken())scheduleSync();}}
@@ -703,7 +704,8 @@
     document.getElementById('health-dialog-body').replaceChildren(V.h('div',{class:'health-modal-head'},V.h('h2',{},file.title||file.name),returnFinding?V.button('К результату','open-finding',{'data-id':returnFinding,class:'small'}):null,V.button('×','close-dialog',{'aria-label':'Закрыть просмотр'})),V.h('div',{class:'health-modal-content'},content));dialog.showModal();if(renderFirst)await renderFirst();
   }
   dialog.addEventListener('close',clearPreview);
-  function lockJournal(){
+  function lockJournal(preserveTemporaryAccess=false){
+    if(!preserveTemporaryAccess)void H.forget();
     sessionRevision++;clearTimeout(syncTimer);clearTimeout(toastTimer);
     G.disconnect();clearPreview();
     if(dialog.open)dialog.close();
@@ -713,6 +715,7 @@
     render();
   }
   async function switchProfile(id){
+    void H.forget();
     const request=++sessionRevision;
     const chosen=await S.get(id);
     if(request!==sessionRevision)return;
@@ -725,6 +728,31 @@
     syncTimer=setTimeout(()=>{void syncNow();},3000);
   }
   function sessionFence(){const revision=sessionRevision,id=state.doc?.id,localId=state.local?.id,key=state.key;return ()=>revision===sessionRevision&&id===state.doc?.id&&localId===state.local?.id&&key===state.key;}
+  async function applyRemember(choice){
+    if(!state.local||!state.key||state.demo)return;
+    if(!choice){void H.forget();return;}
+    const local=state.local,key=state.key,active=sessionFence();
+    try{
+      if(await H.remember(local.id,local.envelope.salt,key,active)&&active())
+        toast('Быстрое открытие включено на 30 минут для этой вкладки.');
+    }catch(e){
+      if(active())toast('Не удалось включить временный доступ: '+e.message);
+    }
+  }
+  async function restoreTemporary(local,revision){
+    if(!local||state.picker||state.demo)return;
+    const active=()=>sessionRevision===revision&&state.local?.id===local.id&&!state.doc;
+    const key=await H.recall(local.id,local.envelope.salt);
+    if(!key||!active())return;
+    try{
+      const doc=await C.openWithKey(local.envelope,key);
+      if(!active())return;
+      state.key=key;state.doc=doc;state.picker=false;state.tab='overview';
+      render();
+    }catch{
+      void H.forget(local.id);
+    }
+  }
   const syncLabels={
     observations:'Анализ',vitals:'Показатель',episodes:'Эпизод',medical:'Медкарта',
     medications:'Препарат',findings:'Генетическая запись',diary:'Дневник',documents:'Документ',
@@ -1003,6 +1031,7 @@
       if(mode==='sync-merge'){
         await acceptSyncMerge(form);
       }else if(mode==='create'){
+        const remember=form.elements.namedItem('remember')?.checked===true;
         const active=sessionFence();
         const pass=form.elements.namedItem('password').value;
         if(pass.length<12||pass!==form.elements.namedItem('repeat').value)
@@ -1013,8 +1042,10 @@
         state.local=local;
         state.doc=created.doc;state.key=created.key;state.picker=false;state.tab='overview';
         render();
+        await applyRemember(remember);
         toast('Зашифрованный профиль создан. Не теряйте фразу доступа.');
       }else if(mode==='initialize-remote'){
+        const remember=form.elements.namedItem('remember')?.checked===true;
         const setup=state.pendingGitHub;
         if(!setup||!G.hasToken())throw Error('Сначала проверьте доступ к репозиторию GitHub.');
         const pass=form.elements.namedItem('password').value;
@@ -1036,13 +1067,16 @@
         await profileList();if(!current())return;
         state.pendingGitHub=null;state.local=local;state.doc=created.doc;state.key=created.key;
         state.picker=false;state.tab='overview';render();
+        await applyRemember(remember);
         toast('Хранилище GitHub подготовлено и проверено записью зашифрованного журнала.');
       }else if(mode==='unlock'){
+        const remember=form.elements.namedItem('remember')?.checked===true;
         const active=sessionFence();
         const opened=await C.unlock(state.local.envelope,form.elements.namedItem('passphrase').value);
         if(!active())return;
         state.doc=opened.doc;state.key=opened.key;state.picker=false;state.tab='overview';
         render();
+        await applyRemember(remember);
       }else if(mode==='download'){
         const session=sessionFence();
         const v=Object.fromEntries(new FormData(form).entries()),repo=G.parseRepo(v.repo,v.branch);
@@ -1188,7 +1222,7 @@
     const copied=await backup();if(!copied||!sameSession())return;
     if(!confirm('Удалить локальную зашифрованную копию и черновики импорта с этого устройства? GitHub останется без изменений.'))return;
     if(!confirm('Подтвердите окончательное удаление с устройства.'))return;
-    const id=state.local.id;clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
+    const id=state.local.id;void H.forget();clearTimeout(syncTimer);G.disconnect();state.doc=null;state.key=null;render();const active=sessionFence();
     try{
       await S.remove(id,copied);
     }catch(e){
@@ -1202,6 +1236,7 @@
     state.local=null;state.picker=true;render();
   }
   function openDemo(){
+    void H.forget();
     sessionRevision++;
     clearTimeout(syncTimer);
     G.disconnect();
@@ -1214,6 +1249,7 @@
     render();
   }
   async function exitDemo(){
+    void H.forget();
     sessionRevision++;clearTimeout(syncTimer);G.disconnect();
     state.demo=false;state.doc=null;state.key=null;state.local=null;state.picker=true;state.pendingGitHub=null;
     state.tab='overview';state.search='';state.groupKey='';state.conflict=false;render();
@@ -1309,6 +1345,7 @@
         state.groupKey=all[Number(el.dataset.index)]?.key||'';
         render();
       }else if(action==='picker'){
+        void H.forget();
         sessionRevision++;
         clearTimeout(syncTimer);G.disconnect();state.demo=false;
         state.picker=true;state.local=null;state.doc=null;state.key=null;state.pendingGitHub=null;render();
@@ -1395,7 +1432,7 @@
   }
   let diaryResize;window.addEventListener?.('resize',()=>{if(state.doc&&['activity','vital'].includes(state.tab)){clearTimeout(diaryResize);diaryResize=setTimeout(render,120);}});
   window.setInterval?.(refreshCare,60000);window.addEventListener?.('focus',refreshCare);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCare();});
-  window.addEventListener?.('pagehide',()=>{activeNotification?.close();stopImport();if(!state.demo)lockJournal();else render();});
+  window.addEventListener?.('pagehide',()=>{activeNotification?.close();stopImport();if(!state.demo)lockJournal(true);else render();});
   window.addEventListener?.('pageshow',event=>{if(event.persisted&&!state.demo)void loadLocal();});
   if(channel)channel.onmessage=event=>{
     if(state.demo||!state.local||event.data?.client===clientId||event.data?.vaultId!==state.local.id)return;
@@ -1424,8 +1461,10 @@
       if(!local&&profiles.length===1)local=await S.get(profiles[0].id);
       if(revision!==sessionRevision)return;
       state.local=local;state.profiles=profiles;render();
+      await restoreTemporary(local,sessionRevision);
     }catch(e){if(revision===sessionRevision)root.replaceChildren(V.banner('Ошибка хранилища',e.message));}
   }
+  void H.sweep().catch(()=>{});
   if(new URLSearchParams(window.location?.search||'').get('demo')==='1')openDemo();
   else void loadLocal();
 })();
