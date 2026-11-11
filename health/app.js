@@ -222,12 +222,17 @@
       conflict.classList.add('profile-panel-conflict');
       items.push(conflict);
     }
+    const rememberUntil=H.expiresAt(local.id);
     const security=V.card('Защита данных',[
       V.h('p',{class:'health-profile-meta'},'AES-256-GCM · PBKDF2-SHA256 · 310 000 итераций'),
       V.h('p',{class:'health-note'},'Журнал зашифрован на устройстве. Фраза доступа не отправляется в GitHub.'),
+      rememberUntil?V.h('p',{class:'health-remember-status'},
+        V.icon('ShieldCheck',14),'Без повторной фразы до ',
+        new Date(rememberUntil).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})):null,
       V.h('div',{class:'health-profile-actions'},
         V.button('Изменить фразу','change-passphrase'),
-        V.button('Другой профиль','picker'))
+        V.button('Другой профиль','picker'),
+        rememberUntil?V.button('Отключить быстрый вход','forget-remember',{class:'small'}):null)
     ]);
     security.classList.add('profile-panel-security');
     items.push(security);
@@ -1353,6 +1358,7 @@
       else if(action==='lock')lockJournal();
       else if(action==='sync')await syncNow();
       else if(action==='disconnect-token'){clearTimeout(syncTimer);syncRun++;G.disconnect();state.syncBusy=false;state.conflict=false;render();}
+      else if(action==='forget-remember'){await H.forget(state.local?.id);render();toast('Быстрый вход отключён.');}
       else if(action==='sync-conflict-file')await conflictFile(Number(el.dataset.index),el.dataset.side);
       else if(action==='restore-remote')await restoreRemote();
       else if(action==='open-vital'||action==='open-episode'){state.tab='vital';state.globalSearch='';state.vitalId=action==='open-vital'?el.dataset.id:'';state.episodeId=action==='open-episode'?el.dataset.id:'';if(action==='open-episode')state.filters.vital='illness';else state.filters.vital=state.doc.vitals.find(x=>x.id===el.dataset.id)?.type||'Масса';render();const panel=root.querySelector('.health-details');panel?.focus();panel?.scrollIntoView({block:'start'});}
