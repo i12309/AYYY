@@ -406,3 +406,55 @@ body{font-size:14px}
  .care-list .health-table-wrap{overflow:visible}
  .care-form .health-form-row{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* First-time GitHub connection is a single focused step, not two competing forms. */
+.health-intro-grid.health-intro-grid-single{grid-template-columns:minmax(0,1fr);max-width:780px;margin-left:auto;margin-right:auto}
+.health-intro-grid-single>.health-card{min-height:0;padding:20px 24px}
+.health-intro-grid-single .health-form{margin-top:0}
+.health-intro-grid-single .health-github-setup{margin-top:8px}
+.health-intro-grid-single .health-form-actions{justify-content:flex-end}
+
+/* Profile is the single place for identity, encryption, backup and GitHub settings. */
+.profile-page .health-profile-columns{display:grid;grid-template-columns:minmax(270px,.88fr) minmax(0,1.35fr);gap:16px;align-items:start}
+.profile-page .health-profile-stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.profile-page .health-profile-stack>.health-card{margin:0;min-width:0}
+.profile-page .health-profile-stack>.health-card>.section-heading{margin-bottom:12px}
+.profile-page .health-profile-stack>.health-card>.section-heading h2{font-size:15px}
+.profile-page .health-profile-personal .metadata{margin:0 0 14px}
+.profile-page .health-profile-personal .preserve{margin:10px 0 0}
+.profile-page .health-profile-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:14px}
+.profile-page .health-profile-actions>.button{min-height:35px;max-width:100%;padding:7px 11px;font-size:11px;border-radius:6px;flex:0 0 auto}
+.profile-page .health-profile-actions>.button.danger{background:#fff;color:var(--red-ink);border-color:#e9b4b7}
+.profile-page .health-profile-actions>.button.danger:hover{background:var(--red-soft)}
+.profile-page .health-profile-meta{font-size:12px;font-weight:600;margin:0 0 5px}
+.profile-page .health-profile-stack .health-note{font-size:11px;line-height:1.55;margin:6px 0}
+.profile-page .health-profile-github-status{display:flex;align-items:center;gap:10px;background:#f6f9fe;border:1px solid #dfe8f7;border-radius:7px;padding:11px 12px;margin:0 0 10px}
+.profile-page .health-profile-github-status>svg{color:var(--blue);flex:none}
+.profile-page .health-profile-github-status>div{display:grid;gap:3px;min-width:0}
+.profile-page .health-profile-github-status strong{font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.profile-page .health-profile-github-status small{font-size:10px;color:var(--muted)}
+.profile-page .health-profile-github-form{display:grid;gap:10px;margin-top:12px;min-width:0}
+.profile-page .health-profile-github-form>.field{min-width:0}
+.profile-page .health-profile-github-form .health-form-row{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:12px}
+.profile-page .health-profile-github-form .health-form-row>*{min-width:0}
+.profile-page .health-profile-github-form input{min-width:0;width:100%}
+.profile-page .health-profile-github-form .health-help{font-size:11px;line-height:1.55;margin:0}
+.profile-page .health-profile-github-form .health-form-actions{display:flex;justify-content:flex-end;padding-top:11px;margin-top:1px}
+.profile-page .health-profile-github-form [type=submit]{min-height:35px;padding:7px 14px;border-radius:6px}
+.profile-page .health-profile-github-actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.profile-page .health-profile-github-actions:empty{display:none}
+@media(max-width:1060px){
+ .profile-page .health-profile-columns{grid-template-columns:minmax(235px,.8fr) minmax(0,1.25fr);gap:13px}
+ .profile-page .health-profile-github-form .health-form-row{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:780px){
+ .profile-page .health-profile-columns{grid-template-columns:minmax(0,1fr)}
+ .profile-page .health-profile-stack{gap:12px}
+ .health-intro-grid.health-intro-grid-single{max-width:none}
+}
+@media(max-width:500px){
+ .profile-page .health-profile-actions>.button{white-space:normal;text-align:center;flex:1 1 auto}
+ .profile-page .health-profile-github-form input{font-size:16px}
+ .health-intro-grid-single>.health-card{padding:17px 16px}
+}
