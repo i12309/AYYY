@@ -84,7 +84,8 @@
     if(!validWeather(value))throw new Error('В прогнозе есть недоступные значения. Попробуйте позже.');
     return value;
   }
-  app.refreshWeather = () => {
+  app.refreshWeather = (options = {}) => {
+    const silent = options?.silent === true;
     const city={...selectedCity}, key=cityKey(city);
     if(weatherPendingKey===key && weatherPromise)return weatherPromise;
     const ticket=++weatherTicket;
@@ -94,13 +95,13 @@
       try {
         const value=parseWeather(await app.fetchJSON('https://api.open-meteo.com/v1/forecast?'+query),city);
         weatherMemory.set(key,value);app.set('weather.cache.'+key,value);
-        if(ticket===weatherTicket && key===cityKey(selectedCity)){weatherError='';if(['home','weather'].includes(app.route))app.toast('Погода обновлена: '+city.name);}
+        if(ticket===weatherTicket && key===cityKey(selectedCity)){weatherError='';if(!silent && ['home','weather'].includes(app.route))app.toast('Погода обновлена: '+city.name);}
         return true;
       } catch(error) {
         if(ticket===weatherTicket && key===cityKey(selectedCity)){
           weatherError=error?.name==='AbortError'?'Источник не ответил за 12 секунд. Попробуйте ещё раз.':'Не удалось обновить погоду. Проверьте интернет и повторите запрос.';
           if(error?.message?.startsWith('В прогнозе')||error?.message?.startsWith('Источник вернул')||error?.message?.startsWith('В ответе'))weatherError=error.message;
-          if(['home','weather'].includes(app.route))app.toast(weatherError);
+          if(!silent && ['home','weather'].includes(app.route))app.toast(weatherError);
         }
         return false;
       } finally {
@@ -117,7 +118,7 @@
     app.refreshWeather();
   }
   app.showCityPicker = () => {
-    app.modal('Погода в вашем городе',`<div class="data-city-picker"><p class="muted small">Выберите город или найдите его по названию. Поиск и обновление выполняются только по вашему действию.</p><form class="data-city-form" id="data-city-form"><label class="data-visually-hidden" for="data-city-query">Название города</label><input class="field" id="data-city-query" placeholder="Город, например Казань" maxlength="120" autocomplete="off" required minlength="2"><button class="btn primary" type="submit">${app.icon('search',17)} Найти</button></form><div class="data-city-section">Быстрый выбор</div><div>${presets.map((city,i)=>`<button class="city-option" type="button" data-city-preset="${i}"><span><strong>${esc(city.name)}</strong><small>${esc(city.country)}</small></span>${app.icon(cityKey(city)===cityKey(selectedCity)?'check':'pin',17)}</button>`).join('')}</div><div id="data-city-results" aria-live="polite"></div><div class="market-source">Геокодинг: <a href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener noreferrer">Open-Meteo / GeoNames</a></div></div>`);
+    app.modal('Погода в вашем городе',`<div class="data-city-picker"><p class="muted small">Выберите город или найдите его по названию. Поиск города выполняется по вашему действию; прогноз обновляется автоматически при открытии главной.</p><form class="data-city-form" id="data-city-form"><label class="data-visually-hidden" for="data-city-query">Название города</label><input class="field" id="data-city-query" placeholder="Город, например Казань" maxlength="120" autocomplete="off" required minlength="2"><button class="btn primary" type="submit">${app.icon('search',17)} Найти</button></form><div class="data-city-section">Быстрый выбор</div><div>${presets.map((city,i)=>`<button class="city-option" type="button" data-city-preset="${i}"><span><strong>${esc(city.name)}</strong><small>${esc(city.country)}</small></span>${app.icon(cityKey(city)===cityKey(selectedCity)?'check':'pin',17)}</button>`).join('')}</div><div id="data-city-results" aria-live="polite"></div><div class="market-source">Геокодинг: <a href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener noreferrer">Open-Meteo / GeoNames</a></div></div>`);
     const picker=document.querySelector('.data-city-picker'), form=picker.querySelector('form'), input=picker.querySelector('input'), results=picker.querySelector('#data-city-results');
     let searchTicket=0, found=[];
     const isCurrent=()=>picker.isConnected && document.querySelector('#modal')?.open && document.querySelector('#modal-body')?.contains(picker);
@@ -186,12 +187,13 @@
     if(!validRates(rates))throw new Error('В курсах есть недоступные значения.');
     return rates;
   }
-  app.refreshRates=()=>{
+  app.refreshRates=(options = {})=>{
+    const silent = options?.silent === true;
     if(ratesPromise)return ratesPromise;
     ratesPending=true;ratesError='';notify('rates');
     ratesPromise=(async()=>{
-      try {currentRates=parseRates(await app.fetchJSON('https://api.frankfurter.dev/v2/rates?base=rub&quotes=usd,eur,gbp,cny'));app.set('finance.rates',currentRates);if(['home','finance'].includes(app.route))app.toast('Справочные курсы обновлены');return true;}
-      catch(error){ratesError=error?.name==='AbortError'?'Источник не ответил за 12 секунд. Попробуйте ещё раз.':'Не удалось получить курсы. Проверьте интернет и повторите запрос.';if(['home','finance'].includes(app.route))app.toast(ratesError);return false;}
+      try {currentRates=parseRates(await app.fetchJSON('https://api.frankfurter.dev/v2/rates?base=rub&quotes=usd,eur,gbp,cny'));app.set('finance.rates',currentRates);if(!silent && ['home','finance'].includes(app.route))app.toast('Справочные курсы обновлены');return true;}
+      catch(error){ratesError=error?.name==='AbortError'?'Источник не ответил за 12 секунд. Попробуйте ещё раз.':'Не удалось получить курсы. Проверьте интернет и повторите запрос.';if(!silent && ['home','finance'].includes(app.route))app.toast(ratesError);return false;}
       finally {ratesPending=false;ratesPromise=null;notify('rates',true);}
     })();
     return ratesPromise;
