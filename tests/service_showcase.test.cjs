@@ -94,3 +94,16 @@ test('v2 gallery remains borderless while the card images restore their v1 full-
  }
  assert.equal((html.match(/data-sc-picture=/g)||[]).length,11);
 });
+
+test('homepage defaults use requested order, including the same six saved in old order',()=>{
+ const {app,stored}=setup();
+ const expected=['weather','oberon','health','family','games','finance'];
+ const rendered=()=>[...app.views.home.render().matchAll(/class="shore-shortcut"[^>]+href="#([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(rendered(),['weather','oberon','health','family','games','finance']);
+ stored.set('ayyy:v1:home.shortcuts',JSON.stringify(['games','weather','family','oberon','health','finance']));
+ assert.deepEqual(rendered(),expected);
+ // A different, deliberately customized group must keep its stored order.
+ stored.set('ayyy:v1:home.shortcuts',JSON.stringify(['ai','games','tools','weather','family','search']));
+ assert.deepEqual(rendered(),['ai','games','tools/loan','weather','family','search']);
+ assert.deepEqual(JSON.parse(stored.get('ayyy:v1:home.shortcuts')),['ai','games','tools','weather','family','search']);
+});

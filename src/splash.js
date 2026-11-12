@@ -3,7 +3,7 @@
   'use strict';
   const a = window.AYYY, e = a.escape, icon = a.icon;
   const artwork = 'assets/lighthouse-watercolor.webp';
-  const defaults = ['games', 'ai', 'tools', 'weather', 'family', 'search'];
+  const defaults = ['weather', 'oberon', 'health', 'family', 'games', 'finance'];
   const shortNames = {games:'Игры',ai:'Терминал',tools:'Инструменты',weather:'Погода',search:'Поиск'};
   const shortDescriptions = {games:'Пять минут для себя',ai:'Разобраться вместе',tools:'Нужное под рукой',weather:'Прогноз на день',search:'Найти направление'};
   a.catalogCategory = 'all';
@@ -11,6 +11,9 @@
   const shortcutIds = () => {
     const saved = a.get('home.shortcuts', defaults);
     const available = [...new Set((Array.isArray(saved) ? saved : defaults).map(a.serviceId))].filter(id => a.services.some(s => s.id===id));
+    // Keep the user's chosen services. If these are the six standard services,
+    // display them in the requested default order without rewriting local storage.
+    if (available.length===defaults.length && defaults.every(id=>available.includes(id))) return defaults.slice();
     return (available.length ? available : defaults).slice(0,6);
   };
 
