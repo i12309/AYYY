@@ -28,7 +28,7 @@ def init(browser, size=(1600,950), reduced=False, fail_resource=None):
     page.on('pageerror', lambda e: errors.append(str(e)))
     # Isolated storage and transport fixtures, installed before application scripts.
     page.add_init_script('''(() => {
-      window.__store=new Map();
+      window.__store=new Map([['ayyy:v1:weather.scene.theme','"lighthouse"']]);
       Object.defineProperty(window,'localStorage',{configurable:true,value:{
         getItem:k=>__store.get(k)||null,setItem:(k,v)=>__store.set(k,String(v)),removeItem:k=>__store.delete(k),
         key:i=>[...__store.keys()][i]||null,get length(){return __store.size}}});

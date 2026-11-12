@@ -77,7 +77,7 @@
     let city=options.city||M.read('weather.city',M.CITIES[0]);city=M.validCity(city)?M.cleanCity(city):M.CITIES[0];
     const initial=M.cached(city)||M.demo(city);
     const state={city,data:initial,unit:M.read('weather.scene.unit','C')==='F'?'F':'C',period:7,metric:'temp',selectedDay:M.dateKey(initial.current.time,initial.timezone),selectedTime:null,
-      theme:['tree','lighthouse'].includes(M.read('weather.scene.theme'))?M.read('weather.scene.theme'):'lighthouse',flashes:M.read('weather.scene.flashes',true)!==false,cycle:false,settingsOpen:false,override:{},paused:options.motionEnabled===false||M.read('weather.scene.paused',false)===true,busy:false,error:'',request:0,found:M.CITIES.slice(),searchBusy:false};
+      theme:['tree','lighthouse'].includes(M.read('weather.scene.theme'))?M.read('weather.scene.theme'):'tree',flashes:M.read('weather.scene.flashes',true)!==false,cycle:false,settingsOpen:false,override:{},paused:options.motionEnabled===false||M.read('weather.scene.paused',false)===true,busy:false,error:'',request:0,found:M.CITIES.slice(),searchBusy:false};
     let active=true,weatherController=null,searchController=null,searchTicket=0,weatherTimer=null,searchTimer=null,nextAttempt=0,themeRequest=0;
     const app=document.createElement('div');app.className='ww-app';app.dataset.mobileForecast='closed';host.replaceChildren(app);
     const homeURL=options.homeURL||'../#home',directoryURL=options.directoryURL||'../#directory';
