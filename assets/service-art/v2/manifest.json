@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "format": "webp-rgba",
+  "order": [
+    "oberon",
+    "health",
+    "weather",
+    "family",
+    "games",
+    "finance",
+    "tools",
+    "mpp",
+    "search",
+    "ai"
+  ],
+  "description": "Unframed transparent painterly illustrations with independent card variants",
+  "services": {
+    "oberon": {
+      "source": "oberon_космическая_орбита_идей.png",
+      "source_sha256": "3e72a1f60797427b71ccd4466405c0f69f68cb68373cc11669787d96fb15bfd2",
+      "hero": {
+        "path": "assets/service-art/v2/oberon-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 206396,
+        "sha256": "65ba49549b2eb2dc10b8fc0e030ac66dde90d48e84d4c4bf5f5e1af3bb0847f7",
+        "transparent_fraction": 0.277
+      },
+      "card": {
+        "path": "assets/service-art/v2/oberon-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 72510,
+        "sha256": "5c1e18336cdbcb40db54331a5e0b260a7a0c8f3cca303c27054e9ab5e5457852",
+        "transparent_fraction": 0.168
+      }
+    },
+    "health": {
+      "source": "медицинская_днк_и_эмблема_здоровья.png",
+      "source_sha256": "1129f74c3801b1a31398dc9db37e415a5ce35db332a5e191aa3c247ee4d86535",
+      "hero": {
+        "path": "assets/service-art/v2/health-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 185322,
+        "sha256": "040a51f2281b55009fc795dcdeef5275672fbcd0534896a09ededb95b6d08deb",
+        "transparent_fraction": 0.368
+      },
+      "card": {
+        "path": "assets/service-art/v2/health-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 60430,
+        "sha256": "bcb232ff9a3b6f588cbacf56466229e4ea8c4f388864ffb843a26c3dcf9aabe9",
+        "transparent_fraction": 0.255
+      }
+    },
+    "weather": {
+      "source": "акварельный_шторм_с_молнией_и_деревом.png",
+      "source_sha256": "46e381129197e52c76c810e8a5072f886f74c4a8f4c8cf7667358b44cdef2a97",
+      "hero": {
+        "path": "assets/service-art/v2/weather-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 312676,
+        "sha256": "bbe40e020111467cab66c61a2a411e9e9bec376fb43e6e4613b90377223be1d4",
+        "transparent_fraction": 0.228
+      },
+      "card": {
+        "path": "assets/service-art/v2/weather-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 95870,
+        "sha256": "32cfd817e6fce5fc7031bad56ae48b501d62c000097f49b52cd9b5ba504cea00",
+        "transparent_fraction": 0.186
+      }
+    },
+    "family": {
+      "source": "aquarell_stammbaum_mit_familienporträts.png",
+      "source_sha256": "a4c03117c06b135cd5f27b515802e7eb6855c6538798d80be8c00804ead4a3b8",
+      "hero": {
+        "path": "assets/service-art/v2/family-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 323072,
+        "sha256": "e0f4f170378fd8a7bcf36dfd53190eacbfd1ee9d1ac7c5846c696ab3be8d3581",
+        "transparent_fraction": 0.26
+      },
+      "card": {
+        "path": "assets/service-art/v2/family-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 122368,
+        "sha256": "d09b86ca425d5a2436fa79e5fdcb0cae0eb1ea8818554c95c9f584fd329f1909",
+        "transparent_fraction": 0.164
+      }
+    },
+    "games": {
+      "source": "fantastische_spielwelt_mit_portal.png",
+      "source_sha256": "6ea07c9a1ea15fb51a0ff8b88e27520ce24b66f61a9e4f3bf06ae0a07aec8422",
+      "hero": {
+        "path": "assets/service-art/v2/games-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 288778,
+        "sha256": "49d26e3c4a2ddf1ed3a92a272d083fee36ea0feb83f26f374c6d9737fc12fb0a",
+        "transparent_fraction": 0.3
+      },
+      "card": {
+        "path": "assets/service-art/v2/games-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 106994,
+        "sha256": "d391486582375337e1ecee86879b503907e7ed37887c95384169a922e9257c85",
+        "transparent_fraction": 0.249
+      }
+    },
+    "finance": {
+      "source": "globale_finanzmärkte_in_gold_und_silber.png",
+      "source_sha256": "6ffa16531651a9f191014328f9b59baaea6ad77258f6f31715fc0f84dd4d5859",
+      "hero": {
+        "path": "assets/service-art/v2/finance-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 248538,
+        "sha256": "9512fe0a3776e724a5ebc82642a009dac94e213cbb6786f2430135eb18bc260b",
+        "transparent_fraction": 0.292
+      },
+      "card": {
+        "path": "assets/service-art/v2/finance-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 94300,
+        "sha256": "250318877f1b3c14d529513ef4927cf318fc3134b068605a75eb418ef5062a7d",
+        "transparent_fraction": 0.165
+      }
+    },
+    "tools": {
+      "source": "инструменты_архитектора_финансы_и_планы.png",
+      "source_sha256": "2f107cc02dc6105c5df32339d57e3510b044283bf8b65c3c43e1d6017cdb3f78",
+      "hero": {
+        "path": "assets/service-art/v2/tools-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 214982,
+        "sha256": "23e69ec20aedf22ec0440b134cead858b455c31eac58522423d921f24e16515b",
+        "transparent_fraction": 0.438
+      },
+      "card": {
+        "path": "assets/service-art/v2/tools-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 98534,
+        "sha256": "75de0e824ca11eefb9716d6d66974276503f606f598878c1f428c1d5f2962906",
+        "transparent_fraction": 0.215
+      }
+    },
+    "mpp": {
+      "source": "projektplanung_mit_gantt_board.png",
+      "source_sha256": "a09975e1e8c27c97a05d9bed2a877f1c5835fa5446b02c103c2c5602f1ccb28c",
+      "hero": {
+        "path": "assets/service-art/v2/mpp-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 127706,
+        "sha256": "4bd6ab4ccdcfa1fa05d0d0cd55bc10f9d778e5621e2414d13229e926f0251c28",
+        "transparent_fraction": 0.459
+      },
+      "card": {
+        "path": "assets/service-art/v2/mpp-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 67654,
+        "sha256": "b8ea4b918d9ddb4f86d3f1510bb69faaea0a4ffe4296f2054a110c7f2fa6c7a3",
+        "transparent_fraction": 0.247
+      }
+    },
+    "search": {
+      "source": "умный_поиск_путь_к_открытиям.png",
+      "source_sha256": "a0c1e0d476aa3db6f6e517ed3bb945ca5037adc65c6477fb398d5f5826b17e2b",
+      "hero": {
+        "path": "assets/service-art/v2/search-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 227456,
+        "sha256": "aa28acff0b7207edf4b6d46323e223d377bdc03d63129655376fdab2e49cc0d1",
+        "transparent_fraction": 0.339
+      },
+      "card": {
+        "path": "assets/service-art/v2/search-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 98698,
+        "sha256": "f6380fda011815cbd0bee94acc70e18c35c845c9df1cfadbaa5ec19b57cb75d4",
+        "transparent_fraction": 0.202
+      }
+    },
+    "ai": {
+      "source": "ретро_терминал_в_зелёном_свечении.png",
+      "source_sha256": "80424db6ee2dc8370b394ab956d338db1db2db4749edb4aa29a36d332002278d",
+      "hero": {
+        "path": "assets/service-art/v2/ai-hero.webp",
+        "width": 900,
+        "height": 900,
+        "bytes": 133760,
+        "sha256": "ee5e9f34d1fd8056e2802c6045a34bb4ee79104d67c9ddc88279f53818aa8cc3",
+        "transparent_fraction": 0.404
+      },
+      "card": {
+        "path": "assets/service-art/v2/ai-card.webp",
+        "width": 480,
+        "height": 480,
+        "bytes": 64694,
+        "sha256": "0b3be81b2a1313622a457c7c24e1174365b546fa8b66ff5bb15bfdfa23495abe",
+        "transparent_fraction": 0.191
+      }
+    }
+  }
+}

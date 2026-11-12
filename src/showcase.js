@@ -142,16 +142,16 @@
 
   // Approved artwork: separate full-size scenes and square card thumbnails.
   const artwork = Object.freeze({
-    oberon: {hero:'assets/service-art/v1/oberon-hero.webp',card:'assets/service-art/v1/oberon-card.webp',width:850,height:958},
-    health: {hero:'assets/service-art/v1/health-hero.webp',card:'assets/service-art/v1/health-card.webp',width:850,height:958},
-    weather: {hero:'assets/service-art/v1/weather-hero.webp',card:'assets/service-art/v1/weather-card.webp',width:850,height:932},
-    family: {hero:'assets/service-art/v1/family-hero.webp',card:'assets/service-art/v1/family-card.webp',width:850,height:942},
-    games: {hero:'assets/service-art/v1/games-hero.webp',card:'assets/service-art/v1/games-card.webp',width:850,height:953},
-    finance: {hero:'assets/service-art/v1/finance-hero.webp',card:'assets/service-art/v1/finance-card.webp',width:850,height:998},
-    tools: {hero:'assets/service-art/v1/tools-hero.webp',card:'assets/service-art/v1/tools-card.webp',width:850,height:1010},
-    mpp: {hero:'assets/service-art/v1/mpp-hero.webp',card:'assets/service-art/v1/mpp-card.webp',width:850,height:939},
-    search: {hero:'assets/service-art/v1/search-hero.webp',card:'assets/service-art/v1/search-card.webp',width:850,height:961},
-    ai: {hero:'assets/service-art/v1/ai-hero.webp',card:'assets/service-art/v1/ai-card.webp',width:850,height:921},
+    oberon: {hero:'assets/service-art/v2/oberon-hero.webp',card:'assets/service-art/v2/oberon-card.webp',width:900,height:900},
+    health: {hero:'assets/service-art/v2/health-hero.webp',card:'assets/service-art/v2/health-card.webp',width:900,height:900},
+    weather: {hero:'assets/service-art/v2/weather-hero.webp',card:'assets/service-art/v2/weather-card.webp',width:900,height:900},
+    family: {hero:'assets/service-art/v2/family-hero.webp',card:'assets/service-art/v2/family-card.webp',width:900,height:900},
+    games: {hero:'assets/service-art/v2/games-hero.webp',card:'assets/service-art/v2/games-card.webp',width:900,height:900},
+    finance: {hero:'assets/service-art/v2/finance-hero.webp',card:'assets/service-art/v2/finance-card.webp',width:900,height:900},
+    tools: {hero:'assets/service-art/v2/tools-hero.webp',card:'assets/service-art/v2/tools-card.webp',width:900,height:900},
+    mpp: {hero:'assets/service-art/v2/mpp-hero.webp',card:'assets/service-art/v2/mpp-card.webp',width:900,height:900},
+    search: {hero:'assets/service-art/v2/search-hero.webp',card:'assets/service-art/v2/search-card.webp',width:900,height:900},
+    ai: {hero:'assets/service-art/v2/ai-hero.webp',card:'assets/service-art/v2/ai-card.webp',width:900,height:900},
   });
 
   function linkFor(service) {

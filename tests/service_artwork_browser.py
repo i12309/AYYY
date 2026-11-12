@@ -21,7 +21,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self,*_): pass
 
 def check_assets():
-    manifest=json.loads((ROOT/'assets/service-art/v1/manifest.json').read_text())
+    manifest=json.loads((ROOT/'assets/service-art/v2/manifest.json').read_text())
     assert manifest['order']==ORDER
     for service in ORDER:
         images=manifest['services'][service]
@@ -31,6 +31,10 @@ def check_assets():
             assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
             assert hashlib.sha256(data).hexdigest()==record['sha256']
             assert len(data)==record['bytes']
+            # WebP extended feature ALPHA flag, plus transparent corners verified at export.
+            assert data[12:16]==b'VP8X', (service,role,'not extended WebP')
+            assert data[20] & 16, (service,role,'no alpha channel')
+            assert record['transparent_fraction']>=0.1,(service,role)
 
 def snap(page,name):
     if OUT:
@@ -49,6 +53,9 @@ def preview(page,service,desktop=True):
     assert page.locator('.sc-gallery-image.is-visible').count()==1
     b=rect(image);assert b['width']>60 and b['height']>70,b
     if service!='default':assert f'/{service}-hero.webp' in image.get_attribute('src')
+    if service!='default' and not EMBEDDED:
+        # A transparent first pixel proves no opaque rectangular sheet was exported.
+        assert image.evaluate('''e => {const c=document.createElement("canvas");c.width=e.naturalWidth;c.height=e.naturalHeight;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(e,0,0);return x.getImageData(0,0,1,1).data[3]===0}''')
     if desktop:
         g=rect(page.locator('.sc-gallery-sticky'));c=rect(page.locator('.sc-catalog'))
         assert g['width']>=250,(g,c)
