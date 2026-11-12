@@ -1,4 +1,4 @@
-name: Import approved service artwork
+name: Import transparent service artwork v2
 on:
   push:
     branches: [work/approved-service-art-20261111]
@@ -8,53 +8,56 @@ permissions:
 jobs:
   import:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
           ref: work/approved-service-art-20261111
-      - name: Import checksum-verified artwork and code
+      - name: Import checksum-verified borderless illustrations
         env:
-          ARCHIVE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-b4d4-8210-a0b6-c6d7ee0a3aba/raw?se=2026-11-11T21%3A05%3A06Z&sp=r&sv=2026-06-06&sr=b&scid=bd1cf004-3f31-56be-8293-276f771fde44&skoid=d294dba5-36f7-432b-aab8-935656489847&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-11T06%3A02%3A25Z&ske=2026-11-12T06%3A02%3A25Z&sks=b&skv=2026-06-06&sig=M3YxIUDYVf4U1v2DoWEisMtiv7/uF1OL5A0Vn2Q4azk%3D'
+          ARCHIVE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-5fcc-8210-b404-26ca723fd893/raw?se=2026-11-12T07%3A21%3A06Z&sp=r&sv=2026-06-06&sr=b&scid=ed437702-e45c-5e26-82e5-3f64e395b1f6&skoid=d294dba5-36f7-432b-aab8-935656489847&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-12T05%3A06%3A32Z&ske=2026-11-13T05%3A06%3A32Z&sks=b&skv=2026-06-06&sig=hF%2BJPGMJe9izy%2BT4EIHUdzm2%2BVA0ox50fNGbvWzokYI%3D'
         run: |
           set -euo pipefail
-          curl --fail --location --silent --show-error --retry 2 "$ARCHIVE_URL" --output /tmp/approved-art.zip
-          echo 'd7d087314c06c11301312901a053851b8f11088a897c9eaf75425b919b2aadb9  /tmp/approved-art.zip' | sha256sum -c -
+          curl --fail --location --silent --show-error --retry 3 "$ARCHIVE_URL" --output /tmp/ayyy-v2.zip
+          echo 'd15197de4366779827638cbc39fd80c4dea6b2086eb569b21977a8c94aff1003  /tmp/ayyy-v2.zip' | sha256sum -c -
           python3 - <<'PY'
-          from pathlib import Path, PurePosixPath
-          import zipfile, hashlib, json
+          from pathlib import Path,PurePosixPath
+          import zipfile,hashlib,json
           root=Path.cwd()
-          allowed={'src/core.js','src/showcase.js','src/showcase.css','index.html','tests/service_showcase.test.cjs','tests/service_artwork_browser.py','docs/SERVICE_ARTWORK.md'}
           ids=['oberon','health','weather','family','games','finance','tools','mpp','search','ai']
-          allowed.add('assets/service-art/v1/manifest.json')
+          allowed={'src/showcase.js','src/showcase.css','index.html','tests/service_showcase.test.cjs','tests/service_artwork_browser.py','docs/SERVICE_ARTWORK.md','assets/service-art/v2/manifest.json'}
           for id in ids:
-              for role in ('hero','card'):allowed.add(f'assets/service-art/v1/{id}-{role}.webp')
-          with zipfile.ZipFile('/tmp/approved-art.zip') as z:
-              assert len(z.infolist())==len(allowed) and set(z.namelist())==allowed
-              assert sum(i.file_size for i in z.infolist())<4_000_000
-              for name in z.namelist():
+              for role in ('hero','card'):allowed.add(f'assets/service-art/v2/{id}-{role}.webp')
+          with zipfile.ZipFile('/tmp/ayyy-v2.zip') as z:
+              assert set(z.namelist())==allowed and len(z.infolist())==len(allowed)
+              assert sum(i.file_size for i in z.infolist())<5000000
+              for item in z.infolist():
+                  name=item.filename
                   assert not PurePosixPath(name).is_absolute() and '..' not in PurePosixPath(name).parts
-                  p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(name))
-          manifest=json.loads((root/'assets/service-art/v1/manifest.json').read_text())
-          assert manifest['order']==ids
+                  dest=root/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(z.read(name))
+          manifest=json.loads((root/'assets/service-art/v2/manifest.json').read_text())
+          assert manifest['version']==2 and manifest['order']==ids
           for id in ids:
               for role in ('hero','card'):
-                  item=manifest['services'][id][role];data=(root/item['path']).read_bytes()
-                  assert hashlib.sha256(data).hexdigest()==item['sha256']
+                  info=manifest['services'][id][role]
+                  assert info['path']==f'assets/service-art/v2/{id}-{role}.webp'
+                  data=(root/info['path']).read_bytes()
+                  assert hashlib.sha256(data).hexdigest()==info['sha256']
+                  assert len(data)==info['bytes'] and info['transparent_fraction']>0.1
                   assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
-          print('Imported 20 local WebP assets and bounded source changes.')
+                  assert data[12:16]==b'VP8X' and data[20]&16
+          print('Verified all 20 borderless, alpha-enabled illustrations.')
           PY
           python3 src/build.py
-          node --check src/core.js
           node --check src/showcase.js
           node --test tests/service_showcase.test.cjs tests/retired_services.test.cjs tests/oberon_portal.test.cjs
-      - name: Save prepared tree on staging branch
+      - name: Commit approved v2 files to staging
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- src/core.js src/showcase.js src/showcase.css index.html tests/service_showcase.test.cjs tests/service_artwork_browser.py docs/SERVICE_ARTWORK.md assets/service-art/v1
-          git commit -m 'Integrate approved service artwork pairs and requested catalog order'
+          git add -- src/showcase.js src/showcase.css index.html tests/service_showcase.test.cjs tests/service_artwork_browser.py docs/SERVICE_ARTWORK.md assets/service-art/v2
+          git commit -m 'Add borderless transparent artwork for all ten services'
           git push origin HEAD:work/approved-service-art-20261111
           echo "PREPARED_COMMIT=$(git rev-parse HEAD)"
           echo "PREPARED_TREE=$(git rev-parse HEAD^{tree})"
