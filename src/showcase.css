@@ -402,3 +402,24 @@
 @media (min-width:981px) {
   .sc-page .sc-gallery-image:not([data-sc-picture="default"]) {width:92%;max-width:420px;height:auto;max-height:100%}
 }
+
+/* Unframed artwork v2: the image itself fades into the page, not a pale rectangle. */
+.sc-page .sc-gallery-frame {background:transparent;border-radius:0}
+.sc-page .sc-gallery-image:not([data-sc-picture="default"]) {border-radius:0!important}
+.sc-card-cover,.sc-row--oberon .sc-card-cover,.sc-row--ai .sc-card-cover {
+  background:radial-gradient(ellipse at 50% 50%,var(--sc-cover1) 0%,transparent 76%);
+}
+.sc-card-cover img {
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  padding:2px;
+  object-fit:contain;
+  object-position:center;
+  opacity:1;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.sc-card-cover::after {display:none}

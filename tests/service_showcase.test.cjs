@@ -42,7 +42,7 @@ test('ten illustrated stories replace the lighthouse on hover, then restore it',
  assert.equal(previews.length,11);
  assert.deepEqual(previews.slice(1),Array.from(app.services,s=>s.id));
  for(const id of previews.slice(1)){
-   const filename='assets/service-art/v1/'+id+'-hero.webp';
+   const filename='assets/service-art/v2/'+id+'-hero.webp';
    assert.ok(fs.existsSync(path.join(root,filename)),filename);
    const bytes=fs.readFileSync(path.join(root,filename));
    assert.equal(bytes.toString('ascii',0,4),'RIFF',filename);
@@ -73,4 +73,20 @@ test('gallery uses a true grid column and a constrained sticky inner scene',()=>
   assert.match(css,/grid-template-columns:clamp\(260px,26vw,440px\) minmax\(0,1fr\)/);
   assert.ok(!css.includes('position:fixed'), 'gallery should not float outside the grid');
   assert.match(css, /@media \(max-width:980px\)/);
+});
+
+test('approved illustrations use borderless, versioned hero and card assets',()=>{
+ const {app}=setup(),html=app.views.directory.render(),css=read('src/showcase.css');
+ const source=read('src/showcase.js');
+ assert.match(source,/assets\/service-art\/v2\/oberon-hero\.webp/);
+ assert.doesNotMatch(source,/assets\/service-art\/v1\//);
+ assert.match(css,/\.sc-page \.sc-gallery-image:not\(\[data-sc-picture="default"\]\) \{border-radius:0!important\}/);
+ assert.match(css,/object-fit:contain/);
+ for(const service of app.services){
+  for(const role of ['hero','card']){
+   const path='assets/service-art/v2/'+service.id+'-'+role+'.webp';
+   assert.ok(fs.existsSync(require('node:path').join(root,path)),path);
+  }
+ }
+ assert.equal((html.match(/data-sc-picture=/g)||[]).length,11);
 });

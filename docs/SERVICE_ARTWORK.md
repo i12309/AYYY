@@ -43,3 +43,17 @@ hover/focus, lighthouse reset, filtering, favorites, and details. In environment
 that prohibit localhost navigation, `AYYY_EMBEDDED_RENDER=1` renders that same
 HTML using `set_content`; only unavailable origin storage is mocked, so that mode
 is a layout/interaction check, not a GitHub-sync or persistence test.
+
+## V2: no rectangular backing (2026-11-12)
+
+The final renders live under `assets/service-art/v2/` and supersede the `v1` crops.
+They are generated from individually composed transparent illustrations rather
+than from the rounded presentation-board panels. All ten heroes and ten card
+previews are RGBA WebP with nonopaque, organically shaped edges, and the gallery
+has no added image border-radius. Card previews are focused soft-edge crops of
+the same illustrations; the card itself retains its accessible link, title and
+status. The default lighthouse is preserved. The existing v1 files remain as an
+archive, but are not referenced at runtime.
+
+The `v2/manifest.json` records each image's SHA-256, dimensions and alpha
+coverage. Browser regression checks first-pixel transparency on each hero.
