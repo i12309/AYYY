@@ -15,6 +15,9 @@
     return value && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ru-RU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(date) : '';
   };
   const state = data => data.pending ? 'Обновляем…' : !data.live ? 'Демо' : data.stale || data.error ? 'Сохранено' : 'Обновлено';
+  const AUTO_TTL = {weather:30*60*1000, rates:6*60*60*1000};
+  const AUTO_RETRY_MS = 5*60*1000;
+  const lastAutoAttempt = {weather:0, rates:0};
 
   function weatherHours(data) {
     return (Array.isArray(data.hours) ? data.hours : []).filter(hour => Number.isFinite(hour.temp) && typeof hour.time==='string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(hour.time)).slice(0,6);
@@ -36,7 +39,7 @@
   }
 
   /**
-   * Hydrate the existing homepage; never fetch on mount or replace its root.
+   * Hydrate the existing homepage; refresh expired API data without replacing its root.
    * Weather fields use data-home-weather; rate fields use data-home-rates.
    * Refresh buttons use data-home-refresh="weather|rates|all".
    * Return the cleanup from the home view's mount() callback.
@@ -95,6 +98,22 @@
       updateButtons();
     }
 
+    function refreshIfNeeded() {
+      if (!mounted || !root.isConnected || document.visibilityState==='hidden') return;
+      const now=Date.now();
+      const sources=[
+        ['weather',app.getWeather(),app.refreshWeather],
+        ['rates',app.getRates(),app.refreshRates]
+      ];
+      sources.forEach(([type,data,refresh])=>{
+        const lastUpdated=Date.parse(data.updatedAt||'');
+        const isFresh=data.live && Number.isFinite(lastUpdated) && lastUpdated<=now && now-lastUpdated<AUTO_TTL[type];
+        if (data.pending || isFresh || now-lastAutoAttempt[type]<AUTO_RETRY_MS) return;
+        lastAutoAttempt[type]=now;
+        refresh({silent:true});
+      });
+    }
+
     function updateButtons() {
       const weather=app.getWeather(), rates=app.getRates();
       root.querySelectorAll('[data-home-refresh]').forEach(button=>{
@@ -123,8 +142,11 @@
     root.addEventListener('click',click);
     document.addEventListener('ayyy:weather',updateWeather);
     document.addEventListener('ayyy:rates',updateRates);
+    document.addEventListener('visibilitychange',refreshIfNeeded);
+    window.addEventListener('pageshow',refreshIfNeeded);
     updateWeather();
     updateRates();
+    refreshIfNeeded();
 
     return () => {
       mounted=false;
@@ -132,6 +154,8 @@
       root.removeEventListener('click',click);
       document.removeEventListener('ayyy:weather',updateWeather);
       document.removeEventListener('ayyy:rates',updateRates);
+      document.removeEventListener('visibilitychange',refreshIfNeeded);
+      window.removeEventListener('pageshow',refreshIfNeeded);
     };
   };
 })();
