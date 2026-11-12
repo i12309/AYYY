@@ -57,3 +57,14 @@ archive, but are not referenced at runtime.
 
 The `v2/manifest.json` records each image's SHA-256, dimensions and alpha
 coverage. Browser regression checks first-pixel transparency on each hero.
+
+## Card preview restoration (2026-11-12)
+
+The left-side service illustration remains the **transparent, borderless v2 hero**.
+The small preview inside every right-hand service row has been restored to the
+**original v1 card crop**, fully covering its left image area. In particular,
+OBERON shows the dark note rocket, Health shows the split H on a solid dark
+background, Weather shows the square thunderstorm scene, and the other seven
+services retain their original card art. The earlier v2 card crops remain
+archived but are no longer referenced. No service routes, descriptions,
+GitHub connections, the lighthouse default, or hover logic were changed.

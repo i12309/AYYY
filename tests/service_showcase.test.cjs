@@ -75,18 +75,22 @@ test('gallery uses a true grid column and a constrained sticky inner scene',()=>
   assert.match(css, /@media \(max-width:980px\)/);
 });
 
-test('approved illustrations use borderless, versioned hero and card assets',()=>{
+test('v2 gallery remains borderless while the card images restore their v1 full-bleed previews',()=>{
  const {app}=setup(),html=app.views.directory.render(),css=read('src/showcase.css');
  const source=read('src/showcase.js');
  assert.match(source,/assets\/service-art\/v2\/oberon-hero\.webp/);
- assert.doesNotMatch(source,/assets\/service-art\/v1\//);
+ assert.match(source,/card:'assets\/service-art\/v1\/oberon-card\.webp'/);
+ assert.match(source,/card:'assets\/service-art\/v1\/health-card\.webp'/);
  assert.match(css,/\.sc-page \.sc-gallery-image:not\(\[data-sc-picture="default"\]\) \{border-radius:0!important\}/);
- assert.match(css,/object-fit:contain/);
+ assert.match(css,/\.sc-card-cover img \{inset:0;width:100%;height:100%;padding:0;object-fit:cover;/);
+ assert.doesNotMatch(css,/background:radial-gradient\(ellipse at 50% 50%,var\(--sc-cover1\)/);
  for(const service of app.services){
-  for(const role of ['hero','card']){
-   const path='assets/service-art/v2/'+service.id+'-'+role+'.webp';
-   assert.ok(fs.existsSync(require('node:path').join(root,path)),path);
-  }
+  const hero='assets/service-art/v2/'+service.id+'-hero.webp';
+  const card='assets/service-art/v1/'+service.id+'-card.webp';
+  assert.ok(fs.existsSync(path.join(root,hero)),hero);
+  assert.ok(fs.existsSync(path.join(root,card)),card);
+  assert.match(source,new RegExp("hero:'"+hero.replace(/\./g,'\\.')+"'"));
+  assert.match(source,new RegExp("card:'"+card.replace(/\./g,'\\.')+"'"));
  }
  assert.equal((html.match(/data-sc-picture=/g)||[]).length,11);
 });

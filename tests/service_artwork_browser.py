@@ -21,20 +21,28 @@ class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self,*_): pass
 
 def check_assets():
-    manifest=json.loads((ROOT/'assets/service-art/v2/manifest.json').read_text())
-    assert manifest['order']==ORDER
+    # V2 natural-edge, transparent artwork is used ONLY by the left-hand gallery.
+    # V1 480×480 opaque crops fill each card edge-to-edge, as originally approved.
+    hero_manifest=json.loads((ROOT/'assets/service-art/v2/manifest.json').read_text())
+    card_manifest=json.loads((ROOT/'assets/service-art/v1/manifest.json').read_text())
+    assert hero_manifest['order']==ORDER==card_manifest['order']
     for service in ORDER:
-        images=manifest['services'][service]
-        assert images['hero']['path']!=images['card']['path']
-        for role in ('hero','card'):
-            record=images[role]; data=(ROOT/record['path']).read_bytes()
+        hero=hero_manifest['services'][service]['hero']
+        card=card_manifest['services'][service]['card']
+        for role,record in [('hero',hero),('card',card)]:
+            expected=f'assets/service-art/{"v2" if role=="hero" else "v1"}/{service}-{role}.webp'
+            assert record['path']==expected,(service,role,record['path'])
+            data=(ROOT/expected).read_bytes()
             assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
             assert hashlib.sha256(data).hexdigest()==record['sha256']
             assert len(data)==record['bytes']
-            # WebP extended feature ALPHA flag, plus transparent corners verified at export.
-            assert data[12:16]==b'VP8X', (service,role,'not extended WebP')
-            assert data[20] & 16, (service,role,'no alpha channel')
-            assert record['transparent_fraction']>=0.1,(service,role)
+            if role=='hero':
+                assert data[12:16]==b'VP8X' and data[20]&16,(service,'hero not transparent')
+                assert record['transparent_fraction']>=0.1,(service,'transparent_fraction')
+            else:
+                assert data[12:16]==b'VP8 ',(service,'card should be opaque, full-bleed v1')
+                assert record['width']==record['height']==480
+
 
 def snap(page,name):
     if OUT:
@@ -112,7 +120,7 @@ Object.defineProperty(window,'indexedDB',{value:undefined});
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
         for id in ORDER:
             image=page.locator(f'.sc-row--{id} .sc-card-cover img')
-            assert f'/{id}-card.webp' in image.get_attribute('src')
+            assert f'/v1/{id}-card.webp' in image.get_attribute('src')
         if width in (390,1728):snap(page,f'directory-{width}-default.png')
         if desktop:
             for id in ORDER:
@@ -160,6 +168,6 @@ def main():
             finally:browser.close()
     finally:server.shutdown();server.server_close()
     if OUT:(OUT/'results.json').write_text(json.dumps(results,indent=2))
-    print('PASS: 20 asset checks; 10 responsive full-portal scenarios; hover, keyboard, filtering, favorites and details.')
+    print('PASS: 10 borderless heroes + 10 original full-bleed cards; 10 responsive portal scenarios; hover, keyboard, filtering, favorites and details.')
 
 if __name__=='__main__':main()
